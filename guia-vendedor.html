@@ -437,501 +437,443 @@
   .script-wrapper { padding: 0 !important; }
   .script-wrapper .s-container { max-width: 100% !important; }
 
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F5F4F2; color: #1a1a18; line-height: 1.6; }
+
+  /* HEADER */
+  header { background: #1C1C1C; padding: 1.4rem 2rem; border-bottom: 4px solid #C41E1E; display: flex; align-items: center; gap: 16px; }
+  .logo-fast { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: .05em; display: flex; align-items: center; gap: 10px; }
+  .logo-fast svg { width: 34px; height: 34px; }
+  .logo-sub { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: .07em; line-height: 1.3; }
+  .hdiv { width: 1px; height: 32px; background: #444; margin: 0 4px; }
+  .htitle { font-size: 13px; color: #bbb; }
+  .htitle strong { display: block; font-size: 15px; color: #fff; font-weight: 500; }
+
+  /* NAV ABAS */
+  nav { background: #fff; border-bottom: 1px solid #E2E0D8; display: flex; padding: 0 2rem; }
+  .nav-btn { padding: 12px 18px; font-size: 13px; font-weight: 500; color: #888; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: color .15s, border-color .15s; white-space: nowrap; }
+  .nav-btn:hover { color: #1C1C1C; }
+  .nav-btn.active { color: #C41E1E; border-bottom-color: #C41E1E; }
+  .nav-btn svg { width: 14px; height: 14px; }
+
+  /* FILTRO RÁPIDO */
+  .quick-filter { background: #fff; border-bottom: 1px solid #EDECEA; padding: 0.75rem 2rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .qf-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #aaa; margin-right: 4px; white-space: nowrap; }
+  .qf-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid #E0DDD8; background: #F5F4F2; color: #555; font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+  .qf-btn:hover { border-color: #C41E1E; color: #C41E1E; }
+  .qf-btn.active { background: #C41E1E; color: #fff; border-color: #C41E1E; }
+  .qf-btn .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* BUSCA */
+  .mat-toolbar { padding: 1.25rem 2rem 0.5rem; display: flex; align-items: center; gap: 10px; }
+  .mat-toolbar input { padding: 8px 14px 8px 36px; border-radius: 7px; border: 1px solid #D3D1C7; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%23aaa' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 12px center; font-size: 13px; color: #1a1a18; width: 280px; outline: none; }
+  .mat-toolbar input:focus { border-color: #C41E1E; }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 14px; padding: 0 2rem 0.5rem; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #777; }
+  .ldot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* MAIN */
+  .mat-main { padding: 0.25rem 2rem 3rem; }
+  .family-block { margin-top: 1.75rem; }
+  .family-header { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; border-bottom: 2px solid #E8E6E1; margin-bottom: 12px; }
+  .family-name { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: #444; }
+  .ftag { font-size: 11px; padding: 2px 10px; border-radius: 20px; font-weight: 500; }
+  .ftag-dw  { background: #FBE9E9; color: #7A0000; border: 1px solid #F5C0C0; }
+  .ftag-gl  { background: #E3F0FA; color: #0C4A7A; border: 1px solid #A8CFF0; }
+  .ftag-iso { background: #FEF3E0; color: #7A4A00; border: 1px solid #F5CC80; }
+
+  /* GRID */
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+
+  /* CARD */
+  .card { background: #fff; border: 1px solid #E8E6E1; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; transition: border-color .15s; }
+  .card:hover { border-color: #C41E1E; }
+
+  /* IMAGEM SVG ILUSTRATIVA */
+  .card-img { width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .card-img svg { width: 100%; height: 100%; }
+
+  .cbar { height: 3px; flex-shrink: 0; }
+  .cb-st   { background: #CCCCCC; }
+  .cb-ru   { background: #2E8B2E; }
+  .cb-rf   { background: #C41E1E; }
+  .cb-pf   { background: #7A0000; }
+  .cb-ms   { background: #888; }
+  .cb-gl   { background: #1A6FA8; }
+  .cb-bc   { background: #4A90C4; }
+  .cb-iso  { background: #E8A020; }
+
+  .card-body { padding: .9rem 1rem; flex: 1; display: flex; flex-direction: column; }
+  .card-name { font-size: 14px; font-weight: 600; color: #1C1C1C; margin-bottom: 2px; }
+  .card-sub  { font-size: 11px; color: #999; margin-bottom: 7px; }
+  .card-desc { font-size: 12.5px; color: #555; line-height: 1.55; margin-bottom: 9px; flex: 1; }
+  hr.cd { border: none; border-top: 1px solid #F0EEEA; margin-bottom: 7px; }
+  .ml { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: #bbb; margin-bottom: 4px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 5px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 5px; font-weight: 500; }
+  .bp  { background: #FBE9E9; color: #7A0000; border: 1px solid #F5C0C0; }
+  .be  { background: #FFF3E0; color: #7A3B00; border: 1px solid #FFD0A0; }
+  .bgl { background: #E3F0FA; color: #0C4A7A; border: 1px solid #A8CFF0; }
+  .bis { background: #FEF3E0; color: #7A4A00; border: 1px solid #F5CC80; }
+  .obs { font-size: 11px; color: #C95C00; margin-top: 5px; }
+
+  .hidden { display: none !important; }
+
+  /* TABS PLACEHOLDER */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 2rem; text-align: center; gap: 10px; }
+  .placeholder svg { width: 40px; height: 40px; color: #ddd; }
+  .placeholder strong { font-size: 16px; font-weight: 600; color: #444; }
+  .placeholder p { font-size: 13px; color: #999; max-width: 280px; }
+
+  footer { text-align: center; padding: 1.25rem; font-size: 12px; color: #aaa; border-top: 1px solid #E2E0D8; background: #fff; }
+  footer span { color: #C41E1E; font-weight: 700; }
+
+  /* LIGHTBOX */
+  .card-img { cursor: zoom-in; }
+  .lightbox {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.82); z-index: 9999;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px; padding: 2rem;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img {
+    max-width: 90vw; max-height: 80vh; object-fit: contain;
+    border-radius: 10px; background: #fff; padding: 12px;
+    animation: zoomin .2s ease;
+  }
+  @keyframes zoomin { from { transform: scale(.85); opacity:0; } to { transform: scale(1); opacity:1; } }
+  .lightbox-caption { color: #fff; font-size: 15px; font-weight: 500; }
+  .lightbox-close {
+    position: fixed; top: 20px; right: 24px;
+    background: rgba(255,255,255,0.15); border: none; color: #fff;
+    font-size: 26px; width: 44px; height: 44px; border-radius: 50%;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .lightbox-close:hover { background: rgba(196,30,30,0.7); }
+
+  #prod-table tbody tr:nth-child(even) { background: #F8F7F2; }
+  #prod-table tbody tr:hover { background: #FBE9E9; }
+  #prod-table td { padding: 8px 12px; border-bottom: 1px solid #F0EEEA; color: #333; vertical-align: middle; }
+  .fab-mdc { background:#C41E1E; color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; }
+  .fab-fds { background:#7A0000; color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; }
+  .cat-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+  .cat-PLACA { background:#FBE9E9; color:#7A0000; }
+  .cat-COMPLEMENTO { background:#E3F0FA; color:#0C4A7A; }
+  .cat-AÇO { background:#F1EFE8; color:#444; }
+  .cat-VAB { background:#FEF3E0; color:#7A4A00; }
+  .cat-PISO { background:#EAF4EA; color:#2E6B2E; }
+  .cat-default { background:#F1EFE8; color:#555; }
+  .cod-badge { font-family: monospace; font-size:11px; color:#888; }
+
+
+  .script-wrapper { padding: 0; }
+  .script-wrapper .script-container { max-width: 700px; margin: 0 auto; }
+
+
+  .emp-card { background:#fff; border:1px solid #E8E6E1; border-radius:10px; padding:1rem; display:flex; align-items:flex-start; gap:12px; transition:border-color .15s; }
+  .emp-card:hover { border-color:#C41E1E; }
+  .emp-card-icon { width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .emp-card-title { font-size:13px; font-weight:600; color:#1C1C1C; margin-bottom:2px; }
+  .emp-card-sub { font-size:12px; color:#888; margin-bottom:6px; }
+  .emp-link { font-size:12px; color:#C41E1E; text-decoration:none; font-weight:500; }
+  .emp-link:hover { text-decoration:underline; }
+  .emp-info-card { background:#fff; border-radius:10px; border:1px solid #E8E6E1; padding:1rem 1.25rem; }
+  .emp-info-label { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#aaa; margin-bottom:6px; font-weight:600; }
+  .emp-info-text { font-size:13px; color:#444; line-height:1.6; margin-bottom:8px; }
+  .emp-info-edit { font-size:11px; color:#C41E1E; cursor:pointer; }
+
+
+  /* LOGIN */
+  #login-screen {
+    position: fixed; inset: 0; z-index: 99999;
+    background: #1C1C1C;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+  .login-box {
+    background: #fff; border-radius: 16px; padding: 2.5rem 2rem;
+    width: 100%; max-width: 360px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+  .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .login-logo-text { font-size: 26px; font-weight: 700; color: #1C1C1C; letter-spacing: .05em; }
+  .login-sub { font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 1.75rem; }
+  .login-field { width: 100%; margin-bottom: 12px; }
+  .login-field label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: #888; display: block; margin-bottom: 5px; font-weight: 600; }
+  .login-field input {
+    width: 100%; padding: 10px 14px; border-radius: 8px;
+    border: 1.5px solid #E2E0D8; font-size: 14px; color: #1C1C1C;
+    outline: none; transition: border-color .15s;
+  }
+  .login-field input:focus { border-color: #C41E1E; }
+  .login-btn {
+    width: 100%; padding: 11px; border-radius: 8px;
+    background: #C41E1E; color: #fff; border: none;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    margin-top: 6px; transition: background .15s;
+    letter-spacing: .02em;
+  }
+  .login-btn:hover { background: #A01818; }
+  .login-error { font-size: 12px; color: #C41E1E; margin-top: 8px; min-height: 18px; font-weight: 500; }
+
+  /* VENDEDOR BANNER */
+  #vendedor-banner {
+    display: none;
+    background: #1C1C1C;
+    padding: 10px 2rem;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #C41E1E;
+  }
+  .vb-saudacao { font-size: 13px; color: #aaa; }
+  .vb-nome { font-size: 15px; font-weight: 600; color: #fff; }
+  .vb-logout { font-size: 12px; color: #888; cursor: pointer; padding: 4px 10px; border: 1px solid #444; border-radius: 6px; background: none; transition: all .15s; }
+  .vb-logout:hover { border-color: #C41E1E; color: #C41E1E; }
+
+  /* DESEMPENHO TAB */
+  .meta-card { background: #fff; border: 1px solid #E8E6E1; border-radius: 10px; padding: 1.1rem 1.25rem; }
+  .meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #aaa; margin-bottom: 4px; font-weight: 600; }
+  .meta-value { font-size: 28px; font-weight: 700; color: #1C1C1C; line-height: 1.1; }
+  .meta-sub { font-size: 12px; color: #888; margin-top: 3px; }
+  .meta-bar-wrap { background: #F1EFE8; border-radius: 20px; height: 8px; margin-top: 10px; overflow: hidden; }
+  .meta-bar { height: 100%; border-radius: 20px; background: #C41E1E; transition: width .6s ease; }
+
+
+  /* PEDIDOS */
+  .ped-form-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; }
+  .ped-field label { font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#aaa;display:block;margin-bottom:3px; }
+  .ped-field input, .ped-field select { width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;font-family:inherit;background:#fff;color:#1a1a18;appearance:auto; }
+  .ped-field input:focus, .ped-field select:focus { border-color:#C41E1E; }
+  .status-badge { font-size:10px;font-weight:600;padding:3px 8px;border-radius:10px;white-space:nowrap; }
+  .s-agendamento    { background:#E3F0FA;color:#0C447C; }
+  .s-aguardando-dt  { background:#FEF3E0;color:#7A4A00; }
+  .s-com-dt         { background:#F3E5F5;color:#4A148C; }
+  .s-em-rota        { background:#E8F5E9;color:#1B5E20; }
+  .s-cancelado      { background:#FFEBEE;color:#B71C1C; }
+  .s-entregue       { background:#E8F5E9;color:#1B5E20;border:1px solid #81C784; }
+  .s-faturado       { background:#1C1C1C;color:#fff; }
+  .s-aguardando-fat { background:#FFF8E1;color:#E65100; }
+  .ped-table { width:100%;border-collapse:collapse;font-size:12px;margin-top:1rem; }
+  .ped-table th { background:#1C1C1C;color:#fff;padding:8px 10px;text-align:left;font-weight:500;white-space:nowrap; }
+  .ped-table td { padding:7px 10px;border-bottom:1px solid #F0EEEA;vertical-align:middle; }
+  .ped-table tr:hover td { background:#FBE9E9; }
+  .comissao-box { background:#1C1C1C;border-radius:12px;padding:1.25rem;color:#fff;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px; }
+  .com-item-label { font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px; }
+  .com-item-value { font-size:20px;font-weight:700;color:#fff; }
+  .com-item-value.red { color:#C41E1E; }
+  .com-item-value.green { color:#4CAF50; }
+  .redutor-warning { background:#7A0000;border-radius:8px;padding:8px 12px;font-size:12px;color:#FFB3B3;margin-top:8px; }
+
+
+  /* ══════════════════════════════════
+     RESPONSIVIDADE GLOBAL
+  ══════════════════════════════════ */
+
+  /* Padding padrão em todas as seções */
+  .page-section { padding: 1.25rem 1.5rem 3rem; }
+
+  /* Header responsivo */
+  @media (max-width: 600px) {
+    header { padding: 1rem 1rem; gap: 10px; }
+    .logo-fast { font-size: 18px; }
+    .logo-fast svg { width: 28px; height: 28px; }
+    .htitle { font-size: 11px; }
+    .htitle strong { font-size: 13px; }
+    .hdiv { display: none; }
+  }
+
+  /* Nav scroll horizontal no mobile */
+  nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 1rem;
+  }
+  nav::-webkit-scrollbar { display: none; }
+
+  @media (max-width: 600px) {
+    .nav-btn { padding: 10px 12px; font-size: 12px; gap: 4px; }
+    .nav-btn svg { width: 13px; height: 13px; }
+  }
+
+  /* Filtro rápido */
+  @media (max-width: 600px) {
+    .quick-filter { padding: 0.6rem 1rem; gap: 6px; }
+    .qf-btn { padding: 4px 10px; font-size: 11px; }
+  }
+
+  /* Toolbar de busca */
+  @media (max-width: 600px) {
+    .mat-toolbar { padding: 1rem 1rem 0.4rem; }
+    .mat-toolbar input { width: 100%; }
+  }
+
+  /* Legend */
+  @media (max-width: 600px) {
+    .legend { padding: 0 1rem 0.4rem; gap: 10px; }
+  }
+
+  /* Mat main */
+  @media (max-width: 600px) {
+    .mat-main { padding: 0.25rem 1rem 2rem; }
+  }
+
+  /* Product grid */
+  @media (max-width: 500px) {
+    .product-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Vendedor banner */
+  #vendedor-banner { padding: 8px 1rem; }
+  @media (max-width: 600px) {
+    #vendedor-banner { padding: 8px 1rem; }
+    .vb-nome { font-size: 13px; }
+    .vb-saudacao { font-size: 11px; }
+  }
+
+  /* Tabs de conteúdo */
+  @media (max-width: 600px) {
+    #tab-empresa .emp-section,
+    #tab-evolucao > div,
+    #tab-admin > div,
+    #tab-pedidos > div { padding: 1rem 1rem 2rem !important; }
+  }
+
+  /* Dashboard de pedidos */
+  @media (max-width: 600px) {
+    #ped-dashboard > div:last-child {
+      grid-template-columns: 1fr !important;
+    }
+    #ped-dashboard > div:first-child > div:last-child {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+  }
+
+  /* Comissão box */
+  .comissao-box {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    background: #1C1C1C;
+    border-radius: 12px;
+    padding: 1.1rem 1.4rem;
+    color: #fff;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 600px) {
+    .comissao-box { grid-template-columns: repeat(2, 1fr); padding: 1rem; gap: 10px; }
+    .com-item-value { font-size: 16px !important; }
+  }
+
+  /* Tabela de pedidos */
+  @media (max-width: 768px) {
+    .ped-table { font-size: 11px; }
+    .ped-table th, .ped-table td { padding: 6px 7px; }
+  }
+  @media (max-width: 500px) {
+    .ped-table th:nth-child(5),
+    .ped-table td:nth-child(5),
+    .ped-table th:nth-child(7),
+    .ped-table td:nth-child(7),
+    .ped-table th:nth-child(8),
+    .ped-table td:nth-child(8) { display: none; }
+  }
+
+  /* Form de pedido */
+  @media (max-width: 600px) {
+    .ped-form-grid { grid-template-columns: 1fr 1fr !important; }
+  }
+  @media (max-width: 400px) {
+    .ped-form-grid { grid-template-columns: 1fr !important; }
+  }
+
+  /* Emp cards */
+  @media (max-width: 500px) {
+    #acessos-grid { grid-template-columns: 1fr !important; }
+  }
+
+  /* Meta cards evolução */
+  @media (max-width: 500px) {
+    #tab-evolucao .meta-card .meta-value { font-size: 20px !important; }
+  }
+
+  /* Admin panel */
+  @media (max-width: 600px) {
+    #criterios-grid > div { flex-direction: column !important; align-items: flex-start !important; }
+    #adm-resumo { grid-template-columns: 1fr !important; }
+    #ped-resumo-equipe { grid-template-columns: 1fr !important; }
+  }
+
+  /* Tabela de produtos */
+  @media (max-width: 768px) {
+    #prod-table { font-size: 11px; }
+    #prod-table th, #prod-table td { padding: 6px 8px; white-space: normal; }
+    #prod-table th:nth-child(4),
+    #prod-table td:nth-child(4),
+    #prod-table th:nth-child(6),
+    #prod-table td:nth-child(6) { display: none; }
+  }
+
+  /* Filtros de tabela */
+  @media (max-width: 600px) {
+    #tab-tabela > div:first-child { padding: 0.75rem 1rem 0.5rem !important; }
+    #tab-tabela > div:nth-child(2) { padding: 0.5rem 1rem !important; }
+    #tab-tabela > div:nth-child(3) { padding: 0 1rem 2rem !important; }
+    #tbl-search { width: 100% !important; }
+  }
+
+  /* Lightbox */
+  .lightbox img { max-width: 95vw !important; max-height: 85vh !important; }
+
+  /* Empresa cards */
+  .emp-card { background: #fff; border: 1px solid #E8E6E1; border-radius: 10px; padding: 1rem; display: flex; align-items: flex-start; gap: 10px; transition: border-color .15s; }
+  .emp-card:hover { border-color: #C41E1E; }
+  .emp-card-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .emp-card-title { font-size: 13px; font-weight: 600; color: #1C1C1C; margin-bottom: 2px; }
+  .emp-card-sub { font-size: 11px; color: #888; margin-bottom: 5px; }
+  .emp-link { font-size: 12px; color: #C41E1E; text-decoration: none; font-weight: 500; }
+  .emp-link:hover { text-decoration: underline; }
+  .emp-info-card { background: #fff; border-radius: 10px; border: 1px solid #E8E6E1; padding: 1rem 1.1rem; }
+  .emp-info-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #aaa; margin-bottom: 5px; font-weight: 600; }
+  .emp-info-text { font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 6px; }
+
+  /* Meta cards */
+  .meta-card { background: #fff; border: 1px solid #E8E6E1; border-radius: 10px; padding: 1rem 1.1rem; }
+  .meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: #aaa; margin-bottom: 4px; font-weight: 600; }
+  .meta-value { font-size: 24px; font-weight: 700; color: #1C1C1C; }
+  .meta-sub { font-size: 11px; color: #888; margin-top: 2px; }
+  .meta-bar-wrap { background: #F1EFE8; border-radius: 20px; height: 7px; margin-top: 8px; overflow: hidden; }
+  .meta-bar { height: 100%; border-radius: 20px; background: #C41E1E; transition: width .5s ease; }
+
+  /* Pedidos status badges */
+  .s-agendamento    { background: #E3F0FA; color: #0C447C; }
+  .s-aguardando-dt  { background: #FEF3E0; color: #7A4A00; }
+  .s-com-dt         { background: #F3E5F5; color: #4A148C; }
+  .s-em-rota        { background: #E8F5E9; color: #1B5E20; }
+  .s-cancelado      { background: #FFEBEE; color: #B71C1C; }
+  .s-entregue       { background: #E8F5E9; color: #1B5E20; border: 1px solid #81C784; }
+  .s-faturado       { background: #1C1C1C; color: #fff; }
+  .s-aguardando-fat { background: #FFF8E1; color: #E65100; }
+
+  /* Login responsivo */
+  .login-box { width: calc(100% - 2rem) !important; max-width: 380px !important; padding: 2rem 1.5rem !important; }
+
+  /* Script inner */
+  .script-wrapper { padding: 0 !important; }
+  .script-wrapper .s-container { max-width: 100% !important; }
+
+
 </style>
-
-<script>
-// ── FIREBASE SYNC ──
-
-function fbSave(vendNome) {
-  const v = vendedores[vendNome];
-  const data = {
-    meta:      v.meta      || '',
-    realizado: v.realizado || '',
-    ligacoes:  v.ligacoes  || '',
-    ticket:    v.ticket    || '',
-    metaSemana:         v.metaSemana         || '',
-    metaEntregaMes:     v.metaEntregaMes     || '',
-    metaEntregaSemana:  v.metaEntregaSemana  || '',
-    mix:       v.mix       || '',
-    margem:    v.margem    || '',
-    pct:       v.pct       || 0,
-    fortes:    v.fortes    || '',
-    melhorar:  v.melhorar  || '',
-    notas:     v.notas     || {},
-    tarefas:   v.tarefas   || [],
-    updatedAt: Date.now()
-  };
-  dbRef('vendedores/' + vendNome).set(data)
-    .then(() => console.log('Firebase: salvo', vendNome))
-    .catch(e => console.error('Firebase erro:', e));
-}
-
-function fbLoad(vendNome, callback) {
-  dbRef('vendedores/' + vendNome).once('value')
-    .then(snap => {
-      const data = snap.val();
-      if (data) {
-        const v = vendedores[vendNome];
-        v.meta      = data.meta      || v.meta;
-        v.realizado = data.realizado || v.realizado;
-        v.ligacoes  = data.ligacoes  || '';
-        v.ticket    = data.ticket    || v.ticket;
-        v.metaSemana        = data.metaSemana        || '';
-        v.metaEntregaMes    = data.metaEntregaMes    || '';
-        v.metaEntregaSemana = data.metaEntregaSemana || '';
-        v.mix       = data.mix       || '';
-        v.margem    = data.margem    || '';
-        v.pct       = data.pct       || 0;
-        v.fortes    = data.fortes    || '';
-        v.melhorar  = data.melhorar  || '';
-        v.notas     = data.notas     || {};
-        v.tarefas   = data.tarefas   || [];
-      }
-      if (callback) callback();
-    })
-    .catch(e => { console.error('Firebase load erro:', e); if (callback) callback(); });
-}
-
-function fbListenVendedor(vendNome) {
-  dbRef('vendedores/' + vendNome).on('value', snap => {
-    const data = snap.val();
-    if (!data) return;
-    const v = vendedores[vendNome];
-    v.meta      = data.meta      || v.meta;
-    v.realizado = data.realizado || v.realizado;
-    v.ligacoes  = data.ligacoes  || '';
-    v.ticket    = data.ticket    || v.ticket;
-    v.mix       = data.mix       || '';
-    v.margem    = data.margem    || '';
-    v.pct       = data.pct       || 0;
-    v.fortes    = data.fortes    || '';
-    v.melhorar  = data.melhorar  || '';
-    v.notas     = data.notas     || {};
-    v.tarefas   = data.tarefas   || [];
-    // If this is the currently logged-in vendedor, refresh their view
-    if (currentUser === vendNome) {
-      renderEvolucaoVendedor(v);
-    }
-  });
-}
-
-
-// ── PEDIDOS ──
-const STATUS_VENDEDOR = ['agendamento','aguardando-dt','com-dt','em-rota','entregue','cancelado'];
-const STATUS_GESTORA  = ['faturado','aguardando-fat'];
-const STATUS_TODOS    = [...STATUS_VENDEDOR, ...STATUS_GESTORA];
-
-const STATUS_LABEL = {
-  'agendamento':    'Agendamento',
-  'aguardando-dt':  'Aguardando DT',
-  'com-dt':         'Com DT',
-  'em-rota':        'Em Rota',
-  'entregue':       'Entregue',
-  'cancelado':      'Cancelado',
-  'faturado':       'Faturado',
-  'aguardando-fat': 'Aguardando Fat.',
-};
-
-const CAT_LABEL = { placa:'Placa', grx:'GRX/Comp.', aco:'Aço' };
-const CAT_PCT   = { placa:0.005,   grx:0.0075,      aco:0.01  };
-
-function calcValorTotal() {
-  try {
-    const qtdEl   = document.getElementById('pf-qtd');
-    const vitEl   = document.getElementById('pf-valor-item');
-    const totEl   = document.getElementById('pf-valor-total');
-    const qtd = qtdEl  ? (parseFloat(qtdEl.value.replace(',','.'))  || 0) : 0;
-    const vit = vitEl  ? (parseFloat(vitEl.value.replace(',','.'))  || 0) : 0;
-    if (totEl) totEl.value = (qtd * vit).toFixed(2);
-  } catch(e) { console.error('calcValorTotal error:', e); }
-}
-
-function togglePedForm() {
-  try {
-    const f = document.getElementById('ped-form');
-    if (!f) return;
-    const visible = f.style.display !== 'none';
-    f.style.display = visible ? 'none' : 'block';
-    if (!visible) {
-      const today = new Date().toISOString().split('T')[0];
-      const dataEl = document.getElementById('pf-data');
-      if (dataEl) dataEl.value = today;
-    }
-  } catch(e) { console.error('togglePedForm error:', e); }
-}
-
-function salvarPedido() {
-  try {
-    if (!currentUser) { alert('Sessão expirada. Faça login novamente.'); return; }
-    if (typeof db === 'undefined') { alert('Erro: Firebase não carregou. Verifique sua conexão.'); return; }
-
-    const get = id => {
-      try { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
-      catch(e) { return ''; }
-    };
-
-    const data     = get('pf-data') || new Date().toISOString().split('T')[0];
-    const empresa  = get('pf-empresa');
-    const cliente  = get('pf-cliente');
-    const estado   = get('pf-estado');
-    const veiculo  = get('pf-veiculo');
-    const pn       = get('pf-pn');
-    const cat      = get('pf-categoria');
-    const material = get('pf-material');
-    const qtdStr   = get('pf-qtd').replace(',','.');
-    const vUnitStr = get('pf-valor-item').replace(',','.');
-    const qtd      = parseFloat(qtdStr) || 0;
-    const vUnit    = parseFloat(vUnitStr) || 0;
-    const vTotal   = Math.round((qtd * vUnit) * 100) / 100;
-    const status   = get('pf-status') || 'agendamento';
-
-    // Highlight missing fields
-    let faltando = false;
-    [['pf-empresa',empresa],['pf-cliente',cliente],['pf-categoria',cat],
-     ['pf-material',material],['pf-qtd',qtd],['pf-valor-item',vUnit]].forEach(function(pair) {
-      const id = pair[0], val = pair[1];
-      const el = document.getElementById(id);
-      if (!val) { if(el) el.style.borderColor='#C41E1E'; faltando=true; }
-      else { if(el) el.style.borderColor='#E2E0D8'; }
-    });
-    if (faltando) { alert('Preencha os campos obrigatórios (marcados em vermelho).'); return; }
-
-    const pedido = {
-      id: Date.now().toString(),
-      data: data,
-      empresa: empresa,
-      estado: estado,
-      cliente: cliente,
-      pn: pn,
-      cat: cat,
-      material: material,
-      veiculo: veiculo,
-      qtd: qtd,
-      vUnit: vUnit,
-      vTotal: vTotal,
-      status: status,
-      vendedor: currentUser,
-      criadoEm: Date.now()
-    };
-
-    const btn = document.querySelector('button[onclick="salvarPedido()"]');
-    if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
-
-    dbRef('pedidos/' + currentUser + '/' + pedido.id).set(pedido)
-      .then(function() {
-        if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
-        const toast = document.getElementById('ped-toast');
-        if (toast) {
-          toast.style.display = 'block';
-          setTimeout(function() {
-            toast.style.display = 'none';
-            const form = document.getElementById('ped-form');
-            if (form) form.style.display = 'none';
-          }, 1500);
-        }
-        ['pf-empresa','pf-cliente','pf-pn','pf-material','pf-qtd','pf-valor-item','pf-valor-total'].forEach(function(id) {
-          const el = document.getElementById(id);
-          if (el) el.value = '';
-        });
-        const selects = ['pf-categoria','pf-estado','pf-veiculo'];
-        selects.forEach(function(id) {
-          const el = document.getElementById(id);
-          if (el) el.value = '';
-        });
-        const st = document.getElementById('pf-status');
-        if (st) st.value = 'agendamento';
-      })
-      .catch(function(e) {
-        if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
-        alert('Erro ao salvar pedido: ' + (e && e.message ? e.message : 'Verifique as regras do Firebase.'));
-      });
-
-  } catch(err) {
-    alert('Erro inesperado: ' + (err && err.message ? err.message : String(err)));
-  }
-}
-
-function atualizarStatus(vendNome, pedidoId, novoStatus) {
-  dbRef('pedidos/' + vendNome + '/' + pedidoId + '/status').set(novoStatus)
-    .catch(e => console.error('Erro status:', e));
-}
-
-function deletarPedido(vendNome, pedidoId) {
-  if (!confirm('Excluir este pedido?')) return;
-  dbRef('pedidos/' + vendNome + '/' + pedidoId).remove()
-    .catch(e => console.error('Erro delete:', e));
-}
-
-function renderPedidos(pedidosList, isGestora) {
-  const tbody = document.getElementById('ped-tbody');
-  const vazio = document.getElementById('ped-vazio');
-  if (!tbody) return;
-
-  const mesAtual = new Date().toISOString().slice(0,7);
-  const filtrados = pedidosList.filter(p => p.data && p.data.startsWith(mesAtual));
-
-  if (!filtrados.length) {
-    tbody.innerHTML = '';
-    if (vazio) vazio.style.display = 'block';
-    atualizarComissao([], isGestora);
-    return;
-  }
-  if (vazio) vazio.style.display = 'none';
-
-  // Sort by date desc
-  filtrados.sort((a,b) => b.criadoEm - a.criadoEm);
-
-  tbody.innerHTML = filtrados.map(p => {
-    const statusOpts = isGestora ? STATUS_TODOS : STATUS_VENDEDOR;
-    const selectOpts = statusOpts.map(s =>
-      `<option value="${s}" ${p.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`
-    ).join('');
-    const vendLabel = isGestora ? `<td style="font-size:11px;font-weight:600;color:#C41E1E;">${p.vendedor||''}</td>` : '';
-    return `<tr>
-      <td>${p.data||''}</td>
-      ${vendLabel}
-      <td>${p.empresa||''}</td>
-      <td style="text-align:center;font-weight:600;font-size:11px;color:#185FA5;">${p.estado||'—'}</td>
-      <td style="text-align:center;font-size:12px;">${p.veiculo==='truck'?'🚛 Truck':p.veiculo==='carreta'?'🚚 Carreta':p.veiculo==='outros'?'📦 Outros':'—'}</td>
-      <td>${p.cliente||''}</td>
-      <td style="font-family:monospace;font-size:11px;">${p.pn||'—'}</td>
-      <td>${p.material||''}</td>
-      <td style="text-align:center;font-size:11px;background:#F8F7F3;border-radius:4px;padding:2px 6px;">${CAT_LABEL[p.cat]||p.cat}</td>
-      <td style="text-align:center;">${p.qtd}</td>
-      <td>R$ ${Number(p.vUnit||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-      <td style="font-weight:600;">R$ ${Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-      <td>
-        <select onchange="atualizarStatus('${p.vendedor}','${p.id}',this.value)"
-          style="font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;">
-          ${selectOpts}
-        </select>
-      </td>
-      <td>
-        <button onclick="deletarPedido('${p.vendedor}','${p.id}')"
-          style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">✕</button>
-      </td>
-    </tr>`;
-  }).join('');
-
-  atualizarComissao(filtrados, isGestora);
-}
-
-function atualizarComissao(pedidos, isGestora) {
-  let totalVendido = 0, comPlacas = 0, comComp = 0, comAco = 0;
-  pedidos.filter(p => p.status !== 'cancelado').forEach(p => {
-    const v = Number(p.vTotal||0);
-    totalVendido += v;
-    if (p.cat === 'placa') comPlacas += v * CAT_PCT.placa;
-    else if (p.cat === 'grx') comComp += v * CAT_PCT.grx;
-    else if (p.cat === 'aco') comAco += v * CAT_PCT.aco;
-  });
-  const comTotal = comPlacas + comComp + comAco;
-
-  // Check if ligações meta atingida
-  const v = currentUser ? vendedores[currentUser] : null;
-  const ligacoes = parseInt(v?.ligacoes || '0');
-  const metaLig = 600;
-  const redutor = ligacoes < metaLig && ligacoes > 0;
-  const comReductor = totalVendido * 0.005;
-
-  const fmt = n => 'R$ ' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
-
-  set('ped-total-vendido', fmt(totalVendido));
-  set('ped-com-placas',    fmt(comPlacas));
-  set('ped-com-comp',      fmt(comComp));
-  set('ped-com-aco',       fmt(comAco));
-  set('ped-com-total',     fmt(comTotal));
-  set('ped-com-redutor',   fmt(comReductor));
-
-  const redBox  = document.getElementById('ped-redutor-box');
-  const redWarn = document.getElementById('ped-redutor-warning');
-  if (redBox)  redBox.style.display  = redutor ? 'block' : 'none';
-  if (redWarn) redWarn.style.display = redutor ? 'block' : 'none';
-}
-
-function listenPedidos(vendNome, isGestora) {
-  if (isGestora) {
-    // Gestora ouve todos os vendedores
-    const titulo = document.getElementById('ped-periodo');
-    if (titulo) titulo.textContent = 'Pedidos de toda a equipe — ' + new Date().toLocaleString('pt-BR',{month:'long',year:'numeric'});
-
-    // Add vendedor column header
-    const thead = document.querySelector('#ped-tabela thead tr');
-    if (thead && !thead.querySelector('.vend-col')) {
-      const th = document.createElement('th');
-      th.className = 'vend-col';
-      th.textContent = 'Vendedor';
-      thead.insertBefore(th, thead.children[1]);
-    }
-
-    let allPedidos = {};
-    ['PEDRO','WELLINGTON','JONATAS'].forEach(vn => {
-      dbRef('pedidos/' + vn).on('value', snap => {
-        allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
-        const todos = Object.values(allPedidos).flat();
-        renderPedidos(todos, true);
-        renderResumoEquipe(allPedidos);
-      });
-    });
-  } else {
-    const titulo = document.getElementById('ped-periodo');
-    if (titulo) titulo.textContent = 'Seus pedidos — ' + new Date().toLocaleString('pt-BR',{month:'long',year:'numeric'});
-
-    dbRef('pedidos/' + vendNome).on('value', snap => {
-      const pedidos = snap.val() ? Object.values(snap.val()) : [];
-      renderPedidos(pedidos, false);
-      updateDashboard(pedidos, vendedores[vendNome]);
-    });
-  }
-}
-
-function renderResumoEquipe(allPedidos) {
-  // Show team summary in admin tab if exists
-  let box = document.getElementById('ped-resumo-equipe');
-  if (!box) return;
-  const mesAtual = new Date().toISOString().slice(0,7);
-  box.innerHTML = ['PEDRO','WELLINGTON','JONATAS'].map(vn => {
-    const peds = (allPedidos[vn]||[]).filter(p => p.data?.startsWith(mesAtual) && p.status !== 'cancelado');
-    const total = peds.reduce((s,p) => s + Number(p.vTotal||0), 0);
-    const com   = peds.reduce((s,p) => s + Number(p.vTotal||0) * (CAT_PCT[p.cat]||0), 0);
-    return `<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">
-      <div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:6px;">${vendedores[vn].nome}</div>
-      <div style="font-size:11px;color:#aaa;">Total vendido</div>
-      <div style="font-size:14px;font-weight:600;color:#333;margin-bottom:4px;">R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-      <div style="font-size:11px;color:#aaa;">Previsão comissão</div>
-      <div style="font-size:14px;font-weight:600;color:#2E7D32;">R$ ${com.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-      <div style="font-size:11px;color:#aaa;margin-top:4px;">${peds.length} pedido(s) no mês</div>
-    </div>`;
-  }).join('');
-}
-
-
-// ── DASHBOARD MÉTRICAS ──
-function getWeekBounds() {
-  const now = new Date();
-  const day = now.getDay(); // 0=Dom, 1=Seg...
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-  const mon = new Date(now.setDate(diff));
-  mon.setHours(0,0,0,0);
-  const sun = new Date(mon);
-  sun.setDate(mon.getDate() + 6);
-  sun.setHours(23,59,59,999);
-  return { start: mon, end: sun };
-}
-
-function toISO(d) { return d.toISOString().split('T')[0]; }
-
-function fmtBRL(n) {
-  return 'R$ ' + Number(n||0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
-}
-
-function updateDashboard(pedidos, v) {
-  const today = toISO(new Date());
-  const mesAtual = today.slice(0,7);
-  const { start, end } = getWeekBounds();
-
-  // Set today date label
-  const dl = document.getElementById('ped-hoje-data');
-  if (dl) dl.textContent = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'2-digit'});
-
-  // Filter helpers
-  const isHoje     = p => p.data === today && p.status !== 'cancelado';
-  const isSemana   = p => { const d = new Date(p.data+'T12:00:00'); return d >= start && d <= end && p.status !== 'cancelado'; };
-  const isMes      = p => p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado';
-  const isEntregue = p => p.status === 'entregue' || p.status === 'faturado';
-
-  // HOJE
-  const hoje = pedidos.filter(isHoje);
-  const hojeTotal   = hoje.reduce((s,p) => s + Number(p.vTotal||0), 0);
-  const hojeTruck   = hoje.filter(p => p.veiculo === 'truck');
-  const hojeCarreta = hoje.filter(p => p.veiculo === 'carreta');
-  const hojeOutros  = hoje.filter(p => p.veiculo === 'outros' || !p.veiculo);
-
-  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
-  const setW = (id, pct, color) => { const el=document.getElementById(id); if(el){el.style.width=Math.min(pct,100)+'%';if(color)el.style.background=color;} };
-
-  set('dash-hoje-total',      fmtBRL(hojeTotal));
-  set('dash-hoje-truck',      fmtBRL(hojeTruck.reduce((s,p)=>s+Number(p.vTotal||0),0)));
-  set('dash-hoje-truck-qt',   hojeTruck.length + ' pedido(s)');
-  set('dash-hoje-carreta',    fmtBRL(hojeCarreta.reduce((s,p)=>s+Number(p.vTotal||0),0)));
-  set('dash-hoje-carreta-qt', hojeCarreta.length + ' pedido(s)');
-  set('dash-hoje-outros',     fmtBRL(hojeOutros.reduce((s,p)=>s+Number(p.vTotal||0),0)));
-  set('dash-hoje-outros-qt',  hojeOutros.length + ' pedido(s)');
-
-  // METAS
-  const parseMeta = str => parseFloat((str||'0').replace(/\./g,'').replace(',','.')) || 0;
-  const metaMes     = parseMeta(v.meta);
-  const metaSem     = parseMeta(v.metaSemana);
-  const metaEntMes  = parseMeta(v.metaEntregaMes);
-  const metaEntSem  = parseMeta(v.metaEntregaSemana);
-
-  // Vendas semana / mês
-  const realSem = pedidos.filter(isSemana).reduce((s,p)=>s+Number(p.vTotal||0),0);
-  const realMes = pedidos.filter(isMes).reduce((s,p)=>s+Number(p.vTotal||0),0);
-
-  // Entregas semana / mês
-  const entSem = pedidos.filter(p => isSemana(p) && isEntregue(p)).reduce((s,p)=>s+Number(p.vTotal||0),0);
-  const entMes = pedidos.filter(p => isMes(p) && isEntregue(p)).reduce((s,p)=>s+Number(p.vTotal||0),0);
-
-  const pctSem   = metaSem   > 0 ? Math.round((realSem/metaSem)*100)   : 0;
-  const pctMes   = metaMes   > 0 ? Math.round((realMes/metaMes)*100)   : 0;
-  const pctESem  = metaEntSem > 0 ? Math.round((entSem/metaEntSem)*100) : 0;
-  const pctEMes  = metaEntMes > 0 ? Math.round((entMes/metaEntMes)*100) : 0;
-
-  const faltaSem  = Math.max(0, metaSem   - realSem);
-  const faltaMes  = Math.max(0, metaMes   - realMes);
-  const faltaESem = Math.max(0, metaEntSem - entSem);
-  const faltaEMes = Math.max(0, metaEntMes - entMes);
-
-  // Vendas semana
-  set('dash-sem-meta',  metaSem   > 0 ? fmtBRL(metaSem)   : '—');
-  set('dash-sem-real',  fmtBRL(realSem));
-  set('dash-sem-pct',   pctSem + '%');
-  set('dash-sem-falta', metaSem > 0 ? fmtBRL(faltaSem) : '—');
-  setW('dash-sem-bar',  pctSem);
-
-  // Vendas mês
-  set('dash-mes-meta',  metaMes   > 0 ? fmtBRL(metaMes)   : '—');
-  set('dash-mes-real',  fmtBRL(realMes));
-  set('dash-mes-pct',   pctMes + '%');
-  set('dash-mes-falta', metaMes > 0 ? fmtBRL(faltaMes) : '—');
-  setW('dash-mes-bar',  pctMes);
-
-  // Entrega semana
-  set('dash-esem-meta',  metaEntSem > 0 ? fmtBRL(metaEntSem) : '—');
-  set('dash-esem-real',  fmtBRL(entSem));
-  set('dash-esem-pct',   pctESem + '%');
-  set('dash-esem-falta', metaEntSem > 0 ? fmtBRL(faltaESem) : '—');
-  setW('dash-esem-bar',  pctESem, '#185FA5');
-
-  // Entrega mês
-  set('dash-emes-meta',  metaEntMes > 0 ? fmtBRL(metaEntMes) : '—');
-  set('dash-emes-real',  fmtBRL(entMes));
-  set('dash-emes-pct',   pctEMes + '%');
-  set('dash-emes-falta', metaEntMes > 0 ? fmtBRL(faltaEMes) : '—');
-  setW('dash-emes-bar',  pctEMes, '#185FA5');
-}
-
-
-function testarConexao() {
-  var msgs = [];
-  msgs.push('currentUser: ' + (currentUser || 'null'));
-  msgs.push('Firebase: ' + (typeof firebase !== 'undefined' ? 'OK' : 'NÃO CARREGOU'));
-  msgs.push('db: ' + (typeof db !== 'undefined' ? 'OK' : 'NÃO CARREGOU'));
-  if (typeof db !== 'undefined') {
-    dbRef('teste/ping').set({ t: Date.now() })
-      .then(function() { alert(msgs.join('\n') + '\nFirebase WRITE: OK ✅'); })
-      .catch(function(e) { alert(msgs.join('\n') + '\nFirebase WRITE ERRO: ' + e.message); });
-  } else {
-    alert(msgs.join('\n'));
-  }
-}
-
-</script>
 </head>
 <body>
-
 
 <!-- LOGIN SCREEN -->
 <div id="login-screen">
@@ -1873,7 +1815,8 @@ function testarConexao() {
     <!-- FORM NOVO PEDIDO -->
     <div id="ped-form" style="display:none;background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;margin-top:1rem;">
       <div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">Registrar Novo Pedido</div>
-      <div class="ped-form-grid">
+      <!-- DADOS DO PEDIDO -->
+      <div class="ped-form-grid" style="margin-bottom:14px;">
         <div class="ped-field">
           <label>Data do Pedido</label>
           <input type="date" id="pf-data">
@@ -1900,33 +1843,12 @@ function testarConexao() {
           <input type="text" id="pf-cliente" placeholder="Nome do cliente">
         </div>
         <div class="ped-field">
-          <label>Código PN</label>
-          <input type="text" id="pf-pn" placeholder="Ex: 10001234">
+          <label>Código PN (cód. do cliente)</label>
+          <input type="text" id="pf-pn" placeholder="Ex: CF11468">
         </div>
         <div class="ped-field">
-          <label>Categoria do Material</label>
-          <select id="pf-categoria">
-            <option value="">Selecione...</option>
-            <option value="placa">Placa (ST/RU/RF) — 0,5%</option>
-            <option value="grx">GRX / Complemento — 0,75%</option>
-            <option value="aco">Aço — 1%</option>
-          </select>
-        </div>
-        <div class="ped-field">
-          <label>Material (descrição)</label>
-          <input type="text" id="pf-material" placeholder="Ex: Chapa ST 12,5mm">
-        </div>
-        <div class="ped-field">
-          <label>Quantidade</label>
-          <input type="number" id="pf-qtd" placeholder="Ex: 50" oninput="calcValorTotal()">
-        </div>
-        <div class="ped-field">
-          <label>Valor Unitário (R$)</label>
-          <input type="number" step="0.01" id="pf-valor-item" placeholder="Ex: 45,90" oninput="calcValorTotal()">
-        </div>
-        <div class="ped-field">
-          <label>Valor Total (R$)</label>
-          <input type="number" step="0.01" id="pf-valor-total" placeholder="Calculado automaticamente">
+          <label>Chamado (cód. do pedido)</label>
+          <input type="text" id="pf-chamado" placeholder="Ex: 2026070800001">
         </div>
         <div class="ped-field">
           <label>Status</label>
@@ -1949,6 +1871,19 @@ function testarConexao() {
           </select>
         </div>
       </div>
+
+      <!-- ITENS DO PEDIDO -->
+      <div style="background:#F8F7F3;border-radius:10px;padding:1rem;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#555;">Itens do Pedido</div>
+          <button type="button" onclick="addItemLinha()" style="padding:5px 12px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Adicionar Item</button>
+        </div>
+        <div id="pf-itens-lista" style="display:grid;gap:8px;"></div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #E2E0D8;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12px;color:#888;">Total do pedido:</span>
+          <span style="font-size:16px;font-weight:700;color:#1C1C1C;" id="pf-total-geral">R$ 0,00</span>
+        </div>
+      </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
         <button onclick="togglePedForm()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Cancelar</button>
         <button onclick="salvarPedido()" style="padding:8px 18px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Salvar Pedido</button>
@@ -1966,7 +1901,8 @@ function testarConexao() {
             <th>UF</th>
             <th>Veículo</th>
             <th>Cliente</th>
-            <th>PN</th>
+            <th>PN Cliente</th>
+            <th>Chamado</th>
             <th>Material</th>
             <th>Categoria</th>
             <th>Qtd</th>
@@ -2299,8 +2235,766 @@ function testarConexao() {
 
 </div>
 
-<script>
-  function switchTab(tab) {
+
+    </div>
+  </div>
+
+  <div id="outros-embreve" style="display:none;">
+    <div class="placeholder">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+      <strong>Mais conteúdos em breve</strong>
+      <p>Tabelas de preço, perguntas frequentes, argumentos de venda e mais.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ ADMIN / GESTÃO ══ -->
+<div id="tab-admin" class="tab-content">
+  <div class="page-section" style="max-width:860px;">
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+      <div style="background:#C41E1E;border-radius:8px;padding:6px 10px;font-size:18px;">⭐</div>
+      <div>
+        <h2 style="font-size:16px;font-weight:600;color:#1C1C1C;">Painel da Gestora — Feedback de Vendedor</h2>
+        <p style="font-size:12px;color:#888;">Preencha a avaliação. Os resultados aparecem na aba Evolução do vendedor ao fazer login.</p>
+      </div>
+    </div>
+
+    <!-- SELECTOR -->
+    <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <button onclick="adminSelect('PEDRO',this)" class="qf-btn active" id="abtn-PEDRO">Pedro</button>
+      <button onclick="adminSelect('WELLINGTON',this)" class="qf-btn" id="abtn-WELLINGTON">Wellington</button>
+      <button onclick="adminSelect('JONATAS',this)" class="qf-btn" id="abtn-JONATAS">Jonatas</button>
+    </div>
+
+    <div style="display:grid;gap:14px;">
+
+      <!-- METAS DO PERÍODO -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📊 Metas do Período</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+          <div>
+            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Meta (R$)</label>
+            <input id="adm-meta" type="text" placeholder="Ex: 100.000" oninput="calcPct()" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Realizado (R$)</label>
+            <input id="adm-realizado" type="text" placeholder="Ex: 65.000" oninput="calcPct()" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Ligações no mês</label>
+            <input id="adm-ligacoes" type="text" placeholder="Meta: 600" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Ticket Médio (R$)</label>
+            <input id="adm-ticket" type="text" placeholder="Meta: R$65k" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Mix médio (itens/venda)</label>
+            <input id="adm-mix" type="text" placeholder="Meta: 5" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
+          </div>
+          <div>
+            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Margem</label>
+            <input id="adm-margem" type="text" placeholder="Meta: 0,97" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
+          </div>
+        </div>
+        <!-- progress -->
+        <div style="margin-top:12px;display:flex;align-items:center;gap:12px;">
+          <div style="flex:1;">
+            <div style="font-size:11px;color:#aaa;margin-bottom:4px;">% da meta atingida</div>
+            <div style="background:#E8E6E1;border-radius:20px;height:8px;overflow:hidden;">
+              <div id="adm-bar" style="height:100%;border-radius:20px;background:#C41E1E;width:0%;transition:width .4s;"></div>
+            </div>
+          </div>
+          <div id="adm-pct-label" style="font-size:22px;font-weight:700;color:#C41E1E;min-width:52px;text-align:right;">0%</div>
+        </div>
+      </div>
+
+      <!-- CRITÉRIOS -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📋 Critérios de Avaliação (0 = muito fraco · 5 = excelente)</div>
+        <div style="display:grid;gap:12px;" id="criterios-grid">
+        </div>
+        <!-- nota geral -->
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid #F0EEEA;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div style="font-size:13px;font-weight:600;color:#1C1C1C;">Nota Geral (média): <span id="adm-nota-geral" style="color:#C41E1E;font-size:20px;margin-left:6px;">—</span></div>
+          <div id="adm-classificacao" style="font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;background:#F1EFE8;color:#888;">—</div>
+        </div>
+      </div>
+
+      <!-- FEEDBACK QUALITATIVO -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">✍️ Feedback Qualitativo</div>
+        <div style="display:grid;gap:12px;">
+          <div>
+            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;">Pontos Fortes</label>
+            <textarea id="adm-fortes" rows="2" placeholder="Ex: Conhecimento do material, foco..." style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;resize:vertical;font-family:inherit;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'"></textarea>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;">Pontos a Melhorar</label>
+            <textarea id="adm-melhorar" rows="2" placeholder="Ex: Confiança na ligação..." style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;resize:vertical;font-family:inherit;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'"></textarea>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Plano de Ação — Tarefas para o Vendedor</label>
+            <div id="adm-tarefas-lista" style="display:grid;gap:6px;margin-bottom:8px;"></div>
+            <div style="display:flex;gap:6px;">
+              <input id="adm-tarefa-input" type="text" placeholder="Adicionar tarefa... Ex: Ligar para 33 clientes antes das 12h" 
+                style="flex:1;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;font-family:inherit;"
+                onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'"
+                onkeydown="if(event.key==='Enter'){addTarefa();event.preventDefault();}">
+              <button onclick="addTarefa()" style="padding:8px 14px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Add</button>
+            </div>
+            <p style="font-size:11px;color:#bbb;margin-top:5px;">Pressione Enter ou clique em "+ Add" para adicionar cada tarefa.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUTTONS -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="adminClear()" style="padding:9px 18px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Limpar</button>
+        <button onclick="adminSave()" style="padding:9px 22px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Salvar avaliação</button>
+      </div>
+      <div id="adm-toast" style="display:none;background:#1B5E20;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;text-align:center;">✅ Avaliação salva! O vendedor verá ao fazer login.</div>
+
+      <!-- RESUMO EQUIPE -->
+      <div>
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:10px;">Resumo da equipe</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="adm-resumo"></div>
+
+      <!-- RESUMO PEDIDOS EQUIPE -->
+      <div style="margin-top:1.5rem;">
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:10px;">💰 Pedidos & Comissão do Mês</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="ped-resumo-equipe"></div>
+      </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<footer><span>FAST</span> Sistemas Construtivos &nbsp;·&nbsp; Portal do Vendedor</footer>
+
+
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <button class="lightbox-close" onclick="closeLightbox()">&#x2715;</button>
+  <img id="lightbox-img" src="" alt="">
+  <div class="lightbox-caption" id="lightbox-caption"></div>
+</div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+
+var db = null;
+var firebaseOK = false;
+var currentUser = null;
+var pedItens = [];
+
+// ── FIREBASE INIT ──
+try {
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp({
+      apiKey: "AIzaSyBGmNLTCkevCZ83LHetPRaLjq1vTJpf7bU",
+      authDomain: "fast-guia-vendedor.firebaseapp.com",
+      databaseURL: "https://fast-guia-vendedor-default-rtdb.firebaseio.com",
+      projectId: "fast-guia-vendedor",
+      storageBucket: "fast-guia-vendedor.firebasestorage.app",
+      messagingSenderId: "122472038745",
+      appId: "1:122472038745:web:8b5dcd190534d3e65d8c48"
+    });
+    db = firebase.database();
+    firebaseOK = true;
+  }
+} catch(e) { console.warn('Firebase erro:', e.message); }
+
+// ── localStorage fallback ──
+function lsKey(path) { return 'fgv_' + path.replace(/\//g, '_'); }
+function lsGet(path) { try { var v = localStorage.getItem(lsKey(path)); return v ? JSON.parse(v) : null; } catch(e) { return null; } }
+function lsSet(path, data) { try { localStorage.setItem(lsKey(path), JSON.stringify(data)); return Promise.resolve(); } catch(e) { return Promise.reject(e); } }
+function dbRef(path) {
+  if (firebaseOK && db) return db.ref(path);
+  return {
+    set:    function(data) { return lsSet(path, data); },
+    on:     function(e, cb) { try { cb({ val: function() { return lsGet(path); } }); } catch(err) {} },
+    once:   function(e) { return Promise.resolve({ val: function() { return lsGet(path); } }); },
+    remove: function() { try { localStorage.removeItem(lsKey(path)); } catch(e){} return Promise.resolve(); }
+  };
+}
+
+// ── FIREBASE SYNC ──
+
+function fbSave(vendNome) {
+  const v = vendedores[vendNome];
+  const data = {
+    meta:      v.meta      || '',
+    realizado: v.realizado || '',
+    ligacoes:  v.ligacoes  || '',
+    ticket:    v.ticket    || '',
+    metaSemana:         v.metaSemana         || '',
+    metaEntregaMes:     v.metaEntregaMes     || '',
+    metaEntregaSemana:  v.metaEntregaSemana  || '',
+    mix:       v.mix       || '',
+    margem:    v.margem    || '',
+    pct:       v.pct       || 0,
+    fortes:    v.fortes    || '',
+    melhorar:  v.melhorar  || '',
+    notas:     v.notas     || {},
+    tarefas:   v.tarefas   || [],
+    updatedAt: Date.now()
+  };
+  dbRef('vendedores/' + vendNome).set(data)
+    .then(() => console.log('Firebase: salvo', vendNome))
+    .catch(e => console.error('Firebase erro:', e));
+}
+
+function fbLoad(vendNome, callback) {
+  dbRef('vendedores/' + vendNome).once('value')
+    .then(snap => {
+      const data = snap.val();
+      if (data) {
+        const v = vendedores[vendNome];
+        v.meta      = data.meta      || v.meta;
+        v.realizado = data.realizado || v.realizado;
+        v.ligacoes  = data.ligacoes  || '';
+        v.ticket    = data.ticket    || v.ticket;
+        v.metaSemana        = data.metaSemana        || '';
+        v.metaEntregaMes    = data.metaEntregaMes    || '';
+        v.metaEntregaSemana = data.metaEntregaSemana || '';
+        v.mix       = data.mix       || '';
+        v.margem    = data.margem    || '';
+        v.pct       = data.pct       || 0;
+        v.fortes    = data.fortes    || '';
+        v.melhorar  = data.melhorar  || '';
+        v.notas     = data.notas     || {};
+        v.tarefas   = data.tarefas   || [];
+      }
+      if (callback) callback();
+    })
+    .catch(e => { console.error('Firebase load erro:', e); if (callback) callback(); });
+}
+
+function fbListenVendedor(vendNome) {
+  dbRef('vendedores/' + vendNome).on('value', snap => {
+    const data = snap.val();
+    if (!data) return;
+    const v = vendedores[vendNome];
+    v.meta      = data.meta      || v.meta;
+    v.realizado = data.realizado || v.realizado;
+    v.ligacoes  = data.ligacoes  || '';
+    v.ticket    = data.ticket    || v.ticket;
+    v.mix       = data.mix       || '';
+    v.margem    = data.margem    || '';
+    v.pct       = data.pct       || 0;
+    v.fortes    = data.fortes    || '';
+    v.melhorar  = data.melhorar  || '';
+    v.notas     = data.notas     || {};
+    v.tarefas   = data.tarefas   || [];
+    // If this is the currently logged-in vendedor, refresh their view
+    if (currentUser === vendNome) {
+      renderEvolucaoVendedor(v);
+    }
+  });
+}
+
+
+// ── PEDIDOS ──
+const STATUS_VENDEDOR = ['agendamento','aguardando-dt','com-dt','em-rota','entregue','cancelado'];
+const STATUS_GESTORA  = ['faturado','aguardando-fat'];
+const STATUS_TODOS    = [...STATUS_VENDEDOR, ...STATUS_GESTORA];
+
+const STATUS_LABEL = {
+  'agendamento':    'Agendamento',
+  'aguardando-dt':  'Aguardando DT',
+  'com-dt':         'Com DT',
+  'em-rota':        'Em Rota',
+  'entregue':       'Entregue',
+  'cancelado':      'Cancelado',
+  'faturado':       'Faturado',
+  'aguardando-fat': 'Aguardando Fat.',
+};
+
+const CAT_LABEL = { placa:'Placa', grx:'GRX/Comp.', aco:'Aço' };
+const CAT_PCT   = { placa:0.005,   grx:0.0075,      aco:0.01  };
+
+function calcValorTotal() {
+  try {
+    const qtdEl   = document.getElementById('pf-qtd');
+    const vitEl   = document.getElementById('pf-valor-item');
+    const totEl   = document.getElementById('pf-valor-total');
+    const qtd = qtdEl  ? (parseFloat(qtdEl.value.replace(',','.'))  || 0) : 0;
+    const vit = vitEl  ? (parseFloat(vitEl.value.replace(',','.'))  || 0) : 0;
+    if (totEl) totEl.value = (qtd * vit).toFixed(2);
+  } catch(e) { console.error('calcValorTotal error:', e); }
+}
+
+function togglePedForm() {
+  try {
+    const f = document.getElementById('ped-form');
+    if (!f) return;
+    const visible = f.style.display !== 'none';
+    f.style.display = visible ? 'none' : 'block';
+    if (!visible) {
+      var today = new Date().toISOString().split('T')[0];
+      var dataEl = document.getElementById('pf-data');
+      if (dataEl) dataEl.value = today;
+      if (!pedItens.length) { pedItens = []; renderItensList(); }
+    }
+  } catch(e) { console.error('togglePedForm error:', e); }
+}
+
+function salvarPedido() {
+  try {
+    if (!currentUser) { alert('Sessão expirada. Faça login novamente.'); return; }
+    if (typeof db === 'undefined') { alert('Erro: Firebase não carregou. Verifique sua conexão.'); return; }
+
+    const get = id => {
+      try { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+      catch(e) { return ''; }
+    };
+
+    const data     = get('pf-data') || new Date().toISOString().split('T')[0];
+    const empresa  = get('pf-empresa');
+    const cliente  = get('pf-cliente');
+    const estado   = get('pf-estado');
+    const veiculo  = get('pf-veiculo');
+    const pn       = get('pf-pn');
+    const chamado  = get('pf-chamado');
+    const cat      = get('pf-categoria');
+    const material = get('pf-material');
+    const status   = get('pf-status') || 'agendamento';
+
+    // Highlight missing fields
+    var faltando = false;
+    [['pf-empresa',empresa],['pf-cliente',cliente]].forEach(function(pair) {
+      var id = pair[0], val = pair[1];
+      var el = document.getElementById(id);
+      if (!val) { if(el) el.style.borderColor='#C41E1E'; faltando=true; }
+      else { if(el) el.style.borderColor='#E2E0D8'; }
+    });
+    if (faltando) { alert('Preencha os campos obrigatórios (marcados em vermelho).'); return; }
+    if (!pedItens.length) { alert('Adicione pelo menos um item ao pedido.'); return; }
+    var itemSemCat = pedItens.some(function(it) { return !it.cat || !it.material || !it.qtd || !it.vUnit; });
+    if (itemSemCat) { alert('Preencha todos os campos dos itens (categoria, material, qtd e valor).'); return; }
+
+    var vTotal = pedItens.reduce(function(s,it) { return s + (it.vTotal||0); }, 0);
+    var cat = pedItens.length === 1 ? pedItens[0].cat : 'misto';
+
+    var pedido = {
+      id: Date.now().toString(),
+      data: data,
+      empresa: empresa,
+      estado: estado,
+      cliente: cliente,
+      pn: pn,
+      chamado: chamado,
+      itens: pedItens.slice(),
+      cat: cat,
+      vTotal: vTotal,
+      veiculo: veiculo,
+      status: status,
+      vendedor: currentUser,
+      criadoEm: Date.now()
+    };
+
+    const btn = document.querySelector('button[onclick="salvarPedido()"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+    dbRef('pedidos/' + currentUser + '/' + pedido.id).set(pedido)
+      .then(function() {
+        if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
+        const toast = document.getElementById('ped-toast');
+        if (toast) {
+          toast.style.display = 'block';
+          setTimeout(function() {
+            toast.style.display = 'none';
+            const form = document.getElementById('ped-form');
+            if (form) form.style.display = 'none';
+          }, 1500);
+        }
+        ['pf-empresa','pf-cliente','pf-pn','pf-material','pf-qtd','pf-valor-item','pf-valor-total'].forEach(function(id) {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        const selects = ['pf-estado','pf-veiculo'];
+        var ch = document.getElementById('pf-chamado'); if(ch) ch.value='';
+        pedItens = []; renderItensList();
+        selects.forEach(function(id) {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        const st = document.getElementById('pf-status');
+        if (st) st.value = 'agendamento';
+      })
+      .catch(function(e) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
+        alert('Erro ao salvar pedido: ' + (e && e.message ? e.message : 'Verifique as regras do Firebase.'));
+      });
+
+  } catch(err) {
+    alert('Erro inesperado: ' + (err && err.message ? err.message : String(err)));
+  }
+}
+
+function atualizarStatus(vendNome, pedidoId, novoStatus) {
+  dbRef('pedidos/' + vendNome + '/' + pedidoId + '/status').set(novoStatus)
+    .catch(e => console.error('Erro status:', e));
+}
+
+function deletarPedido(vendNome, pedidoId) {
+  if (!confirm('Excluir este pedido?')) return;
+  dbRef('pedidos/' + vendNome + '/' + pedidoId).remove()
+    .catch(e => console.error('Erro delete:', e));
+}
+
+function renderPedidos(pedidosList, isGestora) {
+  const tbody = document.getElementById('ped-tbody');
+  const vazio = document.getElementById('ped-vazio');
+  if (!tbody) return;
+
+  const mesAtual = new Date().toISOString().slice(0,7);
+  const filtrados = pedidosList.filter(p => p.data && p.data.startsWith(mesAtual));
+
+  if (!filtrados.length) {
+    tbody.innerHTML = '';
+    if (vazio) vazio.style.display = 'block';
+    atualizarComissao([], isGestora);
+    return;
+  }
+  if (vazio) vazio.style.display = 'none';
+
+  // Sort by date desc
+  filtrados.sort((a,b) => b.criadoEm - a.criadoEm);
+
+  tbody.innerHTML = filtrados.map(p => {
+    const statusOpts = isGestora ? STATUS_TODOS : STATUS_VENDEDOR;
+    const selectOpts = statusOpts.map(s =>
+      `<option value="${s}" ${p.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`
+    ).join('');
+    const vendLabel = isGestora ? `<td style="font-size:11px;font-weight:600;color:#C41E1E;">${p.vendedor||''}</td>` : '';
+    return `<tr>
+      <td>${p.data||''}</td>
+      ${vendLabel}
+      <td>${p.empresa||''}</td>
+      <td style="text-align:center;font-weight:600;font-size:11px;color:#185FA5;">${p.estado||'—'}</td>
+      <td style="text-align:center;font-size:12px;">${p.veiculo==='truck'?'🚛 Truck':p.veiculo==='carreta'?'🚚 Carreta':p.veiculo==='outros'?'📦 Outros':'—'}</td>
+      <td>${p.cliente||''}</td>
+      <td style="font-family:monospace;font-size:11px;">${p.pn||'—'}</td>
+      <td style="font-family:monospace;font-size:11px;color:#C41E1E;font-weight:600;">${p.chamado||'—'}</td>
+      <td style="max-width:180px;">${p.itens ? p.itens.map(function(it){return it.material;}).join(', ') : (p.material||'')}</td>
+      <td style="text-align:center;font-size:11px;background:#F8F7F3;border-radius:4px;padding:2px 6px;">${p.itens ? (p.itens.length + ' item(s)') : (CAT_LABEL[p.cat]||p.cat)}</td>
+      <td style="text-align:center;">${p.itens ? p.itens.reduce(function(s,it){return s+(it.qtd||0);},0) : (p.qtd||0)}</td>
+      <td>${p.itens ? '—' : 'R$ ' + Number(p.vUnit||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td style="font-weight:600;">R$ ${Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td>
+        <select onchange="atualizarStatus('${p.vendedor}','${p.id}',this.value)"
+          style="font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;">
+          ${selectOpts}
+        </select>
+      </td>
+      <td>
+        <button onclick="deletarPedido('${p.vendedor}','${p.id}')"
+          style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  atualizarComissao(filtrados, isGestora);
+}
+
+function atualizarComissao(pedidos, isGestora) {
+  let totalVendido = 0, comPlacas = 0, comComp = 0, comAco = 0;
+  pedidos.filter(p => p.status !== 'cancelado').forEach(p => {
+    const v = Number(p.vTotal||0);
+    totalVendido += v;
+    if (p.cat === 'placa') comPlacas += v * CAT_PCT.placa;
+    else if (p.cat === 'grx') comComp += v * CAT_PCT.grx;
+    else if (p.cat === 'aco') comAco += v * CAT_PCT.aco;
+  });
+  const comTotal = comPlacas + comComp + comAco;
+
+  // Check if ligações meta atingida
+  const v = currentUser ? vendedores[currentUser] : null;
+  const ligacoes = parseInt(v?.ligacoes || '0');
+  const metaLig = 600;
+  const redutor = ligacoes < metaLig && ligacoes > 0;
+  const comReductor = totalVendido * 0.005;
+
+  const fmt = n => 'R$ ' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+
+  set('ped-total-vendido', fmt(totalVendido));
+  set('ped-com-placas',    fmt(comPlacas));
+  set('ped-com-comp',      fmt(comComp));
+  set('ped-com-aco',       fmt(comAco));
+  set('ped-com-total',     fmt(comTotal));
+  set('ped-com-redutor',   fmt(comReductor));
+
+  const redBox  = document.getElementById('ped-redutor-box');
+  const redWarn = document.getElementById('ped-redutor-warning');
+  if (redBox)  redBox.style.display  = redutor ? 'block' : 'none';
+  if (redWarn) redWarn.style.display = redutor ? 'block' : 'none';
+}
+
+function listenPedidos(vendNome, isGestora) {
+  if (isGestora) {
+    // Gestora ouve todos os vendedores
+    const titulo = document.getElementById('ped-periodo');
+    if (titulo) titulo.textContent = 'Pedidos de toda a equipe — ' + new Date().toLocaleString('pt-BR',{month:'long',year:'numeric'});
+
+    // Add vendedor column header
+    const thead = document.querySelector('#ped-tabela thead tr');
+    if (thead && !thead.querySelector('.vend-col')) {
+      const th = document.createElement('th');
+      th.className = 'vend-col';
+      th.textContent = 'Vendedor';
+      thead.insertBefore(th, thead.children[1]);
+    }
+
+    let allPedidos = {};
+    ['PEDRO','WELLINGTON','JONATAS'].forEach(vn => {
+      dbRef('pedidos/' + vn).on('value', snap => {
+        allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
+        const todos = Object.values(allPedidos).flat();
+        renderPedidos(todos, true);
+        renderResumoEquipe(allPedidos);
+      });
+    });
+  } else {
+    const titulo = document.getElementById('ped-periodo');
+    if (titulo) titulo.textContent = 'Seus pedidos — ' + new Date().toLocaleString('pt-BR',{month:'long',year:'numeric'});
+
+    dbRef('pedidos/' + vendNome).on('value', snap => {
+      const pedidos = snap.val() ? Object.values(snap.val()) : [];
+      renderPedidos(pedidos, false);
+      updateDashboard(pedidos, vendedores[vendNome]);
+    });
+  }
+}
+
+function renderResumoEquipe(allPedidos) {
+  // Show team summary in admin tab if exists
+  let box = document.getElementById('ped-resumo-equipe');
+  if (!box) return;
+  const mesAtual = new Date().toISOString().slice(0,7);
+  box.innerHTML = ['PEDRO','WELLINGTON','JONATAS'].map(vn => {
+    const peds = (allPedidos[vn]||[]).filter(p => p.data?.startsWith(mesAtual) && p.status !== 'cancelado');
+    const total = peds.reduce((s,p) => s + Number(p.vTotal||0), 0);
+    const com   = peds.reduce((s,p) => s + Number(p.vTotal||0) * (CAT_PCT[p.cat]||0), 0);
+    return `<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">
+      <div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:6px;">${vendedores[vn].nome}</div>
+      <div style="font-size:11px;color:#aaa;">Total vendido</div>
+      <div style="font-size:14px;font-weight:600;color:#333;margin-bottom:4px;">R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      <div style="font-size:11px;color:#aaa;">Previsão comissão</div>
+      <div style="font-size:14px;font-weight:600;color:#2E7D32;">R$ ${com.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px;">${peds.length} pedido(s) no mês</div>
+    </div>`;
+  }).join('');
+}
+
+
+// ── DASHBOARD MÉTRICAS ──
+function getWeekBounds() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Dom, 1=Seg...
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+  const mon = new Date(now.setDate(diff));
+  mon.setHours(0,0,0,0);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  sun.setHours(23,59,59,999);
+  return { start: mon, end: sun };
+}
+
+function toISO(d) { return d.toISOString().split('T')[0]; }
+
+function fmtBRL(n) {
+  return 'R$ ' + Number(n||0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
+}
+
+function updateDashboard(pedidos, v) {
+  const today = toISO(new Date());
+  const mesAtual = today.slice(0,7);
+  const { start, end } = getWeekBounds();
+
+  // Set today date label
+  const dl = document.getElementById('ped-hoje-data');
+  if (dl) dl.textContent = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'2-digit'});
+
+  // Filter helpers
+  const isHoje     = p => p.data === today && p.status !== 'cancelado';
+  const isSemana   = p => { const d = new Date(p.data+'T12:00:00'); return d >= start && d <= end && p.status !== 'cancelado'; };
+  const isMes      = p => p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado';
+  const isEntregue = p => p.status === 'entregue' || p.status === 'faturado';
+
+  // HOJE
+  const hoje = pedidos.filter(isHoje);
+  const hojeTotal   = hoje.reduce((s,p) => s + Number(p.vTotal||0), 0);
+  const hojeTruck   = hoje.filter(p => p.veiculo === 'truck');
+  const hojeCarreta = hoje.filter(p => p.veiculo === 'carreta');
+  const hojeOutros  = hoje.filter(p => p.veiculo === 'outros' || !p.veiculo);
+
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  const setW = (id, pct, color) => { const el=document.getElementById(id); if(el){el.style.width=Math.min(pct,100)+'%';if(color)el.style.background=color;} };
+
+  set('dash-hoje-total',      fmtBRL(hojeTotal));
+  set('dash-hoje-truck',      fmtBRL(hojeTruck.reduce((s,p)=>s+Number(p.vTotal||0),0)));
+  set('dash-hoje-truck-qt',   hojeTruck.length + ' pedido(s)');
+  set('dash-hoje-carreta',    fmtBRL(hojeCarreta.reduce((s,p)=>s+Number(p.vTotal||0),0)));
+  set('dash-hoje-carreta-qt', hojeCarreta.length + ' pedido(s)');
+  set('dash-hoje-outros',     fmtBRL(hojeOutros.reduce((s,p)=>s+Number(p.vTotal||0),0)));
+  set('dash-hoje-outros-qt',  hojeOutros.length + ' pedido(s)');
+
+  // METAS
+  const parseMeta = str => parseFloat((str||'0').replace(/\./g,'').replace(',','.')) || 0;
+  const metaMes     = parseMeta(v.meta);
+  const metaSem     = parseMeta(v.metaSemana);
+  const metaEntMes  = parseMeta(v.metaEntregaMes);
+  const metaEntSem  = parseMeta(v.metaEntregaSemana);
+
+  // Vendas semana / mês
+  const realSem = pedidos.filter(isSemana).reduce((s,p)=>s+Number(p.vTotal||0),0);
+  const realMes = pedidos.filter(isMes).reduce((s,p)=>s+Number(p.vTotal||0),0);
+
+  // Entregas semana / mês
+  const entSem = pedidos.filter(p => isSemana(p) && isEntregue(p)).reduce((s,p)=>s+Number(p.vTotal||0),0);
+  const entMes = pedidos.filter(p => isMes(p) && isEntregue(p)).reduce((s,p)=>s+Number(p.vTotal||0),0);
+
+  const pctSem   = metaSem   > 0 ? Math.round((realSem/metaSem)*100)   : 0;
+  const pctMes   = metaMes   > 0 ? Math.round((realMes/metaMes)*100)   : 0;
+  const pctESem  = metaEntSem > 0 ? Math.round((entSem/metaEntSem)*100) : 0;
+  const pctEMes  = metaEntMes > 0 ? Math.round((entMes/metaEntMes)*100) : 0;
+
+  const faltaSem  = Math.max(0, metaSem   - realSem);
+  const faltaMes  = Math.max(0, metaMes   - realMes);
+  const faltaESem = Math.max(0, metaEntSem - entSem);
+  const faltaEMes = Math.max(0, metaEntMes - entMes);
+
+  // Vendas semana
+  set('dash-sem-meta',  metaSem   > 0 ? fmtBRL(metaSem)   : '—');
+  set('dash-sem-real',  fmtBRL(realSem));
+  set('dash-sem-pct',   pctSem + '%');
+  set('dash-sem-falta', metaSem > 0 ? fmtBRL(faltaSem) : '—');
+  setW('dash-sem-bar',  pctSem);
+
+  // Vendas mês
+  set('dash-mes-meta',  metaMes   > 0 ? fmtBRL(metaMes)   : '—');
+  set('dash-mes-real',  fmtBRL(realMes));
+  set('dash-mes-pct',   pctMes + '%');
+  set('dash-mes-falta', metaMes > 0 ? fmtBRL(faltaMes) : '—');
+  setW('dash-mes-bar',  pctMes);
+
+  // Entrega semana
+  set('dash-esem-meta',  metaEntSem > 0 ? fmtBRL(metaEntSem) : '—');
+  set('dash-esem-real',  fmtBRL(entSem));
+  set('dash-esem-pct',   pctESem + '%');
+  set('dash-esem-falta', metaEntSem > 0 ? fmtBRL(faltaESem) : '—');
+  setW('dash-esem-bar',  pctESem, '#185FA5');
+
+  // Entrega mês
+  set('dash-emes-meta',  metaEntMes > 0 ? fmtBRL(metaEntMes) : '—');
+  set('dash-emes-real',  fmtBRL(entMes));
+  set('dash-emes-pct',   pctEMes + '%');
+  set('dash-emes-falta', metaEntMes > 0 ? fmtBRL(faltaEMes) : '—');
+  setW('dash-emes-bar',  pctEMes, '#185FA5');
+}
+
+
+function testarConexao() {
+  var msgs = [];
+  msgs.push('currentUser: ' + (currentUser || 'null'));
+  msgs.push('Firebase: ' + (typeof firebase !== 'undefined' ? 'OK' : 'NÃO CARREGOU'));
+  msgs.push('db: ' + (typeof db !== 'undefined' ? 'OK' : 'NÃO CARREGOU'));
+  if (typeof db !== 'undefined') {
+    dbRef('teste/ping').set({ t: Date.now() })
+      .then(function() { alert(msgs.join('\n') + '\nFirebase WRITE: OK ✅'); })
+      .catch(function(e) { alert(msgs.join('\n') + '\nFirebase WRITE ERRO: ' + e.message); });
+  } else {
+    alert(msgs.join('\n'));
+  }
+}
+
+
+// ── ITENS DO PEDIDO ──
+var pedItens = [];
+
+function addItemLinha() {
+  var idx = pedItens.length;
+  pedItens.push({ pn: '', cat: '', material: '', qtd: 0, vUnit: 0, vTotal: 0 });
+  renderItensList();
+}
+
+function removeItemLinha(idx) {
+  pedItens.splice(idx, 1);
+  renderItensList();
+}
+
+function updateItem(idx, campo, valor) {
+  pedItens[idx][campo] = valor;
+  if (campo === 'qtd' || campo === 'vUnit') {
+    var qtd   = parseFloat(String(pedItens[idx].qtd).replace(',','.'))  || 0;
+    var vUnit = parseFloat(String(pedItens[idx].vUnit).replace(',','.')) || 0;
+    pedItens[idx].vTotal = Math.round(qtd * vUnit * 100) / 100;
+    var totEl = document.getElementById('item-total-' + idx);
+    if (totEl) totEl.textContent = 'R$ ' + pedItens[idx].vTotal.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  }
+  atualizarTotalGeral();
+}
+
+function atualizarTotalGeral() {
+  var total = pedItens.reduce(function(s, it) { return s + (it.vTotal || 0); }, 0);
+  var el = document.getElementById('pf-total-geral');
+  if (el) el.textContent = 'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+}
+
+function renderItensList() {
+  var lista = document.getElementById('pf-itens-lista');
+  if (!lista) return;
+  if (!pedItens.length) {
+    lista.innerHTML = '<p style="font-size:12px;color:#aaa;text-align:center;padding:8px;">Nenhum item adicionado. Clique em "+ Adicionar Item".</p>';
+    atualizarTotalGeral();
+    return;
+  }
+  lista.innerHTML = pedItens.map(function(it, idx) {
+    return '<div style="background:#fff;border:1px solid #E2E0D8;border-radius:8px;padding:10px 12px;">' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:8px;">' +
+        '<div class="ped-field">' +
+          '<label>Categoria</label>' +
+          '<select onchange="updateItem(' + idx + ','cat',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">' +
+            '<option value=""' + (!it.cat ? ' selected' : '') + '>Selecione...</option>' +
+            '<option value="placa"' + (it.cat==='placa' ? ' selected' : '') + '>Placa (ST/RU/RF) 0,5%</option>' +
+            '<option value="grx"' + (it.cat==='grx' ? ' selected' : '') + '>GRX/Complemento 0,75%</option>' +
+            '<option value="aco"' + (it.cat==='aco' ? ' selected' : '') + '>Aço 1%</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="ped-field" style="grid-column:span 2;">' +
+          '<label>Material (descrição)</label>' +
+          '<input type="text" value="' + (it.material||'') + '" placeholder="Ex: Chapa ST 12,5mm" onchange="updateItem(' + idx + ','material',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">' +
+        '</div>' +
+        '<div class="ped-field">' +
+          '<label>Qtd</label>' +
+          '<input type="number" value="' + (it.qtd||'') + '" placeholder="0" oninput="updateItem(' + idx + ','qtd',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">' +
+        '</div>' +
+        '<div class="ped-field">' +
+          '<label>Vl. Unit. (R$)</label>' +
+          '<input type="number" step="0.01" value="' + (it.vUnit||'') + '" placeholder="0,00" oninput="updateItem(' + idx + ','vUnit',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">' +
+        '</div>' +
+        '<div class="ped-field">' +
+          '<label>Total</label>' +
+          '<div id="item-total-' + idx + '" style="padding:6px 8px;font-size:13px;font-weight:600;color:#1C1C1C;background:#F8F7F3;border-radius:6px;">R$ ' + (it.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<button type="button" onclick="removeItemLinha(' + idx + ')" style="font-size:11px;color:#C41E1E;background:none;border:none;cursor:pointer;padding:0;">✕ Remover item</button>' +
+    '</div>';
+  }).join('');
+  atualizarTotalGeral();
+}
+
+// ────────────────────────────────
+
+function switchTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + tab).classList.add('active');
@@ -2392,9 +3086,6 @@ const vendedores = {
     obs: 'Bem-vinda, Juliana! Painel da gestão.', credenciais: [] },
 };
 
-var db = null;
-var firebaseOK = false;
-var currentUser = null;
 
 function doLogin() {
   const user  = document.getElementById('login-user').value.trim().toUpperCase();
@@ -2800,146 +3491,7 @@ function renderTarefasVendedor(vendNome) {
   `;
 }
 
-</script>
-    </div>
-  </div>
-
-  <div id="outros-embreve" style="display:none;">
-    <div class="placeholder">
-      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-      <strong>Mais conteúdos em breve</strong>
-      <p>Tabelas de preço, perguntas frequentes, argumentos de venda e mais.</p>
-    </div>
-  </div>
-</div>
-
-
-<!-- ══ ADMIN / GESTÃO ══ -->
-<div id="tab-admin" class="tab-content">
-  <div class="page-section" style="max-width:860px;">
-
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
-      <div style="background:#C41E1E;border-radius:8px;padding:6px 10px;font-size:18px;">⭐</div>
-      <div>
-        <h2 style="font-size:16px;font-weight:600;color:#1C1C1C;">Painel da Gestora — Feedback de Vendedor</h2>
-        <p style="font-size:12px;color:#888;">Preencha a avaliação. Os resultados aparecem na aba Evolução do vendedor ao fazer login.</p>
-      </div>
-    </div>
-
-    <!-- SELECTOR -->
-    <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
-      <button onclick="adminSelect('PEDRO',this)" class="qf-btn active" id="abtn-PEDRO">Pedro</button>
-      <button onclick="adminSelect('WELLINGTON',this)" class="qf-btn" id="abtn-WELLINGTON">Wellington</button>
-      <button onclick="adminSelect('JONATAS',this)" class="qf-btn" id="abtn-JONATAS">Jonatas</button>
-    </div>
-
-    <div style="display:grid;gap:14px;">
-
-      <!-- METAS DO PERÍODO -->
-      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📊 Metas do Período</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
-          <div>
-            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Meta (R$)</label>
-            <input id="adm-meta" type="text" placeholder="Ex: 100.000" oninput="calcPct()" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
-          </div>
-          <div>
-            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Realizado (R$)</label>
-            <input id="adm-realizado" type="text" placeholder="Ex: 65.000" oninput="calcPct()" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
-          </div>
-          <div>
-            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Ligações no mês</label>
-            <input id="adm-ligacoes" type="text" placeholder="Meta: 600" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
-          </div>
-          <div>
-            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Ticket Médio (R$)</label>
-            <input id="adm-ticket" type="text" placeholder="Meta: R$65k" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
-          </div>
-          <div>
-            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Mix médio (itens/venda)</label>
-            <input id="adm-mix" type="text" placeholder="Meta: 5" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
-          </div>
-          <div>
-            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Margem</label>
-            <input id="adm-margem" type="text" placeholder="Meta: 0,97" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
-          </div>
-        </div>
-        <!-- progress -->
-        <div style="margin-top:12px;display:flex;align-items:center;gap:12px;">
-          <div style="flex:1;">
-            <div style="font-size:11px;color:#aaa;margin-bottom:4px;">% da meta atingida</div>
-            <div style="background:#E8E6E1;border-radius:20px;height:8px;overflow:hidden;">
-              <div id="adm-bar" style="height:100%;border-radius:20px;background:#C41E1E;width:0%;transition:width .4s;"></div>
-            </div>
-          </div>
-          <div id="adm-pct-label" style="font-size:22px;font-weight:700;color:#C41E1E;min-width:52px;text-align:right;">0%</div>
-        </div>
-      </div>
-
-      <!-- CRITÉRIOS -->
-      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📋 Critérios de Avaliação (0 = muito fraco · 5 = excelente)</div>
-        <div style="display:grid;gap:12px;" id="criterios-grid">
-        </div>
-        <!-- nota geral -->
-        <div style="margin-top:14px;padding-top:12px;border-top:1px solid #F0EEEA;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-          <div style="font-size:13px;font-weight:600;color:#1C1C1C;">Nota Geral (média): <span id="adm-nota-geral" style="color:#C41E1E;font-size:20px;margin-left:6px;">—</span></div>
-          <div id="adm-classificacao" style="font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;background:#F1EFE8;color:#888;">—</div>
-        </div>
-      </div>
-
-      <!-- FEEDBACK QUALITATIVO -->
-      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">✍️ Feedback Qualitativo</div>
-        <div style="display:grid;gap:12px;">
-          <div>
-            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;">Pontos Fortes</label>
-            <textarea id="adm-fortes" rows="2" placeholder="Ex: Conhecimento do material, foco..." style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;resize:vertical;font-family:inherit;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'"></textarea>
-          </div>
-          <div>
-            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;">Pontos a Melhorar</label>
-            <textarea id="adm-melhorar" rows="2" placeholder="Ex: Confiança na ligação..." style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;resize:vertical;font-family:inherit;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'"></textarea>
-          </div>
-          <div>
-            <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Plano de Ação — Tarefas para o Vendedor</label>
-            <div id="adm-tarefas-lista" style="display:grid;gap:6px;margin-bottom:8px;"></div>
-            <div style="display:flex;gap:6px;">
-              <input id="adm-tarefa-input" type="text" placeholder="Adicionar tarefa... Ex: Ligar para 33 clientes antes das 12h" 
-                style="flex:1;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;font-family:inherit;"
-                onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'"
-                onkeydown="if(event.key==='Enter'){addTarefa();event.preventDefault();}">
-              <button onclick="addTarefa()" style="padding:8px 14px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Add</button>
-            </div>
-            <p style="font-size:11px;color:#bbb;margin-top:5px;">Pressione Enter ou clique em "+ Add" para adicionar cada tarefa.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- BUTTONS -->
-      <div style="display:flex;gap:10px;justify-content:flex-end;">
-        <button onclick="adminClear()" style="padding:9px 18px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Limpar</button>
-        <button onclick="adminSave()" style="padding:9px 22px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Salvar avaliação</button>
-      </div>
-      <div id="adm-toast" style="display:none;background:#1B5E20;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;text-align:center;">✅ Avaliação salva! O vendedor verá ao fazer login.</div>
-
-      <!-- RESUMO EQUIPE -->
-      <div>
-        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:10px;">Resumo da equipe</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="adm-resumo"></div>
-
-      <!-- RESUMO PEDIDOS EQUIPE -->
-      <div style="margin-top:1.5rem;">
-        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:10px;">💰 Pedidos & Comissão do Mês</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="ped-resumo-equipe"></div>
-      </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-<footer><span>FAST</span> Sistemas Construtivos &nbsp;·&nbsp; Portal do Vendedor</footer>
-
-<script>
+// ────────────────────────────────
 
 const allProducts = [{"fabrica": "MDC", "nome": "PLACA ST 12,5MM 1,80", "m2": "2.16", "peso": "17,92", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00057"}, {"fabrica": "MDC", "nome": "PLACA ST 12,5MM 2,40", "m2": "2.88", "peso": "23,38", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00059"}, {"fabrica": "MDC", "nome": "PLACA ST 15MM 1,80", "m2": "2.16", "peso": "19,17", "pallet": "50 unidades", "categoria": "PLACA", "codigo": "DW00061"}, {"fabrica": "MDC", "nome": "PLACA ST 12,5MM  600X2000", "m2": "1.2", "peso": "8,52", "pallet": "120 unidades", "categoria": "PLACA", "codigo": "DW00055"}, {"fabrica": "MDC", "nome": "PLACA ST 12,5MM 2,80", "m2": "3.36", "peso": "27,88", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00152"}, {"fabrica": "MDC", "nome": "PLACA RU 12,5MM 1,80", "m2": "2.16", "peso": "19,44", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00046"}, {"fabrica": "MDC", "nome": "PLACA RU 12,5MM 2,40", "m2": "2.88", "peso": "24,05", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00048"}, {"fabrica": "MDC", "nome": "PLACA RF 12,5MM 1,80", "m2": "2.16", "peso": "19,98", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00038"}, {"fabrica": "MDC", "nome": "PLACA RF 12,5MM 2,40", "m2": "2.88", "peso": "26,78", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00040"}, {"fabrica": "MDC", "nome": "PLACA RF 15MM 1,80", "m2": "2.16", "peso": "25,4016", "pallet": "50 unidades", "categoria": "PLACA", "codigo": "DW00042"}, {"fabrica": "MDC", "nome": "PLACA RF 15MM 2,40", "m2": "2.88", "peso": "32,832", "pallet": "50 unidades", "categoria": "PLACA", "codigo": "DW00044"}, {"fabrica": "MDC", "nome": "PLACA RU 15MM 1,80", "m2": "2.16", "peso": "38,472", "pallet": "50 unidades", "categoria": "PLACA", "codigo": "DW00166"}, {"fabrica": "MDC", "nome": "RU 15MM 2,40", "m2": "2.88", "peso": "32,85", "pallet": "50 unidades", "categoria": "PLACA", "codigo": "DW00051"}, {"fabrica": "MDC", "nome": "GLASROC-X 12,5MM 1,20 X 2,40", "m2": "2.88", "peso": "33.12", "pallet": "30 unidades", "categoria": "VAB", "codigo": "FS00018"}, {"fabrica": "MDC", "nome": "GLASROC-X 12,5MM 1,20 X 2,20", "m2": "2,64", "peso": "33.12", "pallet": "30 unidades", "categoria": "VAB", "codigo": "FS00072"}, {"fabrica": "MDC", "nome": "PLACOMIX 25 KG", "m2": "1", "peso": "25,7", "pallet": "56 baldes", "categoria": "COMPLEMENTO", "codigo": "DW00078"}, {"fabrica": "MDC", "nome": "PLACOMIX 15 KG", "m2": "1", "peso": "15,7", "pallet": "64 baldes", "categoria": "COMPLEMENTO", "codigo": "DW00079"}, {"fabrica": "MDC", "nome": "PLACOMIX 6 KG", "m2": "1", "peso": "6,2", "pallet": "96 baldes", "categoria": "COMPLEMENTO", "codigo": "DW00024"}, {"fabrica": "MDC", "nome": "PLACOMIX 15KG - EM PÓ", "m2": "1.0", "peso": "15", "pallet": "(não fabricam mais)", "categoria": "", "codigo": "DW00128"}, {"fabrica": "MDC", "nome": "PLACA PERFORMA ST 12,5MM 1,80", "m2": "2.16", "peso": "25,38", "pallet": "30 unidades", "categoria": "VAB", "codigo": "DW00034"}, {"fabrica": "MDC", "nome": "PLACA PERFORMA RU 12,5MM 1,80", "m2": "2.16", "peso": "26,38", "pallet": "30 unidades", "categoria": "VAB", "codigo": "DW00098"}, {"fabrica": "MDC", "nome": "PLACA PERFORMA ST 12,5MM 2,70", "m2": "3,24", "peso": "35", "pallet": "30 unidades", "categoria": "VAB", "codigo": "DW00136"}, {"fabrica": "MDC", "nome": "LÃ DE VIDRO 50 MM - 15M² - ISOVER", "m2": "15", "peso": "7,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00013"}, {"fabrica": "MDC", "nome": "LÃ DE VIDRO 70 MM - 15M² - ISOVER", "m2": "15.0", "peso": "8,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00057"}, {"fabrica": "MDC", "nome": "LÃ DE VIDRO 90 MM - 15M² - ISOVER", "m2": "15.0", "peso": "9,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "BANDA 48x4x10.000 mm", "m2": "1.0", "peso": "0,3", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "BANDA 70x4x10.000 mm", "m2": "1.0", "peso": "0,4", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "BANDA 90x4x10.000 mm", "m2": "1.0", "peso": "0,5", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "FITA MESH TAPE", "m2": "1.0", "peso": "0,2", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": "AC00242"}, {"fabrica": "MDC", "nome": "MASSA UNICA BRASILIT 15KG", "m2": "1.0", "peso": "15", "pallet": "64 unidades", "categoria": "COMPLEMENTO", "codigo": "DW00077"}, {"fabrica": "MDC", "nome": "MASSA UNICA BRASILIT 5KG", "m2": "1.0", "peso": "5", "pallet": "36 unidades", "categoria": "COMPLEMENTO", "codigo": "FS00027"}, {"fabrica": "MDC", "nome": "F530", "m2": "1.0", "peso": "1,10", "pallet": "500 peças", "categoria": "AÇO", "codigo": ""}, {"fabrica": "MDC", "nome": "Cantoneira lisa", "m2": "1.0", "peso": "0,60", "pallet": "2000 peças", "categoria": "AÇO", "codigo": ""}, {"fabrica": "MDC", "nome": "FITA DE PAPEL - 150 M", "m2": "1.0", "peso": "0,25", "pallet": "10 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": "AC00020"}, {"fabrica": "MDC", "nome": "ALCAPAO METAL CLICK BRANCO 40X 40 AP", "m2": "1.0", "peso": "1,6", "pallet": "8 unidades", "categoria": "COMPLEMENTO", "codigo": "AC00273"}, {"fabrica": "MDC", "nome": "ALCAPAO METAL CLICK BRANCO 60X 60 AP", "m2": "1.0", "peso": "4,75", "pallet": "8 unidades", "categoria": "COMPLEMENTO", "codigo": "AC00272"}, {"fabrica": "MDC", "nome": "CANT. FLEXIVEL LEVELLINE -30 M", "m2": "1.0", "peso": "0,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "CANT. METAL. CR 3: 300 CM TABICA PINTADA", "m2": "1.0", "peso": "0,3", "pallet": "20 peças", "categoria": "AÇO PLACO", "codigo": ""}, {"fabrica": "MDC", "nome": "CANTONEIRA BRANCA -3050MM", "m2": "1.0", "peso": "0,3", "pallet": "50 peças", "categoria": "AÇO PLACO", "codigo": ""}, {"fabrica": "MDC", "nome": "CANTONEIRA METALICA 1430: 300 CM", "m2": "1.0", "peso": "0,3", "pallet": "50 peças", "categoria": "AÇO PLACO", "codigo": ""}, {"fabrica": "MDC", "nome": "CANTONEIRA METALICA CR 2: 300 CM", "m2": "1.0", "peso": "0,3", "pallet": "30 peças", "categoria": "AÇO PLACO", "codigo": ""}, {"fabrica": "MDC", "nome": "CANTONEIRA METALICA PERFURADA: 300 CM", "m2": "1.0", "peso": "0,3", "pallet": "20 peças", "categoria": "AÇO PLACO", "codigo": ""}, {"fabrica": "MDC", "nome": "FITA HYDRO TAPE MOLD-X10- 90 M", "m2": "1.0", "peso": "0,3", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "GUIA LSF 90: 0,95 MM X 300 CM", "m2": "1.0", "peso": "4,5", "pallet": "20 peças", "categoria": "AÇO PLACO", "codigo": "SF00005"}, {"fabrica": "MDC", "nome": "GYPTONE BIG QUATTRO 41 - 1,2 X 2,4", "m2": "1.0", "peso": "20,16", "pallet": "20 unidades", "categoria": "VAB", "codigo": ""}, {"fabrica": "MDC", "nome": "GYPTONE BIG QUATTRO 41 - 1,2 X 1,8", "m2": "1.0", "peso": "17", "pallet": "20 unidades", "categoria": "VAB", "codigo": "FF00021"}, {"fabrica": "MDC", "nome": "GYPTONE QUATTRO 20 625x625x10 MM", "m2": "1.0", "peso": "22,4", "pallet": "20 unidades", "categoria": "VAB", "codigo": ""}, {"fabrica": "MDC", "nome": "JUNÇÃO H - CX 400", "m2": "1.0", "peso": "0,05", "pallet": "400 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "MAP MASSA REVESTIMENTO - NAC 25 KG", "m2": "1.0", "peso": "25", "pallet": "48 sacos", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "MEMBRANA HIDROFUGA TYPAR 0,91MX30,5M", "m2": "1.0", "peso": "2", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "PARAFUSO GLASROC 25 PA - CX 1.000", "m2": "1.0", "peso": "1,6", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": "FX00103"}, {"fabrica": "MDC", "nome": "PARAFUSO GLASROC 25 PB - CX 1.000", "m2": "1.0", "peso": "1,6", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": "FS00016"}, {"fabrica": "MDC", "nome": "PARAFUSO GLASROC 45 PA - CX 500", "m2": "1.0", "peso": "0,673", "pallet": "500 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": "FX00104"}, {"fabrica": "MDC", "nome": "PARAFUSO GLASROC 45 PB - CX 1000", "m2": "1.0", "peso": "2,8", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": "FX00132"}, {"fabrica": "MDC", "nome": "PARAFUSO GRX 4,2X32 s/ ASA PB - CX 1000", "m2": "1.0", "peso": "1,6", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "PARAFUSO GRX 4,2X50 S/ASA PB - CX 500", "m2": "1.0", "peso": "1,6", "pallet": "500 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "PARAFUSO P/ DRYWALL 4,2 X13 - CX 1000", "m2": "1.0", "peso": "1", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "PARAFUSO P/ DRYWALL 4,2x13 PA - CX 1.000", "m2": "1.0", "peso": "1", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "PARAFUSO P/ DRYWALL TTPC 25 - CX 1000", "m2": "1.0", "peso": "1,56", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "PARAFUSO P/ DRYWALL TTPC 35 - CX 800", "m2": "1.0", "peso": "1,03", "pallet": "800 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "PARAFUSO P/ DRYWALL TTPC 45 - CX 500", "m2": "1.0", "peso": "1.384", "pallet": "500 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "PARAFUSO DRYWALL 25 PA - OUROFIX  CX/1000", "m2": "1.0", "peso": "1,2", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "CANTONEIRA PVC GRX - 2,5M", "m2": "1.0", "peso": "0,088", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "AC00065"}, {"fabrica": "MDC", "nome": "Perfil drywall F530 0,43 COMERCIAL - 3.00 M", "m2": "1.0", "peso": "1,15", "pallet": "500 peças", "categoria": "AÇO", "codigo": "DW00032"}, {"fabrica": "MDC", "nome": "Perfil drywall F530 0,50 NORMATIZADO - 3.00 M", "m2": "1.0", "peso": "1,17", "pallet": "500 peças", "categoria": "AÇO", "codigo": "DW00033"}, {"fabrica": "MDC", "nome": "PERFIL JUNTA DE DILATACAO GRX HORIZ. -3M", "m2": "1.0", "peso": "0,244", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "PERFIL JUNTA DE DILATACAO GRX VERT.-2,5M", "m2": "1.0", "peso": "0,244", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "PERFIL PINGADEIRA GRX BASE INF. - 2,5M", "m2": "1.0", "peso": "0,13", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "BASECOAT GRX - 20KG", "m2": "1.0", "peso": "20", "pallet": "72 sacos", "categoria": "COMPLEMENTO", "codigo": "FS00061"}, {"fabrica": "MDC", "nome": "REGULADOR ANAO F530", "m2": "1.0", "peso": "0,028", "pallet": "500 peças", "categoria": "AÇO PLACO", "codigo": "DW00065"}, {"fabrica": "MDC", "nome": "REGULADOR F530", "m2": "1.0", "peso": "0,05", "pallet": "500 peças", "categoria": "AÇO PLACO", "codigo": "DW00064"}, {"fabrica": "MDC", "nome": "RIGITONE EDGE 12/25 Q VB 1200 X 2000 MM", "m2": "1.0", "peso": "10,73", "pallet": "20 unidades", "categoria": "VAB", "codigo": "FF00036"}, {"fabrica": "MDC", "nome": "RIGITONE EDGE 8/18 R VB 1188 x 1990 MM", "m2": "1.0", "peso": "24,8", "pallet": "20 unidades", "categoria": "VAB", "codigo": "FF00025"}, {"fabrica": "MDC", "nome": "RIGITONE EDGE 8-15-20 S VB 1200X1960 MM", "m2": "1.0", "peso": "24,7", "pallet": "20 unidades", "categoria": "VAB", "codigo": "FF00037"}, {"fabrica": "MDC", "nome": "SUPORTE CONEXÃO CD 60/27", "m2": "1.0", "peso": "0,05", "pallet": "100 peças / caixa", "categoria": "AÇO PLACO", "codigo": ""}, {"fabrica": "MDC", "nome": "SUSPENSÃO MS", "m2": "1.0", "peso": "0,08", "pallet": "100 peças / caixa", "categoria": "AÇO PLACO", "codigo": "FF00039"}, {"fabrica": "MDC", "nome": "TIRANTE - ARAME 10 COM ELO - 1,0M", "m2": "1.0", "peso": "0,07", "pallet": "1 unidade", "categoria": "AÇO", "codigo": ""}, {"fabrica": "MDC", "nome": "TIRANTE - ARAME 10 COM ELO - 1,5M", "m2": "1.0", "peso": "0,11", "pallet": "1 unidade", "categoria": "AÇO", "codigo": ""}, {"fabrica": "MDC", "nome": "TIRANTE - ARAME 10 COM ELO - 3,0M", "m2": "1.0", "peso": "0,215", "pallet": "1 unidade", "categoria": "AÇO", "codigo": ""}, {"fabrica": "MDC", "nome": "MEMBRANA HIDROFUGA TYVEK HOME WRAP - 0,91MX30,5M", "m2": "1.0", "peso": "2", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "MEMBRANA HIDROFUGA TYVEK HOME WRAP - 2,74MX30,5M", "m2": "1.0", "peso": "4,85", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "FITA TYVEK TAPE - 5CMX50M", "m2": "1.0", "peso": "0,16", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "UNIÃO F530 - CX 200", "m2": "1.0", "peso": "0,03", "pallet": "200 unidades / caixa", "categoria": "AÇO PLACO", "codigo": ""}, {"fabrica": "MDC", "nome": "PLACA CIMENTICIA 6MM - BRASILIT", "m2": "1.0", "peso": "24,4", "pallet": "70 unidades", "categoria": "VAB", "codigo": "FS00042"}, {"fabrica": "MDC", "nome": "PLACA CIMENTICIA 8MM - BRASILIT", "m2": "1.0", "peso": "39,2", "pallet": "50 unidades", "categoria": "VAB", "codigo": "FS00044"}, {"fabrica": "MDC", "nome": "PLACA CIMENTICIA 10MM - BRASILIT", "m2": "1.0", "peso": "49", "pallet": "40 unidades", "categoria": "VAB", "codigo": "FS00036"}, {"fabrica": "MDC", "nome": "PLACA CIMENTICIA 12MM - BRASILIT", "m2": "1.0", "peso": "59,3", "pallet": "30 unidades", "categoria": "VAB", "codigo": "FS00039"}, {"fabrica": "MDC", "nome": "LÃ DE ROCHA 32 -  4,32M² - LA ROCHA", "m2": "1.0", "peso": "14", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00009"}, {"fabrica": "MDC", "nome": "LÃ DE ROCHA 64 -  4,32M² - LA ROCHA", "m2": "1.0", "peso": "-", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "LÃ DE PET M48 - 15M² - ECOFIBER", "m2": "1.0", "peso": "7,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00056"}, {"fabrica": "MDC", "nome": "LÃ DE PET M70 - 30M² - ECOFIBER", "m2": "1.0", "peso": "10,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00053"}, {"fabrica": "MDC", "nome": "LÃ DE PET M90 - 15M² - ECOFIBER", "m2": "1.0", "peso": "9,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00007"}, {"fabrica": "MDC", "nome": "LÃ DE PET M48 - 30M² - ECOFIBER", "m2": "1.0", "peso": "12,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00008"}, {"fabrica": "MDC", "nome": "PAINEL WALL 40MM - 1,20 X 2,40", "m2": "1.0", "peso": "92.16", "pallet": "15 unidades", "categoria": "VAB", "codigo": ""}, {"fabrica": "MDC", "nome": "FORRO DE PVC LISO 625X625 - CX C 8", "m2": "1.0", "peso": "23,4", "pallet": "8 unidades / caixa", "categoria": "VAB", "codigo": ""}, {"fabrica": "MDC", "nome": "PAINEL LÃ DE ROCHA 32 KG - 1200X600X51MM - 4,32 M2", "m2": "1.0", "peso": "7,05", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00030"}, {"fabrica": "MDC", "nome": "Guia drywall 48 mm 0,43 3m", "m2": "1.0", "peso": "1,2", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00012"}, {"fabrica": "MDC", "nome": "Guia drywall 70 mm 0,43 3m", "m2": "1.0", "peso": "1,52", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00013"}, {"fabrica": "MDC", "nome": "Guia drywall 90 mm 0,43 3m", "m2": "1.0", "peso": "1,668", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00015"}, {"fabrica": "MDC", "nome": "Montante drywall 48 mm 0,43 3m", "m2": "1.0", "peso": "1,52", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00026"}, {"fabrica": "MDC", "nome": "Montante drywall 70 mm 0,43 3m", "m2": "1.0", "peso": "1,74", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00028"}, {"fabrica": "MDC", "nome": "Montante drywall 90 mm 0,43 3m", "m2": "1.0", "peso": "2,2", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00030"}, {"fabrica": "MDC", "nome": "Guia drywall 48 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,2", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00073"}, {"fabrica": "MDC", "nome": "Guia drywall 70 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,52", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00074"}, {"fabrica": "MDC", "nome": "Guia drywall 90 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,74", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00075"}, {"fabrica": "MDC", "nome": "Montante drywall 48 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,52", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00086"}, {"fabrica": "MDC", "nome": "Montante drywall 70 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,74", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00087"}, {"fabrica": "MDC", "nome": "Montante drywall 90 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,9", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00088"}, {"fabrica": "MDC", "nome": "Tabica lisa galvanizada 0,43 3m", "m2": "1.0", "peso": "1,191", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "FF00053"}, {"fabrica": "MDC", "nome": "CANTONEIRA DRYWALL 25x30 - 3.00 M", "m2": "1.0", "peso": "0,645", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "DW00003"}, {"fabrica": "MDC", "nome": "Tabica lisa galvanizada 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,2", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "DW00070"}, {"fabrica": "MDC", "nome": "Tabica lisa branca 3m", "m2": "1.0", "peso": "1,2", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "FF00052"}, {"fabrica": "MDC", "nome": "Cantoneira 14x30 0,50 3m", "m2": "1.0", "peso": "0,6", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "DW00001"}, {"fabrica": "MDC", "nome": "Cantoneira perfurada 0,50 3m", "m2": "1.0", "peso": "0,2", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "DW00100"}, {"fabrica": "MDC", "nome": "TELA VERTEX GRX 10CM x 50M", "m2": "1.0", "peso": "1", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "FS00019"}, {"fabrica": "MDC", "nome": "TELA VERTEX GRX 1M X 50M", "m2": "1.0", "peso": "8", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "FS00020"}, {"fabrica": "MDC", "nome": "PORTA COMPLETA 80 / M90 - PINTURA - DIR", "m2": "1.0", "peso": "18", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "FITA TELADA DRYWALL 90M  BRANCA - GN", "m2": "1.0", "peso": "1,055", "pallet": "10 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "MDC", "nome": "ARAME 10 TIRANTE - ROLO 10 KG", "m2": "1.0", "peso": "10", "pallet": "1 unidade", "categoria": "AÇO", "codigo": ""}, {"fabrica": "MDC", "nome": "FORRO OWA BRILLIANTO A LAYIN/625/14MM/4,68M²/12PL - PINTADO", "m2": "1.0", "peso": "22", "pallet": "12 unidades / caixa", "categoria": "VAB", "codigo": "FR00040"}, {"fabrica": "MDC", "nome": "FORRO OWA BRILLIANTO A TEG T24/625/15MM/4,68M²/12P - PINTADO", "m2": "1.0", "peso": "18", "pallet": "12 unidades / caixa", "categoria": "VAB", "codigo": "FR00043"}, {"fabrica": "MDC", "nome": "FORRO OWA BRILLIANTO A TEG T15/625/15MM/4,68M²/12P - PINTADO", "m2": "1.0", "peso": "37", "pallet": "12 unidades / caixa", "categoria": "VAB", "codigo": "FR00042"}, {"fabrica": "MDC", "nome": "FORRO ADHARA CONTRACT/T24/625/13MM/4,58M² - NATURAL", "m2": "1.0", "peso": "15,5", "pallet": "12 unidades / caixa", "categoria": "VAB", "codigo": "FR00271"}, {"fabrica": "MDC", "nome": "VINILICO VITA ATHENNA 19x130x2MM 24PL (5,92M²)", "m2": "1.0", "peso": "21,31", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00008"}, {"fabrica": "MDC", "nome": "VINILICO VITA FERRARA 19x130x2MM 24PL (5,92M²)", "m2": "1.0", "peso": "21,31", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00009"}, {"fabrica": "MDC", "nome": "VINILICO VITA TREVI 19x130x2MM 24PL (5,92M²)", "m2": "1.0", "peso": "21,31", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00010"}, {"fabrica": "MDC", "nome": "VINILICO VITA VERNAZZA 19x130x2MM 24PL (5,92M²)", "m2": "1.0", "peso": "21,31", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00011"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA VENETO 23,8x150x3MM 10PL (3,57M²)", "m2": "1.0", "peso": "21,31", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00012"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE AQUILA 19X130x2,5MM 16PL (3,95M²)", "m2": "1.0", "peso": "16,79", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00013"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ PRÓ NERO CLASSICO 94x94x3MM 5PL (4,42M²)", "m2": "1.0", "peso": "21,31", "pallet": "5 unidades / caixa", "categoria": "PISO", "codigo": "PI00014"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ PRÓ CEMENTO CHIAR 94x94x3MM 5PL (4,42M²)", "m2": "1.0", "peso": "23,6", "pallet": "5 unidades / caixa", "categoria": "PISO", "codigo": "PI00015"}, {"fabrica": "MDC", "nome": "VINILICO NUOVA CESENA 180X1220X5 MM 10PL (2,20M²)", "m2": "1.0", "peso": "21,31", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00016"}, {"fabrica": "MDC", "nome": "VINILICO VITA PARMA 19x130x2MM 24PL (5,92M²)", "m2": "1.0", "peso": "21,31", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00017"}, {"fabrica": "MDC", "nome": "VINILICO VITA DUOMO 19x130x2MM 24PL (5,92M²)", "m2": "1.0", "peso": "21,31", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00018"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ PRÓ GRANILITE 94x94x3MM 5PL (4,42M²)", "m2": "1.0", "peso": "23,6", "pallet": "5 unidades / caixa", "categoria": "PISO", "codigo": "PI00019"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE VICENZA 19x130x2,5MM 16PL (3,95M²)", "m2": "1.0", "peso": "16,79", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00020"}, {"fabrica": "MDC", "nome": "RODAPE CLASSICO BRANCO LISO 07x2,40x13MM 17PL", "m2": "1.0", "peso": "-", "pallet": "17 unidades / caixa", "categoria": "PISO", "codigo": "PI00021"}, {"fabrica": "MDC", "nome": "RODAPE CLASSICO BRANCO LISO 10X2,40X13MM 11PL", "m2": "1.0", "peso": "-", "pallet": "11 unidades / caixa", "categoria": "PISO", "codigo": "PI00022"}, {"fabrica": "MDC", "nome": "RODAPE CLASSICO BRANCO FRISADO 07x2,40x13MM 17PL", "m2": "1.0", "peso": "-", "pallet": "17 unidades / caixa", "categoria": "PISO", "codigo": "PI00023"}, {"fabrica": "MDC", "nome": "RODAPE CLASSICO BRANCO FRISADO 10x2,40x13MM 11PL", "m2": "1.0", "peso": "2", "pallet": "11 unidades / caixa", "categoria": "PISO", "codigo": "PI00024"}, {"fabrica": "MDC", "nome": "VINILICO VITA COLONNA 19x130x2MM 24PL (5,92M²)", "m2": "1.0", "peso": "21,31", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00025"}, {"fabrica": "MDC", "nome": "RODAPE FIT BRANCO LISO 07x240x9MM 24PL", "m2": "1.0", "peso": "-", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00026"}, {"fabrica": "MDC", "nome": "VINILICO NUOVA MODENA 180X1220X5 MM 10PL (2,20M²)", "m2": "1.0", "peso": "21,31", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00027"}, {"fabrica": "MDC", "nome": "VINILICO NUOVA PALERMO 180X1220X5 MM 10PL (2,20M²)", "m2": "1.0", "peso": "21,31", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00028"}, {"fabrica": "MDC", "nome": "VINILICO NUOVA PIACENZA 180X1220X5 MM 10PL (2,20M²)", "m2": "1.0", "peso": "21,31", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00029"}, {"fabrica": "MDC", "nome": "VINILICO NUOVA PISA 180X1220X5 MM 10PL (2,20M²)", "m2": "1.0", "peso": "21,31", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00030"}, {"fabrica": "MDC", "nome": "VINILICO NUOVA VITERNO 180X1220X5 MM 10PL (2,20M²)", "m2": "1.0", "peso": "21,31", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00031"}, {"fabrica": "MDC", "nome": "VINILICO NUOVA MONTEROSSO 180X1220X5 MM 10PL (2,20M²)", "m2": "1.0", "peso": "1,13", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00032"}, {"fabrica": "MDC", "nome": "RODAPE FIT BRANCO FRISADO 07X240x9MM 24PL", "m2": "1.0", "peso": "-", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00033"}, {"fabrica": "MDC", "nome": "RODAPE FIT BRANCO LISO 10x240x9MM 16PL", "m2": "1.0", "peso": "1,13", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00034"}, {"fabrica": "MDC", "nome": "RODAPE FIT BRANCO FRISADO 10x240x9MM 16PL", "m2": "1.0", "peso": "1,13", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00035"}, {"fabrica": "MDC", "nome": "RODAPE FIT BRANCO LISO 15x240x9MM 11PL", "m2": "1.0", "peso": "1,44", "pallet": "11 unidades / caixa", "categoria": "PISO", "codigo": "PI00036"}, {"fabrica": "MDC", "nome": "RODAPE FIT BRANCO FRISADO 15x240x9MM 11PL", "m2": "1.0", "peso": "1,44", "pallet": "11 unidades / caixa", "categoria": "PISO", "codigo": "PI00037"}, {"fabrica": "MDC", "nome": "RODAPE TECH BRANCO LISO 03X240X15MM 30PL", "m2": "1.0", "peso": "0,43", "pallet": "30 unidades / caixa", "categoria": "PISO", "codigo": "PI00038"}, {"fabrica": "MDC", "nome": "RODAPE TECH BRANCO LISO 05X240X12MM 28PL", "m2": "1.0", "peso": "0,72", "pallet": "28 unidades / caixa", "categoria": "PISO", "codigo": "PI00039"}, {"fabrica": "MDC", "nome": "RODAPE TECH BRANCO FRISADO 05X240X12MM 24PL", "m2": "1.0", "peso": "0,72", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00040"}, {"fabrica": "MDC", "nome": "RODAPE TECH BRANCO LISO 07X240X13MM 17PL", "m2": "1.0", "peso": "0,96", "pallet": "17 unidades / caixa", "categoria": "PISO", "codigo": "PI00041"}, {"fabrica": "MDC", "nome": "RODAPE TECH BRANCO FRISADO 07X240X13MM 17PL", "m2": "1.0", "peso": "0,96", "pallet": "17 unidades / caixa", "categoria": "PISO", "codigo": "PI00042"}, {"fabrica": "MDC", "nome": "RODAPE TECH BRANCO LISO 10X240X13MM 11PL", "m2": "1.0", "peso": "1,47", "pallet": "11 unidades / caixa", "categoria": "PISO", "codigo": "PI00043"}, {"fabrica": "MDC", "nome": "RODAPE TECH BRANCO FRISADO 10X240X13MM 11PL", "m2": "1.0", "peso": "2,35", "pallet": "11 unidades / caixa", "categoria": "PISO", "codigo": "PI00044"}, {"fabrica": "MDC", "nome": "RODAPE TECH BRANCO LISO 15X240X13MM 7PL", "m2": "1.0", "peso": "2,35", "pallet": "7 unidades / caixa", "categoria": "PISO", "codigo": "PI00045"}, {"fabrica": "MDC", "nome": "RODAPE TECH BRANCO FRISADO 15X24013MM 7PL", "m2": "1.0", "peso": "2,35", "pallet": "7 unidades / caixa", "categoria": "PISO", "codigo": "PI00046"}, {"fabrica": "MDC", "nome": "VINILICO VITA BAVIERA 19x130x2MM 24PL (5,92M²)", "m2": "1.0", "peso": "21,31", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00047"}, {"fabrica": "MDC", "nome": "VINILICO VITA FIRENZE 19x130x2MM 24PL (5,92M²)", "m2": "1.0", "peso": "21,31", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00048"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE COLONNA 19X130x2,5MM 16PL (3,95M²)", "m2": "1.0", "peso": "16,79", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00049"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE LAZIO 19X130x2,5MM 16PL (3,95M²)", "m2": "1.0", "peso": "16,79", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00050"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE NAVIGLIO 19X130x2,5MM 16PL (3,95M²)", "m2": "1.0", "peso": "16,79", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00051"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE MARSALA 19X130x2,5MM 16PL (3,95M²)", "m2": "1.0", "peso": "16,79", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00052"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE VERNAZZA 19X130x2,5MM 16PL (3,95M²)", "m2": "1.0", "peso": "16,79", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00053"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE RIMINI 19X130x2,5MM 16PL (3,95M²)", "m2": "1.0", "peso": "16,79", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00054"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE TURIM 19X130x2,5MM 16PL (3,95M²)", "m2": "1.0", "peso": "16,79", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00055"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ PRÓ CEMENTO GRIGIO 94x94x3MM 5PL (4,42M²)", "m2": "1.0", "peso": "23,6", "pallet": "5 unidades / caixa", "categoria": "PISO", "codigo": "PI00056"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ CEMENTO SILVER 94x94x3MM 5PL (4,42M²)", "m2": "1.0", "peso": "23,6", "pallet": "5 unidades / caixa", "categoria": "PISO", "codigo": "PI00057"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ LINHO NERO 94x94x3MM 5PL (4,42M²)", "m2": "1.0", "peso": "23,6", "pallet": "5 unidades / caixa", "categoria": "PISO", "codigo": "PI00058"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ MILANO GRAFITE 94x94x3MM 5PL (4,42M²)", "m2": "1.0", "peso": "23,6", "pallet": "5 unidades / caixa", "categoria": "PISO", "codigo": "PI00059"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ HOME ALPI BIANCO 96x96x2MM 8PL (7,37M²)", "m2": "1.0", "peso": "27,12", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00060"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ HOME MONTE GRIGIO 96x96x2MM 8PL (7,37M²)", "m2": "1.0", "peso": "27,12", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00061"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ HOME NEW YORK GRIGIO 96x96x2MM 8PL (7,37M²)", "m2": "1.0", "peso": "27,12", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00062"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ ATACAMA BEIGE 94x94x2MM HOME 8PL (7,07M²)", "m2": "1.0", "peso": "26,02", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00063"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ ALPI BIANCO 94x94x2MM 8PL (7,07M²)", "m2": "1.0", "peso": "26,02", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00064"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ CEMENTO CHIARO 94x94x2MM HOME 8PL (7,07M²)", "m2": "1.0", "peso": "26,02", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00065"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ CEMENTO GRIGIO 94x94x2MM HOME 8PL (7,07M²)", "m2": "1.0", "peso": "26,02", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00066"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ ATACAMA BEIGE 94x94x3MM PRO 5PL (4,42M²)", "m2": "1.0", "peso": "23,6", "pallet": "5 unidades / caixa", "categoria": "PISO", "codigo": "PI00067"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ MONTE BEIGE 94x94x2MM HOME 8PL (7,07M²)", "m2": "1.0", "peso": "26,02", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00068"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ MONTE GRIGIO 94x94x2MM HOME 8PL (7,07M²)", "m2": "1.0", "peso": "26,02", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00069"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ MILANO GRIGIO 94x94x2MM HOME 8PL (7,07M²)", "m2": "1.0", "peso": "26,02", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00070"}, {"fabrica": "MDC", "nome": "VINILICO CITTÁ NEW YORK GRIGIO 94x94x2MM HOME 8PL (7,07M²)", "m2": "1.0", "peso": "26,02", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00071"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA LUCCA 23,8X150X2MM 15PL (5,35M²)", "m2": "1.0", "peso": "19,69", "pallet": "15 unidades / caixa", "categoria": "PISO", "codigo": "PI00072"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA TERNI 23,8X150X2MM 15PL (5,35M²)", "m2": "1.0", "peso": "19,69", "pallet": "15 unidades / caixa", "categoria": "PISO", "codigo": "PI00073"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA AREZZO 23,8X150X2MM 15PL (5,35M²)", "m2": "1.0", "peso": "19,69", "pallet": "15 unidades / caixa", "categoria": "PISO", "codigo": "PI00074"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA SIENA 23,8X150X2MM 15PL (5,35M²)", "m2": "1.0", "peso": "19,69", "pallet": "15 unidades / caixa", "categoria": "PISO", "codigo": "PI00075"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA APRILIA 23,8X150X2MM 15PL (5,35M²)", "m2": "1.0", "peso": "19,69", "pallet": "15 unidades / caixa", "categoria": "PISO", "codigo": "PI00076"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA GARDA 23,8X150X2MM 15PL (5,35M²)", "m2": "1.0", "peso": "19,69", "pallet": "15 unidades / caixa", "categoria": "PISO", "codigo": "PI00077"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA LIGURIA 23,8X150X3MM 10PL (3,57M²)", "m2": "1.0", "peso": "19,21", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00078"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA LAZIO 23,8X150X3MM 10PL (3,57M²)", "m2": "1.0", "peso": "19,21", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00079"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA ABRUZZO 23,8X150X3MM 10PL (3,57M²)", "m2": "1.0", "peso": "19,21", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00080"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA GENEBRA 23,8X150X3MM 10PL (3,57M²)", "m2": "1.0", "peso": "19,21", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00081"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA SICILIA 23,8X150X3MM 10PL (3,57M²)", "m2": "1.0", "peso": "19,21", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00082"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA PIEMONTESA 23,8X150X3MM 10PL (3,57M²)", "m2": "1.0", "peso": "19,21", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00083"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA VERNAZZA 23,8X150X3MM 10PL (3,57M²)", "m2": "1.0", "peso": "19,21", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00084"}, {"fabrica": "MDC", "nome": "VINILICO MASSIMA TRENTO 23,8X150X3MM 10PL (3,57M²)", "m2": "1.0", "peso": "19,21", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00085"}, {"fabrica": "MDC", "nome": "VINILICO CITTA OFFICE CEMENTO SILVER 94x94x2,5MM 6PL (5,30M²)", "m2": "1.0", "peso": "24,22", "pallet": "6 unidades / caixa", "categoria": "PISO", "codigo": "PI00086"}, {"fabrica": "MDC", "nome": "VINILICO CITTA OFFICE CEMENTO GRIGIO 94x94x2,5MM 6PL (5,30M²)", "m2": "1.0", "peso": "24,22", "pallet": "6 unidades / caixa", "categoria": "PISO", "codigo": "PI00087"}, {"fabrica": "MDC", "nome": "VINILICO CITTA OFFICE CEMENTO CHIARO 94x94x2,5MM 6PL (5,30M²)", "m2": "1.0", "peso": "24,22", "pallet": "6 unidades / caixa", "categoria": "PISO", "codigo": "PI00088"}, {"fabrica": "MDC", "nome": "VINILICO CITTA OFFICE MONTECARLO 94x94x2,5MM 6PL (5,30M²)", "m2": "1.0", "peso": "24,22", "pallet": "6 unidades / caixa", "categoria": "PISO", "codigo": "PI00089"}, {"fabrica": "MDC", "nome": "VINILICO INNOVA MENDOZA GRIGIO 462x920x5MM 5PL (2,12M²)", "m2": "1.0", "peso": "24,22", "pallet": "5 unidades / caixa", "categoria": "PISO", "codigo": "PI00090"}, {"fabrica": "MDC", "nome": "VINILICO INNOVA ATACAMA BEIGE 462x920x5MM 5PL (2,12M²)", "m2": "1.0", "peso": "24,22", "pallet": "5 unidades / caixa", "categoria": "PISO", "codigo": "PI00091"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO CARAMBOLA 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00092"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO SAPUCAIA 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00093"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO NOGUEIRA 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00094"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO PAINEIRA 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00095"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO LINHEIRO 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00096"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO TAUARI 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00097"}, {"fabrica": "MDC", "nome": "VINILICO BRAVO AMARANTO 17,78x121,92x3MM 12PL (2,60M²)", "m2": "1.0", "peso": "13,5", "pallet": "12 unidades / caixa", "categoria": "PISO", "codigo": "PI00098"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE PLATANO 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00099"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO BAUNILHA 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00122"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO AMOREIRA 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00123"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO MARULA 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00124"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO VENEZA CLICK 22,90x122,90x4,5MM 10PL (2,79M²)", "m2": "1.0", "peso": "20", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00100"}, {"fabrica": "MDC", "nome": "VINILICO BRAVO MACADAMIA 17,78x121,92x3MM 12PL (2,60M²)", "m2": "1.0", "peso": "13,5", "pallet": "12 unidades / caixa", "categoria": "PISO", "codigo": "PI00101"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO GENOVA CLICK 22,90x122,90x4,5MM 10PL (2,79M²)", "m2": "1.0", "peso": "20", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00102"}, {"fabrica": "MDC", "nome": "RODAPE BRANCO LISO 15X240X10MM - RUFFINO", "m2": "1.0", "peso": "5", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00103"}, {"fabrica": "MDC", "nome": "RODAPE SLIM BRANCO LISO 10X240X15MM - RUFFINO", "m2": "1.0", "peso": "5", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00104"}, {"fabrica": "MDC", "nome": "RODAPE SLIM BRANCO FRISADO 10X240X15MM - RUFFINO", "m2": "1.0", "peso": "5", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00105"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO MILAO CLICK 22,90x122,90x4,5MM 10PL (2,79M²)", "m2": "1.0", "peso": "20", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00107"}, {"fabrica": "MDC", "nome": "VINILICO SOFISTICADO TURIM CLICK 22,90x122,90x4,5MM 10PL (2,79M²)", "m2": "1.0", "peso": "20", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00108"}, {"fabrica": "MDC", "nome": "VINILICO STUDIO SOFISTICADO LUNAR 45,72x45,72x2MM 24PL (5,02M²)", "m2": "1.0", "peso": "17,5", "pallet": "24 unidades / caixa", "categoria": "PISO", "codigo": "PI00106"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE FIGUEIRA 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00109"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE SISAL 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00110"}, {"fabrica": "MDC", "nome": "VINILICO BRAVO FREIJO CLARO 17,78x121,92x3MM 12PL (2,60M²)", "m2": "1.0", "peso": "13,5", "pallet": "12 unidades / caixa", "categoria": "PISO", "codigo": "PI00111"}, {"fabrica": "MDC", "nome": "VINILICO AMBIENTA GALENA 92x92x3MM 4PL (3,38M²)", "m2": "1.0", "peso": "13,5", "pallet": "4 unidades / caixa", "categoria": "PISO", "codigo": "PI00112"}, {"fabrica": "MDC", "nome": "VINILICO ESSENCE MALVA 208,5x1230x2,5MM 16PL (4,09M²)", "m2": "1.0", "peso": "20", "pallet": "16 unidades / caixa", "categoria": "PISO", "codigo": "PI00113"}, {"fabrica": "MDC", "nome": "VINILICO STUDIO NOBILE GRIGGIO 91,44x91,44x2MM 12PL (10,3M²)", "m2": "1.0", "peso": "34,5", "pallet": "12 unidades / caixa", "categoria": "PISO", "codigo": "PI00114"}, {"fabrica": "MDC", "nome": "VINILICO AMBIENTA LIDO 92x92x3MM 4PL (3,38M²)", "m2": "1.0", "peso": "13,5", "pallet": "4 unidades / caixa", "categoria": "PISO", "codigo": "PI00115"}, {"fabrica": "MDC", "nome": "VINILICO STUDIO NOBILE CONCRETO 91,44x91,44x2MM 12PL (10,3M²)", "m2": "1.0", "peso": "34,5", "pallet": "12 unidades / caixa", "categoria": "PISO", "codigo": "PI00116"}, {"fabrica": "MDC", "nome": "VINILICO STUDIO BRAVO TITANIO 91,44x91,44x3MM 8PL (6,69M²)", "m2": "1.0", "peso": "17,5", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00117"}, {"fabrica": "MDC", "nome": "VINILICO STUDIO BRAVO GRAFITE 91,44x91,44x3MM 8PL (6,69M²)", "m2": "1.0", "peso": "17,5", "pallet": "8 unidades / caixa", "categoria": "PISO", "codigo": "PI00118"}, {"fabrica": "MDC", "nome": "VINILICO NOBILE SALGUEIRO 17,78x121,92x2MM 18PL (3,90M²)", "m2": "1.0", "peso": "13,5", "pallet": "18 unidades / caixa", "categoria": "PISO", "codigo": "PI00119"}, {"fabrica": "MDC", "nome": "VINILICO STUDIO NOBILE MARMOGRIS 91,44x91,44x2MM 12PL (10,3M²)", "m2": "1.0", "peso": "34,5", "pallet": "12 unidades / caixa", "categoria": "PISO", "codigo": "PI00120"}, {"fabrica": "MDC", "nome": "RODAPE FRISADO BRANCO 5X240X15MM - RUFFINO", "m2": "1.0", "peso": "5", "pallet": "10 unidades / caixa", "categoria": "PISO", "codigo": "PI00121"}, {"fabrica": "MDC", "nome": "VINILICO BRAVO GREVILEA 17,78x121,92x3MM 12PL (2,60M²)", "m2": "1.0", "peso": "13,5", "pallet": "12 unidades / caixa", "categoria": "PISO", "codigo": "PI00125"}, {"fabrica": "MDC", "nome": "PVC C/ GESSO LISO 625X625MM GYPCLEAN", "m2": "1.0", "peso": "2", "pallet": "8 unidades / caixa", "categoria": "VAB", "codigo": "FR00124"}, {"fabrica": "MDC", "nome": "PERFIL CLICADO PRINCIPAL T 24 MM", "m2": "1.0", "peso": "0,8", "pallet": "30 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "FR00116"}, {"fabrica": "MDC", "nome": "CANTONEIRA REMOVÍVEL BRANCA - 3.00 M", "m2": "1.0", "peso": "0,2", "pallet": "50 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "FR00001"}, {"fabrica": "MDC", "nome": "TRAVESSA CLICADA T24 - 625 MM", "m2": "1.0", "peso": "0,15", "pallet": "75 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "FR00135"}, {"fabrica": "MDC", "nome": "PRIMER FLEX QUARTZOLIT - 18L", "m2": "1.0", "peso": "18", "pallet": "50 baldes", "categoria": "COMPLEMENTO", "codigo": "AC00246"}, {"fabrica": "MDC", "nome": "PRIMER FLEX QUARTZOLIT - 3,6L", "m2": "1.0", "peso": "3,6", "pallet": "160 baldes", "categoria": "COMPLEMENTO", "codigo": "AC00220"}, {"fabrica": "MDC", "nome": "PRIMER RU ANTIUMIDADE QUARTZOLIT - 3,8KG", "m2": "1.0", "peso": "3,8", "pallet": "50 caixas", "categoria": "COMPLEMENTO", "codigo": "AC00058"}, {"fabrica": "MDC", "nome": "PRIMER RU QUARTZOLIT ANTIUMIDADE COMP. A 2,5KG", "m2": "1.0", "peso": "2,5", "pallet": "(composição da caixa)", "categoria": "COMPLEMENTO", "codigo": "AC00244"}, {"fabrica": "MDC", "nome": "PRIMER RU QUARTZOLIT ANTIUMIDADE COMP. B 1,3KG", "m2": "1.0", "peso": "1,3", "pallet": "(composição da caixa)", "categoria": "COMPLEMENTO", "codigo": "AC00245"}, {"fabrica": "MDC", "nome": "TRAVESSA CLICADA T15 - 625 MM", "m2": "1.0", "peso": "0,15", "pallet": "75 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "FR00132"}, {"fabrica": "MDC", "nome": "MONTANTE STEEL FRAME SF 90 X 0.80 MM - 3.00 M", "m2": "1.0", "peso": "3,6", "pallet": "50 peças", "categoria": "AÇO", "codigo": "SF00010"}, {"fabrica": "MDC", "nome": "GUIA STEEL FRAME SF 90 X 0.80 MM - 3.00 M", "m2": "1.0", "peso": "3,6", "pallet": "50 peças", "categoria": "AÇO", "codigo": "SF00004"}, {"fabrica": "MDC", "nome": "ILLTEC PLANO 25 MM PINTADO 625X625 MM", "m2": "1.0", "peso": "0,2", "pallet": "20 unidades / caixa", "categoria": "VAB", "codigo": "FR00088"}, {"fabrica": "MDC", "nome": "ECOPHON FORRO SOMBRA /625/15MM/40PL/15,625M²", "m2": "1.0", "peso": "14,08", "pallet": "40 unidades / caixa", "categoria": "VAB", "codigo": "FR00203"}, {"fabrica": "MDC", "nome": "PARAFUSO DRYWALL 25 PB - OUROFIX  CX/1000", "m2": "1.0", "peso": "0,2", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": "FX00026"}, {"fabrica": "MDC", "nome": "PARAFUSO CIMENTICIA OU OSB - S/ABA", "m2": "1.0", "peso": "0,3", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": "SF00057"}, {"fabrica": "MDC", "nome": "PRIMER RU QUARTZOLIT ANTIUMIDADE COMP. B", "m2": "1.0", "peso": "1,3", "pallet": "-", "categoria": "", "codigo": "AC00245"}, {"fabrica": "MDC", "nome": "PRIMER RU QUARTZOLIT ANTIUMIDADE COMP. A", "m2": "1.0", "peso": "2,5", "pallet": "-", "categoria": "", "codigo": "AC00244"}, {"fabrica": "MDC", "nome": "PRIMER RU ANTIUMIDADE QUARTZOLIT", "m2": "1.0", "peso": "3,8", "pallet": "-", "categoria": "", "codigo": "AC00058"}, {"fabrica": "MDC", "nome": "PRIMER FLEX QUARTZOLIT", "m2": "1.0", "peso": "18", "pallet": "-", "categoria": "", "codigo": "AC00246"}, {"fabrica": "MDC", "nome": "PRIMER FLEX QUARTZOLIT", "m2": "1.0", "peso": "3,6", "pallet": "-", "categoria": "", "codigo": "AC00220"}, {"fabrica": "MDC", "nome": "ADESIVO PARA RODAPÉ 400GR - QUARTZOLIT", "m2": "1.0", "peso": "-", "pallet": "350 cartuchos", "categoria": "PISO", "codigo": "AC00195"}, {"fabrica": "MDC", "nome": "ADESIVO QUARTZOLIT BRANCO PISO ULTRA VINILICO", "m2": "1.0", "peso": "-", "pallet": "18kg - 50 baldes", "categoria": "PISO", "codigo": "AC00253"}, {"fabrica": "MDC", "nome": "ADESIVO QUARTZOLIT BRANCO PISO ULTRA VINILICO", "m2": "1.0", "peso": "18", "pallet": "4kg - 150 galões", "categoria": "PISO", "codigo": "AC00241"}, {"fabrica": "MDC", "nome": "ADESIVO QUARTZOLIT BRANCO PISO VINILICO", "m2": "1.0", "peso": "18", "pallet": "18 kg - 50 baldes", "categoria": "PISO", "codigo": "AC00218"}, {"fabrica": "MDC", "nome": "ADESIVO QUARTZOLIT BRANCO PISO VINILICO", "m2": "1.0", "peso": "4", "pallet": "3,6kg - 150 galões", "categoria": "PISO", "codigo": "AC00216"}, {"fabrica": "MDC", "nome": "ARGAMASSA QUARTZOLIT PREPARA PRO", "m2": "1.0", "peso": "10", "pallet": "-", "categoria": "", "codigo": "AC00217"}, {"fabrica": "MDC", "nome": "CANTONEIRA DRYWALL 25x30 - 3.00 M - NORMATIZADO", "m2": "1.0", "peso": "0,2", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "FF00047"}, {"fabrica": "MDC", "nome": "GUIA STEEL FRAME SF 90 X 0.95 MM - 3.00 M", "m2": "1.0", "peso": "4,5", "pallet": "50 peças", "categoria": "AÇO", "codigo": "SF00005"}, {"fabrica": "MDC", "nome": "GUIA STEEL FRAME SF 90 X 1.25 MM - ML", "m2": "1.0", "peso": "5,7", "pallet": "50 peças", "categoria": "AÇO", "codigo": "SF00006"}, {"fabrica": "MDC", "nome": "MONTANTE STEEL FRAME SF 90 X 0.95 MM - 3.00 M", "m2": "1.0", "peso": "4,5", "pallet": "50 peças", "categoria": "AÇO", "codigo": "SF00012"}, {"fabrica": "MDC", "nome": "MONTANTE STEEL FRAME 90 X 0.95 MM - ML", "m2": "1.0", "peso": "1,152", "pallet": "50 peças", "categoria": "AÇO", "codigo": "SF00031"}, {"fabrica": "MDC", "nome": "GUIA STEEL FRAME SF 1.40 X 0.95 MM - ML", "m2": "1.0", "peso": "1,8", "pallet": "50 peças", "categoria": "AÇO", "codigo": "SF00041"}, {"fabrica": "MDC", "nome": "MONTANTE STEEL FRAME SF 140 X 0.95 MM - ML", "m2": "1.0", "peso": "1,8", "pallet": "50 peças", "categoria": "AÇO", "codigo": "SF00025"}, {"fabrica": "MDC", "nome": "GUIA STEEL FRAME SF 90 X 0.95 MM - ML", "m2": "1.0", "peso": "1,5", "pallet": "50 peças", "categoria": "AÇO", "codigo": "SF00027"}, {"fabrica": "MDC", "nome": "PLACA CIMENTICIA AQUAROC FC 10MMX1,20X2,40M - BRASILIT", "m2": "1.0", "peso": "-", "pallet": "10 unidades", "categoria": "VAB", "codigo": "FS00073"}, {"fabrica": "MDC", "nome": "ARGAMASSA QUARTZOLIT NIVELADORA RÁPIDA CINZA - 20KG", "m2": "1.0", "peso": "20", "pallet": "60 sacos", "categoria": "COMPLEMENTO", "codigo": "AC00215"}, {"fabrica": "MDC", "nome": "TRAVESSA CLICADA T24 - 1250 MM", "m2": "1.0", "peso": "0,25", "pallet": "75 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "FR00133"}, {"fabrica": "MDC", "nome": "OSB HOME PLUS 18 MM LP 1.20 X 2.40 M", "m2": "1.0", "peso": "34", "pallet": "50 unidades", "categoria": "VAB", "codigo": "FS00031"}, {"fabrica": "FDS", "nome": "PLACA ST 12,5MM 1,80", "m2": "2.16", "peso": "17,92", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00139"}, {"fabrica": "FDS", "nome": "PLACA ST 12,5MM 2,80", "m2": "3.36", "peso": "27,88", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00152"}, {"fabrica": "FDS", "nome": "PLACA ST 15MM 1,80", "m2": "2.16", "peso": "19,17", "pallet": "50 unidades", "categoria": "PLACA", "codigo": ""}, {"fabrica": "FDS", "nome": "PLACA ST 12,5MM 2,40", "m2": "2.88", "peso": "23,38", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00143"}, {"fabrica": "FDS", "nome": "PLACA ST 12,5MM  600X2000", "m2": "1.2", "peso": "8,52", "pallet": "120 unidades", "categoria": "PLACA", "codigo": "DW00141"}, {"fabrica": "FDS", "nome": "PLACA RU 12,5MM 1,80", "m2": "2.16", "peso": "19,44", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00140"}, {"fabrica": "FDS", "nome": "PLACA RU 12,5MM 2,40", "m2": "2.88", "peso": "24,05", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00147"}, {"fabrica": "FDS", "nome": "RU 15MM 2,40", "m2": "2.88", "peso": "32,85", "pallet": "50 unidades", "categoria": "PLACA", "codigo": "DW00147"}, {"fabrica": "FDS", "nome": "PLACA RF 12,5MM 1,80", "m2": "2.16", "peso": "19,98", "pallet": "60 unidades", "categoria": "PLACA", "codigo": "DW00142"}, {"fabrica": "FDS", "nome": "PLACA RF 12,5MM 2,40", "m2": "2.88", "peso": "26,78", "pallet": "50 unidades", "categoria": "PLACA", "codigo": ""}, {"fabrica": "FDS", "nome": "PLACA RF 15MM 1,80", "m2": "2.16", "peso": "25,4016", "pallet": "50 unidades", "categoria": "PLACA", "codigo": "DW00151"}, {"fabrica": "FDS", "nome": "PLACA RF 15MM 2,40", "m2": "2.88", "peso": "32,832", "pallet": "50 unidades", "categoria": "PLACA", "codigo": ""}, {"fabrica": "FDS", "nome": "PLACA RU 15MM 1,80", "m2": "2.16", "peso": "38,472", "pallet": "30 unidades", "categoria": "VAB", "codigo": ""}, {"fabrica": "FDS", "nome": "GLASROC-X 12,5MM 1,20 X 2,40", "m2": "2.88", "peso": "33.12", "pallet": "30 unidades", "categoria": "VAB", "codigo": "FS00079"}, {"fabrica": "FDS", "nome": "GLASROC-X 12,5MM 1,20 X 2,20", "m2": "2,64", "peso": "33.12", "pallet": "30 unidades", "categoria": "VAB", "codigo": "FS00082"}, {"fabrica": "FDS", "nome": "PLACA PERFORMA ST 12,5MM 1,80", "m2": "2.16", "peso": "25,38", "pallet": "30 unidades", "categoria": "VAB", "codigo": "DW00145"}, {"fabrica": "FDS", "nome": "PLACA PERFORMA ST 12,5MM 2,70", "m2": "3.24", "peso": "35", "pallet": "30 unidades", "categoria": "VAB", "codigo": "DW00162"}, {"fabrica": "FDS", "nome": "PLACA PERFORMA RU 12,5MM 1,80", "m2": "2.16", "peso": "26,38", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "DW00148"}, {"fabrica": "FDS", "nome": "LÃ DE VIDRO 50MM - ISOVER - 15M²", "m2": "15.0", "peso": "0", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00013"}, {"fabrica": "FDS", "nome": "PINGADEIRA", "m2": "1.0", "peso": "0", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "FITA MESH TAPE", "m2": "1.0", "peso": "0,2", "pallet": "1000 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "AC00242"}, {"fabrica": "FDS", "nome": "PARAFUSO 25 GRX", "m2": "1.0", "peso": "0", "pallet": "64 unidades", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "MASSA UNICA BRASILIT 15KG", "m2": "1.0", "peso": "15", "pallet": "36 unidades", "categoria": "COMPLEMENTO", "codigo": "DW00077"}, {"fabrica": "FDS", "nome": "MASSA UNICA BRASILIT 5KG", "m2": "1.0", "peso": "5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "FS00027"}, {"fabrica": "FDS", "nome": "FITA DE PAPEL - 150 M", "m2": "1.0", "peso": "0", "pallet": "-", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "TYVEK HOME WRAP - 2,74MX30,5M", "m2": "1.0", "peso": "0", "pallet": "-", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PREGO AÇO 15X15", "m2": "1.0", "peso": "0", "pallet": "8 unidades", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "ALCAPAO METAL BRANCO 40X 40 AP", "m2": "1.0", "peso": "0", "pallet": "8 unidades", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "ALCAPAO METAL BRANCO 60X 60 AP", "m2": "1.0", "peso": "0", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "BANDA ACUSTICA AUTO ADESIVA 48x4x10.000", "m2": "1.0", "peso": "0", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "BANDA ACUSTICA AUTO ADESIVA 70x4x10.000", "m2": "1.0", "peso": "0", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "BANDA ACUSTICA AUTO ADESIVA 90x4x10.000", "m2": "1.0", "peso": "0", "pallet": "-", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "FITA HYDRO TAPE MOLD-X10- 90 M", "m2": "1.0", "peso": "0,3", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "FITA MESH TAPE SG 90 M - CAIXA C/24", "m2": "1.0", "peso": "0", "pallet": "20 unidades", "categoria": "VAB", "codigo": ""}, {"fabrica": "FDS", "nome": "GYPTONE BIG QUATTRO 41 - 1,2 X 2,4", "m2": "1.0", "peso": "0", "pallet": "20 unidades", "categoria": "VAB", "codigo": ""}, {"fabrica": "FDS", "nome": "GYPTONE QUATTRO 20 625x625x10 MM", "m2": "1.0", "peso": "22,4", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PERFIL CANTONEIRA GRX - 2,5M", "m2": "1.0", "peso": "0", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "DW00119"}, {"fabrica": "FDS", "nome": "PERFIL JUNTA DE DILATACAO GRX HORIZ. -3M", "m2": "1.0", "peso": "0,244", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PERFIL JUNTA DE DILATACAO GRX VERT.-2,5M", "m2": "1.0", "peso": "0,244", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PERFIL PINGADEIRA GRX BASE INF. - 2,5M", "m2": "1.0", "peso": "0,13", "pallet": "72 unidades", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PLACOMIX 25 KG", "m2": "1.0", "peso": "25,7", "pallet": "64 unidades", "categoria": "COMPLEMENTO", "codigo": "DW00144"}, {"fabrica": "FDS", "nome": "PLACOMIX 15 KG", "m2": "1.0", "peso": "15,7", "pallet": "-", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PLACOMIX 6 KG", "m2": "1.0", "peso": "6,2", "pallet": "-", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PLACOMIX 15KG - EM PÓ", "m2": "1.0", "peso": "15", "pallet": "70 unidades", "categoria": "VAB", "codigo": "DW00146"}, {"fabrica": "FDS", "nome": "PLACA CIMENTICIA 6MM - BRASILIT", "m2": "1.0", "peso": "24,4", "pallet": "50 unidades", "categoria": "VAB", "codigo": "FS00042"}, {"fabrica": "FDS", "nome": "PLACA CIMENTICIA 8MM - BRASILIT", "m2": "1.0", "peso": "39,2", "pallet": "40 unidades", "categoria": "VAB", "codigo": "FS00044"}, {"fabrica": "FDS", "nome": "PLACA CIMENTICIA 10MM - BRASILIT", "m2": "1.0", "peso": "49", "pallet": "30 unidades", "categoria": "VAB", "codigo": "FS00036"}, {"fabrica": "FDS", "nome": "PLACA CIMENTICIA 12MM - BRASILIT", "m2": "1.0", "peso": "59,3", "pallet": "400 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "FS00039"}, {"fabrica": "FDS", "nome": "HZINHO - JUNÇAO H PARA PLACA 0.60 X 2.00 M", "m2": "1.0", "peso": "0,05", "pallet": "72 sacos", "categoria": "COMPLEMENTO", "codigo": "FF00010"}, {"fabrica": "FDS", "nome": "BASECOAT GRX - 20KG", "m2": "1.0", "peso": "20", "pallet": "20 unidades", "categoria": "VAB", "codigo": "FS00080"}, {"fabrica": "FDS", "nome": "RIGITONE EDGE 12/25 Q VB 1200 X 2000 MM", "m2": "1.0", "peso": "10,73", "pallet": "20 unidades", "categoria": "VAB", "codigo": "FF00060"}, {"fabrica": "FDS", "nome": "RIGITONE EDGE 8/18 R VB 1200 X 2000MM", "m2": "2.4", "peso": "24", "pallet": "1 unidade", "categoria": "VAB", "codigo": "FF00025"}, {"fabrica": "FDS", "nome": "RIGITONE EDGE 8-15-20 S VB 1200X1960 MM", "m2": "2.352", "peso": "24,7", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "FF00062"}, {"fabrica": "FDS", "nome": "MEMBRANA HIDROFUGA TYVEK HOME WRAP - 0,91MX30,5M", "m2": "1.0", "peso": "2", "pallet": "-", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "FITA TYVEK TAPE - 5CMX50M", "m2": "1.0", "peso": "0,16", "pallet": "10 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "FITA DE PAPEL - 150 M - CAIXA C/10", "m2": "1.0", "peso": "0", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PARAFUSO GRX P AGULHA 25", "m2": "1.0", "peso": "0", "pallet": "-", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PARAFUSO GRX P BROCA 25", "m2": "1.0", "peso": "0", "pallet": "1000 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PARAFUSO 35 AGULHA DRYWALL - CAIXA COM 800", "m2": "1.0", "peso": "0", "pallet": "800 peças / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "PARAFUSO DRYWALL 35 PB", "m2": "1.0", "peso": "0", "pallet": "800 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "FX00170"}, {"fabrica": "FDS", "nome": "PARAFUSO DRYWALL 35 PA", "m2": "1.0", "peso": "0", "pallet": "1000 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "FX00166"}, {"fabrica": "FDS", "nome": "PARAFUSO DRYWALL 25 PB", "m2": "1.0", "peso": "0", "pallet": "1000 peças / caixa", "categoria": "AÇO", "codigo": "FX00174"}, {"fabrica": "FDS", "nome": "PARAFUSO DRYWALL 25 AG", "m2": "1.0", "peso": "0", "pallet": "-", "categoria": "COMPLEMENTO", "codigo": "FX00164"}, {"fabrica": "FDS", "nome": "Tirante 10 – 50 cm", "m2": "1.0", "peso": "0", "pallet": "10 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "FITA PARA JUNTA DRYWALL PAPEL 150M - PLACO", "m2": "1.0", "peso": "0", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "AC00020"}, {"fabrica": "FDS", "nome": "CANTONEIRA DRYWALL 25x30 - 3.00 M", "m2": "1.0", "peso": "0,645", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "DW00003"}, {"fabrica": "FDS", "nome": "LÃ DE PET M48 - 15M² - ECOFIBER", "m2": "1.0", "peso": "7,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00056"}, {"fabrica": "FDS", "nome": "LÃ DE PET M70 - 30M² - ECOFIBER", "m2": "1.0", "peso": "10,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00053"}, {"fabrica": "FDS", "nome": "LÃ DE PET M90 - 15M² - ECOFIBER", "m2": "1.0", "peso": "9,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00007"}, {"fabrica": "FDS", "nome": "LÃ DE PET M48 - 30M² - ECOFIBER", "m2": "1.0", "peso": "12,5", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00008"}, {"fabrica": "FDS", "nome": "PINGADEIRA PVC GRX 2.5M", "m2": "1.0", "peso": "0", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": ""}, {"fabrica": "FDS", "nome": "TELA VERTEX GRX 10CM x 50M", "m2": "1.0", "peso": "1", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "FS00019"}, {"fabrica": "FDS", "nome": "TELA VERTEX GRX 1M X 50M", "m2": "1.0", "peso": "8", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "FS00020"}, {"fabrica": "FDS", "nome": "MEMBRANA BARREIRA DE VAPOR 0.91M x 30.5M", "m2": "1.0", "peso": "0", "pallet": "50 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "FS00028"}, {"fabrica": "FDS", "nome": "EMENDA F530", "m2": "1.0", "peso": "0", "pallet": "100 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "DW00007"}, {"fabrica": "FDS", "nome": "REGULADOR F530", "m2": "1.0", "peso": "0,05", "pallet": "1000 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "DW00064"}, {"fabrica": "FDS", "nome": "PARAFUSO DRYWALL 25 PA - PATTA  CX/1000", "m2": "1.0", "peso": "0", "pallet": "1000 peças / caixa", "categoria": "COMPLEMENTO", "codigo": "FX00144"}, {"fabrica": "FDS", "nome": "PARAFUSO DRYWALL 4,2 X 13MM PA - PATTA  CX/1000", "m2": "1.0", "peso": "0,3", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "FX00151"}, {"fabrica": "FDS", "nome": "CANTONEIRA DRYWALL 25x30 - 3.00 M - NORMATIZADO", "m2": "1.0", "peso": "0,2", "pallet": "350 peças", "categoria": "AÇO", "codigo": "FF00047"}, {"fabrica": "FDS", "nome": "Guia drywall 48 mm 0,43 3m", "m2": "1.0", "peso": "1,2", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00012"}, {"fabrica": "FDS", "nome": "Guia drywall 48 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,2", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00073"}, {"fabrica": "FDS", "nome": "Guia drywall 70 mm 0,43 3m", "m2": "1.0", "peso": "1,52", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00013"}, {"fabrica": "FDS", "nome": "Guia drywall 70 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,52", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00074"}, {"fabrica": "FDS", "nome": "Guia drywall 90 mm 0,43 3m", "m2": "1.0", "peso": "1,668", "pallet": "350 peças", "categoria": "AÇO", "codigo": "DW00015"}, {"fabrica": "FDS", "nome": "Guia drywall 90 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,74", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00075"}, {"fabrica": "FDS", "nome": "Montante drywall 48 mm 0,43 3m", "m2": "1.0", "peso": "1,52", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00026"}, {"fabrica": "FDS", "nome": "Montante drywall 48 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,52", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00086"}, {"fabrica": "FDS", "nome": "Montante drywall 70 mm 0,43 3m", "m2": "1.0", "peso": "1,74", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00028"}, {"fabrica": "FDS", "nome": "Montante drywall 70 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,74", "pallet": "360 peças", "categoria": "AÇO", "codigo": "DW00087"}, {"fabrica": "FDS", "nome": "Montante drywall 90 mm 0,43 3m", "m2": "1.0", "peso": "2,2", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "DW00030"}, {"fabrica": "FDS", "nome": "Tabica lisa galvanizada 0,43 3m", "m2": "1.0", "peso": "1,191", "pallet": "360 peças", "categoria": "AÇO", "codigo": "FF00053"}, {"fabrica": "FDS", "nome": "Montante drywall 90 mm 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,9", "pallet": "500 peças", "categoria": "AÇO", "codigo": "DW00088"}, {"fabrica": "FDS", "nome": "Perfil drywall F530 0,43 COMERCIAL - 3.00 M", "m2": "1.0", "peso": "1,15", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "DW00032"}, {"fabrica": "FDS", "nome": "Tabica lisa galvanizada 0,50 3m NORMATIZADO", "m2": "1.0", "peso": "1,2", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "DW00070"}, {"fabrica": "FDS", "nome": "Tabica lisa branca 3m", "m2": "1.0", "peso": "1,2", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "FF00052"}, {"fabrica": "FDS", "nome": "Cantoneira 14x30 0,50 3m", "m2": "1.0", "peso": "0,6", "pallet": "2000 peças", "categoria": "AÇO", "codigo": "DW00001"}, {"fabrica": "FDS", "nome": "Cantoneira perfurada 0,50 3m", "m2": "1.0", "peso": "0,2", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "DW00100"}, {"fabrica": "FDS", "nome": "LÃ DE ROCHA 32 KG - 4,32 M2", "m2": "1.0", "peso": "7,05", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00030"}, {"fabrica": "FDS", "nome": "LA DE PET M48 - 1,20 X 12,5M - 15 M2", "m2": "1.0", "peso": "-", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00056"}, {"fabrica": "FDS", "nome": "LA DE PET M48 - 1,20 X 25,0M - 30 M2", "m2": "1.0", "peso": "-", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00008"}, {"fabrica": "FDS", "nome": "LA DE PET M70 - 1,20 X 25,0M - 30 M2", "m2": "1.0", "peso": "-", "pallet": "1 unidade", "categoria": "COMPLEMENTO", "codigo": "IR00053"}, {"fabrica": "FDS", "nome": "LA DE PET M90 - 1,20 X 12,5M - 15 M2", "m2": "1.0", "peso": "-", "pallet": "500 peças", "categoria": "AÇO", "codigo": "IR00007"}, {"fabrica": "FDS", "nome": "Perfil drywall F530 0,50 NORMATIZADO - 3.00 M", "m2": "1.0", "peso": "1,17", "pallet": "24 unidades / caixa", "categoria": "COMPLEMENTO", "codigo": "DW00033"}, {"fabrica": "FDS", "nome": "BANDA ACUSTICA 90 MM - ROLO 10M", "m2": "1.0", "peso": "0,1", "pallet": "-", "categoria": "", "codigo": "IR00003"}];
 let tblFabricaFilter = 'todos';
@@ -3068,74 +3620,17 @@ function closeLightbox(e) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox({target: document.getElementById('lightbox')}); });
 
 
-function outrosNav(section, btn) {
-  document.querySelectorAll('#tab-outros [id^="outros-"]').forEach(el => el.style.display = 'none');
-  document.getElementById('outros-' + section).style.display = 'block';
-  btn.closest('div').querySelectorAll('.qf-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-  function switchTab(tab) {
-    document.querySelectorAll('.script-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.script-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('panel-' + tab).classList.add('active');
-    const idx = tab === 'placas' ? 0 : 1;
-    document.querySelectorAll('.script-tab')[idx].classList.add('active');
-  }
 
 
-</script>
+  !DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia do Vendedor — Fast Sistemas Construtivos</title>
 
-<!-- LIGHTBOX -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
-  <button class="lightbox-close" onclick="closeLightbox()">&#x2715;</button>
-  <img id="lightbox-img" src="" alt="">
-  <div class="lightbox-caption" id="lightbox-caption"></div>
-</div>
 
-  <!-- Firebase — carregado no final para garantir que o DOM está pronto -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-  <script>
-    try {
-      if (typeof firebase !== 'undefined') {
-        var firebaseConfig = {
-          apiKey: "AIzaSyBGmNLTCkevCZ83LHetPRaLjq1vTJpf7bU",
-          authDomain: "fast-guia-vendedor.firebaseapp.com",
-          databaseURL: "https://fast-guia-vendedor-default-rtdb.firebaseio.com",
-          projectId: "fast-guia-vendedor",
-          storageBucket: "fast-guia-vendedor.firebasestorage.app",
-          messagingSenderId: "122472038745",
-          appId: "1:122472038745:web:8b5dcd190534d3e65d8c48"
-        };
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.database();
-        firebaseOK = true;
-        console.log('Firebase OK');
-      }
-    } catch(e) {
-      console.warn('Firebase erro:', e.message);
-    }
 
-    function lsGet(path) {
-      try { var v = localStorage.getItem('fgv_' + path.replace(/\//g,'_')); return v ? JSON.parse(v) : null; } catch(e) { return null; }
-    }
-    function lsSet(path, data) {
-      try { localStorage.setItem('fgv_' + path.replace(/\//g,'_'), JSON.stringify(data)); return Promise.resolve(); } catch(e) { return Promise.reject(e); }
-    }
-    function lsOn(path, cb) {
-      try { var v = lsGet(path); cb({ val: function(){ return v; } }); } catch(e) {}
-    }
-    function dbRef(path) {
-      if (firebaseOK && db) return db.ref(path);
-      return {
-        set: function(data) { return lsSet(path, data); },
-        on:  function(evt, cb) { lsOn(path, cb); },
-        once:function(evt) { return Promise.resolve({ val: function(){ return lsGet(path); } }); },
-        remove: function() { try { localStorage.removeItem('fgv_' + path.replace(/\//g,'_')); } catch(e){} return Promise.resolve(); }
-      };
-    }
   </script>
-
 </body>
 </html>
