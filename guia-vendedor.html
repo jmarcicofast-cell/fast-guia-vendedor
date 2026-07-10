@@ -2383,9 +2383,6 @@
   <div class="lightbox-caption" id="lightbox-caption"></div>
 </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script>
 
 var db = null;
@@ -2393,22 +2390,60 @@ var firebaseOK = false;
 var currentUser = null;
 var pedItens = [];
 
-// ── FIREBASE INIT ──
-try {
-  if (typeof firebase !== 'undefined') {
-    firebase.initializeApp({
-      apiKey: "AIzaSyBGmNLTCkevCZ83LHetPRaLjq1vTJpf7bU",
-      authDomain: "fast-guia-vendedor.firebaseapp.com",
-      databaseURL: "https://fast-guia-vendedor-default-rtdb.firebaseio.com",
-      projectId: "fast-guia-vendedor",
-      storageBucket: "fast-guia-vendedor.firebasestorage.app",
-      messagingSenderId: "122472038745",
-      appId: "1:122472038745:web:8b5dcd190534d3e65d8c48"
-    });
-    db = firebase.database();
-    firebaseOK = true;
-  }
-} catch(e) { console.warn('Firebase erro:', e.message); }
+// ── FIREBASE — carrega dinamicamente para não quebrar o app se falhar ──
+function initFirebase() {
+  try {
+    if (typeof firebase !== 'undefined' && !firebaseOK) {
+      firebase.initializeApp({
+        apiKey: "AIzaSyBGmNLTCkevCZ83LHetPRaLjq1vTJpf7bU",
+        authDomain: "fast-guia-vendedor.firebaseapp.com",
+        databaseURL: "https://fast-guia-vendedor-default-rtdb.firebaseio.com",
+        projectId: "fast-guia-vendedor",
+        storageBucket: "fast-guia-vendedor.firebasestorage.app",
+        messagingSenderId: "122472038745",
+        appId: "1:122472038745:web:8b5dcd190534d3e65d8c48"
+      });
+      db = firebase.database();
+      firebaseOK = true;
+      console.log('Firebase conectado');
+    }
+  } catch(e) { console.warn('Firebase init erro:', e.message); }
+}
+
+function loadFirebase(cb) {
+  if (typeof firebase !== 'undefined') { initFirebase(); if (cb) cb(); return; }
+  var s1 = document.createElement('script');
+  s1.src = 'https://unpkg.com/firebase@10.12.0/compat/app.js';
+  s1.onerror = function() {
+    // Fallback to gstatic
+    var s1b = document.createElement('script');
+    s1b.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js';
+    s1b.onerror = function() { console.warn('Firebase app não carregou'); if (cb) cb(); };
+    s1b.onload = function() {
+      var s2b = document.createElement('script');
+      s2b.src = 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js';
+      s2b.onerror = function() { console.warn('Firebase db não carregou'); if (cb) cb(); };
+      s2b.onload = function() { initFirebase(); if (cb) cb(); };
+      document.head.appendChild(s2b);
+    };
+    document.head.appendChild(s1b);
+  };
+  s1.onload = function() {
+    var s2 = document.createElement('script');
+    s2.src = 'https://unpkg.com/firebase@10.12.0/compat/database.js';
+    s2.onerror = function() { console.warn('Firebase db não carregou'); if (cb) cb(); };
+    s2.onload = function() { initFirebase(); if (cb) cb(); };
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s1);
+}
+
+// Carrega Firebase assim que a página abrir
+window.addEventListener('DOMContentLoaded', function() {
+  loadFirebase(function() {
+    console.log('Firebase pronto. firebaseOK:', firebaseOK);
+  });
+});
 
 // ── localStorage fallback ──
 function lsKey(path) { return 'fgv_' + path.replace(/\//g, '_'); }
@@ -2562,8 +2597,6 @@ function salvarPedido() {
     const veiculo  = get('pf-veiculo');
     const pn       = get('pf-pn');
     const chamado  = get('pf-chamado');
-    const cat      = get('pf-categoria');
-    const material = get('pf-material');
     const status   = get('pf-status') || 'agendamento';
 
     // Highlight missing fields
@@ -2670,35 +2703,32 @@ function renderPedidos(pedidosList, isGestora) {
 
   tbody.innerHTML = filtrados.map(p => {
     const statusOpts = isGestora ? STATUS_TODOS : STATUS_VENDEDOR;
-    const selectOpts = statusOpts.map(s =>
-      `<option value="${s}" ${p.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`
-    ).join('');
-    const vendLabel = isGestora ? `<td style="font-size:11px;font-weight:600;color:#C41E1E;">${p.vendedor||''}</td>` : '';
-    return `<tr>
-      <td>${p.data||''}</td>
-      ${vendLabel}
-      <td>${p.empresa||''}</td>
-      <td style="text-align:center;font-weight:600;font-size:11px;color:#185FA5;">${p.estado||'—'}</td>
-      <td style="text-align:center;font-size:12px;">${p.veiculo==='truck'?'🚛 Truck':p.veiculo==='carreta'?'🚚 Carreta':p.veiculo==='outros'?'📦 Outros':'—'}</td>
-      <td>${p.cliente||''}</td>
-      <td style="font-family:monospace;font-size:11px;">${p.pn||'—'}</td>
-      <td style="font-family:monospace;font-size:11px;color:#C41E1E;font-weight:600;">${p.chamado||'—'}</td>
-      <td style="max-width:180px;">${p.itens ? p.itens.map(function(it){return it.material;}).join(', ') : (p.material||'')}</td>
-      <td style="text-align:center;font-size:11px;background:#F8F7F3;border-radius:4px;padding:2px 6px;">${p.itens ? (p.itens.length + ' item(s)') : (CAT_LABEL[p.cat]||p.cat)}</td>
-      <td style="text-align:center;">${p.itens ? p.itens.reduce(function(s,it){return s+(it.qtd||0);},0) : (p.qtd||0)}</td>
-      <td>${p.itens ? '—' : 'R$ ' + Number(p.vUnit||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-      <td style="font-weight:600;">R$ ${Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-      <td>
-        <select onchange="atualizarStatus('${p.vendedor}','${p.id}',this.value)"
-          style="font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;">
-          ${selectOpts}
-        </select>
-      </td>
-      <td>
-        <button onclick="deletarPedido('${p.vendedor}','${p.id}')"
-          style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">✕</button>
-      </td>
-    </tr>`;
+    var selectOpts = statusOpts.map(function(s) {
+      return '<option value="' + s + '" ' + (p.status===s?'selected':'') + '>' + (STATUS_LABEL[s]||s) + '</option>';
+    }).join('');
+    var vendLabel = isGestora ? '<td style="font-size:11px;font-weight:600;color:#C41E1E;">' + (p.vendedor||'') + '</td>' : '';
+    var materiais = p.itens ? p.itens.map(function(it){return it.material;}).join(', ') : (p.material||'');
+    var catLabel  = p.itens ? (p.itens.length + ' item(s)') : (CAT_LABEL[p.cat]||p.cat);
+    var qtdTotal  = p.itens ? p.itens.reduce(function(s,it){return s+(it.qtd||0);},0) : (p.qtd||0);
+    var vlUnit    = p.itens ? '—' : 'R$ ' + Number(p.vUnit||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    var veicLabel = p.veiculo==='truck' ? 'Truck' : p.veiculo==='carreta' ? 'Carreta' : p.veiculo==='outros' ? 'Outros' : '—';
+    return '<tr>' +
+      '<td>' + (p.data||'') + '</td>' +
+      vendLabel +
+      '<td>' + (p.empresa||'') + '</td>' +
+      '<td style="text-align:center;font-weight:600;font-size:11px;color:#185FA5;">' + (p.estado||'—') + '</td>' +
+      '<td style="text-align:center;font-size:12px;">' + veicLabel + '</td>' +
+      '<td>' + (p.cliente||'') + '</td>' +
+      '<td style="font-family:monospace;font-size:11px;">' + (p.pn||'—') + '</td>' +
+      '<td style="font-family:monospace;font-size:11px;color:#C41E1E;font-weight:600;">' + (p.chamado||'—') + '</td>' +
+      '<td style="max-width:180px;">' + materiais + '</td>' +
+      '<td style="text-align:center;font-size:11px;background:#F8F7F3;border-radius:4px;padding:2px 6px;">' + catLabel + '</td>' +
+      '<td style="text-align:center;">' + qtdTotal + '</td>' +
+      '<td>' + vlUnit + '</td>' +
+      '<td style="font-weight:600;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
+      '<td><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" style="font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;">' + selectOpts + '</select></td>' +
+      '<td><button onclick="deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">x</button></td>' +
+    '</tr>';
   }).join('');
 
   atualizarComissao(filtrados, isGestora);
@@ -2717,7 +2747,7 @@ function atualizarComissao(pedidos, isGestora) {
 
   // Check if ligações meta atingida
   const v = currentUser ? vendedores[currentUser] : null;
-  const ligacoes = parseInt(v?.ligacoes || '0');
+  const ligacoes = parseInt((v && v.ligacoes) ? v.ligacoes : '0');
   const metaLig = 600;
   const redutor = ligacoes < metaLig && ligacoes > 0;
   const comReductor = totalVendido * 0.005;
@@ -2780,17 +2810,17 @@ function renderResumoEquipe(allPedidos) {
   if (!box) return;
   const mesAtual = new Date().toISOString().slice(0,7);
   box.innerHTML = ['PEDRO','WELLINGTON','JONATAS'].map(vn => {
-    const peds = (allPedidos[vn]||[]).filter(p => p.data?.startsWith(mesAtual) && p.status !== 'cancelado');
+    const peds = (allPedidos[vn]||[]).filter(p => p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado');
     const total = peds.reduce((s,p) => s + Number(p.vTotal||0), 0);
     const com   = peds.reduce((s,p) => s + Number(p.vTotal||0) * (CAT_PCT[p.cat]||0), 0);
-    return `<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">
-      <div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:6px;">${vendedores[vn].nome}</div>
-      <div style="font-size:11px;color:#aaa;">Total vendido</div>
-      <div style="font-size:14px;font-weight:600;color:#333;margin-bottom:4px;">R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-      <div style="font-size:11px;color:#aaa;">Previsão comissão</div>
-      <div style="font-size:14px;font-weight:600;color:#2E7D32;">R$ ${com.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
-      <div style="font-size:11px;color:#aaa;margin-top:4px;">${peds.length} pedido(s) no mês</div>
-    </div>`;
+    return '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">' +
+      '<div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:6px;">' + vendedores[vn].nome + '</div>' +
+      '<div style="font-size:11px;color:#aaa;">Total vendido</div>' +
+      '<div style="font-size:14px;font-weight:600;color:#333;margin-bottom:4px;">R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
+      '<div style="font-size:11px;color:#aaa;">Previsao comissao</div>' +
+      '<div style="font-size:14px;font-weight:600;color:#2E7D32;">R$ ' + com.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
+      '<div style="font-size:11px;color:#aaa;margin-top:4px;">' + peds.length + ' pedido(s) no mes</div>' +
+    '</div>';
   }).join('');
 }
 
@@ -2918,7 +2948,7 @@ function testarConexao() {
 
 
 // ── ITENS DO PEDIDO ──
-var pedItens = [];
+
 
 function addItemLinha() {
   var idx = pedItens.length;
@@ -2953,46 +2983,65 @@ function renderItensList() {
   var lista = document.getElementById('pf-itens-lista');
   if (!lista) return;
   if (!pedItens.length) {
-    lista.innerHTML = '<p style="font-size:12px;color:#aaa;text-align:center;padding:8px;">Nenhum item adicionado. Clique em "+ Adicionar Item".</p>';
+    lista.innerHTML = '<p style="font-size:12px;color:#aaa;text-align:center;padding:8px;">Nenhum item. Clique em &quot;+ Adicionar Item&quot;.</p>';
     atualizarTotalGeral();
     return;
   }
-  lista.innerHTML = pedItens.map(function(it, idx) {
-    return '<div style="background:#fff;border:1px solid #E2E0D8;border-radius:8px;padding:10px 12px;">' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:8px;">' +
-        '<div class="ped-field">' +
-          '<label>Categoria</label>' +
-          '<select onchange="updateItem(' + idx + ','cat',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">' +
-            '<option value=""' + (!it.cat ? ' selected' : '') + '>Selecione...</option>' +
-            '<option value="placa"' + (it.cat==='placa' ? ' selected' : '') + '>Placa (ST/RU/RF) 0,5%</option>' +
-            '<option value="grx"' + (it.cat==='grx' ? ' selected' : '') + '>GRX/Complemento 0,75%</option>' +
-            '<option value="aco"' + (it.cat==='aco' ? ' selected' : '') + '>Aço 1%</option>' +
-          '</select>' +
-        '</div>' +
-        '<div class="ped-field" style="grid-column:span 2;">' +
-          '<label>Material (descrição)</label>' +
-          '<input type="text" value="' + (it.material||'') + '" placeholder="Ex: Chapa ST 12,5mm" onchange="updateItem(' + idx + ','material',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">' +
-        '</div>' +
-        '<div class="ped-field">' +
-          '<label>Qtd</label>' +
-          '<input type="number" value="' + (it.qtd||'') + '" placeholder="0" oninput="updateItem(' + idx + ','qtd',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">' +
-        '</div>' +
-        '<div class="ped-field">' +
-          '<label>Vl. Unit. (R$)</label>' +
-          '<input type="number" step="0.01" value="' + (it.vUnit||'') + '" placeholder="0,00" oninput="updateItem(' + idx + ','vUnit',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">' +
-        '</div>' +
-        '<div class="ped-field">' +
-          '<label>Total</label>' +
-          '<div id="item-total-' + idx + '" style="padding:6px 8px;font-size:13px;font-weight:600;color:#1C1C1C;background:#F8F7F3;border-radius:6px;">R$ ' + (it.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
-        '</div>' +
-      '</div>' +
-      '<button type="button" onclick="removeItemLinha(' + idx + ')" style="font-size:11px;color:#C41E1E;background:none;border:none;cursor:pointer;padding:0;">✕ Remover item</button>' +
-    '</div>';
-  }).join('');
+  lista.innerHTML = '';
+  pedItens.forEach(function(it, idx) {
+    var div = document.createElement('div');
+    div.style.cssText = 'background:#fff;border:1px solid #E2E0D8;border-radius:8px;padding:10px 12px;margin-bottom:6px;';
+    var grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:8px;';
+    // Categoria
+    var catDiv = document.createElement('div'); catDiv.className = 'ped-field';
+    catDiv.innerHTML = '<label>Categoria</label>';
+    var sel = document.createElement('select');
+    sel.style.cssText = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
+    [['','Selecione...'],['placa','Placa 0,5%'],['grx','GRX/Comp. 0,75%'],['aco','Aco 1%']].forEach(function(opt) {
+      var o = document.createElement('option'); o.value = opt[0]; o.textContent = opt[1];
+      if (it.cat === opt[0]) o.selected = true; sel.appendChild(o);
+    });
+    (function(i){ sel.addEventListener('change', function() { updateItem(i, 'cat', this.value); }); })(idx);
+    catDiv.appendChild(sel);
+    // Material
+    var matDiv = document.createElement('div'); matDiv.className = 'ped-field'; matDiv.style.gridColumn = 'span 2';
+    matDiv.innerHTML = '<label>Material</label>';
+    var matIn = document.createElement('input'); matIn.type = 'text'; matIn.placeholder = 'Ex: Chapa ST 12,5mm'; matIn.value = it.material || '';
+    matIn.style.cssText = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
+    (function(i){ matIn.addEventListener('change', function() { updateItem(i, 'material', this.value); }); })(idx);
+    matDiv.appendChild(matIn);
+    // Qtd
+    var qtdDiv = document.createElement('div'); qtdDiv.className = 'ped-field';
+    qtdDiv.innerHTML = '<label>Qtd</label>';
+    var qtdIn = document.createElement('input'); qtdIn.type = 'number'; qtdIn.placeholder = '0'; qtdIn.value = it.qtd || '';
+    qtdIn.style.cssText = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
+    (function(i){ qtdIn.addEventListener('input', function() { updateItem(i, 'qtd', this.value); }); })(idx);
+    qtdDiv.appendChild(qtdIn);
+    // Valor Unit
+    var vuDiv = document.createElement('div'); vuDiv.className = 'ped-field';
+    vuDiv.innerHTML = '<label>Vl. Unit. (R$)</label>';
+    var vuIn = document.createElement('input'); vuIn.type = 'number'; vuIn.step = '0.01'; vuIn.placeholder = '0,00'; vuIn.value = it.vUnit || '';
+    vuIn.style.cssText = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
+    (function(i){ vuIn.addEventListener('input', function() { updateItem(i, 'vUnit', this.value); }); })(idx);
+    vuDiv.appendChild(vuIn);
+    // Total
+    var totDiv = document.createElement('div'); totDiv.className = 'ped-field';
+    totDiv.innerHTML = '<label>Total</label>';
+    var totVal = document.createElement('div'); totVal.id = 'item-total-' + idx;
+    totVal.style.cssText = 'padding:6px 8px;font-size:13px;font-weight:600;background:#F8F7F3;border-radius:6px;';
+    totVal.textContent = 'R$ ' + (it.vTotal || 0).toLocaleString('pt-BR', {minimumFractionDigits:2});
+    totDiv.appendChild(totVal);
+    grid.appendChild(catDiv); grid.appendChild(matDiv); grid.appendChild(qtdDiv); grid.appendChild(vuDiv); grid.appendChild(totDiv);
+    div.appendChild(grid);
+    var btn = document.createElement('button'); btn.type = 'button'; btn.textContent = 'x Remover item';
+    btn.style.cssText = 'font-size:11px;color:#C41E1E;background:none;border:none;cursor:pointer;padding:0;';
+    (function(i){ btn.addEventListener('click', function() { removeItemLinha(i); }); })(idx);
+    div.appendChild(btn);
+    lista.appendChild(div);
+  });
   atualizarTotalGeral();
 }
-
-// ────────────────────────────────
 
 function switchTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -3121,22 +3170,23 @@ function doLogin() {
   const credGrid = document.getElementById('credenciais-grid');
   if (credBox && credGrid) {
     if (v.credenciais && v.credenciais.length > 0) {
-      credGrid.innerHTML = v.credenciais.map(c => `
-        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;transition:border-color .15s;" onmouseover="this.style.borderColor='#C41E1E'" onmouseout="this.style.borderColor='#E8E6E1'">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <div style="width:34px;height:34px;border-radius:8px;background:${c.cor};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${c.icone}</div>
-            <div style="font-size:13px;font-weight:600;color:#1C1C1C;">${c.titulo}</div>
-          </div>
-          <div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">Usuário</div>
-          <div style="font-size:12px;color:#333;font-family:monospace;background:#F5F4F2;padding:3px 8px;border-radius:5px;margin-bottom:6px;word-break:break-all;">${c.usuario}</div>
-          <div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;">Senha</div>
-          <div style="font-size:12px;color:#333;font-family:monospace;background:#F5F4F2;padding:3px 8px;border-radius:5px;word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:6px;">
-            <span id="pwd-${c.titulo.replace(/\s/g,'')}" style="filter:blur(4px);cursor:pointer;" onclick="togglePwd('${c.titulo.replace(/\s/g,'')}')">${c.senha}</span>
-            <span onclick="togglePwd('${c.titulo.replace(/\s/g,'')}')" style="cursor:pointer;font-size:14px;flex-shrink:0;" title="Mostrar/ocultar">👁️</span>
-          </div>
-          ${c.link ? `<a href="${c.link}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:6px 12px;background:#C41E1E;color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;width:100%;justify-content:center;">Abrir portal →</a>` : ''}
-        </div>
-      `).join('');
+      credGrid.innerHTML = v.credenciais.map(function(c) {
+        var pwdId = 'pwd-' + c.titulo.replace(/\s/g,'');
+        var linkHtml = c.link ? '<a href="' + c.link + '" target="_blank" style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:6px 12px;background:#C41E1E;color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;width:100%;justify-content:center;">Abrir portal</a>' : '';
+        return '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+            '<div style="width:34px;height:34px;border-radius:8px;background:' + c.cor + ';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">' + c.icone + '</div>' +
+            '<div style="font-size:13px;font-weight:600;color:#1C1C1C;">' + c.titulo + '</div>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#aaa;margin-bottom:2px;">Usuario</div>' +
+          '<div style="font-size:12px;color:#333;font-family:monospace;background:#F5F4F2;padding:3px 8px;border-radius:5px;margin-bottom:6px;word-break:break-all;">' + c.usuario + '</div>' +
+          '<div style="font-size:11px;color:#aaa;margin-bottom:2px;">Senha</div>' +
+          '<div style="font-size:12px;color:#333;font-family:monospace;background:#F5F4F2;padding:3px 8px;border-radius:5px;word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+            '<span id="' + pwdId + '" style="filter:blur(4px);cursor:pointer;" onclick="togglePwd(\'' + pwdId + '\')">' + c.senha + '</span>' +
+            '<span onclick="togglePwd(\'' + pwdId + '\')" style="cursor:pointer;font-size:14px;flex-shrink:0;">&#128065;</span>' +
+          '</div>' + linkHtml +
+        '</div>';
+      }).join('');
       credBox.style.display = 'block';
     } else {
       credBox.style.display = 'none';
@@ -3187,22 +3237,18 @@ function renderCriteriosAdmin() {
   if (!grid) return;
   const v = vendedores[adminVendedor];
   grid.innerHTML = criterios.map(c => {
-    const nota = v.notas ? (v.notas[c.id] || 0) : 0;
-    return `
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #F8F7F3;">
-        <div style="min-width:200px;">
-          <div style="font-size:13px;font-weight:500;color:#1C1C1C;">${c.label}</div>
-          <div style="font-size:11px;color:#aaa;">${c.sub}</div>
-        </div>
-        <div style="display:flex;gap:6px;">
-          ${[0,1,2,3,4,5].map(n => `
-            <button onclick="setNota('${c.id}',${n},this)" data-cid="${c.id}" data-n="${n}"
-              style="width:32px;height:32px;border-radius:6px;border:1.5px solid ${n===nota?'#C41E1E':'#E2E0D8'};
-              background:${n===nota?'#C41E1E':'#fff'};color:${n===nota?'#fff':'#555'};
-              font-size:13px;font-weight:600;cursor:pointer;">${n}</button>
-          `).join('')}
-        </div>
-      </div>`;
+    var nota = v.notas ? (v.notas[c.id] || 0) : 0;
+    var btns = [0,1,2,3,4,5].map(function(n) {
+      var sel = n===nota;
+      return '<button onclick="setNota(\'' + c.id + '\',' + n + ',this)" data-cid="' + c.id + '" data-n="' + n + '" style="width:32px;height:32px;border-radius:6px;border:1.5px solid ' + (sel?'#C41E1E':'#E2E0D8') + ';background:' + (sel?'#C41E1E':'#fff') + ';color:' + (sel?'#fff':'#555') + ';font-size:13px;font-weight:600;cursor:pointer;">' + n + '</button>';
+    }).join('');
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #F8F7F3;">' +
+      '<div style="min-width:200px;">' +
+        '<div style="font-size:13px;font-weight:500;color:#1C1C1C;">' + c.label + '</div>' +
+        '<div style="font-size:11px;color:#aaa;">' + c.sub + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;">' + btns + '</div>' +
+    '</div>';
   }).join('');
   calcNotaGeral();
 }
@@ -3212,7 +3258,7 @@ function setNota(cid, n, btn) {
   if (!v.notas) v.notas = {};
   v.notas[cid] = n;
   // Update button styles in this row
-  document.querySelectorAll(`[data-cid="${cid}"]`).forEach(b => {
+  document.querySelectorAll('[data-cid="' + cid + '"]').forEach(function(b) {
     const bn = parseInt(b.dataset.n);
     b.style.background = bn === n ? '#C41E1E' : '#fff';
     b.style.color = bn === n ? '#fff' : '#555';
@@ -3309,18 +3355,18 @@ function renderAdminResumo() {
     const notas = criterios.map(c => v.notas ? (v.notas[c.id]||0) : 0);
     const media = notas.reduce((a,b)=>a+b,0)/notas.length;
     const cl = media>=4 ? {txt:'Bom',bg:'#E8F5E9',c:'#1B5E20'} : media>=2.5 ? {txt:'Atenção',bg:'#FFF8E1',c:'#E65100'} : {txt:'Crítico',bg:'#FFEBEE',c:'#B71C1C'};
-    return `<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">
-      <div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:6px;">${v.nome}</div>
-      <div style="font-size:11px;color:#aaa;">Meta</div><div style="font-size:12px;color:#333;margin-bottom:4px;">${v.meta}</div>
-      <div style="font-size:11px;color:#aaa;">Realizado</div><div style="font-size:12px;color:#333;margin-bottom:6px;">${v.realizado}</div>
-      <div style="background:#F1EFE8;border-radius:20px;height:6px;overflow:hidden;margin-bottom:4px;">
-        <div style="height:100%;border-radius:20px;background:#C41E1E;width:${Math.min(v.pct||0,100)}%;"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:11px;color:#C41E1E;font-weight:600;">${v.pct||0}%</span>
-        <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${cl.bg};color:${cl.c};font-weight:600;">${cl.txt}</span>
-      </div>
-    </div>`;
+    return '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">' +
+      '<div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:6px;">' + v.nome + '</div>' +
+      '<div style="font-size:11px;color:#aaa;">Meta</div><div style="font-size:12px;color:#333;margin-bottom:4px;">' + v.meta + '</div>' +
+      '<div style="font-size:11px;color:#aaa;">Realizado</div><div style="font-size:12px;color:#333;margin-bottom:6px;">' + v.realizado + '</div>' +
+      '<div style="background:#F1EFE8;border-radius:20px;height:6px;overflow:hidden;margin-bottom:4px;">' +
+        '<div style="height:100%;border-radius:20px;background:#C41E1E;width:' + Math.min(v.pct||0,100) + '%;"></div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<span style="font-size:11px;color:#C41E1E;font-weight:600;">' + (v.pct||0) + '%</span>' +
+        '<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:' + cl.bg + ';color:' + cl.c + ';font-weight:600;">' + cl.txt + '</span>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
@@ -3362,18 +3408,18 @@ function renderEvolucaoVendedor(v) {
       const n = notas[c.id]||0;
       const pct = (n/5)*100;
       const cor = n>=4 ? '#2E7D32' : n>=2.5 ? '#E65100' : '#C41E1E';
-      return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div style="min-width:200px;flex:1;">
-          <div style="font-size:12px;font-weight:500;color:#1C1C1C;">${c.label}</div>
-          <div style="font-size:10px;color:#aaa;">${c.sub}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;min-width:160px;">
-          <div style="flex:1;background:#F1EFE8;border-radius:20px;height:7px;overflow:hidden;">
-            <div style="height:100%;border-radius:20px;background:${cor};width:${pct}%;"></div>
-          </div>
-          <span style="font-size:14px;font-weight:700;color:${cor};min-width:18px;">${n}</span>
-        </div>
-      </div>`;
+      return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+        '<div style="min-width:200px;flex:1;">' +
+          '<div style="font-size:12px;font-weight:500;color:#1C1C1C;">' + c.label + '</div>' +
+          '<div style="font-size:10px;color:#aaa;">' + c.sub + '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;min-width:160px;">' +
+          '<div style="flex:1;background:#F1EFE8;border-radius:20px;height:7px;overflow:hidden;">' +
+            '<div style="height:100%;border-radius:20px;background:' + cor + ';width:' + pct + '%;"></div>' +
+          '</div>' +
+          '<span style="font-size:14px;font-weight:700;color:' + cor + ';min-width:18px;">' + n + '</span>' +
+        '</div>' +
+      '</div>';
     }).join('');
     const nota = Math.round(media*10)/10;
     set('ev-nota-geral', nota);
@@ -3427,17 +3473,17 @@ function renderTarefasAdmin() {
     lista.innerHTML = '<p style="font-size:12px;color:#bbb;font-style:italic;">Nenhuma tarefa adicionada ainda.</p>';
     return;
   }
-  lista.innerHTML = tarefas.map((t, i) => `
-    <div style="display:flex;align-items:center;gap:8px;background:#F8F7F3;border-radius:7px;padding:8px 10px;border-left:3px solid #185FA5;">
-      <span style="font-size:14px;color:#185FA5;font-weight:700;flex-shrink:0;">${i+1}.</span>
-      <span style="flex:1;font-size:13px;color:#333;">${t.txt}</span>
-      <div style="display:flex;gap:4px;flex-shrink:0;">
-        <button onclick="moveTarefa(${i},-1)" style="width:24px;height:24px;border-radius:4px;border:1px solid #E2E0D8;background:#fff;cursor:pointer;font-size:12px;" title="Mover acima">↑</button>
-        <button onclick="moveTarefa(${i},1)"  style="width:24px;height:24px;border-radius:4px;border:1px solid #E2E0D8;background:#fff;cursor:pointer;font-size:12px;" title="Mover abaixo">↓</button>
-        <button onclick="removeTarefa(${i})" style="width:24px;height:24px;border-radius:4px;border:none;background:#FFEBEE;color:#C41E1E;cursor:pointer;font-size:14px;font-weight:700;" title="Remover">×</button>
-      </div>
-    </div>
-  `).join('');
+  lista.innerHTML = tarefas.map(function(t, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;background:#F8F7F3;border-radius:7px;padding:8px 10px;border-left:3px solid #185FA5;">' +
+      '<span style="font-size:14px;color:#185FA5;font-weight:700;flex-shrink:0;">' + (i+1) + '.</span>' +
+      '<span style="flex:1;font-size:13px;color:#333;">' + t.txt + '</span>' +
+      '<div style="display:flex;gap:4px;flex-shrink:0;">' +
+        '<button onclick="moveTarefa(' + i + ',-1)" style="width:24px;height:24px;border-radius:4px;border:1px solid #E2E0D8;background:#fff;cursor:pointer;font-size:12px;">↑</button>' +
+        '<button onclick="moveTarefa(' + i + ',1)" style="width:24px;height:24px;border-radius:4px;border:1px solid #E2E0D8;background:#fff;cursor:pointer;font-size:12px;">↓</button>' +
+        '<button onclick="removeTarefa(' + i + ')" style="width:24px;height:24px;border-radius:4px;border:none;background:#FFEBEE;color:#C41E1E;cursor:pointer;font-size:14px;font-weight:700;">x</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function toggleTarefaVendedor(vendNome, idx) {
@@ -3462,33 +3508,26 @@ function renderTarefasVendedor(vendNome) {
   const total = tarefas.length;
   const done  = tarefas.filter(t => t.done).length;
   const pct   = Math.round((done/total)*100);
-  container.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-      <div style="flex:1;background:#E8E6E1;border-radius:20px;height:7px;overflow:hidden;">
-        <div style="height:100%;border-radius:20px;background:#185FA5;width:${pct}%;transition:width .3s;"></div>
-      </div>
-      <span style="font-size:12px;color:#185FA5;font-weight:600;">${done}/${total} concluídas</span>
-    </div>
-    ${tarefas.map((t, i) => `
-      <div onclick="toggleTarefaVendedor('${vendNome}',${i})"
-        style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;
-        background:${t.done ? '#F0FBF0' : '#1C1C1C'};
-        border:1.5px solid ${t.done ? '#81C784' : '#333'};
-        transition:all .2s;">
-        <div style="width:20px;height:20px;border-radius:5px;border:2px solid ${t.done ? '#2E7D32' : '#555'};
-          background:${t.done ? '#2E7D32' : 'transparent'};
-          display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
-          ${t.done ? '<span style="color:#fff;font-size:13px;font-weight:700;">✓</span>' : ''}
-        </div>
-        <div style="flex:1;">
-          <span style="font-size:13px;font-weight:500;
-            color:${t.done ? '#2E7D32' : '#fff'};
-            text-decoration:${t.done ? 'line-through' : 'none'};
-            opacity:${t.done ? '0.8' : '1'};">${t.txt}</span>
-        </div>
-      </div>
-    `).join('')}
-  `;
+  var progHtml = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">' +
+    '<div style="flex:1;background:#E8E6E1;border-radius:20px;height:7px;overflow:hidden;">' +
+      '<div style="height:100%;border-radius:20px;background:#185FA5;width:' + pct + '%;transition:width .3s;"></div>' +
+    '</div>' +
+    '<span style="font-size:12px;color:#185FA5;font-weight:600;">' + done + '/' + total + ' concluidas</span>' +
+  '</div>';
+  var itemsHtml = tarefas.map(function(t, i) {
+    var bg = t.done ? '#F0FBF0' : '#1C1C1C';
+    var bd = t.done ? '#81C784' : '#333';
+    var checkBg = t.done ? '#2E7D32' : 'transparent';
+    var checkBd = t.done ? '#2E7D32' : '#555';
+    var checkMark = t.done ? '<span style="color:#fff;font-size:13px;font-weight:700;">v</span>' : '';
+    var txtColor = t.done ? '#2E7D32' : '#fff';
+    var txtDeco = t.done ? 'line-through' : 'none';
+    return '<div onclick="toggleTarefaVendedor(\'' + vendNome + '\',' + i + ')" style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;background:' + bg + ';border:1.5px solid ' + bd + ';transition:all .2s;margin-bottom:6px;">' +
+      '<div style="width:20px;height:20px;border-radius:5px;border:2px solid ' + checkBd + ';background:' + checkBg + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">' + checkMark + '</div>' +
+      '<span style="font-size:13px;font-weight:500;color:' + txtColor + ';text-decoration:' + txtDeco + ';">' + t.txt + '</span>' +
+    '</div>';
+  }).join('');
+  container.innerHTML = progHtml + itemsHtml;
 }
 
 // ────────────────────────────────
@@ -3523,17 +3562,17 @@ function renderTable() {
     return 'cat-' + (map[cat.toUpperCase()] || 'default');
   };
   const body = document.getElementById('tbl-body');
-  body.innerHTML = data.map(p => `
-    <tr>
-      <td style="font-weight:500;color:#1C1C1C;">${p.nome}</td>
-      <td style="text-align:center"><span class="cod-badge">${p.codigo || '—'}</span></td>
-      <td style="text-align:center"><span class="fab-${p.fabrica.toLowerCase()}">${p.fabrica}</span></td>
-      <td style="text-align:center"><span class="cat-badge ${catClass(p.categoria)}">${p.categoria || '—'}</span></td>
-      <td style="text-align:center">${p.m2}</td>
-      <td style="text-align:center">${p.peso}</td>
-      <td style="color:#666">${p.pallet}</td>
-    </tr>
-  `).join('');
+  body.innerHTML = data.map(function(p) {
+    return '<tr>' +
+      '<td style="font-weight:500;color:#1C1C1C;">' + p.nome + '</td>' +
+      '<td style="text-align:center"><span class="cod-badge">' + (p.codigo||'—') + '</span></td>' +
+      '<td style="text-align:center"><span class="fab-' + p.fabrica.toLowerCase() + '">' + p.fabrica + '</span></td>' +
+      '<td style="text-align:center"><span class="cat-badge ' + catClass(p.categoria) + '">' + (p.categoria||'—') + '</span></td>' +
+      '<td style="text-align:center">' + p.m2 + '</td>' +
+      '<td style="text-align:center">' + p.peso + '</td>' +
+      '<td style="color:#666">' + p.pallet + '</td>' +
+    '</tr>';
+  }).join('');
   document.getElementById('tbl-count').textContent = data.length + ' produto(s)';
 }
 
@@ -3602,7 +3641,7 @@ function filtrarBusca(q) {
 function openLightbox(img) {
   document.getElementById('lightbox-img').src = img.src;
   document.getElementById('lightbox-caption').textContent = img.closest('.card-body') 
-    ? img.closest('.card').querySelector('.card-name')?.textContent || ''
+    ? (img.closest('.card').querySelector('.card-name') ? img.closest('.card').querySelector('.card-name').textContent : '')
     : '';
   const card = img.closest('.card');
   if (card) {
@@ -3618,19 +3657,6 @@ function closeLightbox(e) {
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox({target: document.getElementById('lightbox')}); });
-
-
-
-
-  !DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Guia do Vendedor — Fast Sistemas Construtivos</title>
-
-
-
   </script>
 </body>
 </html>
