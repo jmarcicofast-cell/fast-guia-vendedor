@@ -1777,39 +1777,96 @@
       </div>
     </div>
 
-    <!-- COMISSÃO PREVIEW -->
-    <div class="comissao-box" id="ped-comissao-box">
-      <div>
-        <div class="com-item-label">Total Vendido</div>
-        <div class="com-item-value" id="ped-total-vendido">R$ 0,00</div>
+    <!-- COMISSÃO VENDEDOR -->
+    <div id="ped-com-vendedor">
+      <div class="comissao-box" id="ped-comissao-box">
+        <div>
+          <div class="com-item-label">Total Vendido</div>
+          <div class="com-item-value" id="ped-total-vendido">R$ 0,00</div>
+        </div>
+        <div>
+          <div class="com-item-label">Comissão Placas</div>
+          <div class="com-item-value green" id="ped-com-placas">R$ 0,00</div>
+          <div style="font-size:10px;color:#666;">0,5%</div>
+        </div>
+        <div>
+          <div class="com-item-label">Comissão GRX/Comp.</div>
+          <div class="com-item-value green" id="ped-com-comp">R$ 0,00</div>
+          <div style="font-size:10px;color:#666;">0,75%</div>
+        </div>
+        <div>
+          <div class="com-item-label">Comissão Aço</div>
+          <div class="com-item-value green" id="ped-com-aco">R$ 0,00</div>
+          <div style="font-size:10px;color:#666;">1%</div>
+        </div>
+        <div>
+          <div class="com-item-label">Previsão Total</div>
+          <div class="com-item-value green" id="ped-com-total">R$ 0,00</div>
+        </div>
+        <div id="ped-redutor-box" style="display:none;">
+          <div class="com-item-label">Com Redutor</div>
+          <div class="com-item-value red" id="ped-com-redutor">R$ 0,00</div>
+          <div style="font-size:10px;color:#C41E1E;">meta ligações não atingida</div>
+        </div>
       </div>
-      <div>
-        <div class="com-item-label">Comissão Placas</div>
-        <div class="com-item-value green" id="ped-com-placas">R$ 0,00</div>
-        <div style="font-size:10px;color:#666;">0,5%</div>
-      </div>
-      <div>
-        <div class="com-item-label">Comissão GRX/Comp.</div>
-        <div class="com-item-value green" id="ped-com-comp">R$ 0,00</div>
-        <div style="font-size:10px;color:#666;">0,75%</div>
-      </div>
-      <div>
-        <div class="com-item-label">Comissão Aço</div>
-        <div class="com-item-value green" id="ped-com-aco">R$ 0,00</div>
-        <div style="font-size:10px;color:#666;">1%</div>
-      </div>
-      <div>
-        <div class="com-item-label">Previsão Total</div>
-        <div class="com-item-value green" id="ped-com-total">R$ 0,00</div>
-      </div>
-      <div id="ped-redutor-box" style="display:none;">
-        <div class="com-item-label">Com Redutor</div>
-        <div class="com-item-value red" id="ped-com-redutor">R$ 0,00</div>
-        <div style="font-size:10px;color:#C41E1E;">meta ligações não atingida</div>
+      <div id="ped-redutor-warning" style="display:none;" class="redutor-warning">
+        ⚠️ Atenção: meta de ligações não atingida — comissão reduzida para 0,5% em todos os produtos.
       </div>
     </div>
-    <div id="ped-redutor-warning" style="display:none;" class="redutor-warning">
-      ⚠️ Atenção: meta de ligações não atingida — comissão reduzida para 0,5% em todos os produtos.
+
+    <!-- COMISSÃO GESTORA -->
+    <div id="ped-com-gestora" style="display:none;">
+      <div style="background:#1C1C1C;border-radius:12px;padding:1.25rem;margin-bottom:1rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;">💰 Minha Comissão — Baseada na Equipe</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:160px;">
+            <div style="font-size:11px;color:#666;margin-bottom:3px;">Minha Meta (R$)</div>
+            <input id="gest-meta" type="text" placeholder="Ex: 500.000" oninput="recalcGestora()" style="width:100%;padding:6px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
+          </div>
+          <div style="flex:1;min-width:140px;">
+            <div style="font-size:11px;color:#666;margin-bottom:3px;">Total Equipe no Mês</div>
+            <div style="font-size:22px;font-weight:700;color:#fff;" id="gest-total-equipe">R$ 0,00</div>
+          </div>
+          <div style="flex:1;min-width:120px;">
+            <div style="font-size:11px;color:#666;margin-bottom:3px;">% da Meta</div>
+            <div style="font-size:22px;font-weight:700;color:#C41E1E;" id="gest-pct-meta">0%</div>
+          </div>
+          <div style="flex:1;min-width:120px;">
+            <div style="font-size:11px;color:#666;margin-bottom:3px;">Taxa de Comissão</div>
+            <div style="font-size:22px;font-weight:700;color:#FAC775;" id="gest-pct-com">0,21%</div>
+          </div>
+          <div style="flex:1;min-width:140px;">
+            <div style="font-size:11px;color:#666;margin-bottom:3px;">💰 Minha Comissão</div>
+            <div style="font-size:26px;font-weight:700;color:#4CAF50;" id="gest-comissao">R$ 0,00</div>
+          </div>
+        </div>
+        <div style="background:#333;border-radius:20px;height:8px;overflow:hidden;margin-bottom:12px;">
+          <div id="gest-meta-bar" style="height:100%;border-radius:20px;background:#C41E1E;width:0%;transition:width .4s;max-width:100%;"></div>
+        </div>
+        <!-- Faixas de comissão -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;">
+          <div id="gest-f75" style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;border:1px solid #333;">
+            <div style="font-size:10px;color:#888;">Até 75%</div>
+            <div style="font-size:13px;font-weight:700;color:#fff;">0,21%</div>
+          </div>
+          <div id="gest-f80" style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;border:1px solid #333;">
+            <div style="font-size:10px;color:#888;">80%</div>
+            <div style="font-size:13px;font-weight:700;color:#fff;">0,21%</div>
+          </div>
+          <div id="gest-f90" style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;border:1px solid #333;">
+            <div style="font-size:10px;color:#888;">90%</div>
+            <div style="font-size:13px;font-weight:700;color:#fff;">0,23%</div>
+          </div>
+          <div id="gest-f110" style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;border:1px solid #333;">
+            <div style="font-size:10px;color:#888;">110%</div>
+            <div style="font-size:13px;font-weight:700;color:#fff;">0,27%</div>
+          </div>
+          <div id="gest-f120" style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;border:1px solid #333;">
+            <div style="font-size:10px;color:#888;">120%</div>
+            <div style="font-size:13px;font-weight:700;color:#fff;">0,29%</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- FORM NOVO PEDIDO -->
@@ -1933,11 +1990,34 @@
   <div class="page-section" style="max-width:800px;display:grid;gap:16px;">
 
     <div>
-      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:2px;">📈 Minha Evolução</h2>
+      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:2px;">📈 Evolução</h2>
       <p style="font-size:12px;color:#aaa;" id="evolucao-periodo">Atualizado pela gestão.</p>
     </div>
 
+    <!-- VISÃO DA GESTORA -->
+    <div id="ev-gestora-section" style="display:none;display:grid;gap:12px;" >
+      <div style="background:#F8F7F3;border-radius:10px;padding:10px 14px;font-size:12px;color:#888;">
+        Resultados da equipe completa (Pedro + Wellington + Jonatas) — semana e mês atual.
+      </div>
+      <div id="gest-ev-box" style="display:grid;gap:12px;">
+        <div style="text-align:center;color:#aaa;font-size:13px;padding:2rem;">Carregando dados...</div>
+      </div>
+      <!-- Painéis analíticos -->
+      <div id="gest-paineis-box" style="display:grid;gap:12px;margin-top:4px;"></div>
+    </div>
+
+    <!-- VISÃO DO VENDEDOR -->
+    <div id="ev-vendedor-section">
+
     <!-- METAS -->
+    <!-- LIGAÇÕES DO MÊS - vendedor -->
+    <div style="background:#1C1C1C;border-radius:12px;padding:1.25rem;border-left:4px solid #C41E1E;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:10px;">📞 Minhas Ligações — Mês Atual</div>
+      <div id="ev-lig-box">
+        <div style="font-size:13px;color:#888;text-align:center;padding:8px;">Carregando...</div>
+      </div>
+    </div>
+
     <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📊 Metas do Período</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:12px;">
@@ -1986,6 +2066,7 @@
       </div>
     </div>
 
+    </div><!-- fim ev-vendedor-section -->
   </div>
 </div>
 
@@ -2311,6 +2392,27 @@
         </div>
       </div>
 
+      <!-- LIGAÇÕES DIÁRIAS -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📞 Registrar Ligações do Dia</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <div class="ped-field" style="flex:1;min-width:130px;">
+            <label>Data</label>
+            <input type="date" id="adm-lig-data" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+          </div>
+          <div class="ped-field" style="flex:1;min-width:130px;">
+            <label>Qtd. de Ligações</label>
+            <input type="number" id="adm-lig-qtd" placeholder="Ex: 45" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button onclick="adicionarLigacaoAdmin()" style="padding:8px 16px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Registrar</button>
+          </div>
+        </div>
+        <div id="adm-lig-box" style="background:#F8F7F3;border-radius:8px;padding:12px;">
+          <div style="font-size:12px;color:#aaa;text-align:center;">Selecione um vendedor para ver o histórico.</div>
+        </div>
+      </div>
+
       <!-- CRITÉRIOS -->
       <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📋 Critérios de Avaliação (0 = muito fraco · 5 = excelente)</div>
@@ -2384,6 +2486,515 @@
 </div>
 
   <script>
+// ── PAINÉIS ANALÍTICOS DA GESTORA ──
+
+function renderPaineisGestora(allPedidos, allLigacoes) {
+  var todos = [];
+  ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn) {
+    if (allPedidos[vn]) todos = todos.concat(allPedidos[vn]);
+  });
+
+  var hoje = new Date();
+  var mesAtual = hoje.toISOString().slice(0,7);
+  var day = hoje.getDay();
+  var diffMon = hoje.getDate() - day + (day===0 ? -6 : 1);
+  var seg = new Date(hoje); seg.setDate(diffMon); seg.setHours(0,0,0,0);
+  var dom = new Date(seg); dom.setDate(seg.getDate()+6); dom.setHours(23,59,59,999);
+
+  function isMes(p) { return p.data && p.data.startsWith(mesAtual); }
+  function isSem(p) { if (!p.data) return false; var d = new Date(p.data+'T12:00:00'); return d>=seg && d<=dom; }
+  function notCanceled(p) { return p.status !== 'cancelado'; }
+  function getValor(p) {
+    if (p.itens && p.itens.length > 0) {
+      return p.itens.reduce(function(s,it){ return s+Math.round((it.qtd||0)*(it.vUnit||0)*100)/100; },0);
+    }
+    return Number(p.vTotal||0);
+  }
+  function getQtdItens(p) {
+    return p.itens ? p.itens.length : 1;
+  }
+
+  function fmt(n) { return 'R$ '+Number(n).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+  function fmtD(n,d) { return Number(n).toLocaleString('pt-BR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0}); }
+
+  var ativos = todos.filter(function(p){ return isMes(p) && notCanceled(p); });
+
+  // ── PAINEL 1: MÉTRICAS REAIS ──
+  var totalVendidoMes = ativos.reduce(function(s,p){ return s+getValor(p); },0);
+  var totalPedidosMes = ativos.length;
+  var ticketMedio = totalPedidosMes > 0 ? totalVendidoMes/totalPedidosMes : 0;
+  var totalItensMes = ativos.reduce(function(s,p){ return s+getQtdItens(p); },0);
+  var mixMedio = totalPedidosMes > 0 ? totalItensMes/totalPedidosMes : 0;
+
+  // Taxa de conversão por vendedor
+  var conversao = {};
+  ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn) {
+    var peds = (allPedidos[vn]||[]).filter(function(p){ return isMes(p) && notCanceled(p); }).length;
+    var ligs = (allLigacoes[vn]||[]).filter(function(l){ return l.data && l.data.startsWith(mesAtual); })
+               .reduce(function(s,l){ return s+(l.qtd||0); },0);
+    conversao[vn] = { peds: peds, ligs: ligs, taxa: ligs>0 ? (peds/ligs*100) : 0 };
+  });
+
+  // ── PAINEL 2: RITMO DE LIGAÇÕES ──
+  var diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
+  var diaAtual = hoje.getDate();
+  var diasUteis = Math.round(diaAtual * 0.72); // ~72% dias úteis
+  var diasUteisTotal = Math.round(diasNoMes * 0.72);
+
+  var ritmo = {};
+  ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn) {
+    var ligs = (allLigacoes[vn]||[]).filter(function(l){ return l.data && l.data.startsWith(mesAtual); });
+    var totalLigs = ligs.reduce(function(s,l){ return s+(l.qtd||0); },0);
+    var diasReg = ligs.length;
+    var mediaD = diasReg > 0 ? totalLigs/diasReg : 0;
+    var projetado = mediaD * diasUteisTotal;
+    var vaiBater = projetado >= 600;
+    var faltaDias = diasUteisTotal - diasReg;
+    var necessario = faltaDias > 0 ? Math.max(0,(600-totalLigs)/faltaDias) : 0;
+    ritmo[vn] = { total: totalLigs, mediaD: mediaD, projetado: projetado, vaiBater: vaiBater, necessario: necessario };
+  });
+
+  // ── PAINEL 4: RANKING SEMANA ──
+  var ranking = ['PEDRO','WELLINGTON','JONATAS'].map(function(vn) {
+    var pedsSem = (allPedidos[vn]||[]).filter(function(p){ return isSem(p) && notCanceled(p); });
+    var vendSem = pedsSem.reduce(function(s,p){ return s+getValor(p); },0);
+    var ligsSem = (allLigacoes[vn]||[]).filter(function(l){
+      if (!l.data) return false;
+      var d = new Date(l.data+'T12:00:00');
+      return d>=seg && d<=dom;
+    }).reduce(function(s,l){ return s+(l.qtd||0); },0);
+    return { nome: vendedores[vn].nome, vn: vn, vendSem: vendSem, ligsSem: ligsSem, pedsSem: pedsSem.length };
+  }).sort(function(a,b){ return b.vendSem - a.vendSem; });
+
+  var medalhas = ['🥇','🥈','🥉'];
+
+  var box = document.getElementById('gest-paineis-box');
+  if (!box) return;
+
+  box.innerHTML =
+
+    // PAINEL 1: Métricas reais
+    '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.1rem 1.25rem;">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;">📊 Métricas Reais do Mês</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px;">' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;"><div style="font-size:10px;color:#aaa;margin-bottom:3px;">Ticket Médio Real</div><div style="font-size:18px;font-weight:700;color:#1C1C1C;">' + fmt(ticketMedio) + '</div></div>' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;"><div style="font-size:10px;color:#aaa;margin-bottom:3px;">Mix Médio Real</div><div style="font-size:18px;font-weight:700;color:#1C1C1C;">' + fmtD(mixMedio,1) + ' <span style="font-size:11px;color:#aaa;">itens/pedido</span></div></div>' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;"><div style="font-size:10px;color:#aaa;margin-bottom:3px;">Total Pedidos</div><div style="font-size:18px;font-weight:700;color:#1C1C1C;">' + totalPedidosMes + '</div></div>' +
+      '</div>' +
+      '<div style="font-size:11px;font-weight:600;color:#555;margin-bottom:8px;">Taxa de Conversão (ligações → pedidos)</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">' +
+        ['PEDRO','WELLINGTON','JONATAS'].map(function(vn) {
+          var c = conversao[vn];
+          var cor = c.taxa >= 5 ? '#2E7D32' : c.taxa >= 2 ? '#E65100' : '#C41E1E';
+          return '<div style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;">' +
+            '<div style="font-size:11px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">' + vendedores[vn].nome + '</div>' +
+            '<div style="font-size:18px;font-weight:700;color:' + cor + ';">' + fmtD(c.taxa,1) + '%</div>' +
+            '<div style="font-size:10px;color:#aaa;">' + c.peds + ' ped / ' + c.ligs + ' lig</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>' +
+
+    // PAINEL 2: Ritmo de ligações
+    '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.1rem 1.25rem;">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#185FA5;margin-bottom:12px;">📞 Ritmo Projetado de Ligações</div>' +
+      '<div style="display:grid;gap:10px;">' +
+        ['PEDRO','WELLINGTON','JONATAS'].map(function(vn) {
+          var r = ritmo[vn];
+          var pct = Math.min(Math.round((r.total/600)*100),100);
+          var cor = r.vaiBater ? '#2E7D32' : '#C41E1E';
+          var status = r.vaiBater ?
+            '✅ Vai bater' :
+            '⚠️ Precisa de ' + Math.ceil(r.necessario) + '/dia';
+          return '<div style="background:#F8F7F3;border-radius:8px;padding:10px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+              '<span style="font-size:13px;font-weight:600;color:#1C1C1C;">' + vendedores[vn].nome + '</span>' +
+              '<span style="font-size:11px;font-weight:600;color:' + cor + ';">' + status + '</span>' +
+            '</div>' +
+            '<div style="background:#E8E6E1;border-radius:20px;height:6px;overflow:hidden;margin-bottom:5px;">' +
+              '<div style="height:100%;border-radius:20px;background:' + cor + ';width:' + pct + '%;"></div>' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:10px;color:#888;">' +
+              '<span>' + r.total + ' de 600 feitas</span>' +
+              '<span>Projeção: ' + Math.round(r.projetado) + '</span>' +
+              '<span>Média: ' + fmtD(r.mediaD,0) + '/dia</span>' +
+            '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>' +
+
+    // PAINEL 4: Ranking semana
+    '<div style="background:#1C1C1C;border-radius:12px;padding:1.1rem 1.25rem;">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#FAC775;margin-bottom:12px;">🏆 Ranking da Semana</div>' +
+      '<div style="display:grid;gap:8px;">' +
+        ranking.map(function(v,i) {
+          var barPct = ranking[0].vendSem > 0 ? Math.round((v.vendSem/ranking[0].vendSem)*100) : 0;
+          return '<div style="background:#2A2A2A;border-radius:8px;padding:10px 12px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+              '<div style="display:flex;align-items:center;gap:8px;">' +
+                '<span style="font-size:18px;">' + medalhas[i] + '</span>' +
+                '<span style="font-size:13px;font-weight:600;color:#fff;">' + v.nome + '</span>' +
+              '</div>' +
+              '<span style="font-size:15px;font-weight:700;color:#FAC775;">' + fmt(v.vendSem) + '</span>' +
+            '</div>' +
+            '<div style="background:#333;border-radius:20px;height:5px;overflow:hidden;margin-bottom:5px;">' +
+              '<div style="height:100%;border-radius:20px;background:#FAC775;width:' + barPct + '%;"></div>' +
+            '</div>' +
+            '<div style="display:flex;gap:12px;font-size:10px;color:#888;">' +
+              '<span>' + v.pedsSem + ' pedidos</span>' +
+              '<span>' + v.ligsSem + ' ligacoes</span>' +
+            '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+}
+
+function listenPaineisGestora() {
+  var allPedidos = {}, allLigacoes = {};
+  var nomes = ['PEDRO','WELLINGTON','JONATAS'];
+  var pendP = nomes.length, pendL = nomes.length;
+
+  nomes.forEach(function(vn) {
+    dbRef('pedidos/' + vn).on('value', function(snap) {
+      allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
+      renderPaineisGestora(allPedidos, allLigacoes);
+    });
+    dbRef('ligacoes/' + vn).on('value', function(snap) {
+      var dados = snap.val() || {};
+      allLigacoes[vn] = Object.values(dados);
+      renderPaineisGestora(allPedidos, allLigacoes);
+    });
+  });
+}
+
+// ── EVOLUÇÃO DA GESTORA ──
+function listenEvolucaoGestora() {
+  var nomes = ['PEDRO','WELLINGTON','JONATAS'];
+  var allPedidos = {};
+
+  nomes.forEach(function(vn) {
+    dbRef('pedidos/' + vn).on('value', function(snap) {
+      allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
+      renderEvolucaoGestora(allPedidos);
+    });
+  });
+}
+
+function renderEvolucaoGestora(allPedidos) {
+  var todos = [];
+  ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn) {
+    if (allPedidos[vn]) todos = todos.concat(allPedidos[vn]);
+  });
+
+  // Date helpers
+  var hoje = new Date();
+  var mesAtual = hoje.toISOString().slice(0,7);
+
+  // Week bounds (Mon-Sun)
+  var day = hoje.getDay();
+  var diffMon = hoje.getDate() - day + (day===0 ? -6 : 1);
+  var seg = new Date(hoje); seg.setDate(diffMon); seg.setHours(0,0,0,0);
+  var dom = new Date(seg); dom.setDate(seg.getDate()+6); dom.setHours(23,59,59,999);
+
+  function isSem(p) {
+    if (!p.data) return false;
+    var d = new Date(p.data + 'T12:00:00');
+    return d >= seg && d <= dom;
+  }
+  function isMes(p) { return p.data && p.data.startsWith(mesAtual); }
+  function notCanceled(p) { return p.status !== 'cancelado'; }
+
+  function getValor(p) {
+    if (p.itens && p.itens.length > 0) {
+      return p.itens.reduce(function(s,it) {
+        return s + Math.round((it.qtd||0)*(it.vUnit||0)*100)/100;
+      }, 0);
+    }
+    return Number(p.vTotal||0);
+  }
+
+  // Vendas semana
+  var vendSem = todos.filter(function(p) { return isSem(p) && notCanceled(p); })
+                     .reduce(function(s,p) { return s+getValor(p); }, 0);
+  // Vendas mês
+  var vendMes = todos.filter(function(p) { return isMes(p) && notCanceled(p); })
+                     .reduce(function(s,p) { return s+getValor(p); }, 0);
+
+  // BI (entregue ou faturado)
+  var statusBI = ['entregue','faturado'];
+  var biSem = todos.filter(function(p) { return isSem(p) && statusBI.indexOf(p.status)>=0; })
+                   .reduce(function(s,p) { return s+getValor(p); }, 0);
+  var biMes = todos.filter(function(p) { return isMes(p) && statusBI.indexOf(p.status)>=0; })
+                   .reduce(function(s,p) { return s+getValor(p); }, 0);
+
+  // Na grade (agendamento, aguardando-dt, com-dt, em-rota)
+  var statusGrade = ['agendamento','aguardando-dt','com-dt','em-rota'];
+  var gradeSem = todos.filter(function(p) { return isSem(p) && statusGrade.indexOf(p.status)>=0; })
+                      .reduce(function(s,p) { return s+getValor(p); }, 0);
+  var gradeMes = todos.filter(function(p) { return isMes(p) && statusGrade.indexOf(p.status)>=0; })
+                      .reduce(function(s,p) { return s+getValor(p); }, 0);
+
+  // Metas (da Juliana — pegas do Firebase)
+  var metaMes = parseFloat((vendedores['JULIANA'] && vendedores['JULIANA'].meta || '0').replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0;
+  var metaSem = parseFloat((vendedores['JULIANA'] && vendedores['JULIANA'].metaSemana || '0').replace(/\./g,'').replace(',','.')) || 0;
+
+  function fmt(n) {
+    return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+  }
+  function pct(val, meta) {
+    return meta > 0 ? Math.round((val/meta)*100) : 0;
+  }
+  function falta(val, meta) {
+    return Math.max(0, meta - val);
+  }
+
+  var pctSem = pct(vendSem, metaSem);
+  var pctMes = pct(vendMes, metaMes);
+
+  var box = document.getElementById('gest-ev-box');
+  if (!box) return;
+
+  box.innerHTML =
+    // VENDAS SEMANA
+    '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.1rem 1.25rem;">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:10px;">📈 Vendas — Semana</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+        '<div><div style="font-size:10px;color:#aaa;">Realizado</div><div style="font-size:20px;font-weight:700;color:#1C1C1C;">' + fmt(vendSem) + '</div></div>' +
+        '<div><div style="font-size:10px;color:#aaa;">Meta Semana</div><div style="font-size:20px;font-weight:700;color:#aaa;">' + (metaSem > 0 ? fmt(metaSem) : '—') + '</div></div>' +
+      '</div>' +
+      '<div style="background:#F1EFE8;border-radius:20px;height:7px;overflow:hidden;margin-bottom:5px;">' +
+        '<div style="height:100%;border-radius:20px;background:#C41E1E;width:' + Math.min(pctSem,100) + '%;"></div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:11px;">' +
+        '<span style="color:#C41E1E;font-weight:600;">' + pctSem + '%</span>' +
+        '<span style="color:#888;">Falta: <strong style="color:#C41E1E;">' + (metaSem>0 ? fmt(falta(vendSem,metaSem)) : '—') + '</strong></span>' +
+      '</div>' +
+    '</div>' +
+
+    // VENDAS MÊS
+    '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.1rem 1.25rem;">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:10px;">📈 Vendas — Mês</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+        '<div><div style="font-size:10px;color:#aaa;">Realizado</div><div style="font-size:20px;font-weight:700;color:#1C1C1C;">' + fmt(vendMes) + '</div></div>' +
+        '<div><div style="font-size:10px;color:#aaa;">Meta Mês</div><div style="font-size:20px;font-weight:700;color:#aaa;">' + (metaMes > 0 ? fmt(metaMes) : '—') + '</div></div>' +
+      '</div>' +
+      '<div style="background:#F1EFE8;border-radius:20px;height:7px;overflow:hidden;margin-bottom:5px;">' +
+        '<div style="height:100%;border-radius:20px;background:#C41E1E;width:' + Math.min(pctMes,100) + '%;"></div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:11px;">' +
+        '<span style="color:#C41E1E;font-weight:600;">' + pctMes + '%</span>' +
+        '<span style="color:#888;">Falta: <strong style="color:#C41E1E;">' + (metaMes>0 ? fmt(falta(vendMes,metaMes)) : '—') + '</strong></span>' +
+      '</div>' +
+    '</div>' +
+
+    // BI ENTREGUE
+    '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.1rem 1.25rem;">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#185FA5;margin-bottom:10px;">✅ BI — Entregue/Faturado</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+        '<div><div style="font-size:10px;color:#aaa;">Semana</div><div style="font-size:20px;font-weight:700;color:#185FA5;">' + fmt(biSem) + '</div></div>' +
+        '<div><div style="font-size:10px;color:#aaa;">Mês</div><div style="font-size:20px;font-weight:700;color:#185FA5;">' + fmt(biMes) + '</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    // NA GRADE
+    '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.1rem 1.25rem;">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#E65100;margin-bottom:10px;">🚚 Na Grade (Agendado/Em Rota)</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+        '<div><div style="font-size:10px;color:#aaa;">Semana</div><div style="font-size:20px;font-weight:700;color:#E65100;">' + fmt(gradeSem) + '</div></div>' +
+        '<div><div style="font-size:10px;color:#aaa;">Mês</div><div style="font-size:20px;font-weight:700;color:#E65100;">' + fmt(gradeMes) + '</div></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function recalcGestora() {
+  // Get all pedidos from all vendedores
+  var todos = [];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS'];
+  var pendentes = nomes.length;
+  nomes.forEach(function(vn) {
+    dbRef('pedidos/' + vn).once('value').then(function(snap) {
+      var peds = snap.val() ? Object.values(snap.val()) : [];
+      todos = todos.concat(peds);
+      pendentes--;
+      if (pendentes === 0) calcComissaoGestora(todos);
+    }).catch(function() { pendentes--; if (pendentes===0) calcComissaoGestora(todos); });
+  });
+}
+
+// ── COMISSÃO DA GESTORA ──
+function calcComissaoGestora(pedidosTodosVendedores) {
+  // Pega todos os pedidos ativos do mês de toda a equipe
+  var mesAtual = new Date().toISOString().slice(0,7);
+  var totalEquipe = 0;
+
+  pedidosTodosVendedores.forEach(function(p) {
+    if (p.status === 'cancelado') return;
+    if (!p.data || !p.data.startsWith(mesAtual)) return;
+    if (p.itens && p.itens.length > 0) {
+      p.itens.forEach(function(it) {
+        totalEquipe += Math.round((it.qtd||0) * (it.vUnit||0) * 100) / 100;
+      });
+    } else {
+      totalEquipe += Number(p.vTotal||0);
+    }
+  });
+
+  // Meta da gestora (pega do campo adm-meta ou usa 0)
+  var metaEl = document.getElementById('gest-meta');
+  var meta = metaEl ? (parseFloat(metaEl.value.replace(/\./g,'').replace(',','.')) || 0) : 0;
+  var pct = meta > 0 ? (totalEquipe / meta) * 100 : 0;
+
+  // Tabela de comissão por faixa
+  var pctCom = 0.0021; // default < 75%
+  if (pct >= 120)      pctCom = 0.0029;
+  else if (pct >= 110) pctCom = 0.0027;
+  else if (pct >= 90)  pctCom = 0.0023;
+  else if (pct >= 80)  pctCom = 0.0021;
+  else if (pct >= 75)  pctCom = 0.0021;
+
+  var comissao = totalEquipe * pctCom;
+
+  function fmt(n) { return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function set(id, val) { var el=document.getElementById(id); if(el) el.textContent=val; }
+
+  set('gest-total-equipe', fmt(totalEquipe));
+  set('gest-pct-meta', Math.round(pct) + '%');
+  set('gest-pct-com', (pctCom*100).toFixed(2) + '%');
+  set('gest-comissao', fmt(comissao));
+
+  // Update progress bar
+  var bar = document.getElementById('gest-meta-bar');
+  if (bar) bar.style.width = Math.min(pct, 150) + '%';
+
+  // Highlight faixa
+  var faixas = ['gest-f75','gest-f80','gest-f90','gest-f110','gest-f120'];
+  faixas.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.background = '#F8F7F3';
+  });
+  var ativo = pct >= 120 ? 'gest-f120' :
+              pct >= 110 ? 'gest-f110' :
+              pct >= 90  ? 'gest-f90'  :
+              pct >= 80  ? 'gest-f80'  : 'gest-f75';
+  var el = document.getElementById(ativo);
+  if (el) el.style.background = '#FBE9E9';
+}
+
+// ── LIGAÇÕES DIÁRIAS ──
+
+function getLigKey() {
+  var hoje = new Date().toISOString().split('T')[0];
+  return hoje;
+}
+
+function salvarLigacoes(vendNome, data, qtd) {
+  dbRef('ligacoes/' + vendNome + '/' + data.replace(/-/g,'_')).set({
+    data: data,
+    qtd: parseInt(qtd) || 0
+  }).catch(function(e) { console.warn('Erro ligacoes:', e); });
+}
+
+function carregarLigacoes(vendNome, cb) {
+  dbRef('ligacoes/' + vendNome).once('value').then(function(snap) {
+    var dados = snap.val() || {};
+    var lista = Object.values(dados);
+    if (cb) cb(lista);
+  }).catch(function(e) { if (cb) cb([]); });
+}
+
+function renderLigacoesAdmin(vendNome) {
+  var mesAtual = new Date().toISOString().slice(0,7);
+  carregarLigacoes(vendNome, function(lista) {
+    var doMes = lista.filter(function(l) { return l.data && l.data.startsWith(mesAtual); });
+    var total  = doMes.reduce(function(s,l) { return s + (l.qtd||0); }, 0);
+    var dias   = doMes.length;
+    var meta   = 600;
+    var pct    = Math.min(Math.round((total/meta)*100), 100);
+    var falta  = Math.max(0, meta - total);
+    var mediaD = dias > 0 ? Math.round(total/dias) : 0;
+
+    var box = document.getElementById('adm-lig-box');
+    if (!box) return;
+    box.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">' +
+        '<div>' +
+          '<div style="font-size:22px;font-weight:700;color:#1C1C1C;">' + total + ' <span style="font-size:12px;color:#aaa;font-weight:400;">de ' + meta + '</span></div>' +
+          '<div style="font-size:11px;color:#888;">' + dias + ' dias registrados · media ' + mediaD + '/dia</div>' +
+        '</div>' +
+        '<div style="font-size:12px;color:' + (total>=meta?'#2E7D32':'#C41E1E') + ';font-weight:600;">' +
+          (total >= meta ? '✅ Meta batida!' : 'Faltam ' + falta + ' ligacoes') +
+        '</div>' +
+      '</div>' +
+      '<div style="background:#F1EFE8;border-radius:20px;height:8px;overflow:hidden;margin-bottom:12px;">' +
+        '<div style="height:100%;border-radius:20px;background:' + (total>=meta?'#2E7D32':'#C41E1E') + ';width:' + pct + '%;transition:width .4s;"></div>' +
+      '</div>' +
+      '<div style="display:grid;gap:6px;" id="adm-lig-lista"></div>';
+
+    // Render list of days
+    var lista2 = doMes.slice().sort(function(a,b) { return b.data.localeCompare(a.data); });
+    var ligLista = document.getElementById('adm-lig-lista');
+    if (ligLista) {
+      ligLista.innerHTML = lista2.map(function(l) {
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:#F8F7F3;border-radius:6px;font-size:12px;">' +
+          '<span style="color:#555;">' + l.data + '</span>' +
+          '<span style="font-weight:600;color:#1C1C1C;">' + l.qtd + ' ligacoes</span>' +
+        '</div>';
+      }).join('');
+    }
+  });
+}
+
+function adicionarLigacaoAdmin() {
+  var data  = document.getElementById('adm-lig-data');
+  var qtdEl = document.getElementById('adm-lig-qtd');
+  if (!data || !qtdEl) return;
+  var d = data.value;
+  var q = parseInt(qtdEl.value) || 0;
+  if (!d || !q) { alert('Preencha a data e a quantidade de ligacoes.'); return; }
+  salvarLigacoes(adminVendedor, d, q);
+  qtdEl.value = '';
+  // Also update ligacoes field in vendedores for reports
+  var v = vendedores[adminVendedor];
+  // After saving, refresh after a short delay
+  setTimeout(function() { renderLigacoesAdmin(adminVendedor); }, 800);
+}
+
+function listenLigacoesVendedor(vendNome) {
+  var mesAtual = new Date().toISOString().slice(0,7);
+  dbRef('ligacoes/' + vendNome).on('value', function(snap) {
+    var dados = snap.val() || {};
+    var lista = Object.values(dados).filter(function(l) { return l.data && l.data.startsWith(mesAtual); });
+    var total  = lista.reduce(function(s,l) { return s + (l.qtd||0); }, 0);
+    var meta   = 600;
+    var pct    = Math.min(Math.round((total/meta)*100), 100);
+    var falta  = Math.max(0, meta - total);
+    var dias   = lista.length;
+    var mediaD = dias > 0 ? Math.round(total/dias) : 0;
+
+    var box = document.getElementById('ev-lig-box');
+    if (!box) return;
+    box.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">' +
+        '<div>' +
+          '<div style="font-size:28px;font-weight:700;color:#fff;">' + total + ' <span style="font-size:13px;color:#888;font-weight:400;">/ ' + meta + '</span></div>' +
+          '<div style="font-size:11px;color:#888;">' + dias + ' dias · media ' + mediaD + '/dia</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div style="font-size:12px;font-weight:600;color:' + (total>=meta?'#4CAF50':'#FAC775') + ';">' +
+            (total >= meta ? '✅ Meta batida!' : 'Faltam ' + falta) +
+          '</div>' +
+          '<div style="font-size:10px;color:#666;">meta: ' + meta + '/mes</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="background:#333;border-radius:20px;height:8px;overflow:hidden;">' +
+        '<div style="height:100%;border-radius:20px;background:' + (total>=meta?'#4CAF50':'#C41E1E') + ';width:' + pct + '%;transition:width .4s;"></div>' +
+      '</div>';
+  });
+}
+
+
 
 var db = null;
 var firebaseOK = false;
@@ -3172,12 +3783,37 @@ function doLogin() {
   // Load from Firebase then render, and listen for real-time updates
   fbLoad(user, () => {
     renderEvolucaoVendedor(vendedores[user]);
+  // Show correct evolucao section
+  var evGest = document.getElementById('ev-gestora-section');
+  var evVend = document.getElementById('ev-vendedor-section');
+  if (v.nome === 'Juliana') {
+    if (evGest) evGest.style.display = 'grid';
+    if (evVend) evVend.style.display = 'none';
+  } else {
+    if (evGest) evGest.style.display = 'none';
+    if (evVend) evVend.style.display = 'block';
+  }
     if (v.nome !== 'Juliana') {
       fbListenVendedor(user);
+      listenLigacoesVendedor(user);
     }
   });
   // Start listening to pedidos
   listenPedidos(user, v.nome === 'Juliana');
+  // Show correct commission section
+  var comVend = document.getElementById('ped-com-vendedor');
+  var comGest = document.getElementById('ped-com-gestora');
+  if (v.nome === 'Juliana') {
+    if (comVend) comVend.style.display = 'none';
+    if (comGest) comGest.style.display = 'block';
+    // Trigger gestora commission calculation
+    setTimeout(recalcGestora, 1500);
+    listenEvolucaoGestora();
+    listenPaineisGestora();
+  } else {
+    if (comVend) comVend.style.display = 'block';
+    if (comGest) comGest.style.display = 'none';
+  }
   // Render personal credentials
   const credBox = document.getElementById('credenciais-box');
   const credGrid = document.getElementById('credenciais-grid');
@@ -3325,6 +3961,53 @@ function adminSelect(nome, btn) {
   calcPct();
   renderCriteriosAdmin();
   renderTarefasAdmin();
+  renderLigacoesAdmin(nome);
+
+  // Auto-preencher Realizado e Pedidos do mês a partir dos registros do Firebase
+  var mesAtual = new Date().toISOString().slice(0,7);
+  dbRef('pedidos/' + nome).once('value').then(function(snap) {
+    var pedidos = snap.val() ? Object.values(snap.val()) : [];
+    var ativos = pedidos.filter(function(p) {
+      return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado';
+    });
+
+    // Calcular total vendido por itens
+    var totalVendido = 0;
+    ativos.forEach(function(p) {
+      if (p.itens && p.itens.length > 0) {
+        p.itens.forEach(function(it) {
+          totalVendido += Math.round((it.qtd||0) * (it.vUnit||0) * 100) / 100;
+        });
+      } else {
+        totalVendido += Number(p.vTotal || 0);
+      }
+    });
+
+    // Preencher campos automaticamente
+    // Update ligacoes total
+  var ligTotal = ativos.reduce(function(s) { return s; }, 0);
+  carregarLigacoes(nome, function(ligLista) {
+    var mesLigs = ligLista.filter(function(l) { return l.data && l.data.startsWith(mesAtual); });
+    var totalLigs = mesLigs.reduce(function(s,l) { return s + (l.qtd||0); }, 0);
+    var ligEl = document.getElementById('adm-ligacoes');
+    if (ligEl) ligEl.value = totalLigs;
+    // Also update vendedor object
+    vendedores[nome].ligacoes = String(totalLigs);
+  });
+
+  var realEl = document.getElementById('adm-realizado');
+    if (realEl) {
+      realEl.value = totalVendido.toFixed(2).replace('.',',');
+      realEl.style.background = '#F0FBF0';
+      realEl.title = 'Preenchido automaticamente dos pedidos do mes';
+    }
+
+    // Total de pedidos
+    var pedEl = document.getElementById('adm-pedidos-count');
+    if (pedEl) pedEl.textContent = ativos.length + ' pedidos no mes';
+
+    calcPct();
+  }).catch(function(e) { console.warn('Erro ao buscar pedidos:', e); });
 }
 
 function adminSave() {
