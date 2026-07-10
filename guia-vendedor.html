@@ -2735,35 +2735,48 @@ function renderPedidos(pedidosList, isGestora) {
 }
 
 function atualizarComissao(pedidos, isGestora) {
-  let totalVendido = 0, comPlacas = 0, comComp = 0, comAco = 0;
-  pedidos.filter(p => p.status !== 'cancelado').forEach(p => {
-    const v = Number(p.vTotal||0);
-    totalVendido += v;
-    if (p.cat === 'placa') comPlacas += v * CAT_PCT.placa;
-    else if (p.cat === 'grx') comComp += v * CAT_PCT.grx;
-    else if (p.cat === 'aco') comAco += v * CAT_PCT.aco;
+  var totalVendido = 0, comPlacas = 0, comComp = 0, comAco = 0;
+
+  pedidos.filter(function(p) { return p.status !== 'cancelado'; }).forEach(function(p) {
+    // Pedido com múltiplos itens
+    if (p.itens && p.itens.length > 0) {
+      p.itens.forEach(function(it) {
+        var v = Math.round((it.qtd || 0) * (it.vUnit || 0) * 100) / 100;
+        totalVendido += v;
+        if (it.cat === 'placa')      comPlacas += v * CAT_PCT.placa;
+        else if (it.cat === 'grx')   comComp   += v * CAT_PCT.grx;
+        else if (it.cat === 'aco')   comAco    += v * CAT_PCT.aco;
+      });
+    } else {
+      // Pedido antigo (item único)
+      var v = Number(p.vTotal || 0);
+      totalVendido += v;
+      if (p.cat === 'placa')      comPlacas += v * CAT_PCT.placa;
+      else if (p.cat === 'grx')   comComp   += v * CAT_PCT.grx;
+      else if (p.cat === 'aco')   comAco    += v * CAT_PCT.aco;
+    }
   });
-  const comTotal = comPlacas + comComp + comAco;
 
-  // Check if ligações meta atingida
-  const v = currentUser ? vendedores[currentUser] : null;
-  const ligacoes = parseInt((v && v.ligacoes) ? v.ligacoes : '0');
-  const metaLig = 600;
-  const redutor = ligacoes < metaLig && ligacoes > 0;
-  const comReductor = totalVendido * 0.005;
+  var comTotal = comPlacas + comComp + comAco;
 
-  const fmt = n => 'R$ ' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  // Redutor: se não atingiu meta de ligações, tudo cai para 0,5%
+  var vend = currentUser ? vendedores[currentUser] : null;
+  var ligacoes = parseInt((vend && vend.ligacoes) ? vend.ligacoes : '0') || 0;
+  var redutor = ligacoes > 0 && ligacoes < 600;
+  var comReductor = redutor ? totalVendido * 0.005 : 0;
+
+  function fmt(n) { return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function set(id, val) { var el = document.getElementById(id); if(el) el.textContent = val; }
 
   set('ped-total-vendido', fmt(totalVendido));
   set('ped-com-placas',    fmt(comPlacas));
   set('ped-com-comp',      fmt(comComp));
   set('ped-com-aco',       fmt(comAco));
   set('ped-com-total',     fmt(comTotal));
-  set('ped-com-redutor',   fmt(comReductor));
+  set('ped-com-redutor',   fmt(redutor ? comReductor : comTotal));
 
-  const redBox  = document.getElementById('ped-redutor-box');
-  const redWarn = document.getElementById('ped-redutor-warning');
+  var redBox  = document.getElementById('ped-redutor-box');
+  var redWarn = document.getElementById('ped-redutor-warning');
   if (redBox)  redBox.style.display  = redutor ? 'block' : 'none';
   if (redWarn) redWarn.style.display = redutor ? 'block' : 'none';
 }
