@@ -950,6 +950,10 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 3L2 8l10 5 10-5-10-5z"/><path d="M2 16l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
     Treinamentos
   </button>
+  <button class="nav-btn" onclick="showTab('reconhecimento',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    Ranking
+  </button>
   <button class="nav-btn" onclick="showTab('evolucao',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
     Evolução
@@ -1976,6 +1980,103 @@
 
   </div>
 </div>
+
+<!-- ══ RECONHECIMENTO ══ -->
+<div id="tab-reconhecimento" class="tab-content">
+  <div class="page-section" style="max-width:860px;">
+
+    <!-- PÓDIO -->
+    <div style="margin-bottom:1.5rem;">
+      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">🏅 Ranking & Reconhecimento</h2>
+      <p style="font-size:12px;color:#aaa;">Baseado no % de atingimento da meta do mês. Atualizado em tempo real.</p>
+    </div>
+
+    <!-- PÓDIO VISUAL -->
+    <div id="rank-podio" style="display:flex;align-items:flex-end;justify-content:center;gap:12px;margin-bottom:2rem;min-height:200px;">
+      <div style="text-align:center;color:#aaa;font-size:13px;padding:2rem;">Carregando...</div>
+    </div>
+
+    <!-- CARDS DETALHADOS -->
+    <div id="rank-cards" style="display:grid;gap:12px;margin-bottom:2rem;"></div>
+
+    <!-- PREMIAÇÕES DO MÊS -->
+    <div style="background:#1C1C1C;border-radius:14px;padding:1.5rem;">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#FAC775;margin-bottom:1rem;">🎁 Premiações do Mês</div>
+
+      <div style="display:grid;gap:10px;" id="premiacoes-lista">
+
+        <div style="background:#2A2A2A;border-radius:10px;padding:1rem;display:flex;align-items:flex-start;gap:12px;">
+          <div style="font-size:22px;flex-shrink:0;">💰</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 50 por Cliente Novo ou Inativo</div>
+            <div style="font-size:12px;color:#888;">Válido para qualquer cliente novo ou reativado no mês</div>
+          </div>
+          <div id="prem-novos-total" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
+        </div>
+
+        <div style="background:#2A2A2A;border-radius:10px;padding:1rem;display:flex;align-items:flex-start;gap:12px;">
+          <div style="font-size:22px;flex-shrink:0;">🏆</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 75 por Cliente Novo de MG comprando por Mogi</div>
+            <div style="font-size:12px;color:#888;">Pedido com UF = MG e entregue via Mogi das Cruzes</div>
+          </div>
+          <div id="prem-mg-total" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
+        </div>
+
+        <div style="background:#2A2A2A;border-radius:10px;padding:1rem;display:flex;align-items:flex-start;gap:12px;">
+          <div style="font-size:22px;flex-shrink:0;">⚙️</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 300 para quem mais vender Aço</div>
+            <div style="font-size:12px;color:#888;">Meta de Aço precisa estar batida para pontuar. Líder em aço leva o prêmio.</div>
+            <div id="prem-aco-lider" style="font-size:11px;color:#FAC775;margin-top:4px;"></div>
+          </div>
+          <div id="prem-aco-status" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
+        </div>
+
+        <div style="background:#2A2A2A;border-radius:10px;padding:1rem;display:flex;align-items:flex-start;gap:12px;">
+          <div style="font-size:22px;flex-shrink:0;">⭐</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">Premiação Surpresa — Diretora Poliana</div>
+            <div style="font-size:12px;color:#888;">Para quem mais vender entre Pedro, Wellington, Antônio e Jonatas. Fique de olho!</div>
+          </div>
+          <div style="margin-left:auto;font-size:20px;">🎁</div>
+        </div>
+
+      </div>
+
+      <!-- Botão gestora para registrar clientes novos -->
+      <div id="prem-gestora-tools" style="display:none;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #333;">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:10px;">Registrar Clientes Novos/Inativos</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+          <div class="ped-field" style="flex:1;min-width:120px;">
+            <label style="color:#aaa;">Vendedor</label>
+            <select id="prem-vend-sel" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
+              <option value="PEDRO">Pedro</option>
+              <option value="WELLINGTON">Wellington</option>
+              <option value="JONATAS">Jonatas</option>
+            </select>
+          </div>
+          <div class="ped-field" style="flex:1;min-width:140px;">
+            <label style="color:#aaa;">Nome do Cliente</label>
+            <input id="prem-cliente-nome" type="text" placeholder="Ex: Construtora ABC" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
+          </div>
+          <div class="ped-field" style="flex:1;min-width:100px;">
+            <label style="color:#aaa;">Tipo</label>
+            <select id="prem-cliente-tipo" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
+              <option value="novo">Novo (R$ 50)</option>
+              <option value="mg">MG/Mogi (R$ 75)</option>
+              <option value="inativo">Inativo (R$ 50)</option>
+            </select>
+          </div>
+          <button onclick="registrarClientePremio()" style="padding:8px 16px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Registrar</button>
+        </div>
+        <div id="prem-toast" style="display:none;background:#1B5E20;color:#fff;padding:8px 12px;border-radius:7px;font-size:12px;text-align:center;margin-top:8px;">✅ Cliente registrado!</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ══ TREINAMENTOS ══ -->
 <div id="tab-treinamentos" class="tab-content">
   <div class="placeholder">
@@ -2486,6 +2587,171 @@
 </div>
 
   <script>
+// ── RANKING & RECONHECIMENTO ──
+
+function listenRanking() {
+  var allPedidos = {}, allLigacoes = {};
+  var nomes = ['PEDRO','WELLINGTON','JONATAS'];
+  nomes.forEach(function(vn) {
+    dbRef('pedidos/' + vn).on('value', function(snap) {
+      allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
+      renderRanking(allPedidos, allLigacoes);
+      renderPremiacoes(allPedidos);
+    });
+  });
+}
+
+function renderRanking(allPedidos, allLigacoes) {
+  var mesAtual = new Date().toISOString().slice(0,7);
+
+  function getValor(p) {
+    if (p.itens && p.itens.length > 0) {
+      return p.itens.reduce(function(s,it){ return s+Math.round((it.qtd||0)*(it.vUnit||0)*100)/100; },0);
+    }
+    return Number(p.vTotal||0);
+  }
+
+  var dados = ['PEDRO','WELLINGTON','JONATAS'].map(function(vn) {
+    var peds = (allPedidos[vn]||[]).filter(function(p){
+      return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado';
+    });
+    var total = peds.reduce(function(s,p){ return s+getValor(p); },0);
+    var metaMes = parseFloat(((vendedores[vn].meta||'0').replace('R$ ','').replace(/\./g,'').replace(',','.'))) || 0;
+    var pct = metaMes > 0 ? Math.round((total/metaMes)*100) : 0;
+    return { vn: vn, nome: vendedores[vn].nome, total: total, meta: metaMes, pct: pct };
+  }).sort(function(a,b){ return b.pct - a.pct; });
+
+  var medalhas = ['🥇','🥈','🥉'];
+  var cores = ['#FFD700','#C0C0C0','#CD7F32'];
+  var alturas = ['160px','130px','110px'];
+  var bgs = ['#FFF8E1','#F5F5F5','#FBE9E9'];
+
+  // Render pódio
+  var podio = document.getElementById('rank-podio');
+  if (podio) {
+    // Order: 2nd, 1st, 3rd for visual podium effect
+    var order = dados.length >= 3 ? [dados[1], dados[0], dados[2]] : dados;
+    var heights = dados.length >= 3 ? ['130px','160px','110px'] : ['130px'];
+    var podiumCores = dados.length >= 3 ? ['#C0C0C0','#FFD700','#CD7F32'] : ['#FFD700'];
+    var podiumMed = dados.length >= 3 ? ['🥈','🥇','🥉'] : ['🥇'];
+
+    podio.innerHTML = order.map(function(d, i) {
+      var fmtBRL = 'R$ ' + Number(d.total).toLocaleString('pt-BR',{minimumFractionDigits:0});
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;max-width:200px;">' +
+        '<div style="font-size:32px;">' + podiumMed[i] + '</div>' +
+        '<div style="font-size:14px;font-weight:700;color:#1C1C1C;">' + d.nome + '</div>' +
+        '<div style="font-size:20px;font-weight:700;color:' + podiumCores[i] + ';">' + d.pct + '%</div>' +
+        '<div style="font-size:11px;color:#888;">' + fmtBRL + '</div>' +
+        '<div style="width:100%;background:' + podiumCores[i] + ';border-radius:8px 8px 0 0;height:' + heights[i] + ';display:flex;align-items:flex-start;justify-content:center;padding-top:10px;">' +
+          '<span style="font-size:11px;font-weight:600;color:' + (i===1?'#7A5500':'#333') + ';">' + (i===1?'1º':'i'===0?'2º':'3º') + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Render cards
+  var cards = document.getElementById('rank-cards');
+  if (cards) {
+    cards.innerHTML = dados.map(function(d, i) {
+      var fmtBRL = 'R$ ' + Number(d.total).toLocaleString('pt-BR',{minimumFractionDigits:0});
+      var fmtMeta = 'R$ ' + Number(d.meta).toLocaleString('pt-BR',{minimumFractionDigits:0});
+      var falta = Math.max(0, d.meta - d.total);
+      var fmtFalta = 'R$ ' + Number(falta).toLocaleString('pt-BR',{minimumFractionDigits:0});
+      var barW = Math.min(d.pct, 100);
+      var barCor = d.pct >= 100 ? '#2E7D32' : d.pct >= 80 ? '#E65100' : '#C41E1E';
+      return '<div style="background:#fff;border:2px solid ' + cores[i] + ';border-radius:12px;padding:1.1rem 1.25rem;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<span style="font-size:24px;">' + medalhas[i] + '</span>' +
+            '<div>' +
+              '<div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + d.nome + '</div>' +
+              '<div style="font-size:11px;color:#888;">Meta: ' + fmtMeta + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            '<div style="font-size:22px;font-weight:700;color:' + cores[i] + ';">' + d.pct + '%</div>' +
+            '<div style="font-size:12px;color:#888;">' + fmtBRL + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="background:#F1EFE8;border-radius:20px;height:8px;overflow:hidden;margin-bottom:5px;">' +
+          '<div style="height:100%;border-radius:20px;background:' + barCor + ';width:' + barW + '%;transition:width .5s;"></div>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#888;">' + (falta > 0 ? 'Falta ' + fmtFalta + ' para bater a meta' : '✅ Meta batida!') + '</div>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+function renderPremiacoes(allPedidos) {
+  var mesAtual = new Date().toISOString().slice(0,7);
+
+  // Count clientes novos/inativos from Firebase
+  dbRef('premios/clientes').once('value').then(function(snap) {
+    var clientes = snap.val() ? Object.values(snap.val()) : [];
+    var doMes = clientes.filter(function(c){ return c.data && c.data.startsWith(mesAtual); });
+
+    // Tally by vendedor
+    var novos = {}, mg = {};
+    ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn){ novos[vn]=0; mg[vn]=0; });
+    doMes.forEach(function(c) {
+      if (c.tipo === 'mg') { if(mg[c.vend]!==undefined) mg[c.vend]++; }
+      else { if(novos[c.vend]!==undefined) novos[c.vend]++; }
+    });
+
+    var totalNovos = 0, totalMG = 0;
+    ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn){
+      totalNovos += novos[vn] * 50;
+      totalMG += mg[vn] * 75;
+    });
+
+    var el1 = document.getElementById('prem-novos-total');
+    var el2 = document.getElementById('prem-mg-total');
+    if (el1) el1.textContent = 'R$ ' + totalNovos;
+    if (el2) el2.textContent = 'R$ ' + totalMG;
+  }).catch(function(){});
+
+  // Aço: who sold most and if meta was hit
+  function getVlAco(p) {
+    if (p.itens) return p.itens.filter(function(it){ return it.cat==='aco'; })
+      .reduce(function(s,it){ return s+Math.round((it.qtd||0)*(it.vUnit||0)*100)/100; },0);
+    return p.cat === 'aco' ? Number(p.vTotal||0) : 0;
+  }
+
+  var acoVend = ['PEDRO','WELLINGTON','JONATAS'].map(function(vn) {
+    var peds = (allPedidos[vn]||[]).filter(function(p){ return p.data&&p.data.startsWith(mesAtual)&&p.status!=='cancelado'; });
+    var vlAco = peds.reduce(function(s,p){ return s+getVlAco(p); },0);
+    return { vn: vn, nome: vendedores[vn].nome, vlAco: vlAco };
+  }).sort(function(a,b){ return b.vlAco - a.vlAco; });
+
+  var lider = acoVend[0];
+  var elLider = document.getElementById('prem-aco-lider');
+  var elStatus = document.getElementById('prem-aco-status');
+  if (elLider) {
+    elLider.textContent = lider.vlAco > 0 ?
+      'Lider: ' + lider.nome + ' — R$ ' + Number(lider.vlAco).toLocaleString('pt-BR',{minimumFractionDigits:0}) + ' em aco' :
+      'Nenhuma venda de aco ainda';
+  }
+  if (elStatus) elStatus.textContent = lider.vlAco > 0 ? 'R$ 300' : '—';
+}
+
+function registrarClientePremio() {
+  var vend = document.getElementById('prem-vend-sel');
+  var nome = document.getElementById('prem-cliente-nome');
+  var tipo = document.getElementById('prem-cliente-tipo');
+  if (!vend||!nome||!tipo||!nome.value.trim()) { alert('Preencha o nome do cliente.'); return; }
+  var data = new Date().toISOString().split('T')[0];
+  var id = Date.now().toString();
+  dbRef('premios/clientes/' + id).set({
+    id: id, vend: vend.value, nome: nome.value.trim(),
+    tipo: tipo.value, data: data
+  }).then(function() {
+    nome.value = '';
+    var t = document.getElementById('prem-toast');
+    if(t){ t.style.display='block'; setTimeout(function(){ t.style.display='none'; },2000); }
+    renderPremiacoes({});
+  }).catch(function(e){ alert('Erro: '+e.message); });
+}
+
 // ── PAINÉIS ANALÍTICOS DA GESTORA ──
 
 function renderPaineisGestora(allPedidos, allLigacoes) {
@@ -3797,6 +4063,11 @@ function doLogin() {
       fbListenVendedor(user);
       listenLigacoesVendedor(user);
     }
+    // Ranking aparece para todos
+    listenRanking();
+    // Show gestora premio tools only for Juliana
+    var gestTools = document.getElementById('prem-gestora-tools');
+    if (gestTools) gestTools.style.display = v.nome === 'Juliana' ? 'block' : 'none';
   });
   // Start listening to pedidos
   listenPedidos(user, v.nome === 'Juliana');
