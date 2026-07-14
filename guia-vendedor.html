@@ -245,7 +245,7 @@
   ══════════════════════════════════ */
 
   /* Padding padrão em todas as seções */
-  .page-section { padding: 1.25rem 1.5rem 3rem; }
+  .page-section { padding: 1.25rem 2rem 3rem; max-width: 100%; }
 
   /* Header responsivo */
   @media (max-width: 600px) {
@@ -262,7 +262,12 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    padding: 0 1rem;
+    padding: 0 1.5rem;
+    justify-content: flex-start;
+  }
+  @media (min-width: 900px) {
+    nav { padding: 0 2.5rem; gap: 2px; }
+    .nav-btn { padding: 12px 18px; font-size: 13px; }
   }
   nav::-webkit-scrollbar { display: none; }
 
@@ -299,7 +304,12 @@
   }
 
   /* Vendedor banner */
-  #vendedor-banner { padding: 8px 1rem; }
+  #vendedor-banner { padding: 8px 1.5rem; }
+  @media (min-width: 900px) {
+    #vendedor-banner { padding: 10px 2.5rem; }
+    .vb-nome { font-size: 16px; }
+    .vb-saudacao { font-size: 13px; }
+  }
   @media (max-width: 600px) {
     #vendedor-banner { padding: 8px 1rem; }
     .vb-nome { font-size: 13px; }
@@ -327,7 +337,7 @@
   /* Comissão box */
   .comissao-box {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px;
     background: #1C1C1C;
     border-radius: 12px;
@@ -436,6 +446,55 @@
   /* Script inner */
   .script-wrapper { padding: 0 !important; }
   .script-wrapper .s-container { max-width: 100% !important; }
+
+  /* DESKTOP LAYOUT */
+  @media (min-width: 900px) {
+    .page-section { padding: 1.5rem 2.5rem 3rem; }
+    
+    /* Evolucao vendedor - 2 column grid on desktop */
+    #ev-vendedor-section > div[style*="background:#fff"] > div[style*="grid-template-columns:repeat(auto-fill,minmax(130px"] {
+      grid-template-columns: repeat(6, 1fr) !important;
+    }
+    
+    /* Dashboard pedidos - 4 cards lado a lado */
+    #ped-dashboard > div:last-child {
+      grid-template-columns: 1fr 1fr 1fr 1fr !important;
+    }
+    
+    /* Admin criterios mais largos */
+    #criterios-grid > div {
+      gap: 20px;
+    }
+    
+    /* Ranking cards */
+    #rank-cards {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    /* Pódio maior */
+    #rank-podio {
+      min-height: 240px;
+    }
+    
+    /* Metas admin em 3 colunas */
+    #tab-admin .page-section > div > div[style*="grid-template-columns:repeat(auto-fill,minmax(140px"] {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+  }
+  
+  @media (min-width: 1200px) {
+    .page-section { padding: 1.5rem 3rem 3rem; }
+    
+    /* Evolucao gestora - 2 colunas lado a lado */
+    #gest-ev-box {
+      grid-template-columns: 1fr 1fr;
+    }
+    
+    /* Painéis gestora - 3 colunas */
+    #gest-paineis-box {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+  }
 
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1270,7 +1329,7 @@
   </div>
 
   <!-- ACESSOS -->
-  <div id="emp-acessos" class="emp-section page-section">
+  <div id="emp-acessos" class="emp-section page-section" style="max-width:1100px;">
     <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">🔑 Acessos</h2>
     <p style="font-size:13px;color:#888;margin-bottom:1.25rem;">Links e sistemas que você precisa para trabalhar no dia a dia.</p>
     
@@ -1338,7 +1397,7 @@
   </div>
 
   <!-- INSTITUCIONAL -->
-  <div id="emp-institucional" class="emp-section page-section" style="display:none;">
+  <div id="emp-institucional" class="emp-section page-section" style="max-width:1100px;" style="display:none;">
     <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">🏢 Institucional</h2>
     <p style="font-size:13px;color:#888;margin-bottom:1.5rem;">Conheça a Fast — quem somos, nossa história, missão, visão e valores.</p>
 
@@ -1478,7 +1537,7 @@
   </div>
 
   <!-- TOLERÂNCIA ZERO -->
-  <div id="emp-tolerancia" class="emp-section page-section" style="display:none;">
+  <div id="emp-tolerancia" class="emp-section page-section" style="max-width:1100px;" style="display:none;">
     <h2 style="font-size:15px;font-weight:600;color:#C41E1E;margin-bottom:4px;">🚫 Política de Tolerância Zero</h2>
     <p style="font-size:13px;color:#888;margin-bottom:1.5rem;">Na Fast, adotamos tolerância zero para atitudes que não estejam alinhadas com nossos valores e cultura. <strong>Respeito é inegociável.</strong></p>
 
@@ -1588,7 +1647,7 @@
   </div>
 
   <!-- DOCUMENTOS -->
-  <div id="emp-documentos" class="emp-section page-section" style="display:none;">
+  <div id="emp-documentos" class="emp-section page-section" style="max-width:1100px;" style="display:none;">
     <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">📄 Documentos</h2>
     <p style="font-size:13px;color:#888;margin-bottom:1.25rem;">Regulamentos, políticas e documentos importantes.</p>
 
@@ -1646,7 +1705,7 @@
 
 <!-- ══ PEDIDOS ══ -->
 <div id="tab-pedidos" class="tab-content">
-  <div class="page-section">
+  <div class="page-section" style="max-width:1200px;">
 
     <!-- HEADER -->
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1.25rem;">
@@ -1664,7 +1723,7 @@
       <!-- HOJE -->
       <div style="background:#1C1C1C;border-radius:12px;padding:1.1rem 1.4rem;border-left:4px solid #C41E1E;">
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:10px;">📅 Hoje — <span id="ped-hoje-data" style="color:#aaa;"></span></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
           <div>
             <div style="font-size:10px;color:#666;margin-bottom:2px;">Total Vendido Hoje</div>
             <div style="font-size:22px;font-weight:700;color:#fff;" id="dash-hoje-total">R$ 0</div>
@@ -1983,7 +2042,7 @@
 
 <!-- ══ RECONHECIMENTO ══ -->
 <div id="tab-reconhecimento" class="tab-content">
-  <div class="page-section" style="max-width:860px;">
+  <div class="page-section" style="max-width:1100px;">
 
     <!-- PÓDIO -->
     <div style="margin-bottom:1.5rem;">
@@ -1997,7 +2056,7 @@
     </div>
 
     <!-- CARDS DETALHADOS -->
-    <div id="rank-cards" style="display:grid;gap:12px;margin-bottom:2rem;"></div>
+    <div id="rank-cards" style="display:grid;gap:12px;margin-bottom:2rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));"></div>
 
     <!-- PREMIAÇÕES DO MÊS -->
     <div style="background:#1C1C1C;border-radius:14px;padding:1.5rem;">
@@ -2088,7 +2147,7 @@
 
 <!-- ══ EVOLUÇÃO ══ -->
 <div id="tab-evolucao" class="tab-content">
-  <div class="page-section" style="max-width:800px;display:grid;gap:16px;">
+  <div class="page-section" style="max-width:900px;display:grid;gap:16px;">
 
     <div>
       <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:2px;">📈 Evolução</h2>
@@ -2100,7 +2159,7 @@
       <div style="background:#F8F7F3;border-radius:10px;padding:10px 14px;font-size:12px;color:#888;">
         Resultados da equipe completa (Pedro + Wellington + Jonatas) — semana e mês atual.
       </div>
-      <div id="gest-ev-box" style="display:grid;gap:12px;">
+      <div id="gest-ev-box" style="display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));">
         <div style="text-align:center;color:#aaa;font-size:13px;padding:2rem;">Carregando dados...</div>
       </div>
       <!-- Painéis analíticos -->
@@ -2121,7 +2180,7 @@
 
     <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📊 Metas do Período</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:12px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:12px;">
         <div class="meta-card"><div class="meta-label">Meta (R$)</div><div class="meta-value" id="ev-meta">—</div></div>
         <div class="meta-card"><div class="meta-label">Realizado (R$)</div><div class="meta-value" id="ev-realizado">—</div></div>
         <div class="meta-card"><div class="meta-label">Ligações</div><div class="meta-value" id="ev-ligacoes">—</div><div class="meta-sub">Meta: 600/mês</div></div>
@@ -2433,7 +2492,7 @@
 
 <!-- ══ ADMIN / GESTÃO ══ -->
 <div id="tab-admin" class="tab-content">
-  <div class="page-section" style="max-width:860px;">
+  <div class="page-section" style="max-width:1100px;">
 
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
       <div style="background:#C41E1E;border-radius:8px;padding:6px 10px;font-size:18px;">⭐</div>
