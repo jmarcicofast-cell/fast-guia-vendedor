@@ -1713,8 +1713,11 @@
         <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:2px;">📋 Meus Pedidos</h2>
         <p style="font-size:12px;color:#aaa;" id="ped-periodo">Mês atual</p>
       </div>
-      <button onclick="togglePedForm()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Novo Pedido</button>
-      <button onclick="testarConexao()" style="padding:8px 14px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;">🔧 Testar</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="togglePedForm()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Novo Pedido</button>
+        <button id="btn-exportar" onclick="exportarPedidosExcel()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #2E7D32;background:#fff;color:#2E7D32;font-size:13px;font-weight:600;cursor:pointer;">📥 Exportar Excel</button>
+        <button onclick="testarConexao()" style="padding:8px 14px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;">🔧 Testar</button>
+      </div>
     </div>
 
     <!-- DASHBOARD MÉTRICAS -->
@@ -2646,6 +2649,97 @@
 </div>
 
   <script>
+// ── EXPORTAR EXCEL ──
+function exportarPedidosExcel() {
+  var btn = document.getElementById('btn-exportar');
+  if (btn) { btn.textContent = 'Gerando...'; btn.disabled = true; }
+
+  // Collect all pedidos
+  var nomes = currentUser === 'JULIANA' ? ['PEDRO','WELLINGTON','JONATAS'] : [currentUser];
+  var allPedidos = [];
+  var pendentes = nomes.length;
+
+  nomes.forEach(function(vn) {
+    dbRef('pedidos/' + vn).once('value').then(function(snap) {
+      var peds = snap.val() ? Object.values(snap.val()) : [];
+      allPedidos = allPedidos.concat(peds);
+      pendentes--;
+      if (pendentes === 0) gerarExcel(allPedidos, btn);
+    }).catch(function() {
+      pendentes--;
+      if (pendentes === 0) gerarExcel(allPedidos, btn);
+    });
+  });
+}
+
+function gerarExcel(pedidos, btn) {
+  // Sort by date desc
+  pedidos.sort(function(a,b) { return (b.criadoEm||0) - (a.criadoEm||0); });
+
+  // Build CSV (works as Excel)
+  var sep = ';';
+  var header = ['Data','Vendedor','Empresa','UF','Cliente','PN Cliente','Chamado','Material','Categoria','Qtd','Vl. Unit. (R$)','Vl. Total (R$)','Veiculo','Status'].join(sep);
+
+  var rows = [];
+  pedidos.forEach(function(p) {
+    if (p.itens && p.itens.length > 0) {
+      // Multi-item: one row per item
+      p.itens.forEach(function(it, idx) {
+        var catLabel = it.cat==='placa' ? 'Placa' : it.cat==='grx' ? 'GRX/Comp' : it.cat==='aco' ? 'Aco' : it.cat||'';
+        rows.push([
+          p.data||'',
+          p.vendedor||'',
+          '"' + (p.empresa||'').replace(/"/g,'') + '"',
+          p.estado||'',
+          '"' + (p.cliente||'').replace(/"/g,'') + '"',
+          p.pn||'',
+          p.chamado||'',
+          '"' + (it.material||'').replace(/"/g,'') + '"',
+          catLabel,
+          String(it.qtd||0).replace('.',','),
+          String(Number(it.vUnit||0).toFixed(2)).replace('.',','),
+          String(Number(it.vTotal||0).toFixed(2)).replace('.',','),
+          p.veiculo||'',
+          p.status||''
+        ].join(sep));
+      });
+    } else {
+      // Single item (legacy)
+      var catLabel = p.cat==='placa' ? 'Placa' : p.cat==='grx' ? 'GRX/Comp' : p.cat==='aco' ? 'Aco' : p.cat||'';
+      rows.push([
+        p.data||'',
+        p.vendedor||'',
+        '"' + (p.empresa||'').replace(/"/g,'') + '"',
+        p.estado||'',
+        '"' + (p.cliente||'').replace(/"/g,'') + '"',
+        p.pn||'',
+        p.chamado||'',
+        '"' + (p.material||'').replace(/"/g,'') + '"',
+        catLabel,
+        String(p.qtd||0).replace('.',','),
+        String(Number(p.vUnit||0).toFixed(2)).replace('.',','),
+        String(Number(p.vTotal||0).toFixed(2)).replace('.',','),
+        p.veiculo||'',
+        p.status||''
+      ].join(sep));
+    }
+  });
+
+  var csv = '\uFEFF' + header + '\n' + rows.join('\n'); // BOM for Excel UTF-8
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  var mes = new Date().toISOString().slice(0,7);
+  a.href = url;
+  a.download = 'pedidos_fast_' + mes + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  if (btn) { btn.textContent = '📥 Exportar Excel'; btn.disabled = false; }
+}
+
 // ── RANKING & RECONHECIMENTO ──
 
 function listenRanking() {
