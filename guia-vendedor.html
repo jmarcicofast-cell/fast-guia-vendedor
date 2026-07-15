@@ -3309,14 +3309,14 @@ function renderPremiacoes(allPedidos) {
 
     // Tally by vendedor
     var novos = {}, mg = {};
-    ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn){ novos[vn]=0; mg[vn]=0; });
+    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn){ novos[vn]=0; mg[vn]=0; });
     doMes.forEach(function(c) {
       if (c.tipo === 'mg') { if(mg[c.vend]!==undefined) mg[c.vend]++; }
       else { if(novos[c.vend]!==undefined) novos[c.vend]++; }
     });
 
     var totalNovos = 0, totalMG = 0;
-    ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn){
+    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn){
       totalNovos += novos[vn] * 50;
       totalMG += mg[vn] * 75;
     });
@@ -3334,7 +3334,7 @@ function renderPremiacoes(allPedidos) {
     return p.cat === 'aco' ? Number(p.vTotal||0) : 0;
   }
 
-  var acoVend = ['PEDRO','WELLINGTON','JONATAS'].map(function(vn) {
+  var acoVend = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p){ return p.data&&p.data.startsWith(mesAtual)&&p.status!=='cancelado'; });
     var vlAco = peds.reduce(function(s,p){ return s+getVlAco(p); },0);
     return { vn: vn, nome: vendedores[vn].nome, vlAco: vlAco };
@@ -3411,7 +3411,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
 
   // Taxa de conversão por vendedor
   var conversao = {};
-  ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p){ return isMes(p) && notCanceled(p); }).length;
     var ligs = (allLigacoes[vn]||[]).filter(function(l){ return l.data && l.data.startsWith(mesAtual); })
                .reduce(function(s,l){ return s+(l.qtd||0); },0);
@@ -3425,7 +3425,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
   var diasUteisTotal = Math.round(diasNoMes * 0.72);
 
   var ritmo = {};
-  ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn) {
     var ligs = (allLigacoes[vn]||[]).filter(function(l){ return l.data && l.data.startsWith(mesAtual); });
     var totalLigs = ligs.reduce(function(s,l){ return s+(l.qtd||0); },0);
     var diasReg = ligs.length;
@@ -3438,7 +3438,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
   });
 
   // ── PAINEL 4: RANKING SEMANA ──
-  var ranking = ['PEDRO','WELLINGTON','JONATAS'].map(function(vn) {
+  var ranking = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
     var pedsSem = (allPedidos[vn]||[]).filter(function(p){ return isSem(p) && notCanceled(p); });
     var vendSem = pedsSem.reduce(function(s,p){ return s+getValor(p); },0);
     var ligsSem = (allLigacoes[vn]||[]).filter(function(l){
@@ -3466,7 +3466,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
       '</div>' +
       '<div style="font-size:11px;font-weight:600;color:#555;margin-bottom:8px;">Taxa de Conversão (ligações → pedidos)</div>' +
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">' +
-        ['PEDRO','WELLINGTON','JONATAS'].map(function(vn) {
+        ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
           var c = conversao[vn];
           var cor = c.taxa >= 5 ? '#2E7D32' : c.taxa >= 2 ? '#E65100' : '#C41E1E';
           return '<div style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;">' +
@@ -3482,7 +3482,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
     '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.1rem 1.25rem;">' +
       '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#185FA5;margin-bottom:12px;">📞 Ritmo Projetado de Ligações</div>' +
       '<div style="display:grid;gap:10px;">' +
-        ['PEDRO','WELLINGTON','JONATAS'].map(function(vn) {
+        ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
           var r = ritmo[vn];
           var pct = Math.min(Math.round((r.total/600)*100),100);
           var cor = r.vaiBater ? '#2E7D32' : '#C41E1E';
@@ -3536,7 +3536,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
 
 function listenPaineisGestora() {
   var allPedidos = {}, allLigacoes = {};
-  var nomes = ['PEDRO','WELLINGTON','JONATAS'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
   var pendP = nomes.length, pendL = nomes.length;
 
   nomes.forEach(function(vn) {
@@ -3554,7 +3554,7 @@ function listenPaineisGestora() {
 
 // ── EVOLUÇÃO DA GESTORA ──
 function listenEvolucaoGestora() {
-  var nomes = ['PEDRO','WELLINGTON','JONATAS'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
   var allPedidos = {};
 
   nomes.forEach(function(vn) {
@@ -3567,7 +3567,7 @@ function listenEvolucaoGestora() {
 
 function renderEvolucaoGestora(allPedidos) {
   var todos = [];
-  ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn) {
     if (allPedidos[vn]) todos = todos.concat(allPedidos[vn]);
   });
 
@@ -3695,7 +3695,7 @@ function renderEvolucaoGestora(allPedidos) {
 function recalcGestora() {
   // Get all pedidos from all vendedores
   var todos = [];
-  var nomes = ['PEDRO','WELLINGTON','JONATAS'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
   var pendentes = nomes.length;
   nomes.forEach(function(vn) {
     dbRef('pedidos/' + vn).once('value').then(function(snap) {
@@ -4296,7 +4296,7 @@ function listenPedidos(vendNome, isGestora) {
     }
 
     let allPedidos = {};
-    ['PEDRO','WELLINGTON','JONATAS'].forEach(vn => {
+    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(vn => {
       dbRef('pedidos/' + vn).on('value', snap => {
         allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
         const todos = Object.values(allPedidos).flat();
@@ -4317,14 +4317,14 @@ function listenPedidos(vendNome, isGestora) {
 }
 
 function renderResumoEquipe(allPedidos) {
-  // Show team summary in admin tab if exists
-  let box = document.getElementById('ped-resumo-equipe');
+  var box = document.getElementById('ped-resumo-equipe');
   if (!box) return;
-  const mesAtual = new Date().toISOString().slice(0,7);
-  box.innerHTML = ['PEDRO','WELLINGTON','JONATAS'].map(vn => {
-    const peds = (allPedidos[vn]||[]).filter(p => p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado');
-    const total = peds.reduce((s,p) => s + Number(p.vTotal||0), 0);
-    const com   = peds.reduce((s,p) => s + Number(p.vTotal||0) * (CAT_PCT[p.cat]||0), 0);
+  var mesAtual = new Date().toISOString().slice(0,7);
+  box.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
+    var peds = (allPedidos[vn]||[]).filter(function(p) { return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado'; });
+    var total = peds.reduce(function(s,p) { return s + Number(p.vTotal||0); }, 0);
+    var com   = peds.reduce(function(s,p) { return s + Number(p.vTotal||0) * (CAT_PCT[p.cat]||0); }, 0);
+    if (!vendedores[vn]) return '';
     return '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">' +
       '<div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:6px;">' + vendedores[vn].nome + '</div>' +
       '<div style="font-size:11px;color:#aaa;">Total vendido</div>' +
@@ -4948,13 +4948,14 @@ function adminClear() {
 }
 
 function renderAdminResumo() {
-  const grid = document.getElementById('adm-resumo');
+  var grid = document.getElementById('adm-resumo');
   if (!grid) return;
-  grid.innerHTML = ['PEDRO','WELLINGTON','JONATAS'].map(n => {
-    const v = vendedores[n];
-    const notas = criterios.map(c => v.notas ? (v.notas[c.id]||0) : 0);
-    const media = notas.reduce((a,b)=>a+b,0)/notas.length;
-    const cl = media>=4 ? {txt:'Bom',bg:'#E8F5E9',c:'#1B5E20'} : media>=2.5 ? {txt:'Atenção',bg:'#FFF8E1',c:'#E65100'} : {txt:'Crítico',bg:'#FFEBEE',c:'#B71C1C'};
+  grid.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(n) {
+    var v = vendedores[n];
+    if (!v) return '';
+    var notas = criterios.map(function(c) { return v.notas ? (v.notas[c.id]||0) : 0; });
+    var media = notas.reduce(function(a,b){return a+b;},0)/notas.length;
+    var cl = media>=4 ? {txt:'Bom',bg:'#E8F5E9',c:'#1B5E20'} : media>=2.5 ? {txt:'Atencao',bg:'#FFF8E1',c:'#E65100'} : {txt:'Critico',bg:'#FFEBEE',c:'#B71C1C'};
     return '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">' +
       '<div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:6px;">' + v.nome + '</div>' +
       '<div style="font-size:11px;color:#aaa;">Meta</div><div style="font-size:12px;color:#333;margin-bottom:4px;">' + v.meta + '</div>' +
@@ -4976,8 +4977,8 @@ function checkAdminAccess(nome) {
   if (nome === 'Juliana') {
     adminNav.style.display = 'flex';
     // Load all vendedores from Firebase
-    Promise.all(['PEDRO','WELLINGTON','JONATAS'].map(n => new Promise(res => fbLoad(n, res))))
-      .then(() => {
+    Promise.all(['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
+      .then(function() {
         adminSelect('PEDRO', document.getElementById('abtn-PEDRO'));
         renderAdminResumo();
       });
