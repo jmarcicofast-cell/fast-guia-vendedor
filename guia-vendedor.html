@@ -1716,7 +1716,8 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="togglePedForm()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Novo Pedido</button>
         <button id="btn-exportar" onclick="exportarPedidosExcel()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #2E7D32;background:#fff;color:#2E7D32;font-size:13px;font-weight:600;cursor:pointer;">📥 Exportar Excel</button>
-        <button id="btn-importar-arquivo" onclick="togglePlanilhaImport()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #185FA5;background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;display:none;">📋 Importar em Massa</button>
+        <input type="file" id="excel-import-input" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
+        <button id="btn-importar-arquivo" onclick="document.getElementById('excel-import-input').click()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #185FA5;background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;display:none;">📂 Importar Excel</button>
         <button onclick="testarConexao()" style="padding:8px 14px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;">🔧 Testar</button>
       </div>
     </div>
