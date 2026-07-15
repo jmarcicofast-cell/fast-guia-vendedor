@@ -1716,7 +1716,53 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="togglePedForm()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Novo Pedido</button>
         <button id="btn-exportar" onclick="exportarPedidosExcel()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #2E7D32;background:#fff;color:#2E7D32;font-size:13px;font-weight:600;cursor:pointer;">📥 Exportar Excel</button>
+        <button id="btn-importar-arquivo" onclick="togglePlanilhaImport()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #185FA5;background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;display:none;">Importar em Massa</button>
         <button onclick="testarConexao()" style="padding:8px 14px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;">🔧 Testar</button>
+      </div>
+    </div>
+
+    <!-- PLANILHA DE IMPORTAÇÃO EM MASSA -->
+    <div id="planilha-import" style="display:none;background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#185FA5;">📋 Importação em Massa</div>
+          <div style="font-size:11px;color:#aaa;margin-top:2px;">Preencha as linhas e clique em Salvar no Firebase. Campos com * são obrigatórios.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="addLinhasImport(5)" style="padding:6px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#666;font-size:12px;cursor:pointer;">+ 5 Linhas</button>
+          <button onclick="addLinhasImport(20)" style="padding:6px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#666;font-size:12px;cursor:pointer;">+ 20 Linhas</button>
+          <button onclick="limparPlanilha()" style="padding:6px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;">Limpar</button>
+          <button onclick="salvarImportacao()" style="padding:6px 16px;border-radius:6px;border:none;background:#185FA5;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">💾 Salvar no Firebase</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table id="import-table" style="border-collapse:collapse;min-width:1200px;width:100%;font-size:12px;">
+          <thead>
+            <tr style="background:#F8F7F3;">
+              <th style="padding:8px 4px;text-align:center;color:#aaa;font-size:11px;width:32px;">#</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:110px;">DATA *</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;min-width:150px;">EMPRESA *</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:65px;">UF</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;min-width:130px;">CLIENTE *</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:95px;">CHAMADO</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:85px;">COD. PN</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:115px;">CATEGORIA *</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;min-width:160px;">MATERIAL *</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:65px;">QTD *</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:95px;">VL. UNIT. *</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:95px;">VL. TOTAL</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:85px;">VEÍCULO</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:105px;">STATUS</th>
+              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:105px;">VENDEDOR *</th>
+              <th style="width:28px;"></th>
+            </tr>
+          </thead>
+          <tbody id="import-tbody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #F0EEEA;font-size:12px;">
+        <span id="import-count" style="color:#888;">0 linhas</span>
+        <span>Total: <strong id="import-total" style="color:#1C1C1C;">R$ 0,00</strong></span>
       </div>
     </div>
 
@@ -1887,7 +1933,7 @@
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
           <div style="flex:1;min-width:160px;">
             <div style="font-size:11px;color:#666;margin-bottom:3px;">Minha Meta (R$)</div>
-            <input id="gest-meta" type="text" placeholder="Ex: 500.000" oninput="recalcGestora()" style="width:100%;padding:6px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
+            <input id="gest-meta" type="text" placeholder="Ex: 7.319.212" oninput="recalcGestora()" value="7.319.212,09" style="width:100%;padding:6px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
           </div>
           <div style="flex:1;min-width:140px;">
             <div style="font-size:11px;color:#666;margin-bottom:3px;">Total Equipe no Mês</div>
@@ -1911,8 +1957,16 @@
         </div>
         <!-- Faixas de comissão -->
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;">
+          <div id="gest-f0" style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;border:1px solid #333;">
+            <div style="font-size:10px;color:#888;">Abaixo 70%</div>
+            <div style="font-size:13px;font-weight:700;color:#fff;">0,20%</div>
+          </div>
+          <div id="gest-f70" style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;border:1px solid #333;">
+            <div style="font-size:10px;color:#888;">70% a 74%</div>
+            <div style="font-size:13px;font-weight:700;color:#fff;">0,21%</div>
+          </div>
           <div id="gest-f75" style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;border:1px solid #333;">
-            <div style="font-size:10px;color:#888;">Até 75%</div>
+            <div style="font-size:10px;color:#888;">75% a 79%</div>
             <div style="font-size:13px;font-weight:700;color:#fff;">0,21%</div>
           </div>
           <div id="gest-f80" style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;border:1px solid #333;">
@@ -2116,6 +2170,10 @@
               <option value="PEDRO">Pedro</option>
               <option value="WELLINGTON">Wellington</option>
               <option value="JONATAS">Jonatas</option>
+              <option value="ANTONIO">Antônio</option>
+              <option value="GESSICA">Géssica</option>
+              <option value="LETICIA">Letícia</option>
+              <option value="ELIZIANE">Eliziane</option>
             </select>
           </div>
           <div class="ped-field" style="flex:1;min-width:140px;">
@@ -2507,9 +2565,19 @@
 
     <!-- SELECTOR -->
     <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
-      <button onclick="adminSelect('PEDRO',this)" class="qf-btn active" id="abtn-PEDRO">Pedro</button>
-      <button onclick="adminSelect('WELLINGTON',this)" class="qf-btn" id="abtn-WELLINGTON">Wellington</button>
-      <button onclick="adminSelect('JONATAS',this)" class="qf-btn" id="abtn-JONATAS">Jonatas</button>
+      <div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Novos</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        <button onclick="adminSelect('PEDRO',this)" class="qf-btn active" id="abtn-PEDRO">Pedro</button>
+        <button onclick="adminSelect('WELLINGTON',this)" class="qf-btn" id="abtn-WELLINGTON">Wellington</button>
+        <button onclick="adminSelect('JONATAS',this)" class="qf-btn" id="abtn-JONATAS">Jonatas</button>
+        <button onclick="adminSelect('ANTONIO',this)" class="qf-btn" id="abtn-ANTONIO">Antônio</button>
+      </div>
+      <div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Veteranos</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button onclick="adminSelect('GESSICA',this)" class="qf-btn" id="abtn-GESSICA">Géssica</button>
+        <button onclick="adminSelect('LETICIA',this)" class="qf-btn" id="abtn-LETICIA">Letícia</button>
+        <button onclick="adminSelect('ELIZIANE',this)" class="qf-btn" id="abtn-ELIZIANE">Eliziane</button>
+      </div>
     </div>
 
     <div style="display:grid;gap:14px;">
@@ -2648,14 +2716,145 @@
   <div class="lightbox-caption" id="lightbox-caption"></div>
 </div>
 
-  <script>
+<script>
+// META DA EQUIPE
+var META_EQUIPE = 7319212.09;
+
+// PLANILHA IMPORTACAO INLINE
+var importLinhas = [];
+var importIdxCount = 0;
+var IMPORT_UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+var IMPORT_VENDS = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
+
+function togglePlanilhaImport() {
+  var panel = document.getElementById('planilha-import');
+  if (!panel) return;
+  var open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  if (!open && !importLinhas.length) addLinhasImport(10);
+}
+
+function novaImportLinha(d) {
+  d = d || {};
+  var hoje = new Date().toISOString().split('T')[0];
+  return { _id: ++importIdxCount, data: d.data||hoje, empresa: d.empresa||'', estado: d.estado||'',
+    cliente: d.cliente||'', chamado: d.chamado||'', pn: d.pn||'', cat: d.cat||'', material: d.material||'',
+    qtd: d.qtd||'', vUnit: d.vUnit||'', veiculo: d.veiculo||'', status: d.status||'agendamento', vendedor: d.vendedor||'' };
+}
+
+function addLinhasImport(n) {
+  for (var i = 0; i < n; i++) importLinhas.push(novaImportLinha());
+  renderImportTable();
+}
+
+function fmtImport(n) { return 'R$ ' + Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2}); }
+
+function calcImportTotal(l) {
+  var q = parseFloat(String(l.qtd||'').replace(',','.')) || 0;
+  var v = parseFloat(String(l.vUnit||'').replace(',','.')) || 0;
+  return Math.round(q * v * 100) / 100;
+}
+
+function renderImportTable() {
+  var tbody = document.getElementById('import-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  var totalGeral = 0;
+  importLinhas.forEach(function(l, idx) {
+    var vt = calcImportTotal(l);
+    totalGeral += vt;
+    var tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #F8F7F3';
+    var cats = [['','Selecione'],['placa','Placa 0,5%'],['grx','GRX 0,75%'],['aco','Aco 1%']];
+    var stats = [['agendamento','Agendamento'],['aguardando-dt','Ag. DT'],['com-dt','Com DT'],['em-rota','Em Rota'],['entregue','Entregue'],['faturado','Faturado'],['cancelado','Cancelado']];
+    var inp = 'width:100%;padding:5px 6px;border:1px solid #E2E0D8;border-radius:5px;font-size:11px;outline:none;font-family:inherit;';
+    tr.innerHTML =
+      '<td style="text-align:center;color:#aaa;font-size:11px;padding:4px;">' + (idx+1) + '</td>' +
+      '<td style="padding:3px;"><input type="date" value="' + l.data + '" style="' + inp + '" onchange="updImp(' + idx + ',\'data\',this.value)"></td>' +
+      '<td style="padding:3px;"><input type="text" value="' + (l.empresa||'').replace(/"/g,'') + '" placeholder="Empresa" style="' + inp + '" onchange="updImp(' + idx + ',\'empresa\',this.value)"></td>' +
+      '<td style="padding:3px;"><select style="' + inp + '" onchange="updImp(' + idx + ',\'estado\',this.value)"><option value="">-</option>' + IMPORT_UFS.map(function(u){return '<option value="'+u+'"'+(l.estado===u?' selected':'')+'>'+u+'</option>';}).join('') + '</select></td>' +
+      '<td style="padding:3px;"><input type="text" value="' + (l.cliente||'').replace(/"/g,'') + '" placeholder="Cliente" style="' + inp + '" onchange="updImp(' + idx + ',\'cliente\',this.value)"></td>' +
+      '<td style="padding:3px;"><input type="text" value="' + (l.chamado||'') + '" placeholder="Ex: 123456" style="' + inp + '" onchange="updImp(' + idx + ',\'chamado\',this.value)"></td>' +
+      '<td style="padding:3px;"><input type="text" value="' + (l.pn||'') + '" placeholder="Ex: CF001" style="' + inp + '" onchange="updImp(' + idx + ',\'pn\',this.value)"></td>' +
+      '<td style="padding:3px;"><select style="' + inp + '" onchange="updImp(' + idx + ',\'cat\',this.value)">' + cats.map(function(c){return '<option value="'+c[0]+'"'+(l.cat===c[0]?' selected':'')+'>'+c[1]+'</option>';}).join('') + '</select></td>' +
+      '<td style="padding:3px;"><input type="text" value="' + (l.material||'').replace(/"/g,'') + '" placeholder="Ex: Chapa ST 12,5mm" style="' + inp + '" onchange="updImp(' + idx + ',\'material\',this.value)"></td>' +
+      '<td style="padding:3px;"><input type="number" value="' + (l.qtd||'') + '" placeholder="0" min="0" step="any" style="' + inp + '" oninput="updImpCalc(' + idx + ',\'qtd\',this.value)"></td>' +
+      '<td style="padding:3px;"><input type="number" step="0.01" value="' + (l.vUnit||'') + '" placeholder="0,00" min="0" style="' + inp + '" oninput="updImpCalc(' + idx + ',\'vUnit\',this.value)"></td>' +
+      '<td style="padding:6px 8px;font-size:11px;font-weight:600;background:#F8F7F3;text-align:right;white-space:nowrap;" id="imp-vt-' + l._id + '">' + fmtImport(vt) + '</td>' +
+      '<td style="padding:3px;"><select style="' + inp + '" onchange="updImp(' + idx + ',\'veiculo\',this.value)"><option value="">-</option><option value="truck"'+(l.veiculo==='truck'?' selected':'')+'>Truck</option><option value="carreta"'+(l.veiculo==='carreta'?' selected':'')+'>Carreta</option><option value="outros"'+(l.veiculo==='outros'?' selected':'')+'>Outros</option></select></td>' +
+      '<td style="padding:3px;"><select style="' + inp + '" onchange="updImp(' + idx + ',\'status\',this.value)">' + stats.map(function(s){return '<option value="'+s[0]+'"'+(l.status===s[0]?' selected':'')+'>'+s[1]+'</option>';}).join('') + '</select></td>' +
+      '<td style="padding:3px;"><select style="' + inp + '" onchange="updImp(' + idx + ',\'vendedor\',this.value)"><option value="">Selecione</option>' + IMPORT_VENDS.map(function(v){return '<option value="'+v+'"'+(l.vendedor===v?' selected':'')+'>'+v.charAt(0)+v.slice(1).toLowerCase()+'</option>';}).join('') + '</select></td>' +
+      '<td style="padding:3px;text-align:center;"><button onclick="delImpLinha(' + idx + ')" style="background:none;border:none;color:#C41E1E;cursor:pointer;font-size:14px;padding:4px;">x</button></td>';
+    tbody.appendChild(tr);
+  });
+  var totalEl = document.getElementById('import-total');
+  if (totalEl) totalEl.textContent = fmtImport(totalGeral);
+  var countEl = document.getElementById('import-count');
+  if (countEl) { var preen = importLinhas.filter(function(l){return l.empresa||l.cliente;}).length; countEl.textContent = importLinhas.length + ' linhas - ' + preen + ' preenchidas'; }
+}
+
+function updImp(idx, campo, val) { importLinhas[idx][campo] = val; }
+
+function updImpCalc(idx, campo, val) {
+  importLinhas[idx][campo] = val;
+  var vt = calcImportTotal(importLinhas[idx]);
+  var el = document.getElementById('imp-vt-' + importLinhas[idx]._id);
+  if (el) el.textContent = fmtImport(vt);
+  var total = importLinhas.reduce(function(s,l){ return s + calcImportTotal(l); }, 0);
+  var totalEl = document.getElementById('import-total');
+  if (totalEl) totalEl.textContent = fmtImport(total);
+}
+
+function delImpLinha(idx) { importLinhas.splice(idx, 1); renderImportTable(); }
+
+function limparPlanilha() {
+  if (!confirm('Apagar todas as linhas?')) return;
+  importLinhas = []; renderImportTable();
+}
+
+function salvarImportacao() {
+  var erros = [], validas = [];
+  importLinhas.forEach(function(l, idx) {
+    if (!l.empresa && !l.cliente) return;
+    var err = [];
+    if (!l.empresa)  err.push('Empresa');
+    if (!l.cliente)  err.push('Cliente');
+    if (!l.cat)      err.push('Categoria');
+    if (!l.material) err.push('Material');
+    if (!l.qtd)      err.push('Qtd');
+    if (!l.vUnit)    err.push('Vl. Unit.');
+    if (!l.vendedor) err.push('Vendedor');
+    if (err.length) { erros.push('Linha ' + (idx+1) + ': ' + err.join(', ')); return; }
+    var q = parseFloat(String(l.qtd).replace(',','.')) || 0;
+    var v = parseFloat(String(l.vUnit).replace(',','.')) || 0;
+    var vt = Math.round(q * v * 100) / 100;
+    validas.push({ id: l.chamado||('imp_'+(Date.now()+idx)), data:l.data, empresa:l.empresa, estado:l.estado,
+      cliente:l.cliente, chamado:l.chamado, pn:l.pn, cat:l.cat, material:l.material,
+      itens:[{cat:l.cat, material:l.material, qtd:q, vUnit:v, vTotal:vt}],
+      vTotal:vt, vUnit:v, qtd:q, veiculo:l.veiculo, status:l.status||'agendamento',
+      vendedor:l.vendedor, importado:true, criadoEm:Date.now()+idx });
+  });
+  if (erros.length) { alert('Corrija antes de salvar:\n\n' + erros.join('\n')); return; }
+  if (!validas.length) { alert('Nenhuma linha preenchida.'); return; }
+  var salvos = 0, dup = 0, conc = 0, tot = validas.length;
+  validas.forEach(function(p) {
+    var ref = 'pedidos/' + p.vendedor + '/' + p.id;
+    dbRef(ref).once('value').then(function(snap) {
+      if (snap.val()) { dup++; }
+      else { dbRef(ref).set(p).then(function(){salvos++;}); }
+      conc++;
+      if (conc === tot) { alert('Salvo! ' + salvos + ' novos, ' + dup + ' duplicados ignorados.'); }
+    }).catch(function(){conc++; if(conc===tot) alert('Concluido com erros.');});
+  });
+}
+
 // ── EXPORTAR EXCEL ──
 function exportarPedidosExcel() {
   var btn = document.getElementById('btn-exportar');
   if (btn) { btn.textContent = 'Gerando...'; btn.disabled = true; }
 
   // Collect all pedidos
-  var nomes = currentUser === 'JULIANA' ? ['PEDRO','WELLINGTON','JONATAS'] : [currentUser];
+  var nomes = currentUser === 'JULIANA' ? ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'] : [currentUser];
   var allPedidos = [];
   var pendentes = nomes.length;
 
@@ -2744,7 +2943,7 @@ function gerarExcel(pedidos, btn) {
 
 function listenRanking() {
   var allPedidos = {}, allLigacoes = {};
-  var nomes = ['PEDRO','WELLINGTON','JONATAS'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
   nomes.forEach(function(vn) {
     dbRef('pedidos/' + vn).on('value', function(snap) {
       allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
@@ -2764,12 +2963,13 @@ function renderRanking(allPedidos, allLigacoes) {
     return Number(p.vTotal||0);
   }
 
-  var dados = ['PEDRO','WELLINGTON','JONATAS'].map(function(vn) {
+  var dados = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p){
       return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado';
     });
     var total = peds.reduce(function(s,p){ return s+getValor(p); },0);
-    var metaMes = parseFloat(((vendedores[vn].meta||'0').replace('R$ ','').replace(/\./g,'').replace(',','.'))) || 0;
+    var metaRaw = (vendedores[vn].meta||'0').replace('R$ ','').replace(/\./g,'').replace(',','.');
+    var metaMes = parseFloat(metaRaw) || 0;
     var pct = metaMes > 0 ? Math.round((total/metaMes)*100) : 0;
     return { vn: vn, nome: vendedores[vn].nome, total: total, meta: metaMes, pct: pct };
   }).sort(function(a,b){ return b.pct - a.pct; });
@@ -2909,7 +3109,7 @@ function registrarClientePremio() {
 
 function renderPaineisGestora(allPedidos, allLigacoes) {
   var todos = [];
-  ['PEDRO','WELLINGTON','JONATAS'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn) {
     if (allPedidos[vn]) todos = todos.concat(allPedidos[vn]);
   });
 
@@ -3156,8 +3356,9 @@ function renderEvolucaoGestora(allPedidos) {
                       .reduce(function(s,p) { return s+getValor(p); }, 0);
 
   // Metas (da Juliana — pegas do Firebase)
-  var metaMes = parseFloat((vendedores['JULIANA'] && vendedores['JULIANA'].meta || '0').replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0;
-  var metaSem = parseFloat((vendedores['JULIANA'] && vendedores['JULIANA'].metaSemana || '0').replace(/\./g,'').replace(',','.')) || 0;
+  var metaMes = META_EQUIPE;
+  var metaSem = META_EQUIPE / 4; // ~1 semana
+
 
   function fmt(n) {
     return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
@@ -3262,16 +3463,17 @@ function calcComissaoGestora(pedidosTodosVendedores) {
 
   // Meta da gestora (pega do campo adm-meta ou usa 0)
   var metaEl = document.getElementById('gest-meta');
-  var meta = metaEl ? (parseFloat(metaEl.value.replace(/\./g,'').replace(',','.')) || 0) : 0;
+  var meta = metaEl && metaEl.value ? (parseFloat(metaEl.value.replace(/\./g,'').replace(',','.')) || META_EQUIPE) : META_EQUIPE;
   var pct = meta > 0 ? (totalEquipe / meta) * 100 : 0;
 
   // Tabela de comissão por faixa
-  var pctCom = 0.0021; // default < 75%
+  var pctCom = 0.0020; // default < 70%
   if (pct >= 120)      pctCom = 0.0029;
   else if (pct >= 110) pctCom = 0.0027;
   else if (pct >= 90)  pctCom = 0.0023;
   else if (pct >= 80)  pctCom = 0.0021;
   else if (pct >= 75)  pctCom = 0.0021;
+  else if (pct >= 70)  pctCom = 0.0021;
 
   var comissao = totalEquipe * pctCom;
 
@@ -3288,7 +3490,7 @@ function calcComissaoGestora(pedidosTodosVendedores) {
   if (bar) bar.style.width = Math.min(pct, 150) + '%';
 
   // Highlight faixa
-  var faixas = ['gest-f75','gest-f80','gest-f90','gest-f110','gest-f120'];
+  var faixas = ['gest-f0','gest-f70','gest-f75','gest-f80','gest-f90','gest-f110','gest-f120'];
   faixas.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.background = '#F8F7F3';
@@ -3296,7 +3498,8 @@ function calcComissaoGestora(pedidosTodosVendedores) {
   var ativo = pct >= 120 ? 'gest-f120' :
               pct >= 110 ? 'gest-f110' :
               pct >= 90  ? 'gest-f90'  :
-              pct >= 80  ? 'gest-f80'  : 'gest-f75';
+              pct >= 80  ? 'gest-f80'  :
+              pct >= 70  ? 'gest-f70'  : 'gest-f0';
   var el = document.getElementById(ativo);
   if (el) el.style.background = '#FBE9E9';
 }
@@ -4206,6 +4409,7 @@ function doLogin() {
   var evGest = document.getElementById('ev-gestora-section');
   var evVend = document.getElementById('ev-vendedor-section');
   if (v.nome === 'Juliana') {
+    var biArq = document.getElementById('btn-importar-arquivo'); if(biArq) biArq.style.display='block';
     if (evGest) evGest.style.display = 'grid';
     if (evVend) evVend.style.display = 'none';
   } else {
@@ -4777,6 +4981,34 @@ function closeLightbox(e) {
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox({target: document.getElementById('lightbox')}); });
-  </script>
+  
+function importarArquivo(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      var pedidos = data.pedidos || (Array.isArray(data) ? data : []);
+      if (!pedidos.length) { alert('Nenhum pedido encontrado no arquivo.'); return; }
+      var salvos = 0, dup = 0, conc = 0, tot = pedidos.length;
+      pedidos.forEach(function(p) {
+        var vk = p.vendedor || currentUser;
+        var pid = p.id || ('imp_' + Date.now());
+        dbRef('pedidos/' + vk + '/' + pid).once('value').then(function(snap) {
+          if (snap.val()) { dup++; }
+          else { dbRef('pedidos/' + vk + '/' + pid).set(p).then(function(){ salvos++; }); }
+          conc++;
+          if (conc === tot) {
+            event.target.value = '';
+            alert('Importacao concluida! ' + salvos + ' novos, ' + dup + ' duplicados ignorados.');
+          }
+        }).catch(function() { conc++; if (conc===tot) event.target.value=''; });
+      });
+    } catch(err) { alert('Erro ao ler arquivo: ' + err.message); }
+  };
+  reader.readAsText(file);
+}
+</script>
 </body>
 </html>
