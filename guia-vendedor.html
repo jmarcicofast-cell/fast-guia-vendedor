@@ -2906,16 +2906,14 @@ function importarExcel(event) {
         var cliente  = String(row[3]  || '').trim();
         var chamado  = String(row[4]  || '').trim();
         var pn       = String(row[5]  || '').trim();
-        var cat      = String(row[6]  || '').trim().toLowerCase();
-        var material = String(row[7]  || '').trim();
-        var qtd      = parseFloat(String(row[8]  || '0').replace(',','.')) || 0;
-        var vUnit    = parseFloat(String(row[9]  || '0').replace(',','.').replace(/[^0-9.]/g,'')) || 0;
-        var status   = String(row[12] || 'agendamento').trim().toLowerCase();
-        var vendedor = String(row[13] || '').trim().toUpperCase();
-        var veiculo  = String(row[11] || '').trim().toLowerCase();
+        var veiculo  = String(row[6]  || '').trim().toLowerCase();
+        var status   = String(row[7]  || 'agendamento').trim().toLowerCase();
+        var vendedor = String(row[8]  || '').trim().toUpperCase();
+        var vTotal   = parseFloat(String(row[9]  || '0').replace(',','.').replace(/[^0-9.]/g,'')) || 0;
+        var obs      = String(row[10] || '').trim();
 
         // Validate required fields
-        if (!empresa || !cliente || !cat || !material || !qtd || !vUnit || !vendedor) { ignoradas++; return; }
+        if (!empresa || !cliente || !vendedor || !vTotal) { ignoradas++; return; }
 
         // Normalize date
         var dataF = '';
@@ -2938,16 +2936,15 @@ function importarExcel(event) {
           }
         }
 
-        var vt = Math.round(qtd * vUnit * 100) / 100;
         var id = chamado || ('xl_' + (Date.now() + idx));
 
         pedidos.push({
           id: id, data: dataF, empresa: empresa, estado: uf, cliente: cliente,
-          chamado: chamado, pn: pn, cat: cat, material: material,
-          itens: [{ cat: cat, material: material, qtd: qtd, vUnit: vUnit, vTotal: vt }],
-          vTotal: vt, vUnit: vUnit, qtd: qtd,
+          chamado: chamado, pn: pn,
+          itens: [],
+          vTotal: vTotal,
           veiculo: veiculo, status: status, vendedor: vendedor,
-          importado: true, criadoEm: Date.now() + idx
+          obs: obs, importado: true, criadoEm: Date.now() + idx
         });
       });
 
