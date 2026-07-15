@@ -1716,45 +1716,43 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="togglePedForm()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Novo Pedido</button>
         <button id="btn-exportar" onclick="exportarPedidosExcel()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #2E7D32;background:#fff;color:#2E7D32;font-size:13px;font-weight:600;cursor:pointer;">📥 Exportar Excel</button>
-        <input type="file" id="excel-import-input" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
-        <button id="btn-importar-arquivo" onclick="document.getElementById('excel-import-input').click()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #185FA5;background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;display:none;">📂 Importar Excel</button>
+        <button id="btn-importar-arquivo" onclick="togglePlanilhaImport()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #185FA5;background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;display:none;">📋 Importar em Massa</button>
         <button onclick="testarConexao()" style="padding:8px 14px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;">🔧 Testar</button>
       </div>
     </div>
 
     <!-- PLANILHA DE IMPORTAÇÃO EM MASSA -->
-    <div id="planilha-import" style="display:none;background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <div id="planilha-import" style="display:none;background:#fff;border:1.5px solid #185FA5;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px;">
         <div>
-          <div style="font-size:13px;font-weight:600;color:#185FA5;">📋 Importação em Massa</div>
-          <div style="font-size:11px;color:#aaa;margin-top:2px;">Preencha as linhas e clique em Salvar no Firebase. Campos com * são obrigatórios.</div>
+          <div style="font-size:14px;font-weight:700;color:#185FA5;">📋 Importação em Massa</div>
+          <div style="font-size:11px;color:#aaa;margin-top:2px;">Preencha os dados do pedido. Os itens (produtos/valores) você adiciona depois clicando em ✏️ em cada pedido.</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button onclick="addLinhasImport(5)" style="padding:6px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#666;font-size:12px;cursor:pointer;">+ 5 Linhas</button>
-          <button onclick="addLinhasImport(20)" style="padding:6px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#666;font-size:12px;cursor:pointer;">+ 20 Linhas</button>
-          <button onclick="limparPlanilha()" style="padding:6px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;">Limpar</button>
-          <button onclick="salvarImportacao()" style="padding:6px 16px;border-radius:6px;border:none;background:#185FA5;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">💾 Salvar no Firebase</button>
+          <button onclick="addLinhasImport(10)" style="padding:6px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#666;font-size:12px;cursor:pointer;">+ 10 Linhas</button>
+          <button onclick="addLinhasImport(50)" style="padding:6px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#666;font-size:12px;cursor:pointer;">+ 50 Linhas</button>
+          <button onclick="limparPlanilha()" style="padding:6px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#C41E1E;font-size:12px;cursor:pointer;">🗑 Limpar</button>
+          <button onclick="salvarImportacao()" style="padding:6px 18px;border-radius:6px;border:none;background:#185FA5;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">💾 Salvar Tudo no Firebase</button>
         </div>
       </div>
+      <div style="background:#E8F0FE;border-radius:7px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#185FA5;">
+        ⚠️ Campos obrigatórios: <strong>Empresa, Cliente e Vendedor</strong>. Os demais são opcionais.
+      </div>
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-        <table id="import-table" style="border-collapse:collapse;min-width:1200px;width:100%;font-size:12px;">
+        <table id="import-table" style="border-collapse:collapse;min-width:900px;width:100%;font-size:12px;">
           <thead>
-            <tr style="background:#F8F7F3;">
+            <tr style="background:#1C1C1C;">
               <th style="padding:8px 4px;text-align:center;color:#aaa;font-size:11px;width:32px;">#</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:110px;">DATA *</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;min-width:150px;">EMPRESA *</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:65px;">UF</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;min-width:130px;">CLIENTE *</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:95px;">CHAMADO</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:85px;">COD. PN</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:115px;">CATEGORIA *</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;min-width:160px;">MATERIAL *</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:65px;">QTD *</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:95px;">VL. UNIT. *</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:95px;">VL. TOTAL</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:85px;">VEÍCULO</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:105px;">STATUS</th>
-              <th style="padding:8px;text-align:left;color:#555;font-weight:600;white-space:nowrap;width:105px;">VENDEDOR *</th>
+              <th style="padding:8px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;width:110px;">DATA</th>
+              <th style="padding:8px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;min-width:160px;">EMPRESA *</th>
+              <th style="padding:8px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;width:60px;">UF</th>
+              <th style="padding:8px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;min-width:140px;">CLIENTE *</th>
+              <th style="padding:8px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;width:95px;">CHAMADO</th>
+              <th style="padding:8px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;width:80px;">COD. PN</th>
+              <th style="padding:8px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;width:90px;">VEÍCULO</th>
+              <th style="padding:8px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;width:110px;">STATUS</th>
+              <th style="padding:8px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;width:110px;">VENDEDOR *</th>
+              <th style="padding:8px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;width:110px;">VL. TOTAL (R$)</th>
               <th style="width:28px;"></th>
             </tr>
           </thead>
@@ -1763,7 +1761,7 @@
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #F0EEEA;font-size:12px;">
         <span id="import-count" style="color:#888;">0 linhas</span>
-        <span>Total: <strong id="import-total" style="color:#1C1C1C;">R$ 0,00</strong></span>
+        <span style="font-size:13px;">Total: <strong id="import-total" style="color:#185FA5;font-size:15px;">R$ 0,00</strong></span>
       </div>
     </div>
 
@@ -2163,9 +2161,42 @@
 
       <!-- Botão gestora para registrar clientes novos -->
       <div id="prem-gestora-tools" style="display:none;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #333;">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:10px;">Registrar Clientes Novos/Inativos</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
-          <div class="ped-field" style="flex:1;min-width:120px;">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:12px;">🏅 Registrar Premiação Conquistada</div>
+
+        <!-- Seleção visual da premiação -->
+        <div style="font-size:11px;color:#aaa;margin-bottom:8px;">Qual premiação o vendedor pontuou?</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:14px;" id="prem-tipo-cards">
+          <div onclick="selecionarTipoPremio('novo',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
+            <div style="font-size:18px;">💰</div>
+            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Cliente Novo</div>
+            <div style="font-size:11px;color:#FAC775;">R$ 50</div>
+          </div>
+          <div onclick="selecionarTipoPremio('inativo',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
+            <div style="font-size:18px;">🔄</div>
+            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Cliente Inativo</div>
+            <div style="font-size:11px;color:#FAC775;">R$ 50</div>
+          </div>
+          <div onclick="selecionarTipoPremio('mg',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
+            <div style="font-size:18px;">🏆</div>
+            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">MG via Mogi</div>
+            <div style="font-size:11px;color:#FAC775;">R$ 75</div>
+          </div>
+          <div onclick="selecionarTipoPremio('aco',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
+            <div style="font-size:18px;">⚙️</div>
+            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Líder em Aço</div>
+            <div style="font-size:11px;color:#FAC775;">R$ 300</div>
+          </div>
+          <div onclick="selecionarTipoPremio('surpresa',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
+            <div style="font-size:18px;">⭐</div>
+            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Surpresa Poliana</div>
+            <div style="font-size:11px;color:#aaa;">Valor variável</div>
+          </div>
+        </div>
+        <input type="hidden" id="prem-cliente-tipo" value="">
+
+        <!-- Dados do registro -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px;align-items:end;">
+          <div class="ped-field">
             <label style="color:#aaa;">Vendedor</label>
             <select id="prem-vend-sel" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
               <option value="PEDRO">Pedro</option>
@@ -2177,21 +2208,30 @@
               <option value="ELIZIANE">Eliziane</option>
             </select>
           </div>
-          <div class="ped-field" style="flex:1;min-width:140px;">
-            <label style="color:#aaa;">Nome do Cliente</label>
-            <input id="prem-cliente-nome" type="text" placeholder="Ex: Construtora ABC" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
+          <div class="ped-field">
+            <label style="color:#aaa;">Chamado (Nº Pedido)</label>
+            <input id="prem-chamado" type="text" placeholder="Ex: 439772" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
           </div>
-          <div class="ped-field" style="flex:1;min-width:100px;">
-            <label style="color:#aaa;">Tipo</label>
-            <select id="prem-cliente-tipo" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
-              <option value="novo">Novo (R$ 50)</option>
-              <option value="mg">MG/Mogi (R$ 75)</option>
-              <option value="inativo">Inativo (R$ 50)</option>
+          <div class="ped-field">
+            <label style="color:#aaa;">Valor (R$)</label>
+            <input id="prem-valor-custom" type="number" step="0.01" placeholder="Automático" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
+          </div>
+          <div class="ped-field">
+            <label style="color:#aaa;">Status</label>
+            <select id="prem-status-pag" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
+              <option value="pendente">⏳ Pendente</option>
+              <option value="pago">✅ Pago</option>
             </select>
           </div>
-          <button onclick="registrarClientePremio()" style="padding:8px 16px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Registrar</button>
+          <div style="display:flex;align-items:flex-end;">
+            <button onclick="registrarClientePremio()" style="width:100%;padding:8px 16px;border-radius:6px;border:none;background:#FAC775;color:#1C1C1C;font-size:13px;font-weight:700;cursor:pointer;">+ Registrar</button>
+          </div>
         </div>
-        <div id="prem-toast" style="display:none;background:#1B5E20;color:#fff;padding:8px 12px;border-radius:7px;font-size:12px;text-align:center;margin-top:8px;">✅ Cliente registrado!</div>
+        <div id="prem-tipo-aviso" style="font-size:11px;color:#C41E1E;display:none;margin-bottom:6px;">⚠️ Selecione o tipo de premiação acima.</div>
+
+        <!-- Lista de premiações registradas -->
+        <div id="prem-lista-registros" style="display:grid;gap:6px;margin-top:8px;max-height:260px;overflow-y:auto;"></div>
+        <div id="prem-toast" style="display:none;background:#1B5E20;color:#fff;padding:8px 12px;border-radius:7px;font-size:12px;text-align:center;margin-top:8px;">✅ Premiação registrada!</div>
       </div>
     </div>
 
@@ -2719,6 +2759,37 @@
 </div>
 
 <script>
+// ── SELEÇÃO VISUAL TIPO PREMIAÇÃO ──
+var premTipoSelecionado = '';
+var premValorMap = { novo:50, inativo:50, mg:75, aco:300, surpresa:0 };
+
+function selecionarTipoPremio(tipo, el) {
+  premTipoSelecionado = tipo;
+  var tipoInput = document.getElementById('prem-cliente-tipo');
+  if (tipoInput) tipoInput.value = tipo;
+
+  // Visual highlight
+  document.querySelectorAll('.prem-tipo-card').forEach(function(c) {
+    c.style.borderColor = '#444';
+    c.style.background = '#2A2A2A';
+  });
+  if (el) {
+    el.style.borderColor = '#FAC775';
+    el.style.background = '#3A3000';
+  }
+
+  // Auto-fill valor
+  var vlEl = document.getElementById('prem-valor-custom');
+  if (vlEl && premValorMap[tipo] !== undefined) {
+    vlEl.placeholder = premValorMap[tipo] > 0 ? 'R$ ' + premValorMap[tipo] : 'Definir valor';
+    if (premValorMap[tipo] > 0) vlEl.value = premValorMap[tipo];
+    else vlEl.value = '';
+  }
+
+  var aviso = document.getElementById('prem-tipo-aviso');
+  if (aviso) aviso.style.display = 'none';
+}
+
 // ── EDITAR PEDIDO ──
 var pedidoEmEdicao = null;
 
@@ -3002,8 +3073,8 @@ function novaImportLinha(d) {
   d = d || {};
   var hoje = new Date().toISOString().split('T')[0];
   return { _id: ++importIdxCount, data: d.data||hoje, empresa: d.empresa||'', estado: d.estado||'',
-    cliente: d.cliente||'', chamado: d.chamado||'', pn: d.pn||'', cat: d.cat||'', material: d.material||'',
-    qtd: d.qtd||'', vUnit: d.vUnit||'', veiculo: d.veiculo||'', status: d.status||'agendamento', vendedor: d.vendedor||'' };
+    cliente: d.cliente||'', chamado: d.chamado||'', pn: d.pn||'',
+    veiculo: d.veiculo||'', status: d.status||'agendamento', vendedor: d.vendedor||'', vTotal: d.vTotal||'' };
 }
 
 function addLinhasImport(n) {
@@ -3014,9 +3085,7 @@ function addLinhasImport(n) {
 function fmtImport(n) { return 'R$ ' + Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2}); }
 
 function calcImportTotal(l) {
-  var q = parseFloat(String(l.qtd||'').replace(',','.')) || 0;
-  var v = parseFloat(String(l.vUnit||'').replace(',','.')) || 0;
-  return Math.round(q * v * 100) / 100;
+  return parseFloat(String(l.vTotal||'').replace(',','.').replace(/[^0-9.]/g,'')) || 0;
 }
 
 function renderImportTable() {
@@ -3024,49 +3093,109 @@ function renderImportTable() {
   if (!tbody) return;
   tbody.innerHTML = '';
   var totalGeral = 0;
+  var statsOpts = [['agendamento','Agendamento'],['aguardando-dt','Ag. DT'],['com-dt','Com DT'],['em-rota','Em Rota'],['entregue','Entregue'],['faturado','Faturado'],['cancelado','Cancelado']];
+  var inp = 'width:100%;padding:5px 6px;border:1px solid #E2E0D8;border-radius:5px;font-size:11px;outline:none;font-family:inherit;background:#FFFEF0;';
+
   importLinhas.forEach(function(l, idx) {
     var vt = calcImportTotal(l);
     totalGeral += vt;
     var tr = document.createElement('tr');
-    tr.style.borderBottom = '1px solid #F8F7F3';
-    var cats = [['','Selecione'],['placa','Placa 0,5%'],['grx','GRX 0,75%'],['aco','Aco 1%']];
-    var stats = [['agendamento','Agendamento'],['aguardando-dt','Ag. DT'],['com-dt','Com DT'],['em-rota','Em Rota'],['entregue','Entregue'],['faturado','Faturado'],['cancelado','Cancelado']];
-    var inp = 'width:100%;padding:5px 6px;border:1px solid #E2E0D8;border-radius:5px;font-size:11px;outline:none;font-family:inherit;';
-    tr.innerHTML =
-      '<td style="text-align:center;color:#aaa;font-size:11px;padding:4px;">' + (idx+1) + '</td>' +
-      '<td style="padding:3px;"><input type="date" value="' + l.data + '" style="' + inp + '" onchange="updImp(' + idx + ',\'data\',this.value)"></td>' +
-      '<td style="padding:3px;"><input type="text" value="' + (l.empresa||'').replace(/"/g,'') + '" placeholder="Empresa" style="' + inp + '" onchange="updImp(' + idx + ',\'empresa\',this.value)"></td>' +
-      '<td style="padding:3px;"><select style="' + inp + '" onchange="updImp(' + idx + ',\'estado\',this.value)"><option value="">-</option>' + IMPORT_UFS.map(function(u){return '<option value="'+u+'"'+(l.estado===u?' selected':'')+'>'+u+'</option>';}).join('') + '</select></td>' +
-      '<td style="padding:3px;"><input type="text" value="' + (l.cliente||'').replace(/"/g,'') + '" placeholder="Cliente" style="' + inp + '" onchange="updImp(' + idx + ',\'cliente\',this.value)"></td>' +
-      '<td style="padding:3px;"><input type="text" value="' + (l.chamado||'') + '" placeholder="Ex: 123456" style="' + inp + '" onchange="updImp(' + idx + ',\'chamado\',this.value)"></td>' +
-      '<td style="padding:3px;"><input type="text" value="' + (l.pn||'') + '" placeholder="Ex: CF001" style="' + inp + '" onchange="updImp(' + idx + ',\'pn\',this.value)"></td>' +
-      '<td style="padding:3px;"><select style="' + inp + '" onchange="updImp(' + idx + ',\'cat\',this.value)">' + cats.map(function(c){return '<option value="'+c[0]+'"'+(l.cat===c[0]?' selected':'')+'>'+c[1]+'</option>';}).join('') + '</select></td>' +
-      '<td style="padding:3px;"><input type="text" value="' + (l.material||'').replace(/"/g,'') + '" placeholder="Ex: Chapa ST 12,5mm" style="' + inp + '" onchange="updImp(' + idx + ',\'material\',this.value)"></td>' +
-      '<td style="padding:3px;"><input type="number" value="' + (l.qtd||'') + '" placeholder="0" min="0" step="any" style="' + inp + '" oninput="updImpCalc(' + idx + ',\'qtd\',this.value)"></td>' +
-      '<td style="padding:3px;"><input type="number" step="0.01" value="' + (l.vUnit||'') + '" placeholder="0,00" min="0" style="' + inp + '" oninput="updImpCalc(' + idx + ',\'vUnit\',this.value)"></td>' +
-      '<td style="padding:6px 8px;font-size:11px;font-weight:600;background:#F8F7F3;text-align:right;white-space:nowrap;" id="imp-vt-' + l._id + '">' + fmtImport(vt) + '</td>' +
-      '<td style="padding:3px;"><select style="' + inp + '" onchange="updImp(' + idx + ',\'veiculo\',this.value)"><option value="">-</option><option value="truck"'+(l.veiculo==='truck'?' selected':'')+'>Truck</option><option value="carreta"'+(l.veiculo==='carreta'?' selected':'')+'>Carreta</option><option value="outros"'+(l.veiculo==='outros'?' selected':'')+'>Outros</option></select></td>' +
-      '<td style="padding:3px;"><select style="' + inp + '" onchange="updImp(' + idx + ',\'status\',this.value)">' + stats.map(function(s){return '<option value="'+s[0]+'"'+(l.status===s[0]?' selected':'')+'>'+s[1]+'</option>';}).join('') + '</select></td>' +
-      '<td style="padding:3px;"><select style="' + inp + '" onchange="updImp(' + idx + ',\'vendedor\',this.value)"><option value="">Selecione</option>' + IMPORT_VENDS.map(function(v){return '<option value="'+v+'"'+(l.vendedor===v?' selected':'')+'>'+v.charAt(0)+v.slice(1).toLowerCase()+'</option>';}).join('') + '</select></td>' +
-      '<td style="padding:3px;text-align:center;"><button onclick="delImpLinha(' + idx + ')" style="background:none;border:none;color:#C41E1E;cursor:pointer;font-size:14px;padding:4px;">x</button></td>';
+    tr.style.borderBottom = '1px solid #F0EEEA';
+    tr.style.background = idx % 2 === 0 ? '#fff' : '#FAFAFA';
+
+    // # cell
+    var tdNum = document.createElement('td');
+    tdNum.style.cssText = 'text-align:center;color:#aaa;font-size:11px;padding:4px;';
+    tdNum.textContent = idx + 1;
+    tr.appendChild(tdNum);
+
+    // Helper to create input cell
+    function mkInp(type, val, ph, campo) {
+      var td = document.createElement('td'); td.style.padding = '3px';
+      var el = document.createElement('input');
+      el.type = type; el.value = val || ''; el.placeholder = ph || '';
+      el.style.cssText = inp;
+      if (type === 'number') el.step = '0.01';
+      (function(i,c){ el.addEventListener('change', function(){ updImp(i,c,this.value); }); el.addEventListener('input', function(){ updImp(i,c,this.value); }); })(idx, campo);
+      td.appendChild(el); return td;
+    }
+
+    // Helper to create select cell
+    function mkSel(opts, val, campo) {
+      var td = document.createElement('td'); td.style.padding = '3px';
+      var el = document.createElement('select'); el.style.cssText = inp;
+      opts.forEach(function(o) {
+        var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1];
+        if (val === o[0]) op.selected = true; el.appendChild(op);
+      });
+      (function(i,c){ el.addEventListener('change', function(){ updImp(i,c,this.value); }); })(idx, campo);
+      td.appendChild(el); return td;
+    }
+
+    tr.appendChild(mkInp('date', l.data, '', 'data'));
+    tr.appendChild(mkInp('text', l.empresa, 'Nome da empresa', 'empresa'));
+
+    // UF select
+    var ufOpts = [['','-']].concat(IMPORT_UFS.map(function(u){ return [u,u]; }));
+    tr.appendChild(mkSel(ufOpts, l.estado, 'estado'));
+
+    tr.appendChild(mkInp('text', l.cliente, 'Nome do cliente', 'cliente'));
+    tr.appendChild(mkInp('text', l.chamado, 'Ex: 439772', 'chamado'));
+    tr.appendChild(mkInp('text', l.pn, 'Ex: CF001', 'pn'));
+
+    // Veículo
+    tr.appendChild(mkSel([['','-'],['truck','Truck'],['carreta','Carreta'],['outros','Outros']], l.veiculo, 'veiculo'));
+
+    // Status
+    tr.appendChild(mkSel([['','-']].concat(statsOpts), l.status, 'status'));
+
+    // Vendedor
+    var vendOpts = [['','Selecione']].concat(IMPORT_VENDS.map(function(v){ return [v, v.charAt(0)+v.slice(1).toLowerCase()]; }));
+    tr.appendChild(mkSel(vendOpts, l.vendedor, 'vendedor'));
+
+    // VL Total
+    var tdVt = document.createElement('td'); tdVt.style.padding = '3px';
+    var vtInput = document.createElement('input');
+    vtInput.type = 'number'; vtInput.step = '0.01'; vtInput.min = '0';
+    vtInput.value = l.vTotal || ''; vtInput.placeholder = '0,00';
+    vtInput.style.cssText = inp;
+    (function(i){ vtInput.addEventListener('input', function(){ updImpVt(i, this.value); }); })(idx);
+    tdVt.appendChild(vtInput);
+    tr.appendChild(tdVt);
+
+    // Del button
+    var tdDel = document.createElement('td'); tdDel.style.cssText = 'padding:3px;text-align:center;';
+    var delBtn = document.createElement('button');
+    delBtn.textContent = '✕'; delBtn.type = 'button';
+    delBtn.style.cssText = 'background:none;border:none;color:#C41E1E;cursor:pointer;font-size:14px;padding:4px 8px;';
+    (function(i){ delBtn.addEventListener('click', function(){ delImpLinha(i); }); })(idx);
+    tdDel.appendChild(delBtn);
+    tr.appendChild(tdDel);
+
     tbody.appendChild(tr);
   });
+
   var totalEl = document.getElementById('import-total');
   if (totalEl) totalEl.textContent = fmtImport(totalGeral);
   var countEl = document.getElementById('import-count');
-  if (countEl) { var preen = importLinhas.filter(function(l){return l.empresa||l.cliente;}).length; countEl.textContent = importLinhas.length + ' linhas - ' + preen + ' preenchidas'; }
+  if (countEl) {
+    var preen = importLinhas.filter(function(l){ return l.empresa || l.cliente; }).length;
+    countEl.textContent = importLinhas.length + ' linhas — ' + preen + ' preenchidas';
+  }
+}
+
+
+function updImpVt(idx, val) {
+  importLinhas[idx].vTotal = val;
+  var total = importLinhas.reduce(function(s,l){ return s + calcImportTotal(l); }, 0);
+  var el = document.getElementById('import-total');
+  if (el) el.textContent = fmtImport(total);
 }
 
 function updImp(idx, campo, val) { importLinhas[idx][campo] = val; }
 
 function updImpCalc(idx, campo, val) {
   importLinhas[idx][campo] = val;
-  var vt = calcImportTotal(importLinhas[idx]);
-  var el = document.getElementById('imp-vt-' + importLinhas[idx]._id);
-  if (el) el.textContent = fmtImport(vt);
-  var total = importLinhas.reduce(function(s,l){ return s + calcImportTotal(l); }, 0);
-  var totalEl = document.getElementById('import-total');
-  if (totalEl) totalEl.textContent = fmtImport(total);
 }
 
 function delImpLinha(idx) { importLinhas.splice(idx, 1); renderImportTable(); }
@@ -3083,19 +3212,12 @@ function salvarImportacao() {
     var err = [];
     if (!l.empresa)  err.push('Empresa');
     if (!l.cliente)  err.push('Cliente');
-    if (!l.cat)      err.push('Categoria');
-    if (!l.material) err.push('Material');
-    if (!l.qtd)      err.push('Qtd');
-    if (!l.vUnit)    err.push('Vl. Unit.');
     if (!l.vendedor) err.push('Vendedor');
     if (err.length) { erros.push('Linha ' + (idx+1) + ': ' + err.join(', ')); return; }
-    var q = parseFloat(String(l.qtd).replace(',','.')) || 0;
-    var v = parseFloat(String(l.vUnit).replace(',','.')) || 0;
-    var vt = Math.round(q * v * 100) / 100;
+    var vt = parseFloat(String(l.vTotal||'0').replace(',','.')) || 0;
     validas.push({ id: l.chamado||('imp_'+(Date.now()+idx)), data:l.data, empresa:l.empresa, estado:l.estado,
-      cliente:l.cliente, chamado:l.chamado, pn:l.pn, cat:l.cat, material:l.material,
-      itens:[{cat:l.cat, material:l.material, qtd:q, vUnit:v, vTotal:vt}],
-      vTotal:vt, vUnit:v, qtd:q, veiculo:l.veiculo, status:l.status||'agendamento',
+      cliente:l.cliente, chamado:l.chamado, pn:l.pn, cat:'', material:'',
+      itens:[], vTotal:vt, veiculo:l.veiculo, status:l.status||'agendamento',
       vendedor:l.vendedor, importado:true, criadoEm:Date.now()+idx });
   });
   if (erros.length) { alert('Corrija antes de salvar:\n\n' + erros.join('\n')); return; }
@@ -3352,21 +3474,110 @@ function renderPremiacoes(allPedidos) {
 }
 
 function registrarClientePremio() {
-  var vend = document.getElementById('prem-vend-sel');
-  var nome = document.getElementById('prem-cliente-nome');
-  var tipo = document.getElementById('prem-cliente-tipo');
-  if (!vend||!nome||!tipo||!nome.value.trim()) { alert('Preencha o nome do cliente.'); return; }
+  var vend    = document.getElementById('prem-vend-sel');
+  var chamado = document.getElementById('prem-chamado');
+  var status  = document.getElementById('prem-status-pag');
+  var vlInput = document.getElementById('prem-valor-custom');
+  if (!vend || !chamado) return;
+  if (!chamado.value.trim()) { alert('Preencha o número do Chamado.'); return; }
+  if (!premTipoSelecionado) {
+    var aviso = document.getElementById('prem-tipo-aviso');
+    if (aviso) aviso.style.display = 'block';
+    return;
+  }
+
+  var valor = vlInput && vlInput.value ? parseFloat(vlInput.value) : (premValorMap[premTipoSelecionado] || 0);
   var data = new Date().toISOString().split('T')[0];
   var id = Date.now().toString();
+
   dbRef('premios/clientes/' + id).set({
-    id: id, vend: vend.value, nome: nome.value.trim(),
-    tipo: tipo.value, data: data
+    id: id,
+    vend: vend.value,
+    chamado: chamado.value.trim(),
+    tipo: premTipoSelecionado,
+    valor: valor,
+    status: status ? status.value : 'pendente',
+    data: data
   }).then(function() {
-    nome.value = '';
+    chamado.value = '';
+    if (vlInput) vlInput.value = '';
+    // Reset type selection
+    premTipoSelecionado = '';
+    document.querySelectorAll('.prem-tipo-card').forEach(function(c) {
+      c.style.borderColor = '#444'; c.style.background = '#2A2A2A';
+    });
+    var tipoInput = document.getElementById('prem-cliente-tipo');
+    if (tipoInput) tipoInput.value = '';
     var t = document.getElementById('prem-toast');
     if(t){ t.style.display='block'; setTimeout(function(){ t.style.display='none'; },2000); }
+    carregarListaRegistros();
     renderPremiacoes({});
   }).catch(function(e){ alert('Erro: '+e.message); });
+}
+
+function carregarListaRegistros() {
+  var mesAtual = new Date().toISOString().slice(0,7);
+  dbRef('premios/clientes').once('value').then(function(snap) {
+    var todos = snap.val() ? Object.values(snap.val()) : [];
+    var doMes = todos.filter(function(c){ return c.data && c.data.startsWith(mesAtual); })
+                     .sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+    var lista = document.getElementById('prem-lista-registros');
+    if (!lista) return;
+    if (!doMes.length) { lista.innerHTML = '<div style="font-size:11px;color:#666;text-align:center;padding:8px;">Nenhuma premiação registrada este mês.</div>'; return; }
+
+    var tipoLabel = { novo:'Cliente Novo', mg:'MG/Mogi', inativo:'Cliente Inativo', aco:'Lider Aço', surpresa:'Surpresa Poliana' };
+    lista.innerHTML = '';
+    doMes.forEach(function(c) {
+      var pago = c.status === 'pago';
+      var vn = vendedores[c.vend] ? vendedores[c.vend].nome : c.vend;
+      var vlStr = c.valor ? 'R$ ' + c.valor : '—';
+
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;background:#2A2A2A;border-radius:7px;padding:8px 10px;gap:8px;flex-wrap:wrap;';
+
+      var left = document.createElement('div');
+      left.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      left.innerHTML = '<span style="font-size:16px;">' + (pago ? '✅' : '⏳') + '</span>' +
+        '<div>' +
+          '<div style="font-size:12px;font-weight:600;color:#fff;">' + vn + ' — Chamado ' + (c.chamado||'—') + '</div>' +
+          '<div style="font-size:11px;color:#888;">' + (tipoLabel[c.tipo]||c.tipo) + ' · ' + c.data + '</div>' +
+        '</div>';
+
+      var right = document.createElement('div');
+      right.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+      var vlEl = document.createElement('span');
+      vlEl.style.cssText = 'font-size:13px;font-weight:700;color:#FAC775;';
+      vlEl.textContent = vlStr;
+
+      var btnPago = document.createElement('button');
+      btnPago.textContent = pago ? 'Desfazer' : 'Marcar Pago';
+      btnPago.style.cssText = 'padding:4px 10px;border-radius:5px;border:none;background:' + (pago?'#555':'#2E7D32') + ';color:#fff;font-size:11px;cursor:pointer;';
+      (function(cid, cpago){ btnPago.addEventListener('click', function(){ togglePremPago(cid, !cpago); }); })(c.id, pago);
+
+      var btnDel = document.createElement('button');
+      btnDel.textContent = '✕';
+      btnDel.style.cssText = 'padding:4px 8px;border-radius:5px;border:none;background:#C41E1E;color:#fff;font-size:11px;cursor:pointer;';
+      (function(cid){ btnDel.addEventListener('click', function(){ deletarPremio(cid); }); })(c.id);
+
+      right.appendChild(vlEl); right.appendChild(btnPago); right.appendChild(btnDel);
+      row.appendChild(left); row.appendChild(right);
+      lista.appendChild(row);
+    });
+  }).catch(function(){});
+}
+
+function togglePremPago(id, pago) {
+  dbRef('premios/clientes/' + id + '/status').set(pago ? 'pago' : 'pendente')
+    .then(function() { carregarListaRegistros(); })
+    .catch(function(e){ alert('Erro: ' + e.message); });
+}
+
+function deletarPremio(id) {
+  if (!confirm('Remover esta premiação?')) return;
+  dbRef('premios/clientes/' + id).remove()
+    .then(function() { carregarListaRegistros(); renderPremiacoes({}); })
+    .catch(function(e){ alert('Erro: ' + e.message); });
 }
 
 // ── PAINÉIS ANALÍTICOS DA GESTORA ──
