@@ -3959,8 +3959,8 @@ function dbRef(path) {
 // ── FIREBASE SYNC ──
 
 function fbSave(vendNome) {
-  const v = vendedores[vendNome];
-  const data = {
+  var v = vendedores[vendNome];
+  var data = {
     meta:      v.meta      || '',
     realizado: v.realizado || '',
     ligacoes:  v.ligacoes  || '',
@@ -3978,16 +3978,16 @@ function fbSave(vendNome) {
     updatedAt: Date.now()
   };
   dbRef('vendedores/' + vendNome).set(data)
-    .then(() => console.log('Firebase: salvo', vendNome))
-    .catch(e => console.error('Firebase erro:', e));
+    .then(function() { console.log('Firebase: salvo', vendNome); })
+    .catch(function(e) { console.error('Firebase erro:', e); });
 }
 
 function fbLoad(vendNome, callback) {
   dbRef('vendedores/' + vendNome).once('value')
-    .then(snap => {
-      const data = snap.val();
+    .then(function(snap) {
+      var data = snap.val();
       if (data) {
-        const v = vendedores[vendNome];
+        var v = vendedores[vendNome];
         v.meta      = data.meta      || v.meta;
         v.realizado = data.realizado || v.realizado;
         v.ligacoes  = data.ligacoes  || '';
@@ -4005,14 +4005,14 @@ function fbLoad(vendNome, callback) {
       }
       if (callback) callback();
     })
-    .catch(e => { console.error('Firebase load erro:', e); if (callback) callback(); });
+    .catch(function(e) { console.error('Firebase load erro:', e); if (callback) callback(); });
 }
 
 function fbListenVendedor(vendNome) {
-  dbRef('vendedores/' + vendNome).on('value', snap => {
-    const data = snap.val();
+  dbRef('vendedores/' + vendNome).on('value', function(snap) {
+    var data = snap.val();
     if (!data) return;
-    const v = vendedores[vendNome];
+    var v = vendedores[vendNome];
     v.meta      = data.meta      || v.meta;
     v.realizado = data.realizado || v.realizado;
     v.ligacoes  = data.ligacoes  || '';
@@ -4024,7 +4024,6 @@ function fbListenVendedor(vendNome) {
     v.melhorar  = data.melhorar  || '';
     v.notas     = data.notas     || {};
     v.tarefas   = data.tarefas   || [];
-    // If this is the currently logged-in vendedor, refresh their view
     if (currentUser === vendNome) {
       renderEvolucaoVendedor(v);
     }
@@ -4848,11 +4847,11 @@ function calcPct() {
 
 function adminSelect(nome, btn) {
   adminVendedor = nome;
-  document.querySelectorAll('[id^="abtn-"]').forEach(b => b.classList.remove('active'));
-  const abtn = document.getElementById('abtn-' + nome);
+  document.querySelectorAll('[id^="abtn-"]').forEach(function(b) { b.classList.remove('active'); });
+  var abtn = document.getElementById('abtn-' + nome);
   if (abtn) abtn.classList.add('active');
-  const v = vendedores[nome];
-  const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val||''; };
+  var v = vendedores[nome];
+  var set = function(id, val) { var el=document.getElementById(id); if(el) el.value=val||''; };
   set('adm-meta',      (v.meta||'').replace('R$ ',''));
   set('adm-realizado', (v.realizado||'').replace('R$ ',''));
   set('adm-ligacoes',  v.ligacoes||'');
@@ -4918,10 +4917,10 @@ function adminSelect(nome, btn) {
 }
 
 function adminSave() {
-  const v = vendedores[adminVendedor];
-  const get = id => { const el=document.getElementById(id); return el ? el.value.trim() : ''; };
-  const meta = get('adm-meta'), real = get('adm-realizado');
-  const pct = parseFloat(real.replace(/\./g,'').replace(',','.')) / (parseFloat(meta.replace(/\./g,'').replace(',','.')) || 1) * 100;
+  var v = vendedores[adminVendedor];
+  var get = function(id) { var el=document.getElementById(id); return el ? el.value.trim() : ''; };
+  var meta = get('adm-meta'), real = get('adm-realizado');
+  var pct = parseFloat(real.replace(/\./g,'').replace(',','.')) / (parseFloat(meta.replace(/\./g,'').replace(',','.')) || 1) * 100;
   v.meta      = 'R$ ' + meta;
   v.realizado = 'R$ ' + real;
   v.ligacoes           = get('adm-ligacoes');
@@ -4934,11 +4933,9 @@ function adminSave() {
   v.pct       = Math.round(pct);
   v.fortes    = get('adm-fortes');
   v.melhorar  = get('adm-melhorar');
-  // tarefas saved directly via addTarefa/removeTarefa
-  // Save to Firebase
   fbSave(adminVendedor);
-  const toast = document.getElementById('adm-toast');
-  if (toast) { toast.style.display='block'; setTimeout(()=>toast.style.display='none', 2800); }
+  var toast = document.getElementById('adm-toast');
+  if (toast) { toast.style.display='block'; setTimeout(function(){ toast.style.display='none'; }, 2800); }
   renderAdminResumo();
 }
 
