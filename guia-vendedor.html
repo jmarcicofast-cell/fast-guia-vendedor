@@ -4898,7 +4898,7 @@ function doLogin() {
   // Show correct evolucao section
   var evGest = document.getElementById('ev-gestora-section');
   var evVend = document.getElementById('ev-vendedor-section');
-  if (v.nome === 'Juliana') {
+  if (v.tipo === 'gestora') {
     var biArq = document.getElementById('btn-importar-arquivo'); if(biArq) biArq.style.display='block';
     if (evGest) evGest.style.display = 'grid';
     if (evVend) evVend.style.display = 'none';
@@ -4914,14 +4914,14 @@ function doLogin() {
     listenRanking();
     // Show gestora premio tools only for Juliana
     var gestTools = document.getElementById('prem-gestora-tools');
-    if (gestTools) gestTools.style.display = v.nome === 'Juliana' ? 'block' : 'none';
+    if (gestTools) gestTools.style.display = v.tipo === 'gestora' ? 'block' : 'none';
   });
   // Start listening to pedidos
-  listenPedidos(user, v.nome === 'Juliana');
+  listenPedidos(user, v.tipo === 'gestora');
   // Show correct commission section
   var comVend = document.getElementById('ped-com-vendedor');
   var comGest = document.getElementById('ped-com-gestora');
-  if (v.nome === 'Juliana') {
+  if (v.tipo === 'gestora') {
     if (comVend) comVend.style.display = 'none';
     if (comGest) comGest.style.display = 'block';
     // Trigger gestora commission calculation
