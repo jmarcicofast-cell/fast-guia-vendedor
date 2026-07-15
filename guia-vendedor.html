@@ -1716,7 +1716,8 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="togglePedForm()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Novo Pedido</button>
         <button id="btn-exportar" onclick="exportarPedidosExcel()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #2E7D32;background:#fff;color:#2E7D32;font-size:13px;font-weight:600;cursor:pointer;">📥 Exportar Excel</button>
-        <button id="btn-importar-arquivo" onclick="togglePlanilhaImport()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #185FA5;background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;display:none;">Importar em Massa</button>
+        <input type="file" id="excel-import-input" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
+        <button id="btn-importar-arquivo" onclick="document.getElementById('excel-import-input').click()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #185FA5;background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;display:none;">📂 Importar Excel</button>
         <button onclick="testarConexao()" style="padding:8px 14px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;">🔧 Testar</button>
       </div>
     </div>
@@ -2352,6 +2353,7 @@
 
   .regra-ouro { background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 12.5px; color: #92400e; }
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <div class="script-inner">
       <div class="s-container">
 
@@ -2717,6 +2719,271 @@
 </div>
 
 <script>
+// ── EDITAR PEDIDO ──
+var pedidoEmEdicao = null;
+
+function abrirEditarPedido(vendNome, pedidoId) {
+  dbRef('pedidos/' + vendNome + '/' + pedidoId).once('value').then(function(snap) {
+    var p = snap.val();
+    if (!p) { alert('Pedido nao encontrado.'); return; }
+    pedidoEmEdicao = { vendNome: vendNome, pedidoId: pedidoId, pedido: p };
+
+    // Fill modal fields
+    var set = function(id, val) { var el=document.getElementById(id); if(el) el.value=val||''; };
+    set('edit-data',     p.data);
+    set('edit-empresa',  p.empresa);
+    set('edit-estado',   p.estado);
+    set('edit-cliente',  p.cliente);
+    set('edit-chamado',  p.chamado);
+    set('edit-pn',       p.pn);
+    set('edit-status',   p.status);
+    set('edit-veiculo',  p.veiculo);
+
+    // Load itens
+    editItens = p.itens ? p.itens.slice() : (p.material ? [{cat:p.cat,material:p.material,qtd:p.qtd||1,vUnit:p.vUnit||0,vTotal:p.vTotal||0}] : []);
+    renderEditItens();
+
+    document.getElementById('edit-modal').style.display = 'flex';
+  }).catch(function(e) { alert('Erro: ' + e.message); });
+}
+
+function fecharEditarPedido() {
+  document.getElementById('edit-modal').style.display = 'none';
+  pedidoEmEdicao = null;
+  editItens = [];
+}
+
+var editItens = [];
+
+function renderEditItens() {
+  var lista = document.getElementById('edit-itens-lista');
+  if (!lista) return;
+  lista.innerHTML = '';
+  var totalGeral = 0;
+  editItens.forEach(function(it, idx) {
+    var vt = Math.round((it.qtd||0)*(it.vUnit||0)*100)/100;
+    totalGeral += vt;
+    var div = document.createElement('div');
+    div.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;background:#F8F7F3;border-radius:8px;padding:10px;margin-bottom:8px;position:relative;';
+    var inp = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
+
+    // Categoria select
+    var catDiv = document.createElement('div');
+    catDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Categoria</label>';
+    var sel = document.createElement('select');
+    sel.style.cssText = inp;
+    [['','Selecione'],['placa','Placa 0,5%'],['grx','GRX 0,75%'],['aco','Aco 1%']].forEach(function(opt) {
+      var o = document.createElement('option');
+      o.value = opt[0]; o.textContent = opt[1];
+      if (it.cat === opt[0]) o.selected = true;
+      sel.appendChild(o);
+    });
+    (function(i){ sel.onchange = function(){ editItens[i].cat = this.value; }; })(idx);
+    catDiv.appendChild(sel);
+
+    // Material
+    var matDiv = document.createElement('div');
+    matDiv.style.gridColumn = 'span 2';
+    matDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Material</label>';
+    var matIn = document.createElement('input');
+    matIn.type='text'; matIn.value=it.material||''; matIn.placeholder='Ex: Chapa ST 12,5mm'; matIn.style.cssText=inp;
+    (function(i){ matIn.onchange = function(){ editItens[i].material = this.value; }; })(idx);
+    matDiv.appendChild(matIn);
+
+    // Qtd
+    var qtdDiv = document.createElement('div');
+    qtdDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Qtd</label>';
+    var qtdIn = document.createElement('input');
+    qtdIn.type='number'; qtdIn.value=it.qtd||''; qtdIn.placeholder='0'; qtdIn.style.cssText=inp;
+    (function(i,el){ qtdIn.oninput = function(){ editItens[i].qtd=parseFloat(this.value)||0; editItens[i].vTotal=Math.round(editItens[i].qtd*editItens[i].vUnit*100)/100; recalcEditTotal(); }; })(idx);
+    qtdDiv.appendChild(qtdIn);
+
+    // Vl Unit
+    var vuDiv = document.createElement('div');
+    vuDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Vl. Unit. (R$)</label>';
+    var vuIn = document.createElement('input');
+    vuIn.type='number'; vuIn.step='0.01'; vuIn.value=it.vUnit||''; vuIn.placeholder='0,00'; vuIn.style.cssText=inp;
+    (function(i){ vuIn.oninput = function(){ editItens[i].vUnit=parseFloat(this.value)||0; editItens[i].vTotal=Math.round(editItens[i].qtd*editItens[i].vUnit*100)/100; recalcEditTotal(); }; })(idx);
+    vuDiv.appendChild(vuIn);
+
+    // Total
+    var totDiv = document.createElement('div');
+    totDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Total</label>';
+    var totEl = document.createElement('div');
+    totEl.id = 'edit-vt-' + idx;
+    totEl.style.cssText = 'padding:6px 8px;font-size:13px;font-weight:600;background:#fff;border-radius:6px;border:1.5px solid #E2E0D8;';
+    totEl.textContent = 'R$ ' + vt.toLocaleString('pt-BR',{minimumFractionDigits:2});
+    totDiv.appendChild(totEl);
+
+    // Remove btn
+    var remBtn = document.createElement('button');
+    remBtn.type='button'; remBtn.textContent='✕ Remover';
+    remBtn.style.cssText='font-size:11px;color:#C41E1E;background:none;border:none;cursor:pointer;padding:2px 0;grid-column:span 5;';
+    (function(i){ remBtn.onclick = function(){ editItens.splice(i,1); renderEditItens(); }; })(idx);
+
+    div.appendChild(catDiv); div.appendChild(matDiv); div.appendChild(qtdDiv); div.appendChild(vuDiv); div.appendChild(totDiv); div.appendChild(remBtn);
+    lista.appendChild(div);
+  });
+
+  var totGeral = document.getElementById('edit-total-geral');
+  if (totGeral) totGeral.textContent = 'R$ ' + totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2});
+}
+
+function recalcEditTotal() {
+  var total = editItens.reduce(function(s,it){ return s + (it.vTotal||0); }, 0);
+  var el = document.getElementById('edit-total-geral');
+  if (el) el.textContent = 'R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  editItens.forEach(function(it, i) {
+    var el2 = document.getElementById('edit-vt-' + i);
+    if (el2) el2.textContent = 'R$ ' + (it.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  });
+}
+
+function addEditItem() {
+  editItens.push({ cat:'', material:'', qtd:0, vUnit:0, vTotal:0 });
+  renderEditItens();
+}
+
+function salvarEdicaoPedido() {
+  if (!pedidoEmEdicao) return;
+  var get = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
+  var p = pedidoEmEdicao.pedido;
+
+  // Update fields
+  p.data    = get('edit-data');
+  p.empresa = get('edit-empresa');
+  p.estado  = get('edit-estado');
+  p.cliente = get('edit-cliente');
+  p.chamado = get('edit-chamado');
+  p.pn      = get('edit-pn');
+  p.status  = get('edit-status');
+  p.veiculo = get('edit-veiculo');
+  p.itens   = editItens.slice();
+  p.vTotal  = editItens.reduce(function(s,it){ return s+(it.vTotal||0); }, 0);
+  p.cat     = editItens.length === 1 ? editItens[0].cat : 'misto';
+
+  dbRef('pedidos/' + pedidoEmEdicao.vendNome + '/' + pedidoEmEdicao.pedidoId).set(p)
+    .then(function() {
+      fecharEditarPedido();
+    })
+    .catch(function(e) { alert('Erro ao salvar: ' + e.message); });
+}
+
+// ── IMPORTAR EXCEL ──
+function importarExcel(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = new Uint8Array(e.target.result);
+      var workbook = XLSX.read(data, { type: 'array', cellDates: true });
+      var sheet = workbook.Sheets[workbook.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+
+      // Skip title rows — find header row (row with DATA or DATA *)
+      var headerRow = -1;
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        if (row && row[0] && String(row[0]).toUpperCase().indexOf('DATA') === 0) {
+          headerRow = i;
+          break;
+        }
+      }
+      if (headerRow < 0) { alert('Nao encontrei o cabecalho. Verifique se o arquivo e a planilha de importacao correta.'); return; }
+
+      var dataRows = rows.slice(headerRow + 1);
+      var pedidos = [];
+      var ignoradas = 0;
+
+      dataRows.forEach(function(row, idx) {
+        if (!row || (!row[1] && !row[3])) { ignoradas++; return; } // skip empty
+        // Columns: 0=DATA, 1=EMPRESA, 2=UF, 3=CLIENTE, 4=CHAMADO, 5=PN, 6=CAT, 7=MATERIAL, 8=QTD, 9=VL.UNIT, 10=VL.TOTAL, 11=VEICULO, 12=STATUS, 13=VENDEDOR, 14=OBS
+        var dataRaw  = String(row[0]  || '').trim();
+        var empresa  = String(row[1]  || '').trim();
+        var uf       = String(row[2]  || '').trim();
+        var cliente  = String(row[3]  || '').trim();
+        var chamado  = String(row[4]  || '').trim();
+        var pn       = String(row[5]  || '').trim();
+        var cat      = String(row[6]  || '').trim().toLowerCase();
+        var material = String(row[7]  || '').trim();
+        var qtd      = parseFloat(String(row[8]  || '0').replace(',','.')) || 0;
+        var vUnit    = parseFloat(String(row[9]  || '0').replace(',','.').replace(/[^0-9.]/g,'')) || 0;
+        var status   = String(row[12] || 'agendamento').trim().toLowerCase();
+        var vendedor = String(row[13] || '').trim().toUpperCase();
+        var veiculo  = String(row[11] || '').trim().toLowerCase();
+
+        // Validate required fields
+        if (!empresa || !cliente || !cat || !material || !qtd || !vUnit || !vendedor) { ignoradas++; return; }
+
+        // Normalize date
+        var dataF = '';
+        if (dataRaw) {
+          // Handle dd/mm/yyyy, d-m-yy, yyyy-mm-dd
+          var sep = dataRaw.indexOf('/') >= 0 ? '/' : dataRaw.indexOf('-') >= 0 ? '-' : '';
+          if (sep) {
+            var pp = dataRaw.split(sep);
+            if (pp.length === 3) {
+              if (pp[0].length === 4) {
+                // Already yyyy-mm-dd
+                dataF = pp[0] + '-' + pp[1].padStart(2,'0') + '-' + pp[2].padStart(2,'0');
+              } else {
+                var aa = pp[2].length === 2 ? '20' + pp[2] : pp[2];
+                dataF = aa + '-' + pp[1].padStart(2,'0') + '-' + pp[0].padStart(2,'0');
+              }
+            }
+          } else {
+            dataF = dataRaw;
+          }
+        }
+
+        var vt = Math.round(qtd * vUnit * 100) / 100;
+        var id = chamado || ('xl_' + (Date.now() + idx));
+
+        pedidos.push({
+          id: id, data: dataF, empresa: empresa, estado: uf, cliente: cliente,
+          chamado: chamado, pn: pn, cat: cat, material: material,
+          itens: [{ cat: cat, material: material, qtd: qtd, vUnit: vUnit, vTotal: vt }],
+          vTotal: vt, vUnit: vUnit, qtd: qtd,
+          veiculo: veiculo, status: status, vendedor: vendedor,
+          importado: true, criadoEm: Date.now() + idx
+        });
+      });
+
+      if (!pedidos.length) {
+        alert('Nenhuma linha valida encontrada.\n' + ignoradas + ' linhas ignoradas (campos obrigatorios vazios).');
+        event.target.value = '';
+        return;
+      }
+
+      // Confirm before saving
+      var msg = pedidos.length + ' pedidos prontos para importar (' + ignoradas + ' linhas ignoradas).\nDeseja salvar no Firebase?';
+      if (!confirm(msg)) { event.target.value = ''; return; }
+
+      // Save to Firebase
+      var salvos = 0, dup = 0, conc = 0, tot = pedidos.length;
+      pedidos.forEach(function(p) {
+        var ref = 'pedidos/' + p.vendedor + '/' + p.id;
+        dbRef(ref).once('value').then(function(snap) {
+          if (snap.val()) { dup++; }
+          else { dbRef(ref).set(p).then(function(){ salvos++; }); }
+          conc++;
+          if (conc === tot) {
+            event.target.value = '';
+            alert('Importacao concluida!\n\n' + salvos + ' pedidos novos\n' + dup + ' duplicados ignorados');
+          }
+        }).catch(function() { conc++; if (conc === tot) event.target.value = ''; });
+      });
+
+    } catch(err) {
+      alert('Erro ao ler o arquivo Excel: ' + err.message);
+      event.target.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 // META DA EQUIPE
 var META_EQUIPE = 7319212.09;
 
@@ -3960,7 +4227,10 @@ function renderPedidos(pedidosList, isGestora) {
       '<td>' + vlUnit + '</td>' +
       '<td style="font-weight:600;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
       '<td><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" style="font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;">' + selectOpts + '</select></td>' +
-      '<td><button onclick="deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">x</button></td>' +
+      '<td style="white-space:nowrap;">' +
+        '<button onclick="abrirEditarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#E3F0FA;color:#185FA5;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;margin-right:3px;">✏️</button>' +
+        '<button onclick="deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">✕</button>' +
+      '</td>' +
     '</tr>';
   }).join('');
 
@@ -5010,5 +5280,99 @@ function importarArquivo(event) {
   reader.readAsText(file);
 }
 </script>
+
+<!-- MODAL EDITAR PEDIDO -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+
+    <!-- Header -->
+    <div style="background:#1C1C1C;border-radius:14px 14px 0 0;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:14px;font-weight:700;color:#fff;">✏️ Editar Pedido</div>
+      <button onclick="fecharEditarPedido()" style="background:none;border:none;color:#aaa;font-size:20px;cursor:pointer;line-height:1;">✕</button>
+    </div>
+
+    <div style="padding:1.25rem;display:grid;gap:14px;">
+
+      <!-- Dados do pedido -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+        <div class="ped-field">
+          <label>Data</label>
+          <input type="date" id="edit-data">
+        </div>
+        <div class="ped-field" style="grid-column:span 2;">
+          <label>Empresa</label>
+          <input type="text" id="edit-empresa" placeholder="Nome da empresa">
+        </div>
+        <div class="ped-field">
+          <label>UF</label>
+          <select id="edit-estado">
+            <option value="">—</option>
+            <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+            <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+            <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+            <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+            <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+            <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+            <option>SP</option><option>SE</option><option>TO</option>
+          </select>
+        </div>
+        <div class="ped-field" style="grid-column:span 2;">
+          <label>Cliente</label>
+          <input type="text" id="edit-cliente" placeholder="Nome do cliente">
+        </div>
+        <div class="ped-field">
+          <label>Chamado</label>
+          <input type="text" id="edit-chamado" placeholder="Ex: 123456">
+        </div>
+        <div class="ped-field">
+          <label>Cód. PN</label>
+          <input type="text" id="edit-pn" placeholder="Ex: CF001">
+        </div>
+        <div class="ped-field">
+          <label>Veículo</label>
+          <select id="edit-veiculo">
+            <option value="">—</option>
+            <option value="truck">Truck</option>
+            <option value="carreta">Carreta</option>
+            <option value="outros">Outros</option>
+          </select>
+        </div>
+        <div class="ped-field">
+          <label>Status</label>
+          <select id="edit-status">
+            <option value="agendamento">Agendamento</option>
+            <option value="aguardando-dt">Aguardando DT</option>
+            <option value="com-dt">Com DT</option>
+            <option value="em-rota">Em Rota</option>
+            <option value="entregue">Entregue</option>
+            <option value="faturado">Faturado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Itens -->
+      <div style="border-top:1px solid #F0EEEA;padding-top:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:600;color:#1C1C1C;">Itens do Pedido</div>
+          <button type="button" onclick="addEditItem()" style="padding:5px 12px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Adicionar Item</button>
+        </div>
+        <div id="edit-itens-lista"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #F0EEEA;margin-top:4px;">
+          <span style="font-size:12px;color:#888;">Total do pedido:</span>
+          <span style="font-size:16px;font-weight:700;color:#1C1C1C;" id="edit-total-geral">R$ 0,00</span>
+        </div>
+      </div>
+
+      <!-- Botões -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:8px;border-top:1px solid #F0EEEA;">
+        <button onclick="fecharEditarPedido()" style="padding:9px 20px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;color:#666;font-size:13px;font-weight:600;cursor:pointer;">Cancelar</button>
+        <button onclick="salvarEdicaoPedido()" style="padding:9px 20px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Salvar Alterações</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
