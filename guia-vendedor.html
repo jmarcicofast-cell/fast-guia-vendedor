@@ -1893,6 +1893,67 @@
         </div>
 
       </div>
+
+      <!-- DETALHAMENTO PRECISO POR STATUS -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px;">
+
+        <!-- SEMANA - STATUS -->
+        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#7A4A00;margin-bottom:10px;">📄 Detalhamento por Status — Semana</div>
+          <div style="display:grid;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:#666;">Com DT</span>
+              <span style="display:flex;flex-direction:column;align-items:flex-end;">
+                <span style="font-size:14px;font-weight:700;color:#7A4A00;" id="dash-sem-comdt">R$ 0,00</span>
+                <span style="font-size:10px;color:#aaa;" id="dash-sem-comdt-qt">(0)</span>
+              </span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:#666;">Entregue</span>
+              <span style="display:flex;flex-direction:column;align-items:flex-end;">
+                <span style="font-size:14px;font-weight:700;color:#1B5E20;" id="dash-sem-entregue">R$ 0,00</span>
+                <span style="font-size:10px;color:#aaa;" id="dash-sem-entregue-qt">(0)</span>
+              </span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:#666;">Faturado</span>
+              <span style="display:flex;flex-direction:column;align-items:flex-end;">
+                <span style="font-size:14px;font-weight:700;color:#1C1C1C;" id="dash-sem-faturado">R$ 0,00</span>
+                <span style="font-size:10px;color:#aaa;" id="dash-sem-faturado-qt">(0)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MÊS - STATUS -->
+        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#7A4A00;margin-bottom:10px;">📄 Detalhamento por Status — Mês</div>
+          <div style="display:grid;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:#666;">Com DT</span>
+              <span style="display:flex;flex-direction:column;align-items:flex-end;">
+                <span style="font-size:14px;font-weight:700;color:#7A4A00;" id="dash-mes-comdt">R$ 0,00</span>
+                <span style="font-size:10px;color:#aaa;" id="dash-mes-comdt-qt">(0)</span>
+              </span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:#666;">Entregue</span>
+              <span style="display:flex;flex-direction:column;align-items:flex-end;">
+                <span style="font-size:14px;font-weight:700;color:#1B5E20;" id="dash-mes-entregue">R$ 0,00</span>
+                <span style="font-size:10px;color:#aaa;" id="dash-mes-entregue-qt">(0)</span>
+              </span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:#666;">Faturado</span>
+              <span style="display:flex;flex-direction:column;align-items:flex-end;">
+                <span style="font-size:14px;font-weight:700;color:#1C1C1C;" id="dash-mes-faturado">R$ 0,00</span>
+                <span style="font-size:10px;color:#aaa;" id="dash-mes-faturado-qt">(0)</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <!-- COMISSÃO VENDEDOR -->
@@ -2173,12 +2234,13 @@
 
       </div>
 
-      <!-- Botão gestora para registrar clientes novos -->
+      <!-- Registrar/solicitar premiação (gestora tem controle total; vendedor só solicita a propria) -->
       <div id="prem-gestora-tools" style="display:none;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #333;">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:12px;">🏅 Registrar Premiação Conquistada</div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:4px;" id="prem-form-titulo">🏅 Registrar Premiação Conquistada</div>
+        <div style="font-size:11px;color:#666;margin-bottom:12px;display:none;" id="prem-form-subtitulo">Sua solicitação fica pendente até a gestão aprovar e marcar como paga.</div>
 
         <!-- Seleção visual da premiação -->
-        <div style="font-size:11px;color:#aaa;margin-bottom:8px;">Qual premiação o vendedor pontuou?</div>
+        <div style="font-size:11px;color:#aaa;margin-bottom:8px;">Qual premiação foi conquistada?</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:14px;" id="prem-tipo-cards">
           <div onclick="selecionarTipoPremio('novo',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
             <div style="font-size:18px;">💰</div>
@@ -2210,7 +2272,7 @@
 
         <!-- Dados do registro -->
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:10px;align-items:end;">
-          <div class="ped-field">
+          <div class="ped-field" id="prem-vend-field">
             <label style="color:#aaa;">Vendedor</label>
             <select id="prem-vend-sel" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
               <option value="PEDRO">Pedro</option>
@@ -2230,21 +2292,26 @@
             <label style="color:#aaa;">Valor (R$)</label>
             <input id="prem-valor-custom" type="number" step="0.01" placeholder="Automático" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
           </div>
-          <div class="ped-field">
+          <div class="ped-field" id="prem-status-field">
             <label style="color:#aaa;">Status</label>
             <select id="prem-status-pag" style="width:100%;padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
               <option value="pendente">⏳ Pendente</option>
               <option value="pago">✅ Pago</option>
             </select>
           </div>
+          <div class="ped-field" id="prem-status-fixo" style="display:none;">
+            <label style="color:#aaa;">Status</label>
+            <div style="padding:7px 10px;border:1.5px solid #333;border-radius:6px;font-size:12px;background:#2A2A2A;color:#FAC775;">⏳ Pendente</div>
+          </div>
           <div style="display:flex;align-items:flex-end;">
-            <button onclick="registrarClientePremio()" style="width:100%;padding:8px 16px;border-radius:6px;border:none;background:#FAC775;color:#1C1C1C;font-size:13px;font-weight:700;cursor:pointer;">+ Registrar</button>
+            <button id="prem-btn-registrar" onclick="registrarClientePremio()" style="width:100%;padding:8px 16px;border-radius:6px;border:none;background:#FAC775;color:#1C1C1C;font-size:13px;font-weight:700;cursor:pointer;">+ Registrar</button>
           </div>
         </div>
         <div id="prem-tipo-aviso" style="font-size:11px;color:#C41E1E;display:none;margin-bottom:6px;">⚠️ Selecione o tipo de premiação acima.</div>
 
         <!-- Lista de premiações registradas -->
-        <div id="prem-lista-registros" style="display:grid;gap:6px;margin-top:8px;max-height:260px;overflow-y:auto;"></div>
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-top:16px;margin-bottom:8px;" id="prem-lista-titulo">Premiações do mês</div>
+        <div id="prem-lista-registros" style="display:grid;gap:6px;margin-top:2px;max-height:260px;overflow-y:auto;"></div>
         <div id="prem-toast" style="display:none;background:#1B5E20;color:#fff;padding:8px 12px;border-radius:7px;font-size:12px;text-align:center;margin-top:8px;">✅ Premiação registrada!</div>
       </div>
     </div>
@@ -3530,12 +3597,34 @@ function renderPremiacoes(allPedidos) {
   if (elStatus) elStatus.textContent = lider.vlAco > 0 ? 'R$ 300' : '—';
 }
 
+function configurarFormPremiacao(tipoUsuario) {
+  var isGestora = tipoUsuario === 'gestora';
+  var vendField   = document.getElementById('prem-vend-field');
+  var statusField = document.getElementById('prem-status-field');
+  var statusFixo  = document.getElementById('prem-status-fixo');
+  var titulo      = document.getElementById('prem-form-titulo');
+  var subtitulo   = document.getElementById('prem-form-subtitulo');
+  var btn         = document.getElementById('prem-btn-registrar');
+  var listaTitulo = document.getElementById('prem-lista-titulo');
+
+  if (vendField)   vendField.style.display   = isGestora ? '' : 'none';
+  if (statusField) statusField.style.display = isGestora ? '' : 'none';
+  if (statusFixo)  statusFixo.style.display  = isGestora ? 'none' : '';
+  if (titulo)      titulo.textContent = isGestora ? '🏅 Registrar Premiação Conquistada' : '🏅 Solicitar Minha Premiação';
+  if (subtitulo)   subtitulo.style.display = isGestora ? 'none' : 'block';
+  if (btn)         btn.textContent = isGestora ? '+ Registrar' : '+ Solicitar';
+  if (listaTitulo) listaTitulo.textContent = isGestora ? 'Premiações do mês (equipe toda)' : 'Minhas premiações do mês';
+
+  carregarListaRegistros();
+}
+
 function registrarClientePremio() {
-  var vend    = document.getElementById('prem-vend-sel');
+  var vendSel = document.getElementById('prem-vend-sel');
   var chamado = document.getElementById('prem-chamado');
-  var status  = document.getElementById('prem-status-pag');
+  var statusSel = document.getElementById('prem-status-pag');
   var vlInput = document.getElementById('prem-valor-custom');
-  if (!vend || !chamado) return;
+  var isGestora = vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora';
+  if (!chamado) return;
   if (!chamado.value.trim()) { alert('Preencha o número do Chamado.'); return; }
   if (!premTipoSelecionado) {
     var aviso = document.getElementById('prem-tipo-aviso');
@@ -3543,17 +3632,20 @@ function registrarClientePremio() {
     return;
   }
 
+  var vendAlvo = isGestora ? (vendSel ? vendSel.value : '') : currentUser;
+  var statusAlvo = isGestora ? (statusSel ? statusSel.value : 'pendente') : 'pendente';
+
   var valor = vlInput && vlInput.value ? parseFloat(vlInput.value) : (premValorMap[premTipoSelecionado] || 0);
   var data = new Date().toISOString().split('T')[0];
   var id = Date.now().toString();
 
   dbRef('premios/clientes/' + id).set({
     id: id,
-    vend: vend.value,
+    vend: vendAlvo,
     chamado: chamado.value.trim(),
     tipo: premTipoSelecionado,
     valor: valor,
-    status: status ? status.value : 'pendente',
+    status: statusAlvo,
     data: data
   }).then(function() {
     chamado.value = '';
@@ -3566,7 +3658,10 @@ function registrarClientePremio() {
     var tipoInput = document.getElementById('prem-cliente-tipo');
     if (tipoInput) tipoInput.value = '';
     var t = document.getElementById('prem-toast');
-    if(t){ t.style.display='block'; setTimeout(function(){ t.style.display='none'; },2000); }
+    if (t) {
+      t.textContent = isGestora ? '✅ Premiação registrada!' : '✅ Solicitação enviada! Aguarde a aprovação da gestão.';
+      t.style.display='block'; setTimeout(function(){ t.style.display='none'; },2500);
+    }
     carregarListaRegistros();
     renderPremiacoes({});
   }).catch(function(e){ alert('Erro: '+e.message); });
@@ -3574,9 +3669,11 @@ function registrarClientePremio() {
 
 function carregarListaRegistros() {
   var mesAtual = new Date().toISOString().slice(0,7);
+  var isGestora = vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora';
   dbRef('premios/clientes').once('value').then(function(snap) {
     var todos = snap.val() ? Object.values(snap.val()) : [];
     var doMes = todos.filter(function(c){ return c.data && c.data.startsWith(mesAtual); })
+                     .filter(function(c){ return isGestora || c.vend === currentUser; })
                      .sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
     var lista = document.getElementById('prem-lista-registros');
     if (!lista) return;
@@ -3607,17 +3704,28 @@ function carregarListaRegistros() {
       vlEl.style.cssText = 'font-size:13px;font-weight:700;color:#FAC775;';
       vlEl.textContent = vlStr;
 
-      var btnPago = document.createElement('button');
-      btnPago.textContent = pago ? 'Desfazer' : 'Marcar Pago';
-      btnPago.style.cssText = 'padding:4px 10px;border-radius:5px;border:none;background:' + (pago?'#555':'#2E7D32') + ';color:#fff;font-size:11px;cursor:pointer;';
-      (function(cid, cpago){ btnPago.addEventListener('click', function(){ togglePremPago(cid, !cpago); }); })(c.id, pago);
+      right.appendChild(vlEl);
 
-      var btnDel = document.createElement('button');
-      btnDel.textContent = '✕';
-      btnDel.style.cssText = 'padding:4px 8px;border-radius:5px;border:none;background:#C41E1E;color:#fff;font-size:11px;cursor:pointer;';
-      (function(cid){ btnDel.addEventListener('click', function(){ deletarPremio(cid); }); })(c.id);
+      // Vendedor comum so acompanha status - so a gestora pode aprovar/pagar/excluir
+      if (isGestora) {
+        var btnPago = document.createElement('button');
+        btnPago.textContent = pago ? 'Desfazer' : 'Marcar Pago';
+        btnPago.style.cssText = 'padding:4px 10px;border-radius:5px;border:none;background:' + (pago?'#555':'#2E7D32') + ';color:#fff;font-size:11px;cursor:pointer;';
+        (function(cid, cpago){ btnPago.addEventListener('click', function(){ togglePremPago(cid, !cpago); }); })(c.id, pago);
 
-      right.appendChild(vlEl); right.appendChild(btnPago); right.appendChild(btnDel);
+        var btnDel = document.createElement('button');
+        btnDel.textContent = '✕';
+        btnDel.style.cssText = 'padding:4px 8px;border-radius:5px;border:none;background:#C41E1E;color:#fff;font-size:11px;cursor:pointer;';
+        (function(cid){ btnDel.addEventListener('click', function(){ deletarPremio(cid); }); })(c.id);
+
+        right.appendChild(btnPago); right.appendChild(btnDel);
+      } else {
+        var statusTag = document.createElement('span');
+        statusTag.style.cssText = 'font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:' + (pago?'#1B5E20':'#3A3000') + ';color:' + (pago?'#A5D6A7':'#FAC775') + ';';
+        statusTag.textContent = pago ? 'Pago' : 'Aguardando aprovação';
+        right.appendChild(statusTag);
+      }
+
       row.appendChild(left); row.appendChild(right);
       lista.appendChild(row);
     });
@@ -4885,6 +4993,11 @@ function listenPedidos(vendNome, isGestora) {
         const todos = Object.values(allPedidos).flat();
         renderPedidos(todos, true);
         renderResumoEquipe(allPedidos);
+        // Dashboard (Hoje / Vendas / Entregas / Detalhamento por status) usando a equipe toda,
+        // com a meta do TIME (campo "gest-meta" se preenchido, senao META_EQUIPE).
+        var metaEl = document.getElementById('gest-meta');
+        var metaTime = metaEl && metaEl.value ? (parseFloat(metaEl.value.replace(/\./g,'').replace(',','.')) || META_EQUIPE) : META_EQUIPE;
+        updateDashboard(todos, { meta: 'R$ ' + metaTime, metaSemana: String(metaTime/4), metaEntregaMes: '', metaEntregaSemana: '' });
       });
     });
   } else {
@@ -5024,6 +5137,34 @@ function updateDashboard(pedidos, v) {
   set('dash-emes-pct',   pctEMes + '%');
   set('dash-emes-falta', metaEntMes > 0 ? fmtBRL(faltaEMes) : '—');
   setW('dash-emes-bar',  pctEMes, '#185FA5');
+
+  // ── Detalhamento preciso por status (Com DT / Entregue / Faturado) ──
+  const fmtBRL2 = n => 'R$ ' + Number(n||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const somaVt  = lista => lista.reduce((s,p)=>s+Number(p.vTotal||0),0);
+  const semanaPeds = pedidos.filter(p => p.status !== 'cancelado' && isSemana(p));
+  const mesPeds    = pedidos.filter(p => p.status !== 'cancelado' && isMes(p));
+  const porStatus  = (lista, status) => lista.filter(p => p.status === status);
+
+  const semComDt = porStatus(semanaPeds, 'com-dt');
+  const semEnt   = porStatus(semanaPeds, 'entregue');
+  const semFat   = porStatus(semanaPeds, 'faturado');
+  const mesComDt = porStatus(mesPeds, 'com-dt');
+  const mesEnt   = porStatus(mesPeds, 'entregue');
+  const mesFat   = porStatus(mesPeds, 'faturado');
+
+  set('dash-sem-comdt',       fmtBRL2(somaVt(semComDt)));
+  set('dash-sem-comdt-qt',    '(' + semComDt.length + ' pedido(s))');
+  set('dash-sem-entregue',    fmtBRL2(somaVt(semEnt)));
+  set('dash-sem-entregue-qt', '(' + semEnt.length + ' pedido(s))');
+  set('dash-sem-faturado',    fmtBRL2(somaVt(semFat)));
+  set('dash-sem-faturado-qt', '(' + semFat.length + ' pedido(s))');
+
+  set('dash-mes-comdt',       fmtBRL2(somaVt(mesComDt)));
+  set('dash-mes-comdt-qt',    '(' + mesComDt.length + ' pedido(s))');
+  set('dash-mes-entregue',    fmtBRL2(somaVt(mesEnt)));
+  set('dash-mes-entregue-qt', '(' + mesEnt.length + ' pedido(s))');
+  set('dash-mes-faturado',    fmtBRL2(somaVt(mesFat)));
+  set('dash-mes-faturado-qt', '(' + mesFat.length + ' pedido(s))');
 }
 
 
@@ -5296,9 +5437,11 @@ function doLogin() {
     }
     // Ranking aparece para todos
     listenRanking();
-    // Show gestora premio tools only for Juliana
+    // Formulario de premiacao aparece para todos: gestora registra/aprova,
+    // vendedor so solicita a propria (fica pendente ate aprovacao).
     var gestTools = document.getElementById('prem-gestora-tools');
-    if (gestTools) gestTools.style.display = v.tipo === 'gestora' ? 'block' : 'none';
+    if (gestTools) gestTools.style.display = 'block';
+    configurarFormPremiacao(v.tipo);
   });
   // Start listening to pedidos
   listenPedidos(user, v.tipo === 'gestora');
