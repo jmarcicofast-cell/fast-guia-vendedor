@@ -4507,6 +4507,14 @@ window.addEventListener('DOMContentLoaded', function() {
   loadFirebase(function() {
     console.log('Firebase pronto. firebaseOK:', firebaseOK);
   });
+  // Mantem conectado: se houver uma sessao salva de uma visita anterior, entra
+  // direto sem pedir usuario/senha de novo.
+  try {
+    var sessao = localStorage.getItem('fgv_session_user');
+    if (sessao && vendedores[sessao]) {
+      entrarComoUsuario(sessao);
+    }
+  } catch(e) {}
 });
 
 // ── localStorage fallback ──
@@ -5395,6 +5403,14 @@ function doLogin() {
     return;
   }
   error.textContent = '';
+  // Guarda a sessao para manter conectado mesmo depois de fechar/atualizar a pagina
+  try { localStorage.setItem('fgv_session_user', user); } catch(e) {}
+  entrarComoUsuario(user);
+}
+
+function entrarComoUsuario(user) {
+  const v = vendedores[user];
+  if (!v) return;
   currentUser = user;
   if (!firebaseOK) {
     var fw = document.getElementById('firebase-warning');
@@ -5491,6 +5507,8 @@ function doLogin() {
 
 function doLogout() {
   currentUser = null;
+  try { localStorage.removeItem('fgv_session_user'); } catch(e) {}
+  if (window._rampaConnWatcher) { clearInterval(window._rampaConnWatcher); window._rampaConnWatcher = null; }
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('vendedor-banner').style.display = 'none';
   document.getElementById('login-user').value = '';
@@ -5499,6 +5517,8 @@ function doLogout() {
   if (cb) cb.style.display = 'none';
   const adminNav = document.getElementById('nav-admin');
   if (adminNav) adminNav.style.display = 'none';
+  const rampaNav = document.getElementById('nav-rampa');
+  if (rampaNav) rampaNav.style.display = 'none';
   // Switch back to materiais if on admin tab
   if (document.getElementById('tab-admin').classList.contains('active')) {
     showTab('materiais', document.querySelector('.nav-btn'));
