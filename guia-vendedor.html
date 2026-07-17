@@ -1801,6 +1801,61 @@
         </div>
       </div>
 
+      <!-- FILTRO DE DATA PERSONALIZADO -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#4A148C;margin-bottom:10px;">🔎 Filtro de Período Personalizado</div>
+        <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <div class="ped-field">
+            <label>De</label>
+            <input type="date" id="filtro-data-de" style="padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+          </div>
+          <div class="ped-field">
+            <label>Até</label>
+            <input type="date" id="filtro-data-ate" style="padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+          </div>
+          <button onclick="aplicarFiltroPeriodo()" style="padding:8px 16px;border-radius:6px;border:none;background:#4A148C;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Aplicar</button>
+          <button onclick="limparFiltroPeriodo()" style="padding:8px 14px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;">✕ Limpar</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="qf-btn" onclick="filtroPeriodoRapido('hoje')">Hoje</button>
+          <button class="qf-btn" onclick="filtroPeriodoRapido('ontem')">Ontem</button>
+          <button class="qf-btn" onclick="filtroPeriodoRapido('7dias')">Últimos 7 dias</button>
+          <button class="qf-btn" onclick="filtroPeriodoRapido('30dias')">Últimos 30 dias</button>
+          <button class="qf-btn" onclick="filtroPeriodoRapido('mesatual')">Este mês</button>
+          <button class="qf-btn" onclick="filtroPeriodoRapido('mespassado')">Mês passado</button>
+          <button class="qf-btn" onclick="filtroPeriodoRapido('anoatual')">Este ano</button>
+        </div>
+      </div>
+
+      <!-- RESULTADO DO PERÍODO PERSONALIZADO -->
+      <div id="filtro-periodo-resultado" style="display:none;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
+          <div style="background:#fff;border:2px solid #4A148C;border-radius:12px;padding:1rem 1.2rem;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#4A148C;margin-bottom:6px;">📈 Vendas no Período</div>
+            <div style="font-size:11px;color:#888;margin-bottom:8px;" id="filtro-periodo-label">—</div>
+            <div style="font-size:24px;font-weight:700;color:#1C1C1C;" id="filtro-vendas-total">R$ 0,00</div>
+            <div style="font-size:11px;color:#888;margin-top:4px;" id="filtro-vendas-qt">0 pedido(s)</div>
+          </div>
+          <div style="background:#fff;border:2px solid #185FA5;border-radius:12px;padding:1rem 1.2rem;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#185FA5;margin-bottom:6px;">🚚 Entregue + Faturado no Período</div>
+            <div style="font-size:24px;font-weight:700;color:#1C1C1C;" id="filtro-entregas-total">R$ 0,00</div>
+            <div style="font-size:11px;color:#888;margin-top:4px;" id="filtro-entregas-qt">0 pedido(s)</div>
+          </div>
+          <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#7A4A00;margin-bottom:10px;">📄 Detalhamento por Status no Período</div>
+            <div style="display:grid;gap:6px;">
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:#666;">Agendamento</span><span style="font-size:13px;font-weight:700;color:#0C447C;" id="filtro-st-agendamento">R$ 0,00 (0)</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:#666;">Aguardando DT</span><span style="font-size:13px;font-weight:700;color:#7A4A00;" id="filtro-st-aguardando-dt">R$ 0,00 (0)</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:#666;">Com DT</span><span style="font-size:13px;font-weight:700;color:#4A148C;" id="filtro-st-com-dt">R$ 0,00 (0)</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:#666;">Em Rota</span><span style="font-size:13px;font-weight:700;color:#1B5E20;" id="filtro-st-em-rota">R$ 0,00 (0)</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:#666;">Entregue</span><span style="font-size:13px;font-weight:700;color:#1B5E20;" id="filtro-st-entregue">R$ 0,00 (0)</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:#666;">Faturado</span><span style="font-size:13px;font-weight:700;color:#1C1C1C;" id="filtro-st-faturado">R$ 0,00 (0)</span></div>
+              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:#666;">Cancelado</span><span style="font-size:13px;font-weight:700;color:#C41E1E;" id="filtro-st-cancelado">R$ 0,00 (0)</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- METAS VENDAS -->
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px);">
 
@@ -4977,6 +5032,8 @@ function renderPedidosFiltrados() {
   atualizarComissao(_pedTodosDoMes, _pedIsGestora);
 }
 
+var _pedTodosGeral = [];
+
 function renderPedidos(pedidosList, isGestora) {
   const mesAtual = new Date().toISOString().slice(0,7);
   const filtrados = pedidosList.filter(p => p.data && p.data.startsWith(mesAtual));
@@ -4986,7 +5043,12 @@ function renderPedidos(pedidosList, isGestora) {
 
   _pedTodosDoMes = filtrados;
   _pedIsGestora = isGestora;
+  _pedTodosGeral = pedidosList.slice();
   renderPedidosFiltrados();
+  // Se ja tiver um filtro de periodo personalizado aplicado, recalcula com os dados novos
+  if (document.getElementById('filtro-periodo-resultado') && document.getElementById('filtro-periodo-resultado').style.display !== 'none') {
+    aplicarFiltroPeriodo();
+  }
 }
 
 function atualizarComissao(pedidos, isGestora) {
@@ -5117,6 +5179,93 @@ function toISO(d) { return d.toISOString().split('T')[0]; }
 
 function fmtBRL(n) {
   return 'R$ ' + Number(n||0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
+}
+
+// ── FILTRO DE PERÍODO PERSONALIZADO ──
+function filtroPeriodoRapido(tipo) {
+  var hoje = new Date();
+  var de = new Date(hoje), ate = new Date(hoje);
+
+  if (tipo === 'hoje') {
+    // de = ate = hoje
+  } else if (tipo === 'ontem') {
+    de.setDate(de.getDate()-1); ate.setDate(ate.getDate()-1);
+  } else if (tipo === '7dias') {
+    de.setDate(de.getDate()-6);
+  } else if (tipo === '30dias') {
+    de.setDate(de.getDate()-29);
+  } else if (tipo === 'mesatual') {
+    de = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    ate = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0);
+  } else if (tipo === 'mespassado') {
+    de = new Date(hoje.getFullYear(), hoje.getMonth()-1, 1);
+    ate = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+  } else if (tipo === 'anoatual') {
+    de = new Date(hoje.getFullYear(), 0, 1);
+    ate = new Date(hoje.getFullYear(), 11, 31);
+  }
+
+  document.getElementById('filtro-data-de').value = toISO(de);
+  document.getElementById('filtro-data-ate').value = toISO(ate);
+  aplicarFiltroPeriodo();
+}
+
+function limparFiltroPeriodo() {
+  document.getElementById('filtro-data-de').value = '';
+  document.getElementById('filtro-data-ate').value = '';
+  var resBox = document.getElementById('filtro-periodo-resultado');
+  if (resBox) resBox.style.display = 'none';
+}
+
+function aplicarFiltroPeriodo() {
+  var deStr  = document.getElementById('filtro-data-de').value;
+  var ateStr = document.getElementById('filtro-data-ate').value;
+  if (!deStr || !ateStr) { alert('Preencha as duas datas (De e Até) ou use um dos atalhos rápidos.'); return; }
+  if (deStr > ateStr) { alert('A data "De" não pode ser depois da data "Até".'); return; }
+
+  function getValor(p) {
+    if (p.itens && p.itens.length > 0) {
+      return p.itens.reduce(function(s,it){ return s + Math.round((it.qtd||0)*(it.vUnit||0)*100)/100; },0);
+    }
+    return Number(p.vTotal||0);
+  }
+  function fmt2(n) { return 'R$ ' + Number(n||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  // Vendas = data do PEDIDO dentro do intervalo (quando a venda foi feita)
+  var pedsVendidos = _pedTodosGeral.filter(function(p) {
+    return p.data && p.data >= deStr && p.data <= ateStr && p.status !== 'cancelado';
+  });
+  var vendasTotal = pedsVendidos.reduce(function(s,p){ return s+getValor(p); }, 0);
+
+  // Entregas/Detalhamento = data em que o STATUS mudou (dataStatus), dentro do intervalo
+  var pedsPorStatusData = _pedTodosGeral.filter(function(p) {
+    var d = p.dataStatus || p.data;
+    return d && d >= deStr && d <= ateStr;
+  });
+  var pedsEntregues = pedsPorStatusData.filter(function(p) { return (p.status === 'entregue' || p.status === 'faturado'); });
+  var entregasTotal = pedsEntregues.reduce(function(s,p){ return s+getValor(p); }, 0);
+
+  var statusList = ['agendamento','aguardando-dt','com-dt','em-rota','entregue','faturado','cancelado'];
+  statusList.forEach(function(st) {
+    var peds = pedsPorStatusData.filter(function(p){ return p.status === st; });
+    var total = peds.reduce(function(s,p){ return s+getValor(p); }, 0);
+    var el = document.getElementById('filtro-st-' + st);
+    if (el) el.textContent = fmt2(total) + ' (' + peds.length + ')';
+  });
+
+  var deFmt  = new Date(deStr+'T12:00:00').toLocaleDateString('pt-BR');
+  var ateFmt = new Date(ateStr+'T12:00:00').toLocaleDateString('pt-BR');
+  var labelEl = document.getElementById('filtro-periodo-label');
+  if (labelEl) labelEl.textContent = deFmt === ateFmt ? deFmt : (deFmt + ' até ' + ateFmt);
+
+  var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+  set('filtro-vendas-total', fmt2(vendasTotal));
+  set('filtro-vendas-qt', pedsVendidos.length + ' pedido(s)');
+  set('filtro-entregas-total', fmt2(entregasTotal));
+  set('filtro-entregas-qt', pedsEntregues.length + ' pedido(s)');
+
+  var resBox = document.getElementById('filtro-periodo-resultado');
+  if (resBox) resBox.style.display = 'block';
 }
 
 function updateDashboard(pedidos, v) {
