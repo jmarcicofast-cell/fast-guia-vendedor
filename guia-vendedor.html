@@ -960,8 +960,9 @@
 </div>
 
 <!-- VENDEDOR BANNER -->
-<div id="firebase-warning" style="display:none;background:#E65100;color:#fff;text-align:center;padding:6px 1rem;font-size:12px;font-weight:500;">
-  ⚠️ Modo offline — dados salvos localmente neste dispositivo. Abra via link para sincronizar.
+<div id="firebase-warning" style="display:none;position:sticky;top:0;z-index:9998;background:#7A0000;color:#fff;text-align:center;padding:12px 1rem;font-size:14px;font-weight:700;border-bottom:3px solid #C41E1E;">
+  ⚠️ SEM CONEXÃO COM O SERVIDOR — os pedidos que você salvar agora ficam SÓ neste aparelho e a gestão NÃO vai vê-los até sincronizar.
+  <button onclick="testarConexao()" style="margin-left:10px;padding:5px 12px;border-radius:6px;border:1px solid #fff;background:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">🔧 Testar conexão agora</button>
 </div>
 <div id="vendedor-banner">
   <div>
@@ -1719,6 +1720,7 @@
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="togglePedForm()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Novo Pedido</button>
+        <button id="btn-sync-local" onclick="sincronizarPedidosLocais()" style="display:none;padding:8px 16px;border-radius:7px;border:1.5px solid #7A0000;background:#FFEBEE;color:#7A0000;font-size:13px;font-weight:700;cursor:pointer;">🔄 Sincronizar pedidos locais<span id="btn-sync-local-count"></span></button>
         <button id="btn-exportar" onclick="exportarPedidosExcel()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #2E7D32;background:#fff;color:#2E7D32;font-size:13px;font-weight:600;cursor:pointer;">📥 Exportar Excel</button>
         <input type="file" id="excel-import-input" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
         <button id="btn-importar-arquivo" onclick="document.getElementById('excel-import-input').click()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #185FA5;background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;display:none;">📂 Importar Excel</button>
@@ -4413,6 +4415,71 @@ function dbRef(path) {
   };
 }
 
+// ── RECUPERAÇÃO DE PEDIDOS SALVOS SÓ LOCALMENTE (MODO OFFLINE) ──
+// Se em algum momento o Firebase nao estava acessivel, salvarPedido() ainda
+// funciona (para nao travar quem esta em campo sem sinal), mas o pedido fica
+// preso so no localStorage deste aparelho. Essas funcoes detectam isso e
+// permitem empurrar esses pedidos pro Firebase assim que a conexao volta.
+function listarPedidosLocaisPendentes(vendNome) {
+  var prefix = 'fgv_pedidos_' + vendNome + '_';
+  var pendentes = [];
+  for (var i = 0; i < localStorage.length; i++) {
+    var k = localStorage.key(i);
+    if (k && k.indexOf(prefix) === 0) {
+      try {
+        var val = JSON.parse(localStorage.getItem(k));
+        if (val && val.id) pendentes.push({ key: k, pedido: val });
+      } catch(e) {}
+    }
+  }
+  return pendentes;
+}
+
+function checarPedidosLocaisPendentes() {
+  var btn = document.getElementById('btn-sync-local');
+  var countEl = document.getElementById('btn-sync-local-count');
+  if (!btn || !currentUser) return;
+  var pendentes = listarPedidosLocaisPendentes(currentUser);
+  if (pendentes.length > 0) {
+    btn.style.display = 'inline-block';
+    if (countEl) countEl.textContent = ' (' + pendentes.length + ')';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+function sincronizarPedidosLocais() {
+  if (!currentUser) return;
+  if (!firebaseOK || !db) {
+    alert('Ainda sem conexão com o servidor. Verifique sua internet e clique em "🔧 Testar" antes de tentar sincronizar.');
+    return;
+  }
+  var pendentes = listarPedidosLocaisPendentes(currentUser);
+  if (!pendentes.length) {
+    alert('Nenhum pedido local pendente de sincronização — tudo certo!');
+    checarPedidosLocaisPendentes();
+    return;
+  }
+  var enviados = 0, falhas = 0, total = pendentes.length;
+  pendentes.forEach(function(item) {
+    db.ref('pedidos/' + currentUser + '/' + item.pedido.id).set(item.pedido)
+      .then(function() {
+        enviados++;
+        localStorage.removeItem(item.key);
+        if (enviados + falhas === total) finalizarSincronizacao(enviados, falhas);
+      })
+      .catch(function() {
+        falhas++;
+        if (enviados + falhas === total) finalizarSincronizacao(enviados, falhas);
+      });
+  });
+  function finalizarSincronizacao(ok, err) {
+    alert('Sincronização concluída: ' + ok + ' pedido(s) enviados para o servidor' + (err ? ', ' + err + ' com falha (tente novamente)' : '') + '.');
+    checarPedidosLocaisPendentes();
+    listenPedidos(currentUser, vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora');
+  }
+}
+
 // ── FIREBASE SYNC ──
 
 function fbSave(vendNome) {
@@ -4593,12 +4660,19 @@ function salvarPedido() {
         if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
         const toast = document.getElementById('ped-toast');
         if (toast) {
+          if (firebaseOK) {
+            toast.style.background = '#1B5E20';
+            toast.innerHTML = '✅ Pedido salvo e sincronizado!';
+          } else {
+            toast.style.background = '#7A0000';
+            toast.innerHTML = '⚠️ Pedido salvo APENAS neste aparelho — sem conexão com o servidor. A gestão não vai ver esse pedido até você sincronizar. Verifique sua internet.';
+          }
           toast.style.display = 'block';
           setTimeout(function() {
             toast.style.display = 'none';
             const form = document.getElementById('ped-form');
-            if (form) form.style.display = 'none';
-          }, 1500);
+            if (form && firebaseOK) form.style.display = 'none';
+          }, firebaseOK ? 1500 : 5000);
         }
         ['pf-empresa','pf-cliente','pf-pn','pf-material','pf-qtd','pf-valor-item','pf-valor-total'].forEach(function(id) {
           const el = document.getElementById(id);
@@ -5185,6 +5259,19 @@ function doLogin() {
     var fw = document.getElementById('firebase-warning');
     if (fw) fw.style.display = 'block';
   }
+  // Fica de olho no status da conexao e em pedidos presos localmente durante toda a sessao.
+  // Assim, se a conexao cair no meio do uso (ou voltar depois de estar offline), o aviso
+  // aparece/some sozinho e a sincronizacao automatica acontece assim que possivel.
+  if (window._rampaConnWatcher) clearInterval(window._rampaConnWatcher);
+  window._rampaConnWatcher = setInterval(function() {
+    var fw = document.getElementById('firebase-warning');
+    if (fw) fw.style.display = firebaseOK ? 'none' : 'block';
+    checarPedidosLocaisPendentes();
+    if (firebaseOK && currentUser) {
+      var pend = listarPedidosLocaisPendentes(currentUser);
+      if (pend.length > 0) sincronizarPedidosLocais();
+    }
+  }, 8000);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('vendedor-banner').style.display = 'flex';
   document.getElementById('vb-nome-text').textContent = v.nome;
@@ -5215,6 +5302,7 @@ function doLogin() {
   });
   // Start listening to pedidos
   listenPedidos(user, v.tipo === 'gestora');
+  checarPedidosLocaisPendentes();
   // Show correct commission section
   var comVend = document.getElementById('ped-com-vendedor');
   var comGest = document.getElementById('ped-com-gestora');
