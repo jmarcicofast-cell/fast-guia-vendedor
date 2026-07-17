@@ -4043,14 +4043,14 @@ function renderRampaNovos() {
     var admissao = rampaState.admissao[vn] || '';
 
     var pedsPeriodo = todosPedidos.filter(function(p) {
-      return rampaFiltraData(p.data, bounds) && p.status !== 'cancelado';
+      return rampaFiltraData(p.data, bounds) && p.status !== 'cancelado' && (!admissao || !p.data || p.data >= admissao);
     });
     var cargasFechadas = pedsPeriodo.length;
     var valorTotal = pedsPeriodo.reduce(function(s,p) { return s + getValor(p); }, 0);
     var ticketMedio = cargasFechadas > 0 ? valorTotal / cargasFechadas : 0;
     var entregues = pedsPeriodo.filter(function(p) { return p.status === 'entregue' || p.status === 'faturado'; }).length;
 
-    var ligsPeriodo = ligs.filter(function(l) { return rampaFiltraData(l.data, bounds); })
+    var ligsPeriodo = ligs.filter(function(l) { return rampaFiltraData(l.data, bounds) && (!admissao || !l.data || l.data >= admissao); })
                           .reduce(function(s,l) { return s + (l.qtd||0); }, 0);
 
     // meta de referencia (so faz sentido pra semana/mes; no "total" usamos a meta mensal atual como referencia)
@@ -4066,7 +4066,7 @@ function renderRampaNovos() {
     var corPct = pctMeta >= 100 ? '#2E7D32' : pctMeta >= 60 ? '#E65100' : '#C41E1E';
 
     // ── Projeção para bater R$ 1 milhão (baseada no total acumulado desde a admissão) ──
-    var totalGeral = todosPedidos.filter(function(p) { return p.status !== 'cancelado'; })
+    var totalGeral = todosPedidos.filter(function(p) { return p.status !== 'cancelado' && (!admissao || !p.data || p.data >= admissao); })
                                   .reduce(function(s,p) { return s + getValor(p); }, 0);
     var METATOTAL = 1000000;
     var projecaoHtml = '';
