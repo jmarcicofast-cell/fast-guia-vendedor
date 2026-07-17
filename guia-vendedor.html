@@ -3366,14 +3366,22 @@ function gerarExcel(pedidos, btn) {
 function listenRanking() {
   var allPedidos = {}, allLigacoes = {};
   var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
-  // Garante que a META de TODOS os vendedores venha do Firebase, nao do valor
-  // padrao hardcoded no objeto "vendedores" - isso evita que o ranking mostre
-  // metas erradas quando quem esta logado nao e a gestora (que e a unica que
-  // antes carregava a meta de todo mundo).
+  // Garante que os dados de TODOS os vendedores (incluindo a meta) venham do
+  // Firebase, usando o MESMO mecanismo ja comprovado que a aba Gestao/Evolucao
+  // usa (fbListenVendedor le o no inteiro em tempo real). Antes so a meta era
+  // escutada isoladamente, o que nao estava sincronizando corretamente para
+  // quem nao e a gestora.
   nomes.forEach(function(vn) {
-    dbRef('vendedores/' + vn + '/meta').on('value', function(snap) {
-      var val = snap.val();
-      if (val) vendedores[vn].meta = val;
+    dbRef('vendedores/' + vn).on('value', function(snap) {
+      var data = snap.val();
+      if (data) {
+        var v = vendedores[vn];
+        v.meta       = data.meta       || v.meta;
+        v.metaSemana = data.metaSemana || v.metaSemana || '';
+        v.realizado  = data.realizado  || v.realizado;
+        v.ligacoes   = data.ligacoes   || '';
+        v.ticket     = data.ticket     || v.ticket;
+      }
       renderRanking(allPedidos, allLigacoes);
     });
   });
