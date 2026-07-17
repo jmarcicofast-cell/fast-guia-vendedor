@@ -2073,7 +2073,14 @@
     </div>
 
     <!-- TABELA DE PEDIDOS -->
-    <div style="overflow-x:auto;margin-top:1rem;-webkit-overflow-scrolling:touch;">
+    <div style="display:flex;align-items:center;gap:10px;margin-top:1.25rem;flex-wrap:wrap;">
+      <input type="text" id="ped-busca" placeholder="Buscar por cliente, empresa, vendedor, material, chamado, PN, UF, veículo, status ou valor..."
+        oninput="aplicarBuscaPedidos(this.value)"
+        style="flex:1;min-width:240px;padding:8px 14px 8px 34px;border-radius:7px;border:1px solid #D3D1C7;background:#fff url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%2214%22 fill=%22none%22 stroke=%22%23aaa%22 stroke-width=%222%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2211%22 cy=%2211%22 r=%228%22/%3E%3Cpath d=%22m21 21-4.35-4.35%22/%3E%3C/svg%3E') no-repeat 10px center;font-size:13px;outline:none;">
+      <span id="ped-busca-count" style="font-size:12px;color:#aaa;white-space:nowrap;"></span>
+      <button id="ped-busca-clear" onclick="limparBuscaPedidos()" style="display:none;padding:7px 14px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;white-space:nowrap;">✕ Limpar</button>
+    </div>
+    <div style="overflow-x:auto;margin-top:0.75rem;-webkit-overflow-scrolling:touch;">
       <table class="ped-table" id="ped-tabela">
         <thead>
           <tr>
@@ -4620,59 +4627,111 @@ function deletarPedido(vendNome, pedidoId) {
     .catch(e => console.error('Erro delete:', e));
 }
 
-function renderPedidos(pedidosList, isGestora) {
+var _pedTodosDoMes = [];
+var _pedIsGestora = false;
+var _pedBuscaAtual = '';
+
+function linhaPedidoHtml(p, isGestora) {
+  const statusOpts = isGestora ? STATUS_TODOS : STATUS_VENDEDOR;
+  var selectOpts = statusOpts.map(function(s) {
+    return '<option value="' + s + '" ' + (p.status===s?'selected':'') + '>' + (STATUS_LABEL[s]||s) + '</option>';
+  }).join('');
+  var vendLabel = isGestora ? '<td style="font-size:11px;font-weight:600;color:#C41E1E;">' + (p.vendedor||'') + '</td>' : '';
+  var materiais = p.itens ? p.itens.map(function(it){return it.material;}).join(', ') : (p.material||'');
+  var catLabel  = p.itens ? (p.itens.length + ' item(s)') : (CAT_LABEL[p.cat]||p.cat);
+  var qtdTotal  = p.itens ? p.itens.reduce(function(s,it){return s+(it.qtd||0);},0) : (p.qtd||0);
+  var vlUnit    = p.itens ? '—' : 'R$ ' + Number(p.vUnit||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  var veicLabel = p.veiculo==='truck' ? 'Truck' : p.veiculo==='carreta' ? 'Carreta' : p.veiculo==='outros' ? 'Outros' : '—';
+  return '<tr>' +
+    '<td>' + (p.data||'') + '</td>' +
+    vendLabel +
+    '<td>' + (p.empresa||'') + '</td>' +
+    '<td style="text-align:center;font-weight:600;font-size:11px;color:#185FA5;">' + (p.estado||'—') + '</td>' +
+    '<td style="text-align:center;font-size:12px;">' + veicLabel + '</td>' +
+    '<td>' + (p.cliente||'') + '</td>' +
+    '<td style="font-family:monospace;font-size:11px;">' + (p.pn||'—') + '</td>' +
+    '<td style="font-family:monospace;font-size:11px;color:#C41E1E;font-weight:600;">' + (p.chamado||'—') + '</td>' +
+    '<td style="max-width:180px;">' + materiais + '</td>' +
+    '<td style="text-align:center;font-size:11px;background:#F8F7F3;border-radius:4px;padding:2px 6px;">' + catLabel + '</td>' +
+    '<td style="text-align:center;">' + qtdTotal + '</td>' +
+    '<td>' + vlUnit + '</td>' +
+    '<td style="font-weight:600;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
+    '<td><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" style="font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;">' + selectOpts + '</select></td>' +
+    '<td style="white-space:nowrap;">' +
+      '<button onclick="abrirEditarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#E3F0FA;color:#185FA5;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;margin-right:3px;">✏️</button>' +
+      '<button onclick="deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">✕</button>' +
+    '</td>' +
+  '</tr>';
+}
+
+function pedidoCasaBusca(p, termo) {
+  if (!termo) return true;
+  var materiais = p.itens ? p.itens.map(function(it){ return it.material; }).join(' ') : (p.material||'');
+  var catTxt = p.itens ? p.itens.map(function(it){ return CAT_LABEL[it.cat]||it.cat||''; }).join(' ') : (CAT_LABEL[p.cat]||p.cat||'');
+  var veicTxt = p.veiculo==='truck' ? 'truck' : p.veiculo==='carreta' ? 'carreta' : p.veiculo==='outros' ? 'outros' : '';
+  var statusTxt = STATUS_LABEL[p.status] || p.status || '';
+  var vendNome = p.vendedor && vendedores[p.vendedor] ? vendedores[p.vendedor].nome : (p.vendedor||'');
+  var campos = [
+    p.empresa, p.cliente, vendNome, p.vendedor, materiais, catTxt,
+    p.chamado, p.pn, p.estado, veicTxt, statusTxt,
+    String(p.vTotal||''), p.data
+  ];
+  var alvo = campos.join(' ').toLowerCase();
+  return alvo.indexOf(termo.toLowerCase()) !== -1;
+}
+
+function aplicarBuscaPedidos(termo) {
+  _pedBuscaAtual = termo || '';
+  renderPedidosFiltrados();
+}
+
+function limparBuscaPedidos() {
+  _pedBuscaAtual = '';
+  var input = document.getElementById('ped-busca');
+  if (input) input.value = '';
+  renderPedidosFiltrados();
+}
+
+function renderPedidosFiltrados() {
   const tbody = document.getElementById('ped-tbody');
   const vazio = document.getElementById('ped-vazio');
+  const countEl = document.getElementById('ped-busca-count');
+  const clearBtn = document.getElementById('ped-busca-clear');
   if (!tbody) return;
 
-  const mesAtual = new Date().toISOString().slice(0,7);
-  const filtrados = pedidosList.filter(p => p.data && p.data.startsWith(mesAtual));
+  var termo = _pedBuscaAtual.trim();
+  var lista = termo ? _pedTodosDoMes.filter(function(p) { return pedidoCasaBusca(p, termo); }) : _pedTodosDoMes;
 
-  if (!filtrados.length) {
+  if (clearBtn) clearBtn.style.display = termo ? 'inline-block' : 'none';
+  if (countEl) countEl.textContent = termo ? (lista.length + ' de ' + _pedTodosDoMes.length + ' pedidos') : '';
+
+  if (!lista.length) {
     tbody.innerHTML = '';
-    if (vazio) vazio.style.display = 'block';
-    atualizarComissao([], isGestora);
+    if (vazio) {
+      vazio.style.display = 'block';
+      vazio.textContent = termo ? 'Nenhum pedido encontrado para "' + termo + '".' : 'Nenhum pedido registrado este mês.';
+    }
+    atualizarComissao([], _pedIsGestora);
     return;
   }
   if (vazio) vazio.style.display = 'none';
 
+  tbody.innerHTML = lista.map(function(p) { return linhaPedidoHtml(p, _pedIsGestora); }).join('');
+
+  // A comissao sempre e calculada com base no mes inteiro, nao no resultado da busca
+  atualizarComissao(_pedTodosDoMes, _pedIsGestora);
+}
+
+function renderPedidos(pedidosList, isGestora) {
+  const mesAtual = new Date().toISOString().slice(0,7);
+  const filtrados = pedidosList.filter(p => p.data && p.data.startsWith(mesAtual));
+
   // Sort by date desc
   filtrados.sort((a,b) => b.criadoEm - a.criadoEm);
 
-  tbody.innerHTML = filtrados.map(p => {
-    const statusOpts = isGestora ? STATUS_TODOS : STATUS_VENDEDOR;
-    var selectOpts = statusOpts.map(function(s) {
-      return '<option value="' + s + '" ' + (p.status===s?'selected':'') + '>' + (STATUS_LABEL[s]||s) + '</option>';
-    }).join('');
-    var vendLabel = isGestora ? '<td style="font-size:11px;font-weight:600;color:#C41E1E;">' + (p.vendedor||'') + '</td>' : '';
-    var materiais = p.itens ? p.itens.map(function(it){return it.material;}).join(', ') : (p.material||'');
-    var catLabel  = p.itens ? (p.itens.length + ' item(s)') : (CAT_LABEL[p.cat]||p.cat);
-    var qtdTotal  = p.itens ? p.itens.reduce(function(s,it){return s+(it.qtd||0);},0) : (p.qtd||0);
-    var vlUnit    = p.itens ? '—' : 'R$ ' + Number(p.vUnit||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-    var veicLabel = p.veiculo==='truck' ? 'Truck' : p.veiculo==='carreta' ? 'Carreta' : p.veiculo==='outros' ? 'Outros' : '—';
-    return '<tr>' +
-      '<td>' + (p.data||'') + '</td>' +
-      vendLabel +
-      '<td>' + (p.empresa||'') + '</td>' +
-      '<td style="text-align:center;font-weight:600;font-size:11px;color:#185FA5;">' + (p.estado||'—') + '</td>' +
-      '<td style="text-align:center;font-size:12px;">' + veicLabel + '</td>' +
-      '<td>' + (p.cliente||'') + '</td>' +
-      '<td style="font-family:monospace;font-size:11px;">' + (p.pn||'—') + '</td>' +
-      '<td style="font-family:monospace;font-size:11px;color:#C41E1E;font-weight:600;">' + (p.chamado||'—') + '</td>' +
-      '<td style="max-width:180px;">' + materiais + '</td>' +
-      '<td style="text-align:center;font-size:11px;background:#F8F7F3;border-radius:4px;padding:2px 6px;">' + catLabel + '</td>' +
-      '<td style="text-align:center;">' + qtdTotal + '</td>' +
-      '<td>' + vlUnit + '</td>' +
-      '<td style="font-weight:600;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
-      '<td><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" style="font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;">' + selectOpts + '</select></td>' +
-      '<td style="white-space:nowrap;">' +
-        '<button onclick="abrirEditarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#E3F0FA;color:#185FA5;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;margin-right:3px;">✏️</button>' +
-        '<button onclick="deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">✕</button>' +
-      '</td>' +
-    '</tr>';
-  }).join('');
-
-  atualizarComissao(filtrados, isGestora);
+  _pedTodosDoMes = filtrados;
+  _pedIsGestora = isGestora;
+  renderPedidosFiltrados();
 }
 
 function atualizarComissao(pedidos, isGestora) {
