@@ -3024,6 +3024,7 @@ function salvarEdicaoPedido() {
   if (!pedidoEmEdicao) return;
   var get = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
   var p = pedidoEmEdicao.pedido;
+  var statusAnterior = p.status;
 
   // Update fields
   p.data    = get('edit-data');
@@ -3037,12 +3038,47 @@ function salvarEdicaoPedido() {
   p.itens   = editItens.slice();
   p.vTotal  = editItens.reduce(function(s,it){ return s+(it.vTotal||0); }, 0);
   p.cat     = editItens.length === 1 ? editItens[0].cat : 'misto';
+  // Se o status mudou aqui pelo modal de edicao (nao so pelo dropdown da tabela),
+  // tambem precisa atualizar quando isso aconteceu, senao o detalhamento por
+  // status (Com DT/Entregue/Faturado) usaria uma data desatualizada.
+  if (p.status !== statusAnterior) {
+    p.dataStatus = new Date().toISOString().split('T')[0];
+  }
 
   dbRef('pedidos/' + pedidoEmEdicao.vendNome + '/' + pedidoEmEdicao.pedidoId).set(p)
     .then(function() {
       fecharEditarPedido();
     })
     .catch(function(e) { alert('Erro ao salvar: ' + e.message); });
+}
+
+// Converte texto de valor monetário pra numero, detectando automaticamente se o
+// formato é brasileiro (1.234,56) ou americano (1,234.56) — importante porque
+// arquivos Excel podem vir em qualquer um dos dois dependendo de como foram
+// gerados, e tratar errado faz o valor sair errado silenciosamente.
+function parseValorMonetario(str) {
+  if (str == null) return 0;
+  if (typeof str === 'number') return str;
+  var s = String(str).trim().replace(/^R\$\s*/, '');
+  if (!s) return 0;
+  s = s.replace(/[^0-9.,-]/g, '');
+  if (!s) return 0;
+  var lastComma = s.lastIndexOf(',');
+  var lastDot = s.lastIndexOf('.');
+  if (lastComma > -1 && lastDot > -1) {
+    if (lastComma > lastDot) {
+      // formato BR: 1.234,56 -> ponto é milhar, virgula é decimal
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      // formato US: 1,234.56 -> virgula é milhar, ponto é decimal
+      s = s.replace(/,/g, '');
+    }
+  } else if (lastComma > -1) {
+    // só tem virgula -> decimal (ex: 1234,56)
+    s = s.replace(',', '.');
+  }
+  // só ponto ou nenhum separador -> ja esta no formato que parseFloat entende
+  return parseFloat(s) || 0;
 }
 
 // ── IMPORTAR EXCEL ──
@@ -3085,7 +3121,7 @@ function importarExcel(event) {
         var veiculo  = String(row[6]  || '').trim().toLowerCase();
         var status   = String(row[7]  || 'agendamento').trim().toLowerCase();
         var vendedor = String(row[8]  || '').trim().toUpperCase();
-        var vTotal   = parseFloat(String(row[9]  || '0').replace(',','.').replace(/[^0-9.]/g,'')) || 0;
+        var vTotal   = parseValorMonetario(row[9]);
         var obs      = String(row[10] || '').trim();
 
         // Validate required fields
@@ -4764,6 +4800,7 @@ function salvarPedido() {
       vTotal: vTotal,
       veiculo: veiculo,
       status: status,
+      dataStatus: data,
       vendedor: currentUser,
       criadoEm: Date.now()
     };
@@ -4815,8 +4852,13 @@ function salvarPedido() {
 }
 
 function atualizarStatus(vendNome, pedidoId, novoStatus) {
+  var agora = new Date().toISOString().split('T')[0];
   dbRef('pedidos/' + vendNome + '/' + pedidoId + '/status').set(novoStatus)
     .catch(e => console.error('Erro status:', e));
+  // Guarda quando o status mudou de fato, pra "Com DT/Entregue/Faturado" refletirem
+  // a data real da mudança (e nao a data em que o pedido foi originalmente lançado).
+  dbRef('pedidos/' + vendNome + '/' + pedidoId + '/dataStatus').set(agora)
+    .catch(e => console.error('Erro dataStatus:', e));
 }
 
 function deletarPedido(vendNome, pedidoId) {
@@ -5005,7 +5047,9 @@ function listenPedidos(vendNome, isGestora) {
         // com a meta do TIME (campo "gest-meta" se preenchido, senao META_EQUIPE).
         var metaEl = document.getElementById('gest-meta');
         var metaTime = metaEl && metaEl.value ? (parseFloat(metaEl.value.replace(/\./g,'').replace(',','.')) || META_EQUIPE) : META_EQUIPE;
-        updateDashboard(todos, { meta: 'R$ ' + metaTime, metaSemana: String(metaTime/4), metaEntregaMes: '', metaEntregaSemana: '' });
+        var metaTimeSemana = metaTime / 4;
+        var fmtMetaBR = function(n) { return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+        updateDashboard(todos, { meta: 'R$ ' + fmtMetaBR(metaTime), metaSemana: fmtMetaBR(metaTimeSemana), metaEntregaMes: '', metaEntregaSemana: '' });
       });
     });
   } else {
@@ -5074,6 +5118,11 @@ function updateDashboard(pedidos, v) {
   const isSemana   = p => { const d = new Date(p.data+'T12:00:00'); return d >= start && d <= end && p.status !== 'cancelado'; };
   const isMes      = p => p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado';
   const isEntregue = p => p.status === 'entregue' || p.status === 'faturado';
+  // Para "quando o status mudou" usamos dataStatus (gravada ao alterar o status).
+  // Pedidos antigos que ainda nao tem esse campo caem no fallback pela data do pedido.
+  const dataDoStatus  = p => p.dataStatus || p.data;
+  const isSemanaStatus = p => { if (!dataDoStatus(p)) return false; const d = new Date(dataDoStatus(p)+'T12:00:00'); return d >= start && d <= end && p.status !== 'cancelado'; };
+  const isMesStatus    = p => dataDoStatus(p) && dataDoStatus(p).startsWith(mesAtual) && p.status !== 'cancelado';
 
   // HOJE
   const hoje = pedidos.filter(isHoje);
@@ -5094,19 +5143,23 @@ function updateDashboard(pedidos, v) {
   set('dash-hoje-outros-qt',  hojeOutros.length + ' pedido(s)');
 
   // METAS
-  const parseMeta = str => parseFloat((str||'0').replace(/\./g,'').replace(',','.')) || 0;
+  // Corrigido: precisa remover o "R$ " antes de tratar separadores, senao parseFloat
+  // falha (vira 0) ou, pior, um numero ja formatado com ponto decimal (ex: vindo do
+  // JS puro em vez do formato BR) e mal-interpretado como milhar e explode o valor.
+  const parseMeta = str => parseFloat(String(str==null?'0':str).replace('R$ ','').trim().replace(/\./g,'').replace(',','.')) || 0;
   const metaMes     = parseMeta(v.meta);
   const metaSem     = parseMeta(v.metaSemana);
   const metaEntMes  = parseMeta(v.metaEntregaMes);
   const metaEntSem  = parseMeta(v.metaEntregaSemana);
 
-  // Vendas semana / mês
+  // Vendas semana / mês (baseado na data do PEDIDO — quando a venda foi feita)
   const realSem = pedidos.filter(isSemana).reduce((s,p)=>s+Number(p.vTotal||0),0);
   const realMes = pedidos.filter(isMes).reduce((s,p)=>s+Number(p.vTotal||0),0);
 
-  // Entregas semana / mês
-  const entSem = pedidos.filter(p => isSemana(p) && isEntregue(p)).reduce((s,p)=>s+Number(p.vTotal||0),0);
-  const entMes = pedidos.filter(p => isMes(p) && isEntregue(p)).reduce((s,p)=>s+Number(p.vTotal||0),0);
+  // Entregas semana / mês (baseado em QUANDO o status virou Entregue/Faturado,
+  // nao na data em que o pedido foi originalmente lancado)
+  const entSem = pedidos.filter(p => isSemanaStatus(p) && isEntregue(p)).reduce((s,p)=>s+Number(p.vTotal||0),0);
+  const entMes = pedidos.filter(p => isMesStatus(p) && isEntregue(p)).reduce((s,p)=>s+Number(p.vTotal||0),0);
 
   const pctSem   = metaSem   > 0 ? Math.round((realSem/metaSem)*100)   : 0;
   const pctMes   = metaMes   > 0 ? Math.round((realMes/metaMes)*100)   : 0;
@@ -5147,10 +5200,12 @@ function updateDashboard(pedidos, v) {
   setW('dash-emes-bar',  pctEMes, '#185FA5');
 
   // ── Detalhamento preciso por status (Com DT / Entregue / Faturado) ──
+  // Usa a data em que o status mudou (dataStatus), nao a data original do pedido,
+  // pra refletir com precisao quando cada pedido realmente chegou naquele estagio.
   const fmtBRL2 = n => 'R$ ' + Number(n||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
   const somaVt  = lista => lista.reduce((s,p)=>s+Number(p.vTotal||0),0);
-  const semanaPeds = pedidos.filter(p => p.status !== 'cancelado' && isSemana(p));
-  const mesPeds    = pedidos.filter(p => p.status !== 'cancelado' && isMes(p));
+  const semanaPeds = pedidos.filter(p => p.status !== 'cancelado' && isSemanaStatus(p));
+  const mesPeds    = pedidos.filter(p => p.status !== 'cancelado' && isMesStatus(p));
   const porStatus  = (lista, status) => lista.filter(p => p.status === status);
 
   const semComDt = porStatus(semanaPeds, 'com-dt');
