@@ -4540,17 +4540,32 @@ function loadFirebase(cb) {
 
 // Carrega Firebase assim que a página abrir
 window.addEventListener('DOMContentLoaded', function() {
-  loadFirebase(function() {
+  var jaProsseguiu = false;
+  function prosseguirComLogin() {
+    if (jaProsseguiu) return;
+    jaProsseguiu = true;
     console.log('Firebase pronto. firebaseOK:', firebaseOK);
-  });
-  // Mantem conectado: se houver uma sessao salva de uma visita anterior, entra
-  // direto sem pedir usuario/senha de novo.
-  try {
-    var sessao = localStorage.getItem('fgv_session_user');
-    if (sessao && vendedores[sessao]) {
-      entrarComoUsuario(sessao);
+    // Importante: só tenta entrar automaticamente (ou recarregar os dados de uma
+    // sessao ja aberta) DEPOIS que sabemos se o Firebase conectou ou nao. Fazer
+    // isso antes faz os listeners de pedidos/ranking se prenderem no modo offline
+    // (vazio) permanentemente, mesmo depois do Firebase conectar de verdade.
+    if (currentUser) {
+      // Sessao ja foi aberta antes do Firebase responder (login manual muito rapido) -
+      // reanexa os listeners agora que sabemos o status real da conexao.
+      entrarComoUsuario(currentUser);
+    } else {
+      try {
+        var sessao = localStorage.getItem('fgv_session_user');
+        if (sessao && vendedores[sessao]) {
+          entrarComoUsuario(sessao);
+        }
+      } catch(e) {}
     }
-  } catch(e) {}
+  }
+  // Trava de seguranca: se por algum motivo o carregamento do Firebase nunca
+  // disparar sucesso nem erro, nao deixa a tela de login travada pra sempre.
+  setTimeout(prosseguirComLogin, 6000);
+  loadFirebase(prosseguirComLogin);
 });
 
 // ── localStorage fallback ──
