@@ -2198,6 +2198,34 @@
       <span id="ped-busca-count" style="font-size:12px;color:#aaa;white-space:nowrap;"></span>
       <button id="ped-busca-clear" onclick="limparBuscaPedidos()" style="display:none;padding:7px 14px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;white-space:nowrap;">✕ Limpar</button>
     </div>
+
+    <!-- FILTROS: DATA / ESTADO / ITEM -->
+    <div style="display:flex;align-items:center;gap:8px;margin-top:0.6rem;flex-wrap:wrap;background:#F8F7F3;border:1px solid #EDECEA;border-radius:8px;padding:0.6rem 0.75rem;">
+      <span style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#aaa;white-space:nowrap;">Filtrar por:</span>
+      <div style="display:flex;align-items:center;gap:5px;">
+        <label style="font-size:11px;color:#888;white-space:nowrap;">De</label>
+        <input type="date" id="ped-filtro-de" onchange="aplicarFiltrosPedidos()" style="padding:6px 8px;border-radius:6px;border:1px solid #D3D1C7;font-size:12px;outline:none;">
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;">
+        <label style="font-size:11px;color:#888;white-space:nowrap;">Até</label>
+        <input type="date" id="ped-filtro-ate" onchange="aplicarFiltrosPedidos()" style="padding:6px 8px;border-radius:6px;border:1px solid #D3D1C7;font-size:12px;outline:none;">
+      </div>
+      <select id="ped-filtro-estado" onchange="aplicarFiltrosPedidos()" style="padding:6px 8px;border-radius:6px;border:1px solid #D3D1C7;font-size:12px;outline:none;color:#333;">
+        <option value="">Todos os estados (UF)</option>
+        <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+        <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+        <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+        <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+        <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+        <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+        <option>SP</option><option>SE</option><option>TO</option>
+      </select>
+      <input type="text" id="ped-filtro-item" placeholder="Filtrar por item / material..."
+        oninput="aplicarFiltrosPedidos()"
+        style="flex:1;min-width:180px;padding:6px 10px;border-radius:6px;border:1px solid #D3D1C7;font-size:12px;outline:none;">
+      <button onclick="limparFiltrosPedidos()" style="padding:6px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;white-space:nowrap;">✕ Limpar filtros</button>
+    </div>
+
     <div style="overflow-x:auto;margin-top:0.75rem;-webkit-overflow-scrolling:touch;">
       <table class="ped-table" id="ped-tabela">
         <thead>
@@ -3080,31 +3108,48 @@ function salvarEdicaoPedido() {
   var get = function(id){ var el=document.getElementById(id); return el?el.value.trim():''; };
   var p = pedidoEmEdicao.pedido;
   var statusAnterior = p.status;
+  var novoChamado = get('edit-chamado');
 
-  // Update fields
-  p.data    = get('edit-data');
-  p.empresa = get('edit-empresa');
-  p.estado  = get('edit-estado');
-  p.cliente = get('edit-cliente');
-  p.chamado = get('edit-chamado');
-  p.pn      = get('edit-pn');
-  p.status  = get('edit-status');
-  p.veiculo = get('edit-veiculo');
-  p.itens   = editItens.slice();
-  p.vTotal  = editItens.reduce(function(s,it){ return s+(it.vTotal||0); }, 0);
-  p.cat     = editItens.length === 1 ? editItens[0].cat : 'misto';
-  // Se o status mudou aqui pelo modal de edicao (nao so pelo dropdown da tabela),
-  // tambem precisa atualizar quando isso aconteceu, senao o detalhamento por
-  // status (Com DT/Entregue/Faturado) usaria uma data desatualizada.
-  if (p.status !== statusAnterior) {
-    p.dataStatus = new Date().toISOString().split('T')[0];
+  function gravarEdicao() {
+    // Update fields
+    p.data    = get('edit-data');
+    p.empresa = get('edit-empresa');
+    p.estado  = get('edit-estado');
+    p.cliente = get('edit-cliente');
+    p.chamado = novoChamado;
+    p.pn      = get('edit-pn');
+    p.status  = get('edit-status');
+    p.veiculo = get('edit-veiculo');
+    p.itens   = editItens.slice();
+    p.vTotal  = editItens.reduce(function(s,it){ return s+(it.vTotal||0); }, 0);
+    p.cat     = editItens.length === 1 ? editItens[0].cat : 'misto';
+    // Se o status mudou aqui pelo modal de edicao (nao so pelo dropdown da tabela),
+    // tambem precisa atualizar quando isso aconteceu, senao o detalhamento por
+    // status (Com DT/Entregue/Faturado) usaria uma data desatualizada.
+    if (p.status !== statusAnterior) {
+      p.dataStatus = new Date().toISOString().split('T')[0];
+    }
+
+    dbRef('pedidos/' + pedidoEmEdicao.vendNome + '/' + pedidoEmEdicao.pedidoId).set(p)
+      .then(function() {
+        fecharEditarPedido();
+      })
+      .catch(function(e) { alert('Erro ao salvar: ' + e.message); });
   }
 
-  dbRef('pedidos/' + pedidoEmEdicao.vendNome + '/' + pedidoEmEdicao.pedidoId).set(p)
-    .then(function() {
-      fecharEditarPedido();
-    })
-    .catch(function(e) { alert('Erro ao salvar: ' + e.message); });
+  if (novoChamado && novoChamado.trim().toUpperCase() !== String(p.chamado||'').trim().toUpperCase()) {
+    verificarChamadoDuplicado(novoChamado, pedidoEmEdicao.pedidoId, function(dup) {
+      if (dup) {
+        var chEl = document.getElementById('edit-chamado');
+        if (chEl) chEl.style.borderColor = '#C41E1E';
+        alert('❌ Chamado nº ' + novoChamado + ' já está cadastrado!\n\nVendedor: ' + (vendedores[dup.vendedor] ? vendedores[dup.vendedor].nome : dup.vendedor) + '\nEmpresa: ' + dup.empresa + (dup.data ? '\nData: ' + dup.data : '') + '\n\nUse um número de chamado diferente.');
+        return;
+      }
+      gravarEdicao();
+    });
+  } else {
+    gravarEdicao();
+  }
 }
 
 // Converte texto de valor monetário pra numero, detectando automaticamente se o
@@ -4822,6 +4867,34 @@ function togglePedForm() {
   } catch(e) { console.error('togglePedForm error:', e); }
 }
 
+// Verifica se um numero de Chamado ja existe em QUALQUER pedido de QUALQUER vendedor.
+// pedidoIdExcluir serve pra, ao editar um pedido, nao acusar duplicidade dele com ele mesmo.
+function verificarChamadoDuplicado(chamado, pedidoIdExcluir, callback) {
+  var alvo = String(chamado||'').trim().toUpperCase();
+  if (!alvo) { callback(null); return; }
+  var nomes = Object.keys(vendedores);
+  if (!nomes.length) { callback(null); return; }
+  var achado = null;
+  var pend = nomes.length;
+  nomes.forEach(function(vn) {
+    dbRef('pedidos/' + vn).once('value').then(function(snap) {
+      var val = snap.val();
+      if (val) {
+        Object.keys(val).forEach(function(pid) {
+          if (achado || pid === pedidoIdExcluir) return;
+          var p = val[pid];
+          if (p && p.chamado && String(p.chamado).trim().toUpperCase() === alvo) {
+            achado = { vendedor: vn, empresa: p.empresa||'(sem empresa)', cliente: p.cliente||'', data: p.data||'' };
+          }
+        });
+      }
+    }).catch(function() {}).then(function() {
+      pend--;
+      if (pend === 0) callback(achado);
+    });
+  });
+}
+
 function salvarPedido() {
   try {
     if (!currentUser) { alert('Sessão expirada. Faça login novamente.'); return; }
@@ -4876,45 +4949,66 @@ function salvarPedido() {
     };
 
     const btn = document.querySelector('button[onclick="salvarPedido()"]');
-    if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
 
-    dbRef('pedidos/' + currentUser + '/' + pedido.id).set(pedido)
-      .then(function() {
-        if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
-        const toast = document.getElementById('ped-toast');
-        if (toast) {
-          if (firebaseOK) {
-            toast.style.background = '#1B5E20';
-            toast.innerHTML = '✅ Pedido salvo e sincronizado!';
-          } else {
-            toast.style.background = '#7A0000';
-            toast.innerHTML = '⚠️ Pedido salvo APENAS neste aparelho — sem conexão com o servidor. A gestão não vai ver esse pedido até você sincronizar. Verifique sua internet.';
+    function gravarPedidoNoFirebase() {
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+      dbRef('pedidos/' + currentUser + '/' + pedido.id).set(pedido)
+        .then(function() {
+          if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
+          const toast = document.getElementById('ped-toast');
+          if (toast) {
+            if (firebaseOK) {
+              toast.style.background = '#1B5E20';
+              toast.innerHTML = '✅ Pedido salvo e sincronizado!';
+            } else {
+              toast.style.background = '#7A0000';
+              toast.innerHTML = '⚠️ Pedido salvo APENAS neste aparelho — sem conexão com o servidor. A gestão não vai ver esse pedido até você sincronizar. Verifique sua internet.';
+            }
+            toast.style.display = 'block';
+            setTimeout(function() {
+              toast.style.display = 'none';
+              const form = document.getElementById('ped-form');
+              if (form && firebaseOK) form.style.display = 'none';
+            }, firebaseOK ? 1500 : 5000);
           }
-          toast.style.display = 'block';
-          setTimeout(function() {
-            toast.style.display = 'none';
-            const form = document.getElementById('ped-form');
-            if (form && firebaseOK) form.style.display = 'none';
-          }, firebaseOK ? 1500 : 5000);
+          ['pf-empresa','pf-cliente','pf-pn','pf-material','pf-qtd','pf-valor-item','pf-valor-total'].forEach(function(id) {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+          });
+          const selects = ['pf-estado','pf-veiculo'];
+          var ch = document.getElementById('pf-chamado'); if(ch) ch.value='';
+          pedItens = []; renderItensList();
+          selects.forEach(function(id) {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+          });
+          const st = document.getElementById('pf-status');
+          if (st) st.value = 'agendamento';
+        })
+        .catch(function(e) {
+          if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
+          alert('Erro ao salvar pedido: ' + (e && e.message ? e.message : 'Verifique as regras do Firebase.'));
+        });
+    }
+
+    if (chamado) {
+      if (btn) { btn.disabled = true; btn.textContent = 'Verificando chamado...'; }
+      verificarChamadoDuplicado(chamado, null, function(dup) {
+        if (dup) {
+          if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
+          var chEl = document.getElementById('pf-chamado');
+          if (chEl) chEl.style.borderColor = '#C41E1E';
+          alert('❌ Chamado nº ' + chamado + ' já está cadastrado!\n\nVendedor: ' + (vendedores[dup.vendedor] ? vendedores[dup.vendedor].nome : dup.vendedor) + '\nEmpresa: ' + dup.empresa + (dup.data ? '\nData: ' + dup.data : '') + '\n\nUse um número de chamado diferente.');
+          return;
         }
-        ['pf-empresa','pf-cliente','pf-pn','pf-material','pf-qtd','pf-valor-item','pf-valor-total'].forEach(function(id) {
-          const el = document.getElementById(id);
-          if (el) el.value = '';
-        });
-        const selects = ['pf-estado','pf-veiculo'];
-        var ch = document.getElementById('pf-chamado'); if(ch) ch.value='';
-        pedItens = []; renderItensList();
-        selects.forEach(function(id) {
-          const el = document.getElementById(id);
-          if (el) el.value = '';
-        });
-        const st = document.getElementById('pf-status');
-        if (st) st.value = 'agendamento';
-      })
-      .catch(function(e) {
-        if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
-        alert('Erro ao salvar pedido: ' + (e && e.message ? e.message : 'Verifique as regras do Firebase.'));
+        var chEl2 = document.getElementById('pf-chamado');
+        if (chEl2) chEl2.style.borderColor = '#E2E0D8';
+        gravarPedidoNoFirebase();
       });
+    } else {
+      gravarPedidoNoFirebase();
+    }
 
   } catch(err) {
     alert('Erro inesperado: ' + (err && err.message ? err.message : String(err)));
@@ -4940,6 +5034,10 @@ function deletarPedido(vendNome, pedidoId) {
 var _pedTodosDoMes = [];
 var _pedIsGestora = false;
 var _pedBuscaAtual = '';
+var _pedFiltroDe = '';
+var _pedFiltroAte = '';
+var _pedFiltroEstado = '';
+var _pedFiltroItem = '';
 
 function linhaPedidoHtml(p, isGestora) {
   const statusOpts = isGestora ? STATUS_TODOS : STATUS_VENDEDOR;
@@ -4990,6 +5088,29 @@ function pedidoCasaBusca(p, termo) {
   return alvo.indexOf(termo.toLowerCase()) !== -1;
 }
 
+function pedidoCasaItem(p, termo) {
+  if (!termo) return true;
+  var materiais = p.itens ? p.itens.map(function(it){ return it.material||''; }).join(' ') : (p.material||'');
+  return materiais.toLowerCase().indexOf(termo.toLowerCase()) !== -1;
+}
+
+function aplicarFiltrosPedidos() {
+  _pedFiltroDe     = document.getElementById('ped-filtro-de').value;
+  _pedFiltroAte    = document.getElementById('ped-filtro-ate').value;
+  _pedFiltroEstado = document.getElementById('ped-filtro-estado').value;
+  _pedFiltroItem   = document.getElementById('ped-filtro-item').value.trim();
+  renderPedidosFiltrados();
+}
+
+function limparFiltrosPedidos() {
+  document.getElementById('ped-filtro-de').value = '';
+  document.getElementById('ped-filtro-ate').value = '';
+  document.getElementById('ped-filtro-estado').value = '';
+  document.getElementById('ped-filtro-item').value = '';
+  _pedFiltroDe = _pedFiltroAte = _pedFiltroEstado = _pedFiltroItem = '';
+  renderPedidosFiltrados();
+}
+
 function aplicarBuscaPedidos(termo) {
   _pedBuscaAtual = termo || '';
   renderPedidosFiltrados();
@@ -5010,16 +5131,34 @@ function renderPedidosFiltrados() {
   if (!tbody) return;
 
   var termo = _pedBuscaAtual.trim();
-  var lista = termo ? _pedTodosDoMes.filter(function(p) { return pedidoCasaBusca(p, termo); }) : _pedTodosDoMes;
+  var filtroDataAtivo = !!(_pedFiltroDe || _pedFiltroAte);
+  var algumFiltroAtivo = filtroDataAtivo || _pedFiltroEstado || _pedFiltroItem || termo;
+
+  // Base: se ha filtro de data, busca em TODOS os pedidos (nao so no mes atual),
+  // assim um pedido de outro mes tambem aparece na lista quando o periodo pedido cobre ele.
+  var base = filtroDataAtivo ? _pedTodosGeral.slice() : _pedTodosDoMes;
+  if (filtroDataAtivo) {
+    base = base.filter(function(p) {
+      if (_pedFiltroDe && (!p.data || p.data < _pedFiltroDe)) return false;
+      if (_pedFiltroAte && (!p.data || p.data > _pedFiltroAte)) return false;
+      return true;
+    });
+    base.sort(function(a,b) { return (b.criadoEm||0) - (a.criadoEm||0); });
+  }
+
+  var lista = base;
+  if (_pedFiltroEstado) lista = lista.filter(function(p) { return (p.estado||'') === _pedFiltroEstado; });
+  if (_pedFiltroItem)   lista = lista.filter(function(p) { return pedidoCasaItem(p, _pedFiltroItem); });
+  if (termo)            lista = lista.filter(function(p) { return pedidoCasaBusca(p, termo); });
 
   if (clearBtn) clearBtn.style.display = termo ? 'inline-block' : 'none';
-  if (countEl) countEl.textContent = termo ? (lista.length + ' de ' + _pedTodosDoMes.length + ' pedidos') : '';
+  if (countEl) countEl.textContent = algumFiltroAtivo ? (lista.length + ' de ' + base.length + ' pedido(s)') : '';
 
   if (!lista.length) {
     tbody.innerHTML = '';
     if (vazio) {
       vazio.style.display = 'block';
-      vazio.textContent = termo ? 'Nenhum pedido encontrado para "' + termo + '".' : 'Nenhum pedido registrado este mês.';
+      vazio.textContent = algumFiltroAtivo ? 'Nenhum pedido encontrado para os filtros selecionados.' : 'Nenhum pedido registrado este mês.';
     }
     atualizarComissao([], _pedIsGestora);
     return;
@@ -5028,7 +5167,7 @@ function renderPedidosFiltrados() {
 
   tbody.innerHTML = lista.map(function(p) { return linhaPedidoHtml(p, _pedIsGestora); }).join('');
 
-  // A comissao sempre e calculada com base no mes inteiro, nao no resultado da busca
+  // A comissao sempre e calculada com base no mes inteiro (nao no resultado do filtro/busca)
   atualizarComissao(_pedTodosDoMes, _pedIsGestora);
 }
 
@@ -5114,7 +5253,7 @@ function listenPedidos(vendNome, isGestora) {
     }
 
     let allPedidos = {};
-    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(vn => {
+    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].forEach(vn => {
       dbRef('pedidos/' + vn).on('value', snap => {
         allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
         const todos = Object.values(allPedidos).flat();
