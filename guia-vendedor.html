@@ -2220,6 +2220,9 @@
         <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
         <option>SP</option><option>SE</option><option>TO</option>
       </select>
+      <select id="ped-filtro-status" onchange="aplicarFiltrosPedidos()" style="padding:6px 8px;border-radius:6px;border:1px solid #D3D1C7;font-size:12px;outline:none;color:#333;">
+        <option value="">Todos os status</option>
+      </select>
       <input type="text" id="ped-filtro-item" placeholder="Filtrar por item / material..."
         oninput="aplicarFiltrosPedidos()"
         style="flex:1;min-width:180px;padding:6px 10px;border-radius:6px;border:1px solid #D3D1C7;font-size:12px;outline:none;">
@@ -3044,8 +3047,9 @@ function renderEditItens() {
     var matDiv = document.createElement('div');
     matDiv.style.gridColumn = 'span 2';
     matDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Material</label>';
-    var matIn = document.createElement('input');
-    matIn.type='text'; matIn.value=it.material||''; matIn.placeholder='Ex: Chapa ST 12,5mm'; matIn.style.cssText=inp;
+    var matIn = document.createElement('select');
+    matIn.style.cssText=inp;
+    matIn.innerHTML = montarOptionsMaterial(it.material||'');
     (function(i){ matIn.onchange = function(){ editItens[i].material = this.value; }; })(idx);
     matDiv.appendChild(matIn);
 
@@ -3300,7 +3304,7 @@ var META_EQUIPE = 7319212.09;
 var importLinhas = [];
 var importIdxCount = 0;
 var IMPORT_UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-var IMPORT_VENDS = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
+var IMPORT_VENDS = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
 
 function togglePlanilhaImport() {
   var panel = document.getElementById('planilha-import');
@@ -3481,7 +3485,7 @@ function exportarPedidosExcel() {
   if (btn) { btn.textContent = 'Gerando...'; btn.disabled = true; }
 
   // Collect all pedidos
-  var nomes = currentUser === 'JULIANA' ? ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'] : [currentUser];
+  var nomes = currentUser === 'JULIANA' ? ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'] : [currentUser];
   var allPedidos = [];
   var pendentes = nomes.length;
 
@@ -3570,7 +3574,7 @@ function gerarExcel(pedidos, btn) {
 
 function listenRanking() {
   var allPedidos = {}, allLigacoes = {};
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
   // Garante que os dados de TODOS os vendedores (incluindo a meta) venham do
   // Firebase, usando o MESMO mecanismo ja comprovado que a aba Gestao/Evolucao
   // usa (fbListenVendedor le o no inteiro em tempo real). Antes so a meta era
@@ -3609,7 +3613,7 @@ function renderRanking(allPedidos, allLigacoes) {
     return Number(p.vTotal||0);
   }
 
-  var dados = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
+  var dados = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p){
       return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado';
     });
@@ -3691,14 +3695,14 @@ function renderPremiacoes(allPedidos) {
 
     // Tally by vendedor
     var novos = {}, mg = {};
-    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn){ novos[vn]=0; mg[vn]=0; });
+    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].forEach(function(vn){ novos[vn]=0; mg[vn]=0; });
     doMes.forEach(function(c) {
       if (c.tipo === 'mg') { if(mg[c.vend]!==undefined) mg[c.vend]++; }
       else { if(novos[c.vend]!==undefined) novos[c.vend]++; }
     });
 
     var totalNovos = 0, totalMG = 0;
-    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn){
+    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].forEach(function(vn){
       totalNovos += novos[vn] * 50;
       totalMG += mg[vn] * 75;
     });
@@ -3716,7 +3720,7 @@ function renderPremiacoes(allPedidos) {
     return p.cat === 'aco' ? Number(p.vTotal||0) : 0;
   }
 
-  var acoVend = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
+  var acoVend = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p){ return p.data&&p.data.startsWith(mesAtual)&&p.status!=='cancelado'; });
     var vlAco = peds.reduce(function(s,p){ return s+getVlAco(p); },0);
     return { vn: vn, nome: vendedores[vn].nome, vlAco: vlAco };
@@ -3885,7 +3889,7 @@ function deletarPremio(id) {
 
 function renderPaineisGestora(allPedidos, allLigacoes) {
   var todos = [];
-  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].forEach(function(vn) {
     if (allPedidos[vn]) todos = todos.concat(allPedidos[vn]);
   });
 
@@ -3923,7 +3927,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
 
   // Taxa de conversão por vendedor
   var conversao = {};
-  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].forEach(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p){ return isMes(p) && notCanceled(p); }).length;
     var ligs = (allLigacoes[vn]||[]).filter(function(l){ return l.data && l.data.startsWith(mesAtual); })
                .reduce(function(s,l){ return s+(l.qtd||0); },0);
@@ -3937,7 +3941,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
   var diasUteisTotal = Math.round(diasNoMes * 0.72);
 
   var ritmo = {};
-  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].forEach(function(vn) {
     var ligs = (allLigacoes[vn]||[]).filter(function(l){ return l.data && l.data.startsWith(mesAtual); });
     var totalLigs = ligs.reduce(function(s,l){ return s+(l.qtd||0); },0);
     var diasReg = ligs.length;
@@ -3950,7 +3954,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
   });
 
   // ── PAINEL 4: RANKING SEMANA ──
-  var ranking = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
+  var ranking = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(vn) {
     var pedsSem = (allPedidos[vn]||[]).filter(function(p){ return isSem(p) && notCanceled(p); });
     var vendSem = pedsSem.reduce(function(s,p){ return s+getValor(p); },0);
     var ligsSem = (allLigacoes[vn]||[]).filter(function(l){
@@ -3978,7 +3982,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
       '</div>' +
       '<div style="font-size:11px;font-weight:600;color:#555;margin-bottom:8px;">Taxa de Conversão (ligações → pedidos)</div>' +
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">' +
-        ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
+        ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(vn) {
           var c = conversao[vn];
           var cor = c.taxa >= 5 ? '#2E7D32' : c.taxa >= 2 ? '#E65100' : '#C41E1E';
           return '<div style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;">' +
@@ -3994,7 +3998,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
     '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.1rem 1.25rem;">' +
       '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#185FA5;margin-bottom:12px;">📞 Ritmo Projetado de Ligações</div>' +
       '<div style="display:grid;gap:10px;">' +
-        ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
+        ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(vn) {
           var r = ritmo[vn];
           var pct = Math.min(Math.round((r.total/600)*100),100);
           var cor = r.vaiBater ? '#2E7D32' : '#C41E1E';
@@ -4239,7 +4243,7 @@ function renderRampaNovos() {
 
 function listenPaineisGestora() {
   var allPedidos = {}, allLigacoes = {};
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
   var pendP = nomes.length, pendL = nomes.length;
 
   nomes.forEach(function(vn) {
@@ -4257,7 +4261,7 @@ function listenPaineisGestora() {
 
 // ── EVOLUÇÃO DA GESTORA ──
 function listenEvolucaoGestora() {
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
   var allPedidos = {};
 
   nomes.forEach(function(vn) {
@@ -4270,7 +4274,7 @@ function listenEvolucaoGestora() {
 
 function renderEvolucaoGestora(allPedidos) {
   var todos = [];
-  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].forEach(function(vn) {
     if (allPedidos[vn]) todos = todos.concat(allPedidos[vn]);
   });
 
@@ -4398,7 +4402,7 @@ function renderEvolucaoGestora(allPedidos) {
 function recalcGestora() {
   // Get all pedidos from all vendedores
   var todos = [];
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
   var pendentes = nomes.length;
   nomes.forEach(function(vn) {
     dbRef('pedidos/' + vn).once('value').then(function(snap) {
@@ -4841,6 +4845,47 @@ const STATUS_LABEL = {
 const CAT_LABEL = { placa:'Placa', grx:'GRX/Comp.', aco:'Aço' };
 const CAT_PCT   = { placa:0.005,   grx:0.0075,      aco:0.01  };
 
+// Lista de materiais/produtos cadastrados na aba "Materiais" — usada para popular
+// o select de material no formulário de pedido (em vez de digitação manual livre).
+const MATERIAIS_LISTA = [
+  'ST 12,5mm / 15mm',
+  'RU 12,5mm / 15mm',
+  'RF 12,5mm / 15mm',
+  'Performa ST e RU 12,5mm',
+  'Massa Placomix',
+  'Glasroc-X 12,5mm',
+  'Basecoat 20kg',
+  'Lã de Vidro Isover 50mm'
+];
+
+// Monta as <option> de material para um <select>, preservando o valor atual
+// mesmo que ele nao esteja na lista (ex: pedidos antigos com texto livre).
+function montarOptionsMaterial(valorAtual) {
+  var html = '<option value="">Selecione...</option>';
+  var encontrado = false;
+  MATERIAIS_LISTA.forEach(function(m) {
+    var sel = (valorAtual === m) ? ' selected' : '';
+    if (valorAtual === m) encontrado = true;
+    html += '<option value="' + m.replace(/"/g,'') + '"' + sel + '>' + m + '</option>';
+  });
+  if (valorAtual && !encontrado) {
+    html += '<option value="' + valorAtual.replace(/"/g,'') + '" selected>' + valorAtual + ' (personalizado)</option>';
+  }
+  return html;
+}
+
+// Preenche o dropdown de filtro de status da aba Pedidos com todos os status possiveis
+(function preencherFiltroStatusPedidos() {
+  var sel = document.getElementById('ped-filtro-status');
+  if (!sel) return;
+  Object.keys(STATUS_LABEL).forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = STATUS_LABEL[s];
+    sel.appendChild(opt);
+  });
+})();
+
 function calcValorTotal() {
   try {
     const qtdEl   = document.getElementById('pf-qtd');
@@ -5038,6 +5083,7 @@ var _pedFiltroDe = '';
 var _pedFiltroAte = '';
 var _pedFiltroEstado = '';
 var _pedFiltroItem = '';
+var _pedFiltroStatus = '';
 
 function linhaPedidoHtml(p, isGestora) {
   const statusOpts = isGestora ? STATUS_TODOS : STATUS_VENDEDOR;
@@ -5099,6 +5145,8 @@ function aplicarFiltrosPedidos() {
   _pedFiltroAte    = document.getElementById('ped-filtro-ate').value;
   _pedFiltroEstado = document.getElementById('ped-filtro-estado').value;
   _pedFiltroItem   = document.getElementById('ped-filtro-item').value.trim();
+  var elStatus     = document.getElementById('ped-filtro-status');
+  _pedFiltroStatus = elStatus ? elStatus.value : '';
   renderPedidosFiltrados();
 }
 
@@ -5107,7 +5155,9 @@ function limparFiltrosPedidos() {
   document.getElementById('ped-filtro-ate').value = '';
   document.getElementById('ped-filtro-estado').value = '';
   document.getElementById('ped-filtro-item').value = '';
-  _pedFiltroDe = _pedFiltroAte = _pedFiltroEstado = _pedFiltroItem = '';
+  var elStatus = document.getElementById('ped-filtro-status');
+  if (elStatus) elStatus.value = '';
+  _pedFiltroDe = _pedFiltroAte = _pedFiltroEstado = _pedFiltroItem = _pedFiltroStatus = '';
   renderPedidosFiltrados();
 }
 
@@ -5132,7 +5182,7 @@ function renderPedidosFiltrados() {
 
   var termo = _pedBuscaAtual.trim();
   var filtroDataAtivo = !!(_pedFiltroDe || _pedFiltroAte);
-  var algumFiltroAtivo = filtroDataAtivo || _pedFiltroEstado || _pedFiltroItem || termo;
+  var algumFiltroAtivo = filtroDataAtivo || _pedFiltroEstado || _pedFiltroItem || _pedFiltroStatus || termo;
 
   // Base: se ha filtro de data, busca em TODOS os pedidos (nao so no mes atual),
   // assim um pedido de outro mes tambem aparece na lista quando o periodo pedido cobre ele.
@@ -5148,6 +5198,7 @@ function renderPedidosFiltrados() {
 
   var lista = base;
   if (_pedFiltroEstado) lista = lista.filter(function(p) { return (p.estado||'') === _pedFiltroEstado; });
+  if (_pedFiltroStatus) lista = lista.filter(function(p) { return (p.status||'') === _pedFiltroStatus; });
   if (_pedFiltroItem)   lista = lista.filter(function(p) { return pedidoCasaItem(p, _pedFiltroItem); });
   if (termo)            lista = lista.filter(function(p) { return pedidoCasaBusca(p, termo); });
 
@@ -5284,7 +5335,7 @@ function renderResumoEquipe(allPedidos) {
   var box = document.getElementById('ped-resumo-equipe');
   if (!box) return;
   var mesAtual = new Date().toISOString().slice(0,7);
-  box.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(vn) {
+  box.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p) { return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado'; });
     var total = peds.reduce(function(s,p) { return s + Number(p.vTotal||0); }, 0);
     var com   = peds.reduce(function(s,p) { return s + Number(p.vTotal||0) * (CAT_PCT[p.cat]||0); }, 0);
@@ -5609,8 +5660,9 @@ function renderItensList() {
     // Material
     var matDiv = document.createElement('div'); matDiv.className = 'ped-field'; matDiv.style.gridColumn = 'span 2';
     matDiv.innerHTML = '<label>Material</label>';
-    var matIn = document.createElement('input'); matIn.type = 'text'; matIn.placeholder = 'Ex: Chapa ST 12,5mm'; matIn.value = it.material || '';
+    var matIn = document.createElement('select');
     matIn.style.cssText = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
+    matIn.innerHTML = montarOptionsMaterial(it.material || '');
     (function(i){ matIn.addEventListener('change', function() { updateItem(i, 'material', this.value); }); })(idx);
     matDiv.appendChild(matIn);
     // Qtd
@@ -6071,7 +6123,7 @@ function adminClear() {
 function renderAdminResumo() {
   var grid = document.getElementById('adm-resumo');
   if (!grid) return;
-  grid.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(n) {
+  grid.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(n) {
     var v = vendedores[n];
     if (!v) return '';
     var notas = criterios.map(function(c) { return v.notas ? (v.notas[c.id]||0) : 0; });
@@ -6100,7 +6152,7 @@ function checkAdminAccess(nome) {
     adminNav.style.display = 'flex';
     if (rampaNav) rampaNav.style.display = 'flex';
     // Load all vendedores from Firebase
-    Promise.all(['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE'].map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
+    Promise.all(['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
       .then(function() {
         adminSelect('PEDRO', document.getElementById('abtn-PEDRO'));
         renderAdminResumo();
