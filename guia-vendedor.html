@@ -3050,7 +3050,11 @@ function renderEditItens() {
     var matIn = document.createElement('select');
     matIn.style.cssText=inp;
     matIn.innerHTML = montarOptionsMaterial(it.material||'');
-    (function(i){ matIn.onchange = function(){ editItens[i].material = this.value; }; })(idx);
+    (function(i){ matIn.onchange = function(){
+      editItens[i].material = this.value;
+      var opt = this.options[this.selectedIndex];
+      editItens[i].codigo = opt ? (opt.getAttribute('data-codigo') || '') : '';
+    }; })(idx);
     matDiv.appendChild(matIn);
 
     // Qtd
@@ -4845,31 +4849,42 @@ const STATUS_LABEL = {
 const CAT_LABEL = { placa:'Placa', grx:'GRX/Comp.', aco:'Aço' };
 const CAT_PCT   = { placa:0.005,   grx:0.0075,      aco:0.01  };
 
-// Lista de materiais/produtos cadastrados na aba "Materiais" — usada para popular
-// o select de material no formulário de pedido (em vez de digitação manual livre).
-const MATERIAIS_LISTA = [
-  'ST 12,5mm / 15mm',
-  'RU 12,5mm / 15mm',
-  'RF 12,5mm / 15mm',
-  'Performa ST e RU 12,5mm',
-  'Massa Placomix',
-  'Glasroc-X 12,5mm',
-  'Basecoat 20kg',
-  'Lã de Vidro Isover 50mm'
-];
+// Materiais/produtos usados no select do formulario de pedido vem da base real
+// cadastrada na aba "Tabela de Produtos" (const allProducts, mais abaixo no arquivo).
+// Como allProducts so e usada dentro de funcoes chamadas em tempo de interacao do
+// usuario (nunca na carga inicial), nao ha problema dela ser declarada mais adiante.
 
-// Monta as <option> de material para um <select>, preservando o valor atual
-// mesmo que ele nao esteja na lista (ex: pedidos antigos com texto livre).
+// Retorna a lista de produtos com nomes unicos (ha duplicidade entre fabricas MDC/FDS),
+// mantendo o primeiro codigo encontrado para cada nome.
+function obterMateriaisUnicos() {
+  var vistos = {};
+  var lista = [];
+  (typeof allProducts !== 'undefined' ? allProducts : []).forEach(function(p) {
+    var nome = (p.nome || '').trim();
+    if (nome && !vistos[nome]) {
+      vistos[nome] = true;
+      lista.push({ nome: nome, codigo: p.codigo || '' });
+    }
+  });
+  lista.sort(function(a,b) { return a.nome.localeCompare(b.nome, 'pt-BR'); });
+  return lista;
+}
+
+// Monta as <option> de material para um <select>, com o codigo do produto embutido
+// em data-codigo (usado para preencher automaticamente o codigo do item selecionado).
+// Preserva o valor atual mesmo que ele nao esteja na base (ex: pedidos antigos com texto livre).
 function montarOptionsMaterial(valorAtual) {
+  var lista = obterMateriaisUnicos();
   var html = '<option value="">Selecione...</option>';
   var encontrado = false;
-  MATERIAIS_LISTA.forEach(function(m) {
-    var sel = (valorAtual === m) ? ' selected' : '';
-    if (valorAtual === m) encontrado = true;
-    html += '<option value="' + m.replace(/"/g,'') + '"' + sel + '>' + m + '</option>';
+  lista.forEach(function(m) {
+    var sel = (valorAtual === m.nome) ? ' selected' : '';
+    if (valorAtual === m.nome) encontrado = true;
+    var label = m.codigo ? (m.nome + ' — ' + m.codigo) : m.nome;
+    html += '<option value="' + m.nome.replace(/"/g,'&quot;') + '" data-codigo="' + String(m.codigo).replace(/"/g,'&quot;') + '"' + sel + '>' + label + '</option>';
   });
   if (valorAtual && !encontrado) {
-    html += '<option value="' + valorAtual.replace(/"/g,'') + '" selected>' + valorAtual + ' (personalizado)</option>';
+    html += '<option value="' + valorAtual.replace(/"/g,'&quot;') + '" selected>' + valorAtual + ' (personalizado)</option>';
   }
   return html;
 }
@@ -5091,7 +5106,7 @@ function linhaPedidoHtml(p, isGestora) {
     return '<option value="' + s + '" ' + (p.status===s?'selected':'') + '>' + (STATUS_LABEL[s]||s) + '</option>';
   }).join('');
   var vendLabel = isGestora ? '<td style="font-size:11px;font-weight:600;color:#C41E1E;">' + (p.vendedor||'') + '</td>' : '';
-  var materiais = p.itens ? p.itens.map(function(it){return it.material;}).join(', ') : (p.material||'');
+  var materiais = p.itens ? p.itens.map(function(it){ return it.material + (it.codigo ? ' (' + it.codigo + ')' : ''); }).join(', ') : (p.material||'');
   var catLabel  = p.itens ? (p.itens.length + ' item(s)') : (CAT_LABEL[p.cat]||p.cat);
   var qtdTotal  = p.itens ? p.itens.reduce(function(s,it){return s+(it.qtd||0);},0) : (p.qtd||0);
   var vlUnit    = p.itens ? '—' : 'R$ ' + Number(p.vUnit||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
@@ -5663,7 +5678,11 @@ function renderItensList() {
     var matIn = document.createElement('select');
     matIn.style.cssText = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
     matIn.innerHTML = montarOptionsMaterial(it.material || '');
-    (function(i){ matIn.addEventListener('change', function() { updateItem(i, 'material', this.value); }); })(idx);
+    (function(i){ matIn.addEventListener('change', function() {
+      updateItem(i, 'material', this.value);
+      var opt = this.options[this.selectedIndex];
+      updateItem(i, 'codigo', opt ? (opt.getAttribute('data-codigo') || '') : '');
+    }); })(idx);
     matDiv.appendChild(matIn);
     // Qtd
     var qtdDiv = document.createElement('div'); qtdDiv.className = 'ped-field';
