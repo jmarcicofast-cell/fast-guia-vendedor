@@ -2058,7 +2058,7 @@
             <input id="gest-meta" type="text" placeholder="Ex: 7.319.212" oninput="recalcGestora()" value="7.319.212,09" style="width:100%;padding:6px 10px;border:1.5px solid #333;border-radius:6px;font-size:13px;background:#2A2A2A;color:#fff;outline:none;">
           </div>
           <div style="flex:1;min-width:140px;">
-            <div style="font-size:11px;color:#666;margin-bottom:3px;">Total Equipe no Mês</div>
+            <div style="font-size:11px;color:#666;margin-bottom:3px;" id="gest-total-equipe-label">Total Equipe no Mês</div>
             <div style="font-size:22px;font-weight:700;color:#fff;" id="gest-total-equipe">R$ 0,00</div>
           </div>
           <div style="flex:1;min-width:120px;">
@@ -4420,13 +4420,27 @@ function recalcGestora() {
 
 // ── COMISSÃO DA GESTORA ──
 function calcComissaoGestora(pedidosTodosVendedores) {
-  // Pega todos os pedidos ativos do mês de toda a equipe
+  // Se houver um filtro de período personalizado ativo (De/Até aplicado na aba Pedidos),
+  // a comissão passa a ser calculada sobre ESSE intervalo. Sem filtro ativo, usa o mês corrente.
+  var deEl  = document.getElementById('filtro-data-de');
+  var ateEl = document.getElementById('filtro-data-ate');
+  var resBox = document.getElementById('filtro-periodo-resultado');
+  var filtroAtivo = !!(resBox && resBox.style.display !== 'none' && deEl && ateEl && deEl.value && ateEl.value);
+
   var mesAtual = new Date().toISOString().slice(0,7);
+  var deStr  = filtroAtivo ? deEl.value  : null;
+  var ateStr = filtroAtivo ? ateEl.value : null;
+
   var totalEquipe = 0;
 
   pedidosTodosVendedores.forEach(function(p) {
     if (p.status === 'cancelado') return;
-    if (!p.data || !p.data.startsWith(mesAtual)) return;
+    if (!p.data) return;
+    if (filtroAtivo) {
+      if (p.data < deStr || p.data > ateStr) return;
+    } else {
+      if (!p.data.startsWith(mesAtual)) return;
+    }
     if (p.itens && p.itens.length > 0) {
       p.itens.forEach(function(it) {
         totalEquipe += Math.round((it.qtd||0) * (it.vUnit||0) * 100) / 100;
@@ -4435,6 +4449,18 @@ function calcComissaoGestora(pedidosTodosVendedores) {
       totalEquipe += Number(p.vTotal||0);
     }
   });
+
+  // Atualiza o rótulo pra deixar claro qual período está sendo usado
+  var labelEl = document.getElementById('gest-total-equipe-label');
+  if (labelEl) {
+    if (filtroAtivo) {
+      var deFmt  = new Date(deStr+'T12:00:00').toLocaleDateString('pt-BR');
+      var ateFmt = new Date(ateStr+'T12:00:00').toLocaleDateString('pt-BR');
+      labelEl.textContent = 'Total Equipe no Período (' + (deFmt === ateFmt ? deFmt : deFmt + ' a ' + ateFmt) + ')';
+    } else {
+      labelEl.textContent = 'Total Equipe no Mês';
+    }
+  }
 
   // Meta da gestora (pega do campo adm-meta ou usa 0)
   var metaEl = document.getElementById('gest-meta');
@@ -5420,6 +5446,8 @@ function limparFiltroPeriodo() {
   document.getElementById('filtro-data-ate').value = '';
   var resBox = document.getElementById('filtro-periodo-resultado');
   if (resBox) resBox.style.display = 'none';
+  // Comissão da gestora volta a usar o mês corrente
+  if (typeof recalcGestora === 'function') recalcGestora();
 }
 
 function aplicarFiltroPeriodo() {
@@ -5471,6 +5499,9 @@ function aplicarFiltroPeriodo() {
 
   var resBox = document.getElementById('filtro-periodo-resultado');
   if (resBox) resBox.style.display = 'block';
+
+  // Sincroniza a comissão da gestora com o mesmo período do filtro
+  if (typeof recalcGestora === 'function') recalcGestora();
 }
 
 function updateDashboard(pedidos, v) {
