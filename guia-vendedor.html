@@ -2576,6 +2576,7 @@
   .regra-ouro { background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 10px 12px; margin-top: 10px; font-size: 12.5px; color: #92400e; }
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
     <div class="script-inner">
       <div class="s-container">
 
@@ -2943,6 +2944,19 @@
         <button class="qf-btn active" id="rampa-per-semana" onclick="setRampaPeriodo('semana')">Semana</button>
         <button class="qf-btn" id="rampa-per-mes" onclick="setRampaPeriodo('mes')">Mês</button>
         <button class="qf-btn" id="rampa-per-total" onclick="setRampaPeriodo('total')">Desde o início</button>
+      </div>
+    </div>
+
+    <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:2px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#1C1C1C;">🏁 Corrida rumo a R$ 1 Milhão</div>
+          <div style="font-size:11px;color:#888;">Acumulado em vendas desde a admissão de cada vendedor</div>
+        </div>
+        <div id="rampa-chart-legenda" style="display:flex;gap:14px;flex-wrap:wrap;"></div>
+      </div>
+      <div style="position:relative;height:230px;margin-top:14px;">
+        <canvas id="rampa-chart-milhao"></canvas>
       </div>
     </div>
 
@@ -4143,6 +4157,7 @@ function renderRampaNovos() {
   var box = document.getElementById('rampa-cards');
   if (!box) return;
   var bounds = rampaGetBounds();
+  var chartData = []; // alimentado dentro do map abaixo, usado no gráfico "Corrida rumo a R$ 1 Milhão"
 
   function getValor(p) {
     if (p.itens && p.itens.length > 0) {
@@ -4207,6 +4222,8 @@ function renderRampaNovos() {
     var diasAteVenda = (admissao && primeiraVendaData) ? Math.floor((new Date(primeiraVendaData+'T00:00:00') - new Date(admissao+'T00:00:00')) / (1000*60*60*24)) : null;
     var primeiraVendaFmt = primeiraVendaData ? new Date(primeiraVendaData+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}) : null;
 
+    chartData.push({ nome: v.nome, valor: totalGeral, dias: dias });
+
     var METATOTAL = 1000000;
     var projecaoHtml = '';
     if (totalGeral >= METATOTAL) {
@@ -4239,17 +4256,23 @@ function renderRampaNovos() {
     var linhasDetalhe = todosPedidos.slice().sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); }).map(function(p) {
       var motivos = [];
       if (p.status === 'cancelado') motivos.push('cancelado');
+      if (!p.data) motivos.push('sem data preenchida');
       if (admissao && p.data && p.data < admissao) motivos.push('antes da admissão');
-      if (!rampaFiltraData(p.data, bounds)) motivos.push('fora do período selecionado');
+      if (p.data && !rampaFiltraData(p.data, bounds)) motivos.push('fora do período selecionado');
       var incluido = motivos.length === 0;
       var tipoLbl = p.tipoCliente === 'novo' ? 'Novo' : p.tipoCliente === 'ativo' ? 'Ativo' : p.tipoCliente === 'inativo' ? 'Inativo' : '—';
       return '<tr style="border-bottom:1px solid #F0EEEA;">' +
         '<td style="padding:5px 6px;font-size:11px;">' + (p.data || '—') + '</td>' +
         '<td style="padding:5px 6px;font-size:11px;">' + (p.empresa || p.cliente || '—') + '</td>' +
+        '<td style="padding:5px 6px;font-size:11px;' + (!p.chamado ? 'color:#C41E1E;' : '') + '">' + (p.chamado || '⚠️ sem chamado') + '</td>' +
         '<td style="padding:5px 6px;font-size:11px;">' + (p.status || '—') + '</td>' +
         '<td style="padding:5px 6px;font-size:11px;">' + tipoLbl + '</td>' +
         '<td style="padding:5px 6px;font-size:11px;">' + fmt(getValor(p)) + '</td>' +
         '<td style="padding:5px 6px;font-size:11px;' + (incluido ? 'color:#1B5E20;font-weight:600;' : 'color:#C41E1E;') + '">' + (incluido ? '✓ contado' : '✕ ' + motivos.join(', ')) + '</td>' +
+        '<td style="padding:5px 6px;font-size:11px;white-space:nowrap;">' +
+          '<button type="button" onclick="abrirEditarPedido(\'' + vn + '\',\'' + p.id + '\')" style="border:none;background:#E3F0FA;color:#185FA5;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px;margin-right:3px;">✏️ Editar</button>' +
+          '<button type="button" onclick="deletarPedido(\'' + vn + '\',\'' + p.id + '\')" style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px;">🗑️ Excluir</button>' +
+        '</td>' +
       '</tr>';
     }).join('');
 
@@ -4260,12 +4283,14 @@ function renderRampaNovos() {
           '<thead><tr style="background:#F8F7F3;position:sticky;top:0;">' +
             '<th style="padding:5px 6px;font-size:10px;color:#888;text-align:left;">Data</th>' +
             '<th style="padding:5px 6px;font-size:10px;color:#888;text-align:left;">Empresa/Cliente</th>' +
+            '<th style="padding:5px 6px;font-size:10px;color:#888;text-align:left;">Chamado</th>' +
             '<th style="padding:5px 6px;font-size:10px;color:#888;text-align:left;">Status</th>' +
             '<th style="padding:5px 6px;font-size:10px;color:#888;text-align:left;">Tipo Cliente</th>' +
             '<th style="padding:5px 6px;font-size:10px;color:#888;text-align:left;">Valor</th>' +
             '<th style="padding:5px 6px;font-size:10px;color:#888;text-align:left;">Contado?</th>' +
+            '<th style="padding:5px 6px;font-size:10px;color:#888;text-align:left;">Ações</th>' +
           '</tr></thead>' +
-          '<tbody>' + (linhasDetalhe || '<tr><td colspan="6" style="padding:8px;font-size:11px;color:#aaa;">Nenhum pedido cadastrado.</td></tr>') + '</tbody>' +
+          '<tbody>' + (linhasDetalhe || '<tr><td colspan="8" style="padding:8px;font-size:11px;color:#aaa;">Nenhum pedido cadastrado.</td></tr>') + '</tbody>' +
         '</table>' +
       '</div>' +
     '</div>';
@@ -4323,6 +4348,77 @@ function renderRampaNovos() {
       detalheHtml +
     '</div>';
   }).join('');
+
+  renderRampaChart(chartData);
+}
+
+// ── Gráfico "Corrida rumo a R$ 1 Milhão" (Chart.js) ──
+var rampaChartInstance = null;
+function renderRampaChart(chartData) {
+  var canvas = document.getElementById('rampa-chart-milhao');
+  if (!canvas || typeof Chart === 'undefined') return; // Chart.js ainda nao carregou ou canvas nao existe nessa tela
+
+  var METATOTAL = 1000000;
+  var ordenado = chartData.slice().sort(function(a,b){ return b.valor - a.valor; });
+  var cores = ['#C41E1E','#185FA5','#E65100','#2E7D32'];
+
+  var legenda = document.getElementById('rampa-chart-legenda');
+  if (legenda) {
+    legenda.innerHTML = ordenado.map(function(d, i) {
+      var pct = Math.min(100, Math.round((d.valor/METATOTAL)*100));
+      return '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#555;">' +
+        '<span style="width:9px;height:9px;border-radius:50%;background:' + cores[i%cores.length] + ';display:inline-block;"></span>' +
+        d.nome + ' <b style="color:#1C1C1C;">' + pct + '%</b>' +
+      '</div>';
+    }).join('');
+  }
+
+  var ctx = canvas.getContext('2d');
+  var dataCfg = {
+    labels: ordenado.map(function(d){ return d.nome; }),
+    datasets: [{
+      label: 'Acumulado em vendas (R$)',
+      data: ordenado.map(function(d){ return d.valor; }),
+      backgroundColor: ordenado.map(function(d,i){ return cores[i%cores.length]; }),
+      borderRadius: 8,
+      barThickness: 28
+    }]
+  };
+  var opts = {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 900, easing: 'easeOutQuart' },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function(item) {
+            var v = item.parsed.x;
+            var pct = Math.round((v/METATOTAL)*100);
+            return ' R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '  (' + pct + '% da meta de R$ 1 milhão)';
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        min: 0,
+        max: METATOTAL,
+        ticks: { callback: function(v) { return 'R$ ' + (v/1000).toLocaleString('pt-BR') + 'k'; } },
+        grid: { color: '#F0EEEA' }
+      },
+      y: { grid: { display: false } }
+    }
+  };
+
+  if (rampaChartInstance) {
+    rampaChartInstance.data = dataCfg;
+    rampaChartInstance.options = opts;
+    rampaChartInstance.update();
+  } else {
+    rampaChartInstance = new Chart(ctx, { type: 'bar', data: dataCfg, options: opts });
+  }
 }
 
 function listenPaineisGestora() {
