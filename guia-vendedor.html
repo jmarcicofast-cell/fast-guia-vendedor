@@ -4174,6 +4174,13 @@ function renderRampaNovos() {
     var valorTotal = pedsPeriodo.reduce(function(s,p) { return s + getValor(p); }, 0);
     var ticketMedio = cargasFechadas > 0 ? valorTotal / cargasFechadas : 0;
     var entregues = pedsPeriodo.filter(function(p) { return p.status === 'entregue' || p.status === 'faturado'; }).length;
+    var emAndamento = cargasFechadas - entregues;
+
+    // Breakdown por tipo de cliente (todos os pedidos do período, independente do status de entrega/faturamento)
+    var qtdNovo    = pedsPeriodo.filter(function(p) { return p.tipoCliente === 'novo'; }).length;
+    var qtdAtivo   = pedsPeriodo.filter(function(p) { return p.tipoCliente === 'ativo'; }).length;
+    var qtdInativo = pedsPeriodo.filter(function(p) { return p.tipoCliente === 'inativo'; }).length;
+    var qtdSemTipo = cargasFechadas - qtdNovo - qtdAtivo - qtdInativo;
 
     var ligsPeriodo = ligs.filter(function(l) { return rampaFiltraData(l.data, bounds) && (!admissao || !l.data || l.data >= admissao); })
                           .reduce(function(s,l) { return s + (l.qtd||0); }, 0);
@@ -4191,8 +4198,15 @@ function renderRampaNovos() {
     var corPct = pctMeta >= 100 ? '#2E7D32' : pctMeta >= 60 ? '#E65100' : '#C41E1E';
 
     // ── Projeção para bater R$ 1 milhão (baseada no total acumulado desde a admissão) ──
-    var totalGeral = todosPedidos.filter(function(p) { return p.status !== 'cancelado' && (!admissao || !p.data || p.data >= admissao); })
-                                  .reduce(function(s,p) { return s + getValor(p); }, 0);
+    var pedidosDesdeAdmissao = todosPedidos.filter(function(p) { return p.status !== 'cancelado' && (!admissao || !p.data || p.data >= admissao); });
+    var totalGeral = pedidosDesdeAdmissao.reduce(function(s,p) { return s + getValor(p); }, 0);
+
+    // ── Tempo até a primeira venda (da admissão até o pedido mais antigo já registrado) ──
+    var datasVendas = pedidosDesdeAdmissao.map(function(p){ return p.data; }).filter(Boolean).sort();
+    var primeiraVendaData = datasVendas.length ? datasVendas[0] : null;
+    var diasAteVenda = (admissao && primeiraVendaData) ? Math.floor((new Date(primeiraVendaData+'T00:00:00') - new Date(admissao+'T00:00:00')) / (1000*60*60*24)) : null;
+    var primeiraVendaFmt = primeiraVendaData ? new Date(primeiraVendaData+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}) : null;
+
     var METATOTAL = 1000000;
     var projecaoHtml = '';
     if (totalGeral >= METATOTAL) {
@@ -4226,17 +4240,27 @@ function renderRampaNovos() {
           '<span style="font-size:11px;color:#C41E1E;">⚠️ data de admissão não informada</span>') +
       '</div>' +
 
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">' +
         '<label style="font-size:11px;color:#aaa;white-space:nowrap;">Data de admissão:</label>' +
         '<input type="date" value="' + admissao + '" onchange="salvarAdmissao(\'' + vn + '\',this.value)" style="padding:5px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">' +
         (dias !== null ? '<span style="font-size:11px;color:#888;">(' + dias + ' dias)</span>' : '') +
+        (primeiraVendaFmt ?
+          '<span style="font-size:11px;color:#0C447C;background:#E6F1FB;padding:3px 9px;border-radius:20px;">🎬 1ª venda em ' + primeiraVendaFmt + (diasAteVenda !== null ? ' (' + diasAteVenda + ' dia(s) após admissão)' : '') + '</span>' :
+          '<span style="font-size:11px;color:#C41E1E;background:#FFEBEE;padding:3px 9px;border-radius:20px;">⚠️ ainda sem nenhuma venda registrada</span>') +
+      '</div>' +
+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">' +
+        '<span style="font-size:11px;font-weight:600;background:#FFF3E0;color:#7A4A00;padding:4px 10px;border-radius:20px;">🆕 ' + qtdNovo + ' novo(s)</span>' +
+        '<span style="font-size:11px;font-weight:600;background:#E8F5E9;color:#1B5E20;padding:4px 10px;border-radius:20px;">🟢 ' + qtdAtivo + ' ativo(s)</span>' +
+        '<span style="font-size:11px;font-weight:600;background:#FFEBEE;color:#B71C1C;padding:4px 10px;border-radius:20px;">🔴 ' + qtdInativo + ' inativo(s)</span>' +
+        (qtdSemTipo > 0 ? '<span style="font-size:11px;background:#F1EFE8;color:#888;padding:4px 10px;border-radius:20px;">❔ ' + qtdSemTipo + ' sem tipo informado</span>' : '') +
       '</div>' +
 
       '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;">' +
         '<div style="background:#F8F7F3;border-radius:8px;padding:10px;">' +
-          '<div style="font-size:10px;color:#aaa;margin-bottom:2px;">Cargas Fechadas</div>' +
+          '<div style="font-size:10px;color:#aaa;margin-bottom:2px;">Pedidos Feitos</div>' +
           '<div style="font-size:20px;font-weight:700;color:#1C1C1C;">' + cargasFechadas + '</div>' +
-          '<div style="font-size:10px;color:#888;">' + entregues + ' já entregue(s)/faturada(s)</div>' +
+          '<div style="font-size:10px;color:#888;">' + entregues + ' entregue(s)/faturado(s) · ' + emAndamento + ' em andamento</div>' +
         '</div>' +
         '<div style="background:#F8F7F3;border-radius:8px;padding:10px;">' +
           '<div style="font-size:10px;color:#aaa;margin-bottom:2px;">Valor Total</div>' +
