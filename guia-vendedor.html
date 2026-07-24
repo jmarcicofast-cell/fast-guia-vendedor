@@ -2169,6 +2169,15 @@
             <option value="outros">📦 Outros</option>
           </select>
         </div>
+        <div class="ped-field">
+          <label>Tipo de Cliente</label>
+          <select id="pf-tipo-cliente">
+            <option value="">— Não informado —</option>
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+            <option value="novo">Novo</option>
+          </select>
+        </div>
       </div>
 
       <!-- ITENS DO PEDIDO -->
@@ -3006,6 +3015,7 @@ function abrirEditarPedido(vendNome, pedidoId) {
     set('edit-pn',       p.pn);
     set('edit-status',   p.status);
     set('edit-veiculo',  p.veiculo);
+    set('edit-tipo-cliente', p.tipoCliente);
 
     // Load itens
     editItens = p.itens ? p.itens.slice() : (p.material ? [{cat:p.cat,material:p.material,qtd:p.qtd||1,vUnit:p.vUnit||0,vTotal:p.vTotal||0}] : []);
@@ -3134,6 +3144,7 @@ function salvarEdicaoPedido() {
     p.pn      = get('edit-pn');
     p.status  = get('edit-status');
     p.veiculo = get('edit-veiculo');
+    p.tipoCliente = get('edit-tipo-cliente');
     p.itens   = editItens.slice();
     p.vTotal  = editItens.reduce(function(s,it){ return s+(it.vTotal||0); }, 0);
     p.cat     = editItens.length === 1 ? editItens[0].cat : 'misto';
@@ -5005,6 +5016,7 @@ function salvarPedido() {
     const pn       = get('pf-pn');
     const chamado  = get('pf-chamado');
     const status   = get('pf-status') || 'agendamento';
+    const tipoCliente = get('pf-tipo-cliente');
 
     // Highlight missing fields
     var faltando = false;
@@ -5035,6 +5047,7 @@ function salvarPedido() {
       vTotal: vTotal,
       veiculo: veiculo,
       status: status,
+      tipoCliente: tipoCliente,
       dataStatus: data,
       vendedor: currentUser,
       criadoEm: Date.now()
@@ -5077,6 +5090,8 @@ function salvarPedido() {
           });
           const st = document.getElementById('pf-status');
           if (st) st.value = 'agendamento';
+          const tc = document.getElementById('pf-tipo-cliente');
+          if (tc) tc.value = '';
         })
         .catch(function(e) {
           if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
@@ -6626,6 +6641,15 @@ function importarArquivo(event) {
             <option value="entregue">Entregue</option>
             <option value="faturado">Faturado</option>
             <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+        <div class="ped-field">
+          <label>Tipo de Cliente</label>
+          <select id="edit-tipo-cliente">
+            <option value="">— Não informado —</option>
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+            <option value="novo">Novo</option>
           </select>
         </div>
       </div>
