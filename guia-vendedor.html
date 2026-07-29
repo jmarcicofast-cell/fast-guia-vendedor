@@ -2416,6 +2416,13 @@
       </div>
     </div>
 
+    <!-- POR QUE OS CLIENTES NÃO FECHAM (dados pra levar pra diretoria) -->
+    <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;margin-bottom:1.1rem;">
+      <div style="font-size:12px;font-weight:700;color:#1C1C1C;margin-bottom:2px;">📊 Por que os clientes não fecham</div>
+      <div style="font-size:11px;color:#aaa;margin-bottom:12px;">Contagem de negociações em aberto ou perdidas, por motivo informado</div>
+      <div id="neg-motivos-resumo" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
     <!-- KANBAN -->
     <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;">
       <div style="display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:12px;min-width:900px;">
@@ -2492,6 +2499,41 @@
       <div class="ped-field" id="neg-motivo-perda-field" style="display:none;">
         <label>Motivo da perda</label>
         <input type="text" id="neg-motivo-perda" placeholder="Ex: fechou com concorrente">
+      </div>
+      <div class="ped-field" style="grid-column:1/-1;">
+        <label>Motivo de não fechamento (categoria)</label>
+        <select id="neg-motivo-categoria" onchange="negToggleMotivoOutro()">
+          <option value="">Selecione...</option>
+          <option value="preco">💰 Preço / sem competitividade</option>
+          <option value="faturado">📄 Compra faturado (não à vista)</option>
+          <option value="concorrente">🏳️ Já compra com concorrente</option>
+          <option value="prazo_pagamento">💳 Prazo de pagamento</option>
+          <option value="prazo_entrega">🚚 Prazo de entrega</option>
+          <option value="qualidade">🔧 Qualidade / especificação técnica</option>
+          <option value="aprovacao">🖊️ Aguardando aprovação / decisor</option>
+          <option value="sem_verba">🚫 Sem verba no momento</option>
+          <option value="outro">❓ Outro</option>
+        </select>
+      </div>
+      <div class="ped-field" id="neg-motivo-outro-field" style="display:none;grid-column:1/-1;">
+        <label>Qual o motivo?</label>
+        <input type="text" id="neg-motivo-outro" placeholder="Descreva o motivo de não fechamento">
+      </div>
+      <div class="ped-field">
+        <label>Concorrente</label>
+        <input type="text" id="neg-concorrente" placeholder="Nome do concorrente">
+      </div>
+      <div class="ped-field">
+        <label>Valor que paga no concorrente (R$)</label>
+        <input type="text" id="neg-valor-concorrente" placeholder="Ex: 12.500,00">
+      </div>
+      <div class="ped-field" style="grid-column:1/-1;">
+        <label>Detalhes / observações</label>
+        <textarea id="neg-motivo-travando" rows="2" placeholder="Ex: cliente achou o preço alto / está comparando com outro fornecedor / aguardando aprovação do engenheiro..." style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;font-family:inherit;resize:vertical;"></textarea>
+      </div>
+      <div class="ped-field" style="grid-column:1/-1;">
+        <label>O que falta para fechar?</label>
+        <textarea id="neg-falta-fechar" rows="2" placeholder="Ex: enviar amostra do produto / renegociar prazo de pagamento / aprovação do dono da obra..." style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;font-family:inherit;resize:vertical;"></textarea>
       </div>
     </div>
 
@@ -5915,6 +5957,18 @@ var NEG_ETAPAS = [
 ];
 var negState = { porVendedor: {}, isGestora: false, currentVend: null, filtroVend: 'todos', editando: null };
 
+var NEG_MOTIVOS = {
+  preco:            { label: '💰 Preço / sem competitividade', cor: '#C41E1E' },
+  faturado:         { label: '📄 Compra faturado (não à vista)', cor: '#7A4A00' },
+  concorrente:      { label: '🏳️ Já compra com concorrente',   cor: '#4A148C' },
+  prazo_pagamento:  { label: '💳 Prazo de pagamento',           cor: '#0C447C' },
+  prazo_entrega:    { label: '🚚 Prazo de entrega',             cor: '#185FA5' },
+  qualidade:        { label: '🔧 Qualidade / especificação técnica', cor: '#7A0000' },
+  aprovacao:        { label: '🖊️ Aguardando aprovação / decisor', cor: '#555' },
+  sem_verba:        { label: '🚫 Sem verba no momento',         cor: '#1B5E20' },
+  outro:            { label: '❓ Outro',                        cor: '#888' }
+};
+
 function negEsc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
     return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c];
@@ -6004,7 +6058,43 @@ function renderNegKanban() {
     var soma = abertas.reduce(function(s, n) { return s + (Number(n.valorEstimado) || 0); }, 0);
     totalBox.textContent = 'R$ ' + soma.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   }
+  renderNegMotivosResumo(todas);
   renderBaseClientes();
+}
+
+// Painel "por que os clientes não fecham" — conta quantas negociações (em aberto
+// ou perdidas) têm cada motivo marcado, pra apresentar em números pra diretoria.
+function renderNegMotivosResumo(todas) {
+  var box = document.getElementById('neg-motivos-resumo');
+  if (!box) return;
+
+  var relevantes = todas.filter(function(n) { return n.etapa !== 'fechado' && n.motivoCategoria; });
+  if (!relevantes.length) {
+    box.innerHTML = '<div style="font-size:12px;color:#bbb;">Nenhum motivo registrado ainda. Preencha "Motivo de não fechamento" nas negociações pra esse painel aparecer.</div>';
+    return;
+  }
+
+  var contagem = {};
+  relevantes.forEach(function(n) { contagem[n.motivoCategoria] = (contagem[n.motivoCategoria] || 0) + 1; });
+  var totalCom = relevantes.length;
+
+  var linhas = Object.keys(contagem).map(function(k) {
+    var info = NEG_MOTIVOS[k] || { label: k, cor: '#888' };
+    return { key: k, label: info.label, cor: info.cor, qtd: contagem[k] };
+  }).sort(function(a, b) { return b.qtd - a.qtd; });
+
+  box.innerHTML = linhas.map(function(l) {
+    var pct = Math.round((l.qtd / totalCom) * 100);
+    return '<div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">' +
+        '<span style="color:#333;">' + negEsc(l.label) + '</span>' +
+        '<span style="font-weight:700;color:#1C1C1C;">' + l.qtd + ' cliente(s) · ' + pct + '%</span>' +
+      '</div>' +
+      '<div style="background:#F1EFE8;border-radius:20px;height:8px;overflow:hidden;">' +
+        '<div style="height:100%;border-radius:20px;background:' + l.cor + ';width:' + pct + '%;"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function negCardHtml(n, et, hoje) {
@@ -6023,12 +6113,31 @@ function negCardHtml(n, et, hoje) {
   var converterBtn = n.etapa === 'fechado'
     ? '<button onclick="event.stopPropagation();negConverterEmPedido(\'' + n.vendedor + '\',\'' + n.id + '\')" style="margin-top:6px;width:100%;padding:5px;border-radius:5px;border:none;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">➜ Converter em Pedido</button>'
     : '';
+  var faltaTrunc = function(s) { s = String(s || '').trim(); return s.length > 60 ? s.slice(0, 57) + '...' : s; };
+  var faltaHtml = n.faltaFechar
+    ? '<div style="font-size:10px;color:#7A4A00;background:#FFF3E0;border-radius:5px;padding:4px 6px;margin-top:6px;">🔑 <b>Falta:</b> ' + negEsc(faltaTrunc(n.faltaFechar)) + '</div>'
+    : '';
+  var motivoInfo = n.motivoCategoria ? NEG_MOTIVOS[n.motivoCategoria] : null;
+  var motivoChipLabel = (n.motivoCategoria === 'outro' && n.motivoOutro) ? ('❓ ' + n.motivoOutro) : (motivoInfo ? motivoInfo.label : '');
+  var motivoChipHtml = motivoInfo
+    ? '<div style="display:inline-block;font-size:9.5px;font-weight:700;color:#fff;background:' + motivoInfo.cor + ';border-radius:8px;padding:2px 7px;margin-top:6px;">' + negEsc(faltaTrunc(motivoChipLabel)) + '</div>'
+    : '';
+  var concorrenteHtml = n.concorrente
+    ? '<div style="font-size:10px;color:#4A148C;margin-top:4px;">🏳️ ' + negEsc(n.concorrente) + (n.valorConcorrente ? ' — R$ ' + Number(n.valorConcorrente).toLocaleString('pt-BR',{minimumFractionDigits:2}) : '') + '</div>'
+    : '';
+  var travandoHtml = n.motivoTravando
+    ? '<div style="font-size:10px;color:#7A0000;background:#FBE9E9;border-radius:5px;padding:4px 6px;margin-top:4px;">🚧 ' + negEsc(faltaTrunc(n.motivoTravando)) + '</div>'
+    : '';
   return '<div style="background:#fff;border:1.5px solid ' + (atrasada ? '#C41E1E' : '#E8E6E1') + ';border-radius:9px;padding:10px;margin-bottom:8px;cursor:pointer;" onclick="abrirNegModal(\'' + n.vendedor + '\',\'' + n.id + '\')">' +
     vendLabel +
     '<div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + negEsc(n.empresa || '(sem nome)') + '</div>' +
     (n.contato ? '<div style="font-size:11px;color:#888;">' + negEsc(n.contato) + '</div>' : '') +
     (valor ? '<div style="font-size:12px;font-weight:600;color:#2E7D32;margin-top:4px;">' + valor + '</div>' : '') +
     proxHtml +
+    motivoChipHtml +
+    concorrenteHtml +
+    travandoHtml +
+    faltaHtml +
     '<select onclick="event.stopPropagation()" onchange="negMoverEtapa(\'' + n.vendedor + '\',\'' + n.id + '\',this.value)" style="margin-top:8px;width:100%;padding:4px 6px;border-radius:5px;border:1px solid #E2E0D8;font-size:11px;background:#fff;">' + etapaOpts + '</select>' +
     converterBtn +
   '</div>';
@@ -6056,6 +6165,12 @@ function negToggleMotivoPerda() {
   if (f) f.style.display = etapa === 'perdido' ? 'block' : 'none';
 }
 
+function negToggleMotivoOutro() {
+  var cat = document.getElementById('neg-motivo-categoria').value;
+  var f = document.getElementById('neg-motivo-outro-field');
+  if (f) f.style.display = cat === 'outro' ? 'block' : 'none';
+}
+
 function abrirNegModal(vend, id) {
   negState.editando = (vend && id) ? { vend: vend, id: id } : null;
   var overlay = document.getElementById('neg-modal-overlay');
@@ -6072,7 +6187,14 @@ function abrirNegModal(vend, id) {
   document.getElementById('neg-proxima-acao').value = '';
   document.getElementById('neg-proxima-data').value = '';
   document.getElementById('neg-motivo-perda').value = '';
+  document.getElementById('neg-motivo-categoria').value = '';
+  document.getElementById('neg-concorrente').value = '';
+  document.getElementById('neg-valor-concorrente').value = '';
+  document.getElementById('neg-motivo-travando').value = '';
+  document.getElementById('neg-falta-fechar').value = '';
+  document.getElementById('neg-motivo-outro').value = '';
   negToggleMotivoPerda();
+  negToggleMotivoOutro();
 
   if (negState.editando) {
     titulo.textContent = 'Editar Negociação';
@@ -6095,7 +6217,14 @@ function abrirNegModal(vend, id) {
       document.getElementById('neg-proxima-acao').value = n.proximaAcao || '';
       document.getElementById('neg-proxima-data').value = n.proximaData || '';
       document.getElementById('neg-motivo-perda').value = n.motivoPerda || '';
+      document.getElementById('neg-motivo-categoria').value = n.motivoCategoria || '';
+      document.getElementById('neg-concorrente').value = n.concorrente || '';
+      document.getElementById('neg-valor-concorrente').value = n.valorConcorrente ? String(n.valorConcorrente).replace('.', ',') : '';
+      document.getElementById('neg-motivo-travando').value = n.motivoTravando || '';
+      document.getElementById('neg-falta-fechar').value = n.faltaFechar || '';
+      document.getElementById('neg-motivo-outro').value = n.motivoOutro || '';
       negToggleMotivoPerda();
+      negToggleMotivoOutro();
       negRenderHistorico(n.historico || []);
     });
   } else {
@@ -6167,6 +6296,12 @@ function negSalvar() {
     proximaAcao: document.getElementById('neg-proxima-acao').value.trim(),
     proximaData: document.getElementById('neg-proxima-data').value,
     motivoPerda: etapa === 'perdido' ? document.getElementById('neg-motivo-perda').value.trim() : '',
+    motivoCategoria: document.getElementById('neg-motivo-categoria').value,
+    motivoOutro: document.getElementById('neg-motivo-categoria').value === 'outro' ? document.getElementById('neg-motivo-outro').value.trim() : '',
+    concorrente: document.getElementById('neg-concorrente').value.trim(),
+    valorConcorrente: parseValorMonetario(document.getElementById('neg-valor-concorrente').value) || 0,
+    motivoTravando: document.getElementById('neg-motivo-travando').value.trim(),
+    faltaFechar: document.getElementById('neg-falta-fechar').value.trim(),
     vendedor: vend
   };
 
