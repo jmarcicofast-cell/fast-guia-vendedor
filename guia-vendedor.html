@@ -2297,6 +2297,7 @@
           </select>
         </div>
         <input type="text" id="cli-busca" placeholder="🔎 Buscar cliente..." oninput="cliBuscarInput(this.value)" style="padding:8px 12px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;min-width:180px;">
+        <button id="cli-add-geral-btn" onclick="cliAbrirAddGeralModal()" style="display:none;padding:8px 14px;border-radius:7px;border:none;background:#1C1C1C;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Adicionar Cliente</button>
       </div>
     </div>
 
@@ -2384,6 +2385,29 @@
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button onclick="cliFecharModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Fechar</button>
       <button onclick="cliMarcarAtendidoModal()" style="padding:8px 18px;border-radius:6px;border:none;background:#1B5E20;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ Marcar atendido hoje</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADICIONAR CLIENTE À CARTEIRA GERAL -->
+<div id="cli-add-geral-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) cliFecharAddGeralModal()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:420px;width:100%;">
+    <div style="font-size:14px;font-weight:700;color:#1C1C1C;margin-bottom:12px;">+ Adicionar Cliente à Carteira Geral</div>
+    <div class="ped-field" style="margin-bottom:10px;">
+      <label>Nome do cliente</label>
+      <input type="text" id="cli-add-geral-nome" placeholder="Nome da empresa ou cliente" style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+    </div>
+    <div class="ped-field" style="margin-bottom:14px;">
+      <label>Está ativo?</label>
+      <select id="cli-add-geral-status" style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+        <option value="">Deixar o sistema decidir pelos pedidos</option>
+        <option value="sim">Sim, está ativo</option>
+        <option value="nao">Não, está inativo</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="cliFecharAddGeralModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Cancelar</button>
+      <button onclick="cliSalvarAddGeral()" style="padding:8px 18px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Adicionar</button>
     </div>
   </div>
 </div>
@@ -6360,6 +6384,119 @@ function negConverterEmPedido(vend, id) {
 // simples de "quando foi o último atendimento" salvo em atendimentos/{VEND}/{chave}.
 // ══════════════════════════════════════════════════════════════
 var CLI_META_INATIVO_DIAS = 60;
+
+// Carteira geral de clientes da empresa (sem vendedor associado), passada pela
+// gestora. status: 'sim' = ativo, 'nao' = inativo, '' = deixa o sistema decidir
+// pelos pedidos. Só é usada quando o cliente NÃO tem nenhum pedido registrado
+// no sistema com qualquer vendedor — se tiver, o dado real do pedido manda.
+var CLI_GERAL_SEED = [
+  { nome: 'JRC Gesso Ltda', status: 'sim' },
+  { nome: 'Camelos Distribuicao e Comercio de Materiais Ltda', status: 'nao' },
+  { nome: 'Gesso e Companhia Ltda', status: 'sim' },
+  { nome: 'Casa do Gesso e Comunicacao Visual Ltda', status: 'sim' },
+  { nome: 'JJ de Alencar Gesso - EPP', status: 'sim' },
+  { nome: 'Construtech Comercio de Materiais Ltda', status: 'sim' },
+  { nome: 'Gessobras - Distribuidora de Drywall Ltda', status: 'sim' },
+  { nome: 'M L Belato - Gesso Acartonado - ME', status: 'sim' },
+  { nome: 'Distribuidora e Servicos Evolugesso Ltda', status: 'nao' },
+  { nome: 'Liberty Gesso e Dry Wall Ltda', status: 'sim' },
+  { nome: 'Minosso Industria e Comércio de Perfilados Ltda', status: 'sim' },
+  { nome: 'BLJ Distribuidora de Materiais de Construcao a Seco Ltda', status: 'sim' },
+  { nome: 'Nova Estrutura Construcao a Seco Ltda', status: '' },
+  { nome: 'Araucaria Ferro e Aco Ltda', status: 'nao' },
+  { nome: 'Leal Gesso Ltda', status: '' },
+  { nome: 'Evanilce Alves do Nascimento Gesso', status: 'nao' },
+  { nome: 'Gesso Rafael Ltda', status: 'nao' },
+  { nome: 'MR Gesso Ltda', status: '' },
+  { nome: 'Claudinei dos Santos Gesso', status: '' },
+  { nome: 'MW Top Gesso Ltda.', status: 'sim' },
+  { nome: 'Gessolar Barretos Ltda.', status: 'nao' },
+  { nome: 'Texas Drywall Ltda', status: '' },
+  { nome: 'ACS Athenas Comercio de Gesso Ltda', status: 'sim' },
+  { nome: 'J. C. Albano Decoracoes', status: '' },
+  { nome: 'Drybox Materiais para Construcao a Seco Ltda', status: '' },
+  { nome: 'LV Gesso', status: '' },
+  { nome: 'Olimax Solucoes Construtivas Ltda', status: 'nao' },
+  { nome: 'Maf Gesso Comercio e Servicos Ltda', status: '' },
+  { nome: 'Industria e Comercio de Ferros Bela Vista Ltda', status: 'sim' },
+  { nome: 'Alegra Comercio de Ferragens e Servicos Ltda', status: 'sim' },
+  { nome: 'Drymaster Construcao a Seco Ltda', status: '' },
+  { nome: 'Taynara T F dos Santos Materiais de Construcao', status: 'nao' },
+  { nome: 'Diviforros Ltda', status: 'nao' },
+  { nome: 'D M J Transportes e Comercio de Itaperuna Ltda.', status: 'sim' },
+  { nome: 'Mercado Gesso Ltda', status: 'nao' },
+  { nome: 'Plaster Comercial', status: 'nao' },
+  { nome: 'Central do Gesso Comercio de Materiais', status: 'nao' },
+  { nome: 'Gesso Lagos Comercio e Servicos Ltda', status: 'nao' },
+  { nome: 'Drylux Construtora Ltda', status: '' },
+  { nome: 'Placocentro Drywall, Logistica e Transportes Ltda', status: 'sim' },
+  { nome: 'M M Steel Frame Materiais em Gesso Acartonado Ltda', status: '' },
+  { nome: 'Moreira & Filhos Industria, Comercio, Importacao e Exportacao', status: 'sim' },
+  { nome: 'Kleberson Marques de Oliveira', status: 'sim' },
+  { nome: 'D Souza Comercio e Revestimento Ltda', status: '' },
+  { nome: 'Cerpolo Comercio de Forros Ltda', status: 'sim' },
+  { nome: 'RP Gesso Marica Ltda', status: '' },
+  { nome: 'Steel Shopp Ltda', status: 'nao' },
+  { nome: 'IGB Solucoes Construtivas Comercio e Importacao Ltda', status: '' },
+  { nome: 'Reveste Distribuidora de Materiais para Acabamento Ltda', status: 'sim' },
+  { nome: 'Diego Rafael da Silva Gesso', status: 'sim' },
+  { nome: 'MS Plast Comercio de Derivados de PVC Ltda', status: '' },
+  { nome: 'Atitude Gesso Comercio de Materiais para Construcao Ltda', status: 'sim' },
+  { nome: 'M C Steinbach Auada Gesso Comercio e Servicos', status: '' },
+  { nome: 'Mix Perfis Drywall Industria e Comercio Ltda', status: 'sim' },
+  { nome: 'Eurogesso Materiais de Construcao Ltda', status: '' },
+  { nome: 'Comercio de Gesso Arte Buzios Ltda', status: '' },
+  { nome: 'Leal Comercio de Gesso Ltda', status: '' },
+  { nome: 'Valdenilson Rodrigues de Sousa Gesso', status: '' },
+  { nome: 'Suprafix Representação e Distribuição Ltda', status: 'sim' },
+  { nome: 'Nickson Industria e Comercio de Perfilados Ltda', status: '' },
+  { nome: 'Soares Gesso e Drywall Ltda', status: 'sim' },
+  { nome: 'Rioplast Divisorias e Forros PVC Ltda', status: '' },
+  { nome: 'Drycenter Uberaba Gesso & Drywall Ltda', status: 'sim' },
+  { nome: 'Engesso Comercio de Drywall Ltda', status: 'sim' },
+  { nome: 'Pentagono Gesso Ltda', status: '' },
+  { nome: 'Valdivino Ferreira Cabral', status: '' },
+  { nome: 'F.P.S dos Santos', status: '' },
+  { nome: 'Gesso Pontal Ltda', status: 'sim' },
+  { nome: 'A P Construcoes Ltda', status: '' },
+  { nome: 'Jose Novais Silva Guaruja', status: 'nao' },
+  { nome: 'Valdecir Antonio Cavalheiro Ltda', status: '' },
+  { nome: 'Fagundes Decoracoes Ltda', status: 'sim' },
+  { nome: 'Flavio Vinicius Avelino Vaz Ltda', status: 'nao' },
+  { nome: 'Inove Gesso Ltda', status: '' },
+  { nome: 'Quenier Junior de Oliveira Queiroz', status: 'nao' },
+  { nome: 'Higashi Forros e Divisorias Ltda', status: '' },
+  { nome: 'Gesso Teto', status: 'sim' },
+  { nome: 'Casa do Gesso e Drywall Ltda', status: 'nao' },
+  { nome: 'M A Fernandes Materiais de Construcoes', status: '' },
+  { nome: 'Gesso Fazendinha Ltda', status: '' },
+  { nome: 'Gesso Braga Ltda', status: '' },
+  { nome: 'Cezar DMJ', status: '' },
+  { nome: 'LK Drywall e Construcoes Ltda', status: '' },
+  { nome: 'Michael Anderson Neves', status: '' },
+  { nome: 'Thalia Ferreira de Paula Ltda', status: 'nao' },
+  { nome: 'Construcenter Contagem Comercio de Materiais Ltda', status: 'sim' },
+  { nome: 'Gesso Elizabete Ltda ME', status: '' },
+  { nome: 'Fernando Simplicio da Silva Ltda', status: 'nao' },
+  { nome: 'Ongesso Drywall Ltda', status: 'sim' },
+  { nome: 'Pro Gesso Drywall Comercio e Servicos Ltda', status: '' },
+  { nome: 'Marcio Sidnei de Oliveira', status: '' },
+  { nome: 'WCT 2010 Materiais Eletricos Ltda', status: 'nao' },
+  { nome: 'GS Atacadao do Drywall Ltda', status: '' },
+  { nome: 'Ongesso Steel Frame e Drywall Ltda', status: 'sim' },
+  { nome: 'Top Gesso Comercio e Servico Ltda', status: '' },
+  { nome: 'Apoio Forros e Divisorias Ltda.', status: '' },
+  { nome: 'Bazar Flor do Gesso Ltda', status: '' },
+  { nome: 'SMG Construcoes e Servicos em Geral Ltda', status: 'sim' },
+  { nome: 'Gesso Flor do Campo Ltda', status: '' },
+  { nome: 'Jose Raimundo Simoes', status: '' },
+  { nome: 'R & M Comercio de Gesso Ltda', status: '' },
+  { nome: 'Casa do Gesso VR Ltda', status: '' },
+  { nome: 'Apice - Artefatos de Gesso Ltda', status: 'nao' },
+  { nome: 'Emerson de Freitas Moreira', status: '' },
+  { nome: 'R G K Comercio e Servicos para Construcao Ltda', status: '' },
+  { nome: 'Vinil Rio Revestimentos Ltda', status: '' }
+];
 var CLI_META_ATENDIMENTO_DIAS = 7;
 var cliAtendState = { porVendedor: {}, isGestora: false, currentVend: null };
 var cliFiltroStatus = 'todos';
@@ -6388,9 +6525,11 @@ function listenAtendimentos(vendNome, isGestora) {
 
   var filtroBox = document.getElementById('cli-filtro-vend-box');
   var thVend = document.getElementById('cli-th-vendedor');
+  var addBtn = document.getElementById('cli-add-geral-btn');
   if (isGestora) {
     if (filtroBox) filtroBox.style.display = 'block';
     if (thVend) thVend.style.display = '';
+    if (addBtn) addBtn.style.display = 'inline-block';
     var sel = document.getElementById('cli-filtro-vend');
     if (sel && sel.options.length <= 1) {
       NEG_VENDEDORES_LISTA.forEach(function(vn) {
@@ -6398,21 +6537,64 @@ function listenAtendimentos(vendNome, isGestora) {
         var o = document.createElement('option'); o.value = vn; o.textContent = vendedores[vn].nome;
         sel.appendChild(o);
       });
+      var oGeral = document.createElement('option'); oGeral.value = 'GERAL'; oGeral.textContent = '🏢 Carteira Geral (sem vendedor)';
+      sel.appendChild(oGeral);
     }
-    NEG_VENDEDORES_LISTA.forEach(function(vn) {
+    NEG_VENDEDORES_LISTA.concat(['GERAL']).forEach(function(vn) {
       dbRef('atendimentos/' + vn).on('value', function(snap) {
         cliAtendState.porVendedor[vn] = snap.val() || {};
         renderBaseClientes();
       });
     });
+    listenClientesGeral();
   } else {
     if (filtroBox) filtroBox.style.display = 'none';
     if (thVend) thVend.style.display = 'none';
+    if (addBtn) addBtn.style.display = 'none';
     dbRef('atendimentos/' + vendNome).on('value', function(snap) {
       cliAtendState.porVendedor[vendNome] = snap.val() || {};
       renderBaseClientes();
     });
   }
+}
+
+// Carteira geral da empresa: clientes sem vendedor específico associado,
+// só pra a gestora acompanhar. Semeada uma vez a partir de CLI_GERAL_SEED
+// e depois editável por dentro do app (botão "+ Adicionar Cliente").
+var cliGeralState = {};
+function listenClientesGeral() {
+  dbRef('clientesGeral').once('value').then(function(snap) {
+    if (!snap.val()) {
+      var atualizacoes = {};
+      CLI_GERAL_SEED.forEach(function(c) {
+        var chave = cliChave(c.nome);
+        atualizacoes[chave] = { nome: c.nome, statusManual: c.status || '' };
+      });
+      dbRef('clientesGeral').update(atualizacoes);
+    }
+  });
+  dbRef('clientesGeral').on('value', function(snap) {
+    cliGeralState = snap.val() || {};
+    renderBaseClientes();
+  });
+}
+
+function cliAbrirAddGeralModal() {
+  document.getElementById('cli-add-geral-nome').value = '';
+  document.getElementById('cli-add-geral-status').value = '';
+  document.getElementById('cli-add-geral-overlay').style.display = 'flex';
+}
+
+function cliFecharAddGeralModal() {
+  document.getElementById('cli-add-geral-overlay').style.display = 'none';
+}
+
+function cliSalvarAddGeral() {
+  var nome = document.getElementById('cli-add-geral-nome').value.trim();
+  if (!nome) { alert('Informe o nome do cliente.'); return; }
+  var status = document.getElementById('cli-add-geral-status').value;
+  var chave = cliChave(nome);
+  dbRef('clientesGeral/' + chave).set({ nome: nome, statusManual: status }).then(cliFecharAddGeralModal);
 }
 
 // Junta pedidos (histórico completo) + negociações num único mapa de clientes,
@@ -6457,11 +6639,28 @@ function cliConstruirBase() {
     });
   });
 
+  // Chaves que já têm pedido/negociação registrado com ALGUM vendedor — pra essas,
+  // o dado real do sistema manda, e a carteira geral não entra duplicada.
+  var chavesJaRastreadas = {};
+  Object.keys(mapa).forEach(function(id) { chavesJaRastreadas[mapa[id].chave] = true; });
+
+  Object.keys(cliGeralState || {}).forEach(function(chave) {
+    if (chavesJaRastreadas[chave]) return;
+    var g = cliGeralState[chave];
+    var id = 'GERAL||' + chave;
+    mapa[id] = {
+      vendedor: 'GERAL', chave: chave, nome: g.nome || chave,
+      ultimaCompra: null, tipoClienteRecente: '', qtdPedidos: 0, totalComprado: 0,
+      statusManualGeral: g.statusManual || ''
+    };
+  });
+
   return Object.keys(mapa).map(function(id) {
     var r = mapa[id];
     var diasSemComprar = r.ultimaCompra ? cliDiasEntre(r.ultimaCompra, hojeIso) : null;
     var status;
     if (r.tipoClienteRecente === 'novo') status = 'novo';
+    else if (diasSemComprar === null && r.statusManualGeral === 'sim') status = 'ativo';
     else if (diasSemComprar === null || diasSemComprar > CLI_META_INATIVO_DIAS) status = 'inativo';
     else status = 'ativo';
 
@@ -6496,14 +6695,15 @@ function cliFiltrarVendedorSel(v) { cliFiltroVend = v; renderBaseClientes(); }
 function cliBuscarInput(q) { cliBusca = (q || '').toLowerCase().trim(); renderBaseClientes(); }
 
 function cliLinhaHtml(c) {
+  var nomeVend = c.vendedor === 'GERAL' ? '🏢 Carteira Geral' : (vendedores[c.vendedor] ? vendedores[c.vendedor].nome : c.vendedor);
   var vendCol = cliAtendState.isGestora
-    ? '<td style="padding:8px 10px;font-size:11px;color:#C41E1E;font-weight:600;">' + negEsc(vendedores[c.vendedor] ? vendedores[c.vendedor].nome : c.vendedor) + '</td>'
+    ? '<td style="padding:8px 10px;font-size:11px;color:#C41E1E;font-weight:600;">' + negEsc(nomeVend) + '</td>'
     : '';
   var atrasado = !c.atendidoEssaSemana;
   var atendTxt = c.ultimoAtendimento
     ? (c.diasSemAtendimento + ' dia(s) atrás — ' + negFmtData(c.ultimoAtendimento))
     : 'Nunca atendido';
-  var compraTxt = c.ultimaCompra ? (negFmtData(c.ultimaCompra) + ' · ' + c.diasSemComprar + ' dia(s)') : '— (ainda não comprou)';
+  var compraTxt = c.ultimaCompra ? (negFmtData(c.ultimaCompra) + ' · ' + c.diasSemComprar + ' dia(s)') : '— (sem pedido no sistema)';
   return '<tr style="' + (atrasado ? 'background:#FFF7F5;' : '') + 'border-top:1px solid #F0EEEA;">' +
     vendCol +
     '<td style="padding:8px 10px;font-weight:700;color:#1C1C1C;font-size:12.5px;cursor:pointer;" onclick="cliAbrirDetalhe(\'' + c.vendedor + '\',\'' + c.chave + '\')">' + negEsc(c.nome) + '</td>' +
@@ -6597,7 +6797,7 @@ function cliAbrirDetalhe(vend, chave) {
   document.getElementById('cli-detalhe-status').innerHTML = cliStatusBadge(reg.status);
   document.getElementById('cli-detalhe-compra').textContent = reg.ultimaCompra
     ? ('Última compra: ' + negFmtData(reg.ultimaCompra) + ' (' + reg.diasSemComprar + ' dia(s) atrás)')
-    : 'Ainda não comprou — é uma negociação/lead.';
+    : (vend === 'GERAL' ? 'Sem pedido registrado no sistema (carteira geral).' : 'Ainda não comprou — é uma negociação/lead.');
   document.getElementById('cli-detalhe-total').textContent = 'R$ ' + Number(reg.totalComprado).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   document.getElementById('cli-detalhe-qtd').textContent = reg.qtdPedidos + ' pedido(s)';
   var atend = (cliAtendState.porVendedor[vend] || {})[chave];
