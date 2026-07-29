@@ -2382,9 +2382,12 @@
       </div>
     </div>
 
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button onclick="cliFecharModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Fechar</button>
-      <button onclick="cliMarcarAtendidoModal()" style="padding:8px 18px;border-radius:6px;border:none;background:#1B5E20;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ Marcar atendido hoje</button>
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;">
+      <button id="cli-mesclar-btn" onclick="cliMesclarComOutro()" style="display:none;padding:8px 12px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;color:#666;font-size:12px;cursor:pointer;">🔗 Mesclar com outro cliente</button>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button onclick="cliFecharModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Fechar</button>
+        <button onclick="cliMarcarAtendidoModal()" style="padding:8px 18px;border-radius:6px;border:none;background:#1B5E20;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ Marcar atendido hoje</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3360,7 +3363,12 @@ function renderEditItens() {
   if (!lista) return;
   lista.innerHTML = '';
   var totalGeral = 0;
+  var mapaComissaoPorMaterialEdit = {};
+  obterMateriaisUnicos().forEach(function(m) { mapaComissaoPorMaterialEdit[m.nome] = categoriaParaComissao(m.categoria); });
   editItens.forEach(function(it, idx) {
+    if (!it.cat && it.material && mapaComissaoPorMaterialEdit[it.material]) {
+      it.cat = mapaComissaoPorMaterialEdit[it.material];
+    }
     var vt = Math.round((it.qtd||0)*(it.vUnit||0)*100)/100;
     totalGeral += vt;
     var div = document.createElement('div');
@@ -3369,7 +3377,7 @@ function renderEditItens() {
 
     // Categoria select
     var catDiv = document.createElement('div');
-    catDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Categoria</label>';
+    catDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Categoria <span style="color:#1B5E20;font-weight:400;">(auto)</span></label>';
     var sel = document.createElement('select');
     sel.style.cssText = inp;
     [['','Selecione'],['placa','Placa 0,5%'],['grx','GRX 0,75%'],['aco','Aco 1%']].forEach(function(opt) {
@@ -3392,6 +3400,11 @@ function renderEditItens() {
       editItens[i].material = this.value;
       var opt = this.options[this.selectedIndex];
       editItens[i].codigo = opt ? (opt.getAttribute('data-codigo') || '') : '';
+      var comissaoAuto = opt ? (opt.getAttribute('data-comissao') || '') : '';
+      if (comissaoAuto) {
+        editItens[i].cat = comissaoAuto;
+        sel.value = comissaoAuto;
+      }
     }; })(idx);
     matDiv.appendChild(matIn);
 
@@ -5373,11 +5386,22 @@ function obterMateriaisUnicos() {
     var nome = (p.nome || '').trim();
     if (nome && !vistos[nome]) {
       vistos[nome] = true;
-      lista.push({ nome: nome, codigo: p.codigo || '' });
+      lista.push({ nome: nome, codigo: p.codigo || '', categoria: p.categoria || '' });
     }
   });
   lista.sort(function(a,b) { return a.nome.localeCompare(b.nome, 'pt-BR'); });
   return lista;
+}
+
+// Mapeia a categoria da base de produtos (Tabela de Produtos) pra faixa de
+// comissão do vendedor. Definido pela gestora: PLACA->Placa, COMPLEMENTO e
+// VAB->GRX/Comp., AÇO/AÇO PLACO e PISO->Aço.
+function categoriaParaComissao(categoria) {
+  var c = String(categoria || '').trim().toUpperCase();
+  if (c === 'PLACA') return 'placa';
+  if (c === 'COMPLEMENTO' || c === 'VAB') return 'grx';
+  if (c === 'AÇO' || c === 'ACO' || c === 'AÇO PLACO' || c === 'ACO PLACO' || c === 'PISO') return 'aco';
+  return ''; // categoria vazia/desconhecida na base -> vendedor escolhe manualmente
 }
 
 // Monta as <option> de material para um <select>, com o codigo do produto embutido
@@ -5391,7 +5415,8 @@ function montarOptionsMaterial(valorAtual) {
     var sel = (valorAtual === m.nome) ? ' selected' : '';
     if (valorAtual === m.nome) encontrado = true;
     var label = m.codigo ? (m.nome + ' — ' + m.codigo) : m.nome;
-    html += '<option value="' + m.nome.replace(/"/g,'&quot;') + '" data-codigo="' + String(m.codigo).replace(/"/g,'&quot;') + '"' + sel + '>' + label + '</option>';
+    var comissaoAuto = categoriaParaComissao(m.categoria);
+    html += '<option value="' + m.nome.replace(/"/g,'&quot;') + '" data-codigo="' + String(m.codigo).replace(/"/g,'&quot;') + '" data-comissao="' + comissaoAuto + '"' + sel + '>' + label + '</option>';
   });
   if (valorAtual && !encontrado) {
     html += '<option value="' + valorAtual.replace(/"/g,'&quot;') + '" selected>' + valorAtual + ' (personalizado)</option>';
@@ -6504,10 +6529,87 @@ var cliFiltroVend = 'todos';
 var cliBusca = '';
 var cliIndexPorId = {};
 var cliDetalheAtual = null;
+var cliAliasState = {}; // mapa chaveVariante -> chaveCanonica, alimentado pela mesclagem manual
 
-function cliChave(nome) {
-  var s = String(nome == null ? '' : nome).trim().toUpperCase().replace(/[.#$\[\]\/\\]/g, '_').replace(/\s+/g, ' ');
+// Normaliza o nome (sem acento, maiúsculo, sem pontuação) e remove sufixos
+// societários comuns (LTDA, ME, EPP, EIRELI, S/A) que geram falso-duplicado
+// tipo "JRC Gesso Ltda" x "JRC GESSO".
+function cliChaveBase(nome) {
+  var s = String(nome == null ? '' : nome)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase().trim()
+    .replace(/[.#$\[\]\/\\]/g, ' ')
+    .replace(/[,\-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  var sufixos = ['LTDA ME', 'EIRELI', 'LTDA', 'EPP', 'ME', 'S A', 'SA'];
+  var mudou = true;
+  while (mudou) {
+    mudou = false;
+    for (var i = 0; i < sufixos.length; i++) {
+      var suf = sufixos[i];
+      if (s.length > suf.length && s.slice(-(suf.length + 1)) === (' ' + suf)) {
+        s = s.slice(0, s.length - suf.length - 1).trim();
+        mudou = true;
+        break;
+      }
+    }
+  }
   return s || 'SEM_NOME';
+}
+
+// Resolve a cadeia de mesclagens manuais (se alguém mesclou A dentro de B, e
+// depois B dentro de C, um cliente marcado como A deve cair direto em C).
+function cliChave(nome) {
+  var chave = cliChaveBase(nome);
+  var visto = {};
+  while (cliAliasState[chave] && !visto[chave]) {
+    visto[chave] = true;
+    chave = cliAliasState[chave];
+  }
+  return chave;
+}
+
+function listenClientesAlias() {
+  dbRef('clientesAlias').on('value', function(snap) {
+    cliAliasState = snap.val() || {};
+    renderBaseClientes();
+  });
+}
+
+// Mescla o cliente atualmente aberto no modal de detalhe dentro de outro
+// (o "correto"), migrando o histórico de atendimento existente.
+function cliMesclarComOutro() {
+  if (!cliDetalheAtual) return;
+  var origemVend = cliDetalheAtual.vend, origemChave = cliDetalheAtual.chave;
+  var regOrigem = cliIndexPorId[origemVend + '||' + origemChave];
+  var nomeCanonico = prompt('Digite o nome EXATO de como aparece o cliente CORRETO (o cliente atual será mesclado dentro dele e some da lista):', '');
+  if (!nomeCanonico || !nomeCanonico.trim()) return;
+  var chaveCanonicaFinal = cliChave(nomeCanonico);
+  if (chaveCanonicaFinal === origemChave) { alert('Isso já é o mesmo cliente.'); return; }
+  if (!confirm('Mesclar "' + (regOrigem ? regOrigem.nome : origemChave) + '" dentro de "' + nomeCanonico + '"?\n\nO histórico de atendimento será unido e essa linha some da lista. Não pode ser desfeito.')) return;
+
+  dbRef('clientesAlias/' + origemChave).set(chaveCanonicaFinal)
+    .then(function() { return dbRef('atendimentos/' + origemVend + '/' + origemChave).once('value'); })
+    .then(function(snap) {
+      var antigo = snap.val();
+      if (!antigo) return null;
+      return dbRef('atendimentos/' + origemVend + '/' + chaveCanonicaFinal).once('value').then(function(snapNovo) {
+        var atual = snapNovo.val() || { nome: nomeCanonico.trim(), historico: [] };
+        atual.historico = (atual.historico || []).concat(antigo.historico || []);
+        if (antigo.ultimoAtendimento && (!atual.ultimoAtendimento || antigo.ultimoAtendimento > atual.ultimoAtendimento)) {
+          atual.ultimoAtendimento = antigo.ultimoAtendimento;
+        }
+        return dbRef('atendimentos/' + origemVend + '/' + chaveCanonicaFinal).set(atual);
+      }).then(function() {
+        return dbRef('atendimentos/' + origemVend + '/' + origemChave).remove();
+      });
+    })
+    .then(function() { return dbRef('clientesGeral/' + origemChave).remove(); })
+    .then(function() {
+      cliFecharModal();
+      alert('Mesclado com sucesso.');
+    });
 }
 
 function cliDiasEntre(dataIsoAntiga, dataIsoNova) {
@@ -6522,6 +6624,7 @@ function cliDiasEntre(dataIsoAntiga, dataIsoNova) {
 function listenAtendimentos(vendNome, isGestora) {
   cliAtendState.isGestora = isGestora;
   cliAtendState.currentVend = vendNome;
+  listenClientesAlias(); // todo mundo precisa resolver os mesmos apelidos/mesclagens
 
   var filtroBox = document.getElementById('cli-filtro-vend-box');
   var thVend = document.getElementById('cli-th-vendedor');
@@ -6703,7 +6806,9 @@ function cliLinhaHtml(c) {
   var atendTxt = c.ultimoAtendimento
     ? (c.diasSemAtendimento + ' dia(s) atrás — ' + negFmtData(c.ultimoAtendimento))
     : 'Nunca atendido';
-  var compraTxt = c.ultimaCompra ? (negFmtData(c.ultimaCompra) + ' · ' + c.diasSemComprar + ' dia(s)') : '— (sem pedido no sistema)';
+  var compraTxt = c.ultimaCompra
+    ? (negFmtData(c.ultimaCompra) + ' · ' + (c.diasSemComprar < 0 ? 'agendado' : c.diasSemComprar + ' dia(s)'))
+    : '— (sem pedido no sistema)';
   return '<tr style="' + (atrasado ? 'background:#FFF7F5;' : '') + 'border-top:1px solid #F0EEEA;">' +
     vendCol +
     '<td style="padding:8px 10px;font-weight:700;color:#1C1C1C;font-size:12.5px;cursor:pointer;" onclick="cliAbrirDetalhe(\'' + c.vendedor + '\',\'' + c.chave + '\')">' + negEsc(c.nome) + '</td>' +
@@ -6796,13 +6901,15 @@ function cliAbrirDetalhe(vend, chave) {
   document.getElementById('cli-detalhe-titulo').textContent = reg.nome;
   document.getElementById('cli-detalhe-status').innerHTML = cliStatusBadge(reg.status);
   document.getElementById('cli-detalhe-compra').textContent = reg.ultimaCompra
-    ? ('Última compra: ' + negFmtData(reg.ultimaCompra) + ' (' + reg.diasSemComprar + ' dia(s) atrás)')
+    ? ('Última compra: ' + negFmtData(reg.ultimaCompra) + (reg.diasSemComprar < 0 ? ' (agendado — ainda não ocorreu)' : ' (' + reg.diasSemComprar + ' dia(s) atrás)'))
     : (vend === 'GERAL' ? 'Sem pedido registrado no sistema (carteira geral).' : 'Ainda não comprou — é uma negociação/lead.');
   document.getElementById('cli-detalhe-total').textContent = 'R$ ' + Number(reg.totalComprado).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   document.getElementById('cli-detalhe-qtd').textContent = reg.qtdPedidos + ' pedido(s)';
   var atend = (cliAtendState.porVendedor[vend] || {})[chave];
   cliRenderHistoricoAtendimento(atend ? (atend.historico || []) : []);
   document.getElementById('cli-detalhe-nota').value = '';
+  var mesclarBtn = document.getElementById('cli-mesclar-btn');
+  if (mesclarBtn) mesclarBtn.style.display = cliAtendState.isGestora ? 'inline-block' : 'none';
   document.getElementById('cli-modal-overlay').style.display = 'flex';
 }
 
@@ -7144,14 +7251,19 @@ function renderItensList() {
     return;
   }
   lista.innerHTML = '';
+  var mapaComissaoPorMaterial = {};
+  obterMateriaisUnicos().forEach(function(m) { mapaComissaoPorMaterial[m.nome] = categoriaParaComissao(m.categoria); });
   pedItens.forEach(function(it, idx) {
+    if (!it.cat && it.material && mapaComissaoPorMaterial[it.material]) {
+      it.cat = mapaComissaoPorMaterial[it.material];
+    }
     var div = document.createElement('div');
     div.style.cssText = 'background:#fff;border:1px solid #E2E0D8;border-radius:8px;padding:10px 12px;margin-bottom:6px;';
     var grid = document.createElement('div');
     grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:8px;';
     // Categoria
     var catDiv = document.createElement('div'); catDiv.className = 'ped-field';
-    catDiv.innerHTML = '<label>Categoria</label>';
+    catDiv.innerHTML = '<label>Categoria <span style="color:#1B5E20;font-weight:400;font-size:10px;">(auto)</span></label>';
     var sel = document.createElement('select');
     sel.style.cssText = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
     [['','Selecione...'],['placa','Placa 0,5%'],['grx','GRX/Comp. 0,75%'],['aco','Aco 1%']].forEach(function(opt) {
@@ -7170,6 +7282,11 @@ function renderItensList() {
       updateItem(i, 'material', this.value);
       var opt = this.options[this.selectedIndex];
       updateItem(i, 'codigo', opt ? (opt.getAttribute('data-codigo') || '') : '');
+      var comissaoAuto = opt ? (opt.getAttribute('data-comissao') || '') : '';
+      if (comissaoAuto) {
+        updateItem(i, 'cat', comissaoAuto);
+        sel.value = comissaoAuto;
+      }
     }); })(idx);
     matDiv.appendChild(matIn);
     // Qtd
