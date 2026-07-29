@@ -1006,6 +1006,14 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
     Pedidos
   </button>
+  <button class="nav-btn" onclick="showTab('clientes',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Base de Clientes
+  </button>
+  <button class="nav-btn" onclick="showTab('negociacoes',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+    Negociações
+  </button>
   <button class="nav-btn" onclick="showTab('treinamentos',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 3L2 8l10 5 10-5-10-5z"/><path d="M2 16l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
     Treinamentos
@@ -2269,6 +2277,240 @@
       <div id="ped-scrollbar-fixo-inner" style="height:1px;"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- ══ BASE DE CLIENTES (Ativos / Inativos / Novos + controle de atendimento semanal) ══ -->
+<div id="tab-clientes" class="tab-content">
+  <div class="page-section" style="max-width:100%;">
+
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1.1rem;">
+      <div>
+        <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:2px;">👥 Base de Clientes</h2>
+        <p style="font-size:12px;color:#aaa;">Ativos, inativos (60+ dias sem comprar) e novos — com controle de atendimento semanal</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <div id="cli-filtro-vend-box" style="display:none;">
+          <select id="cli-filtro-vend" onchange="cliFiltrarVendedorSel(this.value)" style="padding:8px 10px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;">
+            <option value="todos">Todos os vendedores</option>
+          </select>
+        </div>
+        <input type="text" id="cli-busca" placeholder="🔎 Buscar cliente..." oninput="cliBuscarInput(this.value)" style="padding:8px 12px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;min-width:180px;">
+      </div>
+    </div>
+
+    <!-- RESUMO -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.1rem;">
+      <div style="background:#1C1C1C;border-radius:10px;padding:.85rem 1rem;">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;">Total</div>
+        <div style="font-size:20px;font-weight:700;color:#fff;" id="cli-total">0</div>
+      </div>
+      <div style="background:#E8F5E9;border-radius:10px;padding:.85rem 1rem;">
+        <div style="font-size:10px;color:#1B5E20;text-transform:uppercase;letter-spacing:.05em;">🟢 Ativos</div>
+        <div style="font-size:20px;font-weight:700;color:#1B5E20;" id="cli-qtd-ativos">0</div>
+      </div>
+      <div style="background:#FBE9E9;border-radius:10px;padding:.85rem 1rem;">
+        <div style="font-size:10px;color:#7A0000;text-transform:uppercase;letter-spacing:.05em;">🔴 Inativos</div>
+        <div style="font-size:20px;font-weight:700;color:#7A0000;" id="cli-qtd-inativos">0</div>
+      </div>
+      <div style="background:#E6F1FB;border-radius:10px;padding:.85rem 1rem;">
+        <div style="font-size:10px;color:#0C447C;text-transform:uppercase;letter-spacing:.05em;">🔵 Novos</div>
+        <div style="font-size:20px;font-weight:700;color:#0C447C;" id="cli-qtd-novos">0</div>
+      </div>
+      <div style="background:#FFF3E0;border-radius:10px;padding:.85rem 1rem;">
+        <div style="font-size:10px;color:#7A4A00;text-transform:uppercase;letter-spacing:.05em;">⚠️ Sem atender há 7+ dias</div>
+        <div style="font-size:20px;font-weight:700;color:#7A4A00;" id="cli-qtd-pendentes">0</div>
+      </div>
+    </div>
+
+    <!-- FILTROS DE STATUS -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="qf-btn active" onclick="cliFiltrarStatus('todos',this)">Todos</button>
+      <button class="qf-btn" onclick="cliFiltrarStatus('ativo',this)">🟢 Ativos</button>
+      <button class="qf-btn" onclick="cliFiltrarStatus('inativo',this)">🔴 Inativos</button>
+      <button class="qf-btn" onclick="cliFiltrarStatus('novo',this)">🔵 Novos</button>
+    </div>
+
+    <!-- TABELA -->
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid #E8E6E1;border-radius:10px;">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:760px;">
+        <thead>
+          <tr style="background:#1C1C1C;">
+            <th id="cli-th-vendedor" style="display:none;padding:9px 10px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;">Vendedor</th>
+            <th style="padding:9px 10px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;">Cliente</th>
+            <th style="padding:9px 10px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;">Status</th>
+            <th style="padding:9px 10px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;">Última compra</th>
+            <th style="padding:9px 10px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;">Atendimento semanal</th>
+            <th style="padding:9px 10px;text-align:left;color:#fff;font-weight:600;white-space:nowrap;">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="cli-tbody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL DETALHE DO CLIENTE -->
+<div id="cli-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) cliFecharModal()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:480px;width:100%;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-size:14px;font-weight:700;color:#1C1C1C;" id="cli-detalhe-titulo">Cliente</div>
+      <div id="cli-detalhe-status"></div>
+    </div>
+    <div style="font-size:11px;color:#888;margin-bottom:14px;" id="cli-detalhe-compra">—</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div style="background:#F8F7F3;border-radius:8px;padding:8px 10px;">
+        <div style="font-size:10px;color:#aaa;">Total comprado</div>
+        <div style="font-size:13px;font-weight:700;color:#1C1C1C;" id="cli-detalhe-total">R$ 0,00</div>
+      </div>
+      <div style="background:#F8F7F3;border-radius:8px;padding:8px 10px;">
+        <div style="font-size:10px;color:#aaa;">Pedidos</div>
+        <div style="font-size:13px;font-weight:700;color:#1C1C1C;" id="cli-detalhe-qtd">0 pedido(s)</div>
+      </div>
+    </div>
+
+    <div style="background:#F8F7F3;border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#555;margin-bottom:8px;">Histórico de atendimento</div>
+      <div id="cli-detalhe-historico" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:160px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="cli-detalhe-nota" placeholder="Adicionar observação do atendimento..." style="flex:1;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">
+        <button onclick="cliSalvarNotaAtendimento()" style="padding:7px 12px;border-radius:6px;border:none;background:#185FA5;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Nota</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="cliFecharModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Fechar</button>
+      <button onclick="cliMarcarAtendidoModal()" style="padding:8px 18px;border-radius:6px;border:none;background:#1B5E20;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ Marcar atendido hoje</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NEGOCIAÇÕES (CRM DE LEADS/OPORTUNIDADES) ══ -->
+<div id="tab-negociacoes" class="tab-content">
+  <div class="page-section" style="max-width:100%;">
+
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1.25rem;">
+      <div>
+        <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:2px;">🎯 Negociações</h2>
+        <p style="font-size:12px;color:#aaa;">Acompanhe leads e oportunidades antes de virarem pedido</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <div id="neg-filtro-vend-box" style="display:none;">
+          <select id="neg-filtro-vend" onchange="negFiltrarVendedor(this.value)" style="padding:8px 10px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;">
+            <option value="todos">Todos os vendedores</option>
+          </select>
+        </div>
+        <button onclick="abrirNegModal()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Nova Negociação</button>
+      </div>
+    </div>
+
+    <!-- RESUMO -->
+    <div style="background:#1C1C1C;border-radius:12px;padding:1rem 1.4rem;margin-bottom:1.1rem;display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
+      <div>
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Valor estimado em aberto</div>
+        <div style="font-size:20px;font-weight:700;color:#fff;" id="neg-total-estimado">R$ 0,00</div>
+      </div>
+    </div>
+
+    <!-- KANBAN -->
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;">
+      <div style="display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:12px;min-width:900px;">
+        <div style="background:#F8F7F3;border-radius:10px;padding:10px;">
+          <div style="font-size:12px;font-weight:700;color:#185FA5;margin-bottom:8px;display:flex;justify-content:space-between;">🔵 Contato <span id="neg-count-contato" style="background:#185FA5;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;">0</span></div>
+          <div id="neg-col-contato"></div>
+        </div>
+        <div style="background:#F8F7F3;border-radius:10px;padding:10px;">
+          <div style="font-size:12px;font-weight:700;color:#7A4A00;margin-bottom:8px;display:flex;justify-content:space-between;">📋 Orçamento enviado <span id="neg-count-orcamento" style="background:#7A4A00;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;">0</span></div>
+          <div id="neg-col-orcamento"></div>
+        </div>
+        <div style="background:#F8F7F3;border-radius:10px;padding:10px;">
+          <div style="font-size:12px;font-weight:700;color:#4A148C;margin-bottom:8px;display:flex;justify-content:space-between;">🤝 Negociando <span id="neg-count-negociando" style="background:#4A148C;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;">0</span></div>
+          <div id="neg-col-negociando"></div>
+        </div>
+        <div style="background:#F8F7F3;border-radius:10px;padding:10px;">
+          <div style="font-size:12px;font-weight:700;color:#1B5E20;margin-bottom:8px;display:flex;justify-content:space-between;">✅ Fechado <span id="neg-count-fechado" style="background:#1B5E20;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;">0</span></div>
+          <div id="neg-col-fechado"></div>
+        </div>
+        <div style="background:#F8F7F3;border-radius:10px;padding:10px;">
+          <div style="font-size:12px;font-weight:700;color:#7A0000;margin-bottom:8px;display:flex;justify-content:space-between;">❌ Perdido <span id="neg-count-perdido" style="background:#7A0000;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;">0</span></div>
+          <div id="neg-col-perdido"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL NOVA/EDITAR NEGOCIAÇÃO -->
+<div id="neg-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) fecharNegModal()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;">
+    <div style="font-size:14px;font-weight:700;color:#1C1C1C;margin-bottom:12px;" id="neg-modal-titulo">Nova Negociação</div>
+
+    <div class="ped-form-grid" style="margin-bottom:10px;">
+      <div class="ped-field" id="neg-vend-field" style="display:none;">
+        <label>Vendedor</label>
+        <select id="neg-vendedor"></select>
+      </div>
+      <div class="ped-field">
+        <label>Empresa / Cliente</label>
+        <input type="text" id="neg-empresa" placeholder="Nome da empresa ou cliente">
+      </div>
+      <div class="ped-field">
+        <label>Contato</label>
+        <input type="text" id="neg-contato" placeholder="Nome de quem você fala">
+      </div>
+      <div class="ped-field">
+        <label>Telefone</label>
+        <input type="text" id="neg-telefone" placeholder="(00) 00000-0000">
+      </div>
+      <div class="ped-field">
+        <label>Valor estimado (R$)</label>
+        <input type="text" id="neg-valor" placeholder="Ex: 15.000,00">
+      </div>
+      <div class="ped-field">
+        <label>Etapa</label>
+        <select id="neg-etapa" onchange="negToggleMotivoPerda()">
+          <option value="contato">🔵 Contato</option>
+          <option value="orcamento">📋 Orçamento enviado</option>
+          <option value="negociando">🤝 Negociando</option>
+          <option value="fechado">✅ Fechado</option>
+          <option value="perdido">❌ Perdido</option>
+        </select>
+      </div>
+      <div class="ped-field">
+        <label>Próxima ação</label>
+        <input type="text" id="neg-proxima-acao" placeholder="Ex: Ligar para confirmar orçamento">
+      </div>
+      <div class="ped-field">
+        <label>Data da próxima ação</label>
+        <input type="date" id="neg-proxima-data">
+      </div>
+      <div class="ped-field" id="neg-motivo-perda-field" style="display:none;">
+        <label>Motivo da perda</label>
+        <input type="text" id="neg-motivo-perda" placeholder="Ex: fechou com concorrente">
+      </div>
+    </div>
+
+    <div id="neg-historico-box" style="display:none;background:#F8F7F3;border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#555;margin-bottom:8px;">Histórico</div>
+      <div id="neg-historico-lista" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:160px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="neg-historico-novo" placeholder="Adicionar observação..." style="flex:1;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;">
+        <button onclick="negAdicionarHistorico()" style="padding:7px 12px;border-radius:6px;border:none;background:#185FA5;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Nota</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:6px;">
+      <button id="neg-btn-excluir" onclick="negExcluir()" style="display:none;padding:8px 14px;border-radius:6px;border:1.5px solid #C41E1E;background:#fff;color:#C41E1E;font-size:12px;font-weight:600;cursor:pointer;">🗑 Excluir</button>
+      <div style="display:flex;gap:8px;margin-left:auto;">
+        <button onclick="fecharNegModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Cancelar</button>
+        <button onclick="negSalvar()" style="padding:8px 18px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Salvar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -5495,6 +5737,7 @@ function renderPedidos(pedidosList, isGestora) {
   _pedIsGestora = isGestora;
   _pedTodosGeral = pedidosList.slice();
   renderPedidosFiltrados();
+  renderBaseClientes();
   // Se ja tiver um filtro de periodo personalizado aplicado, recalcula com os dados novos
   if (document.getElementById('filtro-periodo-resultado') && document.getElementById('filtro-periodo-resultado').style.display !== 'none') {
     aplicarFiltroPeriodo();
@@ -5502,51 +5745,117 @@ function renderPedidos(pedidosList, isGestora) {
 }
 
 function atualizarComissao(pedidos, isGestora) {
-  var totalVendido = 0, comPlacas = 0, comComp = 0, comAco = 0;
+  var mesAtual = new Date().toISOString().slice(0,7);
 
+  // Agrupa os pedidos por vendedor. Na visão da gestora, "pedidos" já vem
+  // com os pedidos de toda a equipe misturados — cada vendedor precisa ter
+  // sua PRÓPRIA meta de ligações avaliada, não uma só pra todo mundo.
+  var porVendedor = {};
   pedidos.filter(function(p) { return p.status !== 'cancelado'; }).forEach(function(p) {
-    // Pedido com múltiplos itens
-    if (p.itens && p.itens.length > 0) {
-      p.itens.forEach(function(it) {
-        var v = Math.round((it.qtd || 0) * (it.vUnit || 0) * 100) / 100;
-        totalVendido += v;
-        if (it.cat === 'placa')      comPlacas += v * CAT_PCT.placa;
-        else if (it.cat === 'grx')   comComp   += v * CAT_PCT.grx;
-        else if (it.cat === 'aco')   comAco    += v * CAT_PCT.aco;
-      });
-    } else {
-      // Pedido antigo (item único)
-      var v = Number(p.vTotal || 0);
-      totalVendido += v;
-      if (p.cat === 'placa')      comPlacas += v * CAT_PCT.placa;
-      else if (p.cat === 'grx')   comComp   += v * CAT_PCT.grx;
-      else if (p.cat === 'aco')   comAco    += v * CAT_PCT.aco;
-    }
+    var vn = p.vendedor || currentUser;
+    if (!vn) return;
+    (porVendedor[vn] = porVendedor[vn] || []).push(p);
   });
 
-  var comTotal = comPlacas + comComp + comAco;
-
-  // Redutor: se não atingiu meta de ligações, tudo cai para 0,5%
-  var vend = currentUser ? vendedores[currentUser] : null;
-  var ligacoes = parseInt((vend && vend.ligacoes) ? vend.ligacoes : '0') || 0;
-  var redutor = ligacoes > 0 && ligacoes < 600;
-  var comReductor = redutor ? totalVendido * 0.005 : 0;
+  var nomes = Object.keys(porVendedor);
+  var reqId = ++_comReqId; // evita condição de corrida se o filtro mudar no meio da busca
 
   function fmt(n) { return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function set(id, val) { var el = document.getElementById(id); if(el) el.textContent = val; }
 
-  set('ped-total-vendido', fmt(totalVendido));
-  set('ped-com-placas',    fmt(comPlacas));
-  set('ped-com-comp',      fmt(comComp));
-  set('ped-com-aco',       fmt(comAco));
-  set('ped-com-total',     fmt(comTotal));
-  set('ped-com-redutor',   fmt(redutor ? comReductor : comTotal));
+  if (!nomes.length) {
+    set('ped-total-vendido', fmt(0));
+    set('ped-com-placas', fmt(0));
+    set('ped-com-comp', fmt(0));
+    set('ped-com-aco', fmt(0));
+    set('ped-com-total', fmt(0));
+    set('ped-com-redutor', fmt(0));
+    var rb = document.getElementById('ped-redutor-box'); if (rb) rb.style.display = 'none';
+    var rw = document.getElementById('ped-redutor-warning'); if (rw) rw.style.display = 'none';
+    return;
+  }
 
-  var redBox  = document.getElementById('ped-redutor-box');
-  var redWarn = document.getElementById('ped-redutor-warning');
-  if (redBox)  redBox.style.display  = redutor ? 'block' : 'none';
-  if (redWarn) redWarn.style.display = redutor ? 'block' : 'none';
+  var totalVendido = 0, comPlacas = 0, comComp = 0, comAco = 0, comFinal = 0;
+  var algumRedutor = false;
+  var pendentes = nomes.length;
+
+  nomes.forEach(function(vn) {
+    var vTotalVend = 0, vPlacas = 0, vComp = 0, vAco = 0;
+    porVendedor[vn].forEach(function(p) {
+      if (p.itens && p.itens.length > 0) {
+        p.itens.forEach(function(it) {
+          var v = Math.round((it.qtd || 0) * (it.vUnit || 0) * 100) / 100;
+          vTotalVend += v;
+          if (it.cat === 'placa')      vPlacas += v * CAT_PCT.placa;
+          else if (it.cat === 'grx')   vComp   += v * CAT_PCT.grx;
+          else if (it.cat === 'aco')   vAco    += v * CAT_PCT.aco;
+        });
+      } else {
+        var v2 = Number(p.vTotal || 0);
+        vTotalVend += v2;
+        if (p.cat === 'placa')      vPlacas += v2 * CAT_PCT.placa;
+        else if (p.cat === 'grx')   vComp   += v2 * CAT_PCT.grx;
+        else if (p.cat === 'aco')   vAco    += v2 * CAT_PCT.aco;
+      }
+    });
+
+    // Busca o total REAL de ligações do mês pra esse vendedor (dado ao vivo
+    // registrado em ligacoes/{vendedor}), em vez do campo manual desatualizado
+    // vendedores[vn].ligacoes — que só muda quando a gestora salva o admin.
+    dbRef('ligacoes/' + vn).once('value').then(function(snap) {
+      if (reqId !== _comReqId) return; // filtro mudou, descarta este resultado
+      var dados = snap.val() || {};
+      var totalLigs = Object.values(dados)
+        .filter(function(l) { return l && l.data && l.data.startsWith(mesAtual); })
+        .reduce(function(s, l) { return s + (l.qtd || 0); }, 0);
+      var redutorVend = totalLigs < 600;
+      if (redutorVend) algumRedutor = true;
+
+      totalVendido += vTotalVend;
+      comPlacas    += vPlacas;
+      comComp      += vComp;
+      comAco       += vAco;
+      comFinal     += redutorVend ? (vTotalVend * 0.005) : (vPlacas + vComp + vAco);
+
+      pendentes--;
+      if (pendentes === 0) {
+        var comTotalCheio = comPlacas + comComp + comAco;
+        set('ped-total-vendido', fmt(totalVendido));
+        set('ped-com-placas',    fmt(comPlacas));
+        set('ped-com-comp',      fmt(comComp));
+        set('ped-com-aco',       fmt(comAco));
+        set('ped-com-total',     fmt(comTotalCheio));
+        set('ped-com-redutor',   fmt(comFinal));
+
+        var redBox  = document.getElementById('ped-redutor-box');
+        var redWarn = document.getElementById('ped-redutor-warning');
+        if (redBox)  redBox.style.display  = algumRedutor ? 'block' : 'none';
+        if (redWarn) {
+          redWarn.style.display = algumRedutor ? 'block' : 'none';
+          redWarn.textContent = (isGestora && nomes.length > 1)
+            ? '⚠️ Atenção: um ou mais vendedores não atingiram a meta de ligações — comissão desses vendedores reduzida para 0,5%.'
+            : '⚠️ Atenção: meta de ligações não atingida — comissão reduzida para 0,5% em todos os produtos.';
+        }
+      }
+    }).catch(function() {
+      if (reqId !== _comReqId) return;
+      pendentes--;
+      // Se falhar a busca das ligações desse vendedor, assume sem redução pra não travar o cálculo
+      totalVendido += vTotalVend;
+      comPlacas += vPlacas; comComp += vComp; comAco += vAco;
+      comFinal  += (vPlacas + vComp + vAco);
+      if (pendentes === 0) {
+        set('ped-total-vendido', fmt(totalVendido));
+        set('ped-com-placas',    fmt(comPlacas));
+        set('ped-com-comp',      fmt(comComp));
+        set('ped-com-aco',       fmt(comAco));
+        set('ped-com-total',     fmt(comPlacas+comComp+comAco));
+        set('ped-com-redutor',   fmt(comFinal));
+      }
+    });
+  });
 }
+var _comReqId = 0;
 
 function listenPedidos(vendNome, isGestora) {
   if (isGestora) {
@@ -5589,6 +5898,600 @@ function listenPedidos(vendNome, isGestora) {
       updateDashboard(pedidos, vendedores[vendNome]);
     });
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+// NEGOCIAÇÕES — CRM de leads/oportunidades (pré-pedido)
+// Guardado em negociacoes/{VENDEDOR}/{id}. Cada negociação vira
+// pedido de verdade só quando o vendedor clica em "Converter em Pedido".
+// ══════════════════════════════════════════════════════════════
+var NEG_VENDEDORES_LISTA = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
+var NEG_ETAPAS = [
+  { key: 'contato',    label: '🔵 Contato',            cor: '#185FA5' },
+  { key: 'orcamento',  label: '📋 Orçamento enviado',   cor: '#7A4A00' },
+  { key: 'negociando', label: '🤝 Negociando',          cor: '#4A148C' },
+  { key: 'fechado',    label: '✅ Fechado',              cor: '#1B5E20' },
+  { key: 'perdido',    label: '❌ Perdido',              cor: '#7A0000' }
+];
+var negState = { porVendedor: {}, isGestora: false, currentVend: null, filtroVend: 'todos', editando: null };
+
+function negEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c];
+  });
+}
+function negFmtData(iso) {
+  if (!iso) return '';
+  try { return new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR'); } catch(e) { return iso; }
+}
+
+function listenNegociacoes(vendNome, isGestora) {
+  negState.isGestora = isGestora;
+  negState.currentVend = vendNome;
+
+  var filtroBox = document.getElementById('neg-filtro-vend-box');
+  var vendField = document.getElementById('neg-vend-field');
+  if (isGestora) {
+    if (filtroBox) filtroBox.style.display = 'block';
+    if (vendField) vendField.style.display = 'block';
+    var sel = document.getElementById('neg-filtro-vend');
+    var selVend = document.getElementById('neg-vendedor');
+    if (sel && sel.options.length <= 1) {
+      NEG_VENDEDORES_LISTA.forEach(function(vn) {
+        if (!vendedores[vn]) return;
+        var o = document.createElement('option'); o.value = vn; o.textContent = vendedores[vn].nome;
+        sel.appendChild(o);
+      });
+    }
+    if (selVend && !selVend.options.length) {
+      NEG_VENDEDORES_LISTA.forEach(function(vn) {
+        if (!vendedores[vn]) return;
+        var o = document.createElement('option'); o.value = vn; o.textContent = vendedores[vn].nome;
+        selVend.appendChild(o);
+      });
+    }
+    NEG_VENDEDORES_LISTA.forEach(function(vn) {
+      dbRef('negociacoes/' + vn).on('value', function(snap) {
+        negState.porVendedor[vn] = snap.val() ? Object.values(snap.val()) : [];
+        renderNegKanban();
+      });
+    });
+  } else {
+    if (filtroBox) filtroBox.style.display = 'none';
+    if (vendField) vendField.style.display = 'none';
+    dbRef('negociacoes/' + vendNome).on('value', function(snap) {
+      negState.porVendedor[vendNome] = snap.val() ? Object.values(snap.val()) : [];
+      renderNegKanban();
+    });
+  }
+}
+
+function negFiltrarVendedor(v) {
+  negState.filtroVend = v;
+  renderNegKanban();
+}
+
+function negTodasListadas() {
+  var lista = [];
+  Object.keys(negState.porVendedor).forEach(function(vn) {
+    (negState.porVendedor[vn] || []).forEach(function(n) { lista.push(n); });
+  });
+  if (negState.isGestora && negState.filtroVend !== 'todos') {
+    lista = lista.filter(function(n) { return n.vendedor === negState.filtroVend; });
+  }
+  return lista;
+}
+
+function renderNegKanban() {
+  var todas = negTodasListadas();
+  var hoje = new Date().toISOString().split('T')[0];
+  NEG_ETAPAS.forEach(function(et) {
+    var col = document.getElementById('neg-col-' + et.key);
+    var countEl = document.getElementById('neg-count-' + et.key);
+    if (!col) return;
+    var itens = todas.filter(function(n) { return n.etapa === et.key; })
+      .sort(function(a, b) { return (a.proximaData || '9999-99-99').localeCompare(b.proximaData || '9999-99-99'); });
+    if (countEl) countEl.textContent = itens.length;
+    if (!itens.length) {
+      col.innerHTML = '<div style="font-size:11px;color:#bbb;text-align:center;padding:16px 0;">Nenhuma</div>';
+      return;
+    }
+    col.innerHTML = itens.map(function(n) { return negCardHtml(n, et, hoje); }).join('');
+  });
+  var totalBox = document.getElementById('neg-total-estimado');
+  if (totalBox) {
+    var abertas = todas.filter(function(n) { return n.etapa !== 'fechado' && n.etapa !== 'perdido'; });
+    var soma = abertas.reduce(function(s, n) { return s + (Number(n.valorEstimado) || 0); }, 0);
+    totalBox.textContent = 'R$ ' + soma.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  }
+  renderBaseClientes();
+}
+
+function negCardHtml(n, et, hoje) {
+  var atrasada = !!(n.proximaData && n.proximaData < hoje && et.key !== 'fechado' && et.key !== 'perdido');
+  var vendLabel = negState.isGestora
+    ? '<div style="font-size:10px;font-weight:700;color:#C41E1E;margin-bottom:3px;">' + negEsc(vendedores[n.vendedor] ? vendedores[n.vendedor].nome : n.vendedor) + '</div>'
+    : '';
+  var valor = n.valorEstimado ? 'R$ ' + Number(n.valorEstimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '';
+  var proxHtml = n.proximaData
+    ? '<div style="font-size:10px;' + (atrasada ? 'color:#C41E1E;font-weight:700;' : 'color:#888;') + 'margin-top:4px;">' +
+        (atrasada ? '⚠️ ' : '📅 ') + negFmtData(n.proximaData) + (n.proximaAcao ? ' — ' + negEsc(n.proximaAcao) : '') + '</div>'
+    : (n.proximaAcao ? '<div style="font-size:10px;color:#888;margin-top:4px;">📌 ' + negEsc(n.proximaAcao) + '</div>' : '');
+  var etapaOpts = NEG_ETAPAS.map(function(o) {
+    return '<option value="' + o.key + '"' + (o.key === n.etapa ? ' selected' : '') + '>' + o.label + '</option>';
+  }).join('');
+  var converterBtn = n.etapa === 'fechado'
+    ? '<button onclick="event.stopPropagation();negConverterEmPedido(\'' + n.vendedor + '\',\'' + n.id + '\')" style="margin-top:6px;width:100%;padding:5px;border-radius:5px;border:none;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">➜ Converter em Pedido</button>'
+    : '';
+  return '<div style="background:#fff;border:1.5px solid ' + (atrasada ? '#C41E1E' : '#E8E6E1') + ';border-radius:9px;padding:10px;margin-bottom:8px;cursor:pointer;" onclick="abrirNegModal(\'' + n.vendedor + '\',\'' + n.id + '\')">' +
+    vendLabel +
+    '<div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + negEsc(n.empresa || '(sem nome)') + '</div>' +
+    (n.contato ? '<div style="font-size:11px;color:#888;">' + negEsc(n.contato) + '</div>' : '') +
+    (valor ? '<div style="font-size:12px;font-weight:600;color:#2E7D32;margin-top:4px;">' + valor + '</div>' : '') +
+    proxHtml +
+    '<select onclick="event.stopPropagation()" onchange="negMoverEtapa(\'' + n.vendedor + '\',\'' + n.id + '\',this.value)" style="margin-top:8px;width:100%;padding:4px 6px;border-radius:5px;border:1px solid #E2E0D8;font-size:11px;background:#fff;">' + etapaOpts + '</select>' +
+    converterBtn +
+  '</div>';
+}
+
+function negMoverEtapa(vend, id, novaEtapa) {
+  var motivo = null;
+  if (novaEtapa === 'perdido') {
+    motivo = prompt('Motivo da perda (opcional):', '') || '';
+  }
+  dbRef('negociacoes/' + vend + '/' + id).once('value').then(function(snap) {
+    var n = snap.val();
+    if (!n) return;
+    n.etapa = novaEtapa;
+    if (motivo !== null) n.motivoPerda = motivo;
+    n.historico = n.historico || [];
+    n.historico.push({ data: new Date().toISOString(), texto: 'Movida para: ' + (NEG_ETAPAS.find(function(e){return e.key===novaEtapa;})||{}).label });
+    dbRef('negociacoes/' + vend + '/' + id).set(n);
+  });
+}
+
+function negToggleMotivoPerda() {
+  var etapa = document.getElementById('neg-etapa').value;
+  var f = document.getElementById('neg-motivo-perda-field');
+  if (f) f.style.display = etapa === 'perdido' ? 'block' : 'none';
+}
+
+function abrirNegModal(vend, id) {
+  negState.editando = (vend && id) ? { vend: vend, id: id } : null;
+  var overlay = document.getElementById('neg-modal-overlay');
+  var titulo = document.getElementById('neg-modal-titulo');
+  var histBox = document.getElementById('neg-historico-box');
+  var btnExcluir = document.getElementById('neg-btn-excluir');
+  var vendField = document.getElementById('neg-vend-field');
+
+  document.getElementById('neg-empresa').value = '';
+  document.getElementById('neg-contato').value = '';
+  document.getElementById('neg-telefone').value = '';
+  document.getElementById('neg-valor').value = '';
+  document.getElementById('neg-etapa').value = 'contato';
+  document.getElementById('neg-proxima-acao').value = '';
+  document.getElementById('neg-proxima-data').value = '';
+  document.getElementById('neg-motivo-perda').value = '';
+  negToggleMotivoPerda();
+
+  if (negState.editando) {
+    titulo.textContent = 'Editar Negociação';
+    if (btnExcluir) btnExcluir.style.display = 'inline-block';
+    if (histBox) histBox.style.display = 'block';
+    if (vendField && negState.isGestora) {
+      vendField.style.display = 'block';
+      var selVend = document.getElementById('neg-vendedor');
+      if (selVend) selVend.value = vend;
+      selVend.disabled = true;
+    }
+    dbRef('negociacoes/' + vend + '/' + id).once('value').then(function(snap) {
+      var n = snap.val();
+      if (!n) return;
+      document.getElementById('neg-empresa').value = n.empresa || '';
+      document.getElementById('neg-contato').value = n.contato || '';
+      document.getElementById('neg-telefone').value = n.telefone || '';
+      document.getElementById('neg-valor').value = n.valorEstimado ? String(n.valorEstimado).replace('.', ',') : '';
+      document.getElementById('neg-etapa').value = n.etapa || 'contato';
+      document.getElementById('neg-proxima-acao').value = n.proximaAcao || '';
+      document.getElementById('neg-proxima-data').value = n.proximaData || '';
+      document.getElementById('neg-motivo-perda').value = n.motivoPerda || '';
+      negToggleMotivoPerda();
+      negRenderHistorico(n.historico || []);
+    });
+  } else {
+    titulo.textContent = 'Nova Negociação';
+    if (btnExcluir) btnExcluir.style.display = 'none';
+    if (histBox) histBox.style.display = 'none';
+    if (vendField) {
+      vendField.style.display = negState.isGestora ? 'block' : 'none';
+      var selVend2 = document.getElementById('neg-vendedor');
+      if (selVend2) { selVend2.disabled = false; if (!negState.isGestora) selVend2.value = negState.currentVend; }
+    }
+  }
+  overlay.style.display = 'flex';
+}
+
+function negRenderHistorico(historico) {
+  var box = document.getElementById('neg-historico-lista');
+  if (!box) return;
+  if (!historico.length) {
+    box.innerHTML = '<div style="font-size:11px;color:#bbb;">Sem histórico ainda.</div>';
+    return;
+  }
+  var ordenado = historico.slice().sort(function(a, b) { return new Date(b.data) - new Date(a.data); });
+  box.innerHTML = ordenado.map(function(h) {
+    var dt = new Date(h.data);
+    var dtFmt = isNaN(dt.getTime()) ? '' : dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    return '<div style="font-size:11.5px;color:#555;padding:6px 8px;background:#fff;border-radius:6px;border:1px solid #E8E6E1;">' +
+      '<span style="color:#aaa;font-size:10px;">' + dtFmt + '</span><br>' + negEsc(h.texto) + '</div>';
+  }).join('');
+}
+
+function negAdicionarHistorico() {
+  var input = document.getElementById('neg-historico-novo');
+  var texto = input.value.trim();
+  if (!texto || !negState.editando) { if (input) input.value = ''; return; }
+  var vend = negState.editando.vend, id = negState.editando.id;
+  dbRef('negociacoes/' + vend + '/' + id).once('value').then(function(snap) {
+    var n = snap.val();
+    if (!n) return;
+    n.historico = n.historico || [];
+    n.historico.push({ data: new Date().toISOString(), texto: texto });
+    dbRef('negociacoes/' + vend + '/' + id).set(n).then(function() {
+      negRenderHistorico(n.historico);
+      input.value = '';
+    });
+  });
+}
+
+function fecharNegModal() {
+  document.getElementById('neg-modal-overlay').style.display = 'none';
+  negState.editando = null;
+}
+
+function negSalvar() {
+  var empresa = document.getElementById('neg-empresa').value.trim();
+  if (!empresa) { alert('Informe o nome da empresa/cliente.'); return; }
+  var vend = negState.isGestora
+    ? (document.getElementById('neg-vendedor').value || negState.currentVend)
+    : negState.currentVend;
+  if (!vend) { alert('Selecione o vendedor.'); return; }
+
+  var etapa = document.getElementById('neg-etapa').value;
+  var dados = {
+    empresa: empresa,
+    contato: document.getElementById('neg-contato').value.trim(),
+    telefone: document.getElementById('neg-telefone').value.trim(),
+    valorEstimado: parseValorMonetario(document.getElementById('neg-valor').value) || 0,
+    etapa: etapa,
+    proximaAcao: document.getElementById('neg-proxima-acao').value.trim(),
+    proximaData: document.getElementById('neg-proxima-data').value,
+    motivoPerda: etapa === 'perdido' ? document.getElementById('neg-motivo-perda').value.trim() : '',
+    vendedor: vend
+  };
+
+  if (negState.editando) {
+    var id = negState.editando.id;
+    dbRef('negociacoes/' + vend + '/' + id).once('value').then(function(snap) {
+      var atual = snap.val() || {};
+      dados.id = id;
+      dados.dataCriacao = atual.dataCriacao || new Date().toISOString();
+      dados.historico = atual.historico || [];
+      dbRef('negociacoes/' + vend + '/' + id).set(dados).then(fecharNegModal);
+    });
+  } else {
+    var novoId = 'neg_' + Date.now();
+    dados.id = novoId;
+    dados.dataCriacao = new Date().toISOString();
+    dados.historico = [{ data: new Date().toISOString(), texto: 'Negociação criada.' }];
+    dbRef('negociacoes/' + vend + '/' + novoId).set(dados).then(fecharNegModal);
+  }
+}
+
+function negExcluir() {
+  if (!negState.editando) return;
+  if (!confirm('Excluir esta negociação? Essa ação não pode ser desfeita.')) return;
+  dbRef('negociacoes/' + negState.editando.vend + '/' + negState.editando.id).remove().then(fecharNegModal);
+}
+
+// Converte uma negociação Fechada em um pedido de verdade: leva o essencial
+// pro formulário de Novo Pedido e deixa o vendedor completar os itens.
+function negConverterEmPedido(vend, id) {
+  dbRef('negociacoes/' + vend + '/' + id).once('value').then(function(snap) {
+    var n = snap.val();
+    if (!n) return;
+    if (vend !== currentUser && !negState.isGestora) return;
+    // Muda pra aba de Pedidos e abre o formulário já preenchido
+    var btnPedidos = Array.from(document.querySelectorAll('.nav-btn')).find(function(b) { return b.getAttribute('onclick') === "showTab('pedidos',this)"; });
+    showTab('pedidos', btnPedidos || document.querySelector('.nav-btn'));
+    var form = document.getElementById('ped-form');
+    if (form && form.style.display === 'none') togglePedForm();
+    setTimeout(function() {
+      var elEmpresa = document.getElementById('pf-empresa');
+      var elCliente = document.getElementById('pf-cliente');
+      if (elEmpresa) elEmpresa.value = n.empresa || '';
+      if (elCliente) elCliente.value = n.contato || '';
+      var elData = document.getElementById('pf-data');
+      if (elData && !elData.value) elData.value = new Date().toISOString().split('T')[0];
+    }, 50);
+    alert('Dados da negociação levados para o formulário de Novo Pedido. Complete os itens e salve normalmente.');
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// BASE DE CLIENTES — Ativos / Inativos (60+ dias sem comprar) / Novos,
+// com controle de atendimento semanal. Construída em cima dos dados que já
+// existem (histórico de pedidos + negociações) e sobreposta com um registro
+// simples de "quando foi o último atendimento" salvo em atendimentos/{VEND}/{chave}.
+// ══════════════════════════════════════════════════════════════
+var CLI_META_INATIVO_DIAS = 60;
+var CLI_META_ATENDIMENTO_DIAS = 7;
+var cliAtendState = { porVendedor: {}, isGestora: false, currentVend: null };
+var cliFiltroStatus = 'todos';
+var cliFiltroVend = 'todos';
+var cliBusca = '';
+var cliIndexPorId = {};
+var cliDetalheAtual = null;
+
+function cliChave(nome) {
+  var s = String(nome == null ? '' : nome).trim().toUpperCase().replace(/[.#$\[\]\/\\]/g, '_').replace(/\s+/g, ' ');
+  return s || 'SEM_NOME';
+}
+
+function cliDiasEntre(dataIsoAntiga, dataIsoNova) {
+  if (!dataIsoAntiga) return null;
+  try {
+    var a = new Date(dataIsoAntiga + 'T00:00:00');
+    var b = dataIsoNova ? new Date(dataIsoNova + 'T00:00:00') : new Date();
+    return Math.floor((b - a) / 86400000);
+  } catch(e) { return null; }
+}
+
+function listenAtendimentos(vendNome, isGestora) {
+  cliAtendState.isGestora = isGestora;
+  cliAtendState.currentVend = vendNome;
+
+  var filtroBox = document.getElementById('cli-filtro-vend-box');
+  var thVend = document.getElementById('cli-th-vendedor');
+  if (isGestora) {
+    if (filtroBox) filtroBox.style.display = 'block';
+    if (thVend) thVend.style.display = '';
+    var sel = document.getElementById('cli-filtro-vend');
+    if (sel && sel.options.length <= 1) {
+      NEG_VENDEDORES_LISTA.forEach(function(vn) {
+        if (!vendedores[vn]) return;
+        var o = document.createElement('option'); o.value = vn; o.textContent = vendedores[vn].nome;
+        sel.appendChild(o);
+      });
+    }
+    NEG_VENDEDORES_LISTA.forEach(function(vn) {
+      dbRef('atendimentos/' + vn).on('value', function(snap) {
+        cliAtendState.porVendedor[vn] = snap.val() || {};
+        renderBaseClientes();
+      });
+    });
+  } else {
+    if (filtroBox) filtroBox.style.display = 'none';
+    if (thVend) thVend.style.display = 'none';
+    dbRef('atendimentos/' + vendNome).on('value', function(snap) {
+      cliAtendState.porVendedor[vendNome] = snap.val() || {};
+      renderBaseClientes();
+    });
+  }
+}
+
+// Junta pedidos (histórico completo) + negociações num único mapa de clientes,
+// com o status calculado automaticamente (novo/ativo/inativo).
+function cliConstruirBase() {
+  var hojeIso = new Date().toISOString().split('T')[0];
+  var mapa = {};
+
+  (_pedTodosGeral || []).forEach(function(p) {
+    if (p.status === 'cancelado') return;
+    if (!p.empresa) return;
+    var vn = p.vendedor || cliAtendState.currentVend;
+    if (!vn) return;
+    var chave = cliChave(p.empresa);
+    var id = vn + '||' + chave;
+    var vTotalPedido = 0;
+    if (p.itens && p.itens.length) {
+      p.itens.forEach(function(it) { vTotalPedido += (Number(it.qtd) || 0) * (Number(it.vUnit) || 0); });
+    } else {
+      vTotalPedido = Number(p.vTotal || 0);
+    }
+    if (!mapa[id]) mapa[id] = { vendedor: vn, chave: chave, nome: p.empresa, ultimaCompra: null, tipoClienteRecente: '', qtdPedidos: 0, totalComprado: 0 };
+    var reg = mapa[id];
+    reg.qtdPedidos++;
+    reg.totalComprado += vTotalPedido;
+    if (p.data && (!reg.ultimaCompra || p.data > reg.ultimaCompra)) {
+      reg.ultimaCompra = p.data;
+      reg.tipoClienteRecente = p.tipoCliente || reg.tipoClienteRecente;
+      reg.nome = p.empresa;
+    }
+  });
+
+  // Negociações em aberto entram como "novo" mesmo antes de qualquer pedido
+  Object.keys(negState.porVendedor || {}).forEach(function(vn) {
+    (negState.porVendedor[vn] || []).forEach(function(n) {
+      if (!n.empresa) return;
+      var chave = cliChave(n.empresa);
+      var id = vn + '||' + chave;
+      if (!mapa[id]) {
+        mapa[id] = { vendedor: vn, chave: chave, nome: n.empresa, ultimaCompra: null, tipoClienteRecente: 'novo', qtdPedidos: 0, totalComprado: 0 };
+      }
+    });
+  });
+
+  return Object.keys(mapa).map(function(id) {
+    var r = mapa[id];
+    var diasSemComprar = r.ultimaCompra ? cliDiasEntre(r.ultimaCompra, hojeIso) : null;
+    var status;
+    if (r.tipoClienteRecente === 'novo') status = 'novo';
+    else if (diasSemComprar === null || diasSemComprar > CLI_META_INATIVO_DIAS) status = 'inativo';
+    else status = 'ativo';
+
+    var atend = (cliAtendState.porVendedor[r.vendedor] || {})[r.chave] || null;
+    var ultimoAtendimento = atend ? atend.ultimoAtendimento : null;
+    var diasSemAtendimento = ultimoAtendimento ? cliDiasEntre(ultimoAtendimento, hojeIso) : null;
+    var atendidoEssaSemana = diasSemAtendimento !== null && diasSemAtendimento < CLI_META_ATENDIMENTO_DIAS;
+
+    return {
+      vendedor: r.vendedor, chave: r.chave, nome: r.nome, status: status,
+      ultimaCompra: r.ultimaCompra, diasSemComprar: diasSemComprar,
+      qtdPedidos: r.qtdPedidos, totalComprado: r.totalComprado,
+      ultimoAtendimento: ultimoAtendimento, diasSemAtendimento: diasSemAtendimento,
+      atendidoEssaSemana: atendidoEssaSemana
+    };
+  });
+}
+
+function cliStatusBadge(status) {
+  var map = { ativo: ['#1B5E20', '#E8F5E9', '🟢 Ativo'], inativo: ['#7A0000', '#FBE9E9', '🔴 Inativo'], novo: ['#0C447C', '#E6F1FB', '🔵 Novo'] };
+  var m = map[status] || ['#555', '#eee', status];
+  return '<span style="background:' + m[1] + ';color:' + m[0] + ';font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;white-space:nowrap;">' + m[2] + '</span>';
+}
+
+function cliFiltrarStatus(s, btn) {
+  cliFiltroStatus = s;
+  document.querySelectorAll('#tab-clientes .qf-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  renderBaseClientes();
+}
+function cliFiltrarVendedorSel(v) { cliFiltroVend = v; renderBaseClientes(); }
+function cliBuscarInput(q) { cliBusca = (q || '').toLowerCase().trim(); renderBaseClientes(); }
+
+function cliLinhaHtml(c) {
+  var vendCol = cliAtendState.isGestora
+    ? '<td style="padding:8px 10px;font-size:11px;color:#C41E1E;font-weight:600;">' + negEsc(vendedores[c.vendedor] ? vendedores[c.vendedor].nome : c.vendedor) + '</td>'
+    : '';
+  var atrasado = !c.atendidoEssaSemana;
+  var atendTxt = c.ultimoAtendimento
+    ? (c.diasSemAtendimento + ' dia(s) atrás — ' + negFmtData(c.ultimoAtendimento))
+    : 'Nunca atendido';
+  var compraTxt = c.ultimaCompra ? (negFmtData(c.ultimaCompra) + ' · ' + c.diasSemComprar + ' dia(s)') : '— (ainda não comprou)';
+  return '<tr style="' + (atrasado ? 'background:#FFF7F5;' : '') + 'border-top:1px solid #F0EEEA;">' +
+    vendCol +
+    '<td style="padding:8px 10px;font-weight:700;color:#1C1C1C;font-size:12.5px;cursor:pointer;" onclick="cliAbrirDetalhe(\'' + c.vendedor + '\',\'' + c.chave + '\')">' + negEsc(c.nome) + '</td>' +
+    '<td style="padding:8px 10px;">' + cliStatusBadge(c.status) + '</td>' +
+    '<td style="padding:8px 10px;font-size:11.5px;color:#666;white-space:nowrap;">' + compraTxt + '</td>' +
+    '<td style="padding:8px 10px;font-size:11.5px;white-space:nowrap;' + (atrasado ? 'color:#C41E1E;font-weight:700;' : 'color:#2E7D32;') + '">' + (atrasado ? '⚠️ ' : '✅ ') + atendTxt + '</td>' +
+    '<td style="padding:8px 10px;"><button onclick="cliMarcarAtendido(\'' + c.vendedor + '\',\'' + c.chave + '\')" style="padding:5px 10px;border-radius:6px;border:none;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">✅ Atender hoje</button></td>' +
+  '</tr>';
+}
+
+function renderBaseClientes() {
+  var tbody = document.getElementById('cli-tbody');
+  if (!tbody) return;
+
+  var lista = cliConstruirBase();
+
+  if (cliAtendState.isGestora) {
+    if (cliFiltroVend !== 'todos') lista = lista.filter(function(c) { return c.vendedor === cliFiltroVend; });
+  } else {
+    lista = lista.filter(function(c) { return c.vendedor === cliAtendState.currentVend; });
+  }
+
+  // Índice usado pelas ações de clique (marcar atendido / abrir detalhe)
+  cliIndexPorId = {};
+  lista.forEach(function(c) { cliIndexPorId[c.vendedor + '||' + c.chave] = c; });
+
+  var setTxt = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+  setTxt('cli-total', lista.length);
+  setTxt('cli-qtd-ativos', lista.filter(function(c) { return c.status === 'ativo'; }).length);
+  setTxt('cli-qtd-inativos', lista.filter(function(c) { return c.status === 'inativo'; }).length);
+  setTxt('cli-qtd-novos', lista.filter(function(c) { return c.status === 'novo'; }).length);
+  setTxt('cli-qtd-pendentes', lista.filter(function(c) { return !c.atendidoEssaSemana; }).length);
+
+  if (cliFiltroStatus !== 'todos') lista = lista.filter(function(c) { return c.status === cliFiltroStatus; });
+  if (cliBusca) lista = lista.filter(function(c) { return c.nome.toLowerCase().indexOf(cliBusca) !== -1; });
+
+  // Quem está atrasado no atendimento semanal aparece primeiro; dentro de cada grupo,
+  // quem está há mais tempo sem atendimento vem antes.
+  lista.sort(function(a, b) {
+    if (a.atendidoEssaSemana !== b.atendidoEssaSemana) return a.atendidoEssaSemana ? 1 : -1;
+    var da = a.diasSemAtendimento == null ? 9999 : a.diasSemAtendimento;
+    var db = b.diasSemAtendimento == null ? 9999 : b.diasSemAtendimento;
+    return db - da;
+  });
+
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem;">Nenhum cliente encontrado.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista.map(cliLinhaHtml).join('');
+}
+
+function cliMarcarAtendido(vend, chave) {
+  var reg = cliIndexPorId[vend + '||' + chave];
+  var nome = reg ? reg.nome : chave;
+  var hoje = new Date().toISOString().split('T')[0];
+  dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
+    var atual = snap.val() || { nome: nome, historico: [] };
+    atual.nome = nome;
+    atual.ultimoAtendimento = hoje;
+    atual.historico = atual.historico || [];
+    atual.historico.push({ data: new Date().toISOString(), texto: 'Atendido em ' + negFmtData(hoje) + '.' });
+    dbRef('atendimentos/' + vend + '/' + chave).set(atual);
+  });
+}
+
+function cliMarcarAtendidoModal() {
+  if (!cliDetalheAtual) return;
+  cliMarcarAtendido(cliDetalheAtual.vend, cliDetalheAtual.chave);
+  setTimeout(function() { cliAbrirDetalhe(cliDetalheAtual.vend, cliDetalheAtual.chave); }, 300);
+}
+
+function cliRenderHistoricoAtendimento(historico) {
+  var box = document.getElementById('cli-detalhe-historico');
+  if (!box) return;
+  if (!historico.length) { box.innerHTML = '<div style="font-size:11px;color:#bbb;">Sem atendimentos registrados ainda.</div>'; return; }
+  var ordenado = historico.slice().sort(function(a, b) { return new Date(b.data) - new Date(a.data); });
+  box.innerHTML = ordenado.map(function(h) {
+    var dt = new Date(h.data);
+    var dtFmt = isNaN(dt.getTime()) ? '' : dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    return '<div style="font-size:11.5px;color:#555;padding:6px 8px;background:#fff;border-radius:6px;border:1px solid #E8E6E1;">' +
+      '<span style="color:#aaa;font-size:10px;">' + dtFmt + '</span><br>' + negEsc(h.texto) + '</div>';
+  }).join('');
+}
+
+function cliAbrirDetalhe(vend, chave) {
+  var reg = cliIndexPorId[vend + '||' + chave];
+  if (!reg) return;
+  cliDetalheAtual = { vend: vend, chave: chave };
+  document.getElementById('cli-detalhe-titulo').textContent = reg.nome;
+  document.getElementById('cli-detalhe-status').innerHTML = cliStatusBadge(reg.status);
+  document.getElementById('cli-detalhe-compra').textContent = reg.ultimaCompra
+    ? ('Última compra: ' + negFmtData(reg.ultimaCompra) + ' (' + reg.diasSemComprar + ' dia(s) atrás)')
+    : 'Ainda não comprou — é uma negociação/lead.';
+  document.getElementById('cli-detalhe-total').textContent = 'R$ ' + Number(reg.totalComprado).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  document.getElementById('cli-detalhe-qtd').textContent = reg.qtdPedidos + ' pedido(s)';
+  var atend = (cliAtendState.porVendedor[vend] || {})[chave];
+  cliRenderHistoricoAtendimento(atend ? (atend.historico || []) : []);
+  document.getElementById('cli-detalhe-nota').value = '';
+  document.getElementById('cli-modal-overlay').style.display = 'flex';
+}
+
+function cliFecharModal() {
+  document.getElementById('cli-modal-overlay').style.display = 'none';
+  cliDetalheAtual = null;
+}
+
+function cliSalvarNotaAtendimento() {
+  if (!cliDetalheAtual) return;
+  var input = document.getElementById('cli-detalhe-nota');
+  var texto = input.value.trim();
+  if (!texto) return;
+  var vend = cliDetalheAtual.vend, chave = cliDetalheAtual.chave;
+  var reg = cliIndexPorId[vend + '||' + chave];
+  dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
+    var atual = snap.val() || { nome: reg ? reg.nome : chave, historico: [] };
+    atual.historico = atual.historico || [];
+    atual.historico.push({ data: new Date().toISOString(), texto: texto });
+    dbRef('atendimentos/' + vend + '/' + chave).set(atual).then(function() {
+      cliRenderHistoricoAtendimento(atual.historico);
+      input.value = '';
+    });
+  });
 }
 
 function renderResumoEquipe(allPedidos) {
@@ -6143,6 +7046,8 @@ function entrarComoUsuario(user) {
   });
   // Start listening to pedidos
   listenPedidos(user, v.tipo === 'gestora');
+  listenNegociacoes(user, v.tipo === 'gestora');
+  listenAtendimentos(user, v.tipo === 'gestora');
   checarPedidosLocaisPendentes();
   // Show correct commission section
   var comVend = document.getElementById('ped-com-vendedor');
