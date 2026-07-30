@@ -3411,6 +3411,24 @@ function abrirEditarPedido(vendNome, pedidoId) {
     set('edit-veiculo',  p.veiculo);
     set('edit-tipo-cliente', p.tipoCliente);
 
+    // Reatribuir vendedor: só a gestora vê e pode mudar. Útil pra corrigir pedidos
+    // gerados sob o usuário errado (ex: conversão de negociação feita pela gestora).
+    var vendField = document.getElementById('edit-vendedor-field');
+    var vendSel = document.getElementById('edit-vendedor');
+    if (_pedIsGestora && vendField && vendSel) {
+      if (!vendSel.options.length) {
+        NEG_VENDEDORES_LISTA.forEach(function(vn) {
+          if (!vendedores[vn]) return;
+          var o = document.createElement('option'); o.value = vn; o.textContent = vendedores[vn].nome;
+          vendSel.appendChild(o);
+        });
+      }
+      vendSel.value = vendNome;
+      vendField.style.display = 'block';
+    } else if (vendField) {
+      vendField.style.display = 'none';
+    }
+
     // Load itens
     editItens = p.itens ? p.itens.slice() : (p.material ? [{cat:p.cat,material:p.material,qtd:p.qtd||1,vUnit:p.vUnit||0,vTotal:p.vTotal||0}] : []);
     renderEditItens();
@@ -3538,6 +3556,13 @@ function salvarEdicaoPedido() {
   var statusAnterior = p.status;
   var novoChamado = get('edit-chamado');
 
+  var vendField = document.getElementById('edit-vendedor-field');
+  var vendAntigo = pedidoEmEdicao.vendNome;
+  var vendNovo = (_pedIsGestora && vendField && vendField.style.display !== 'none')
+    ? (get('edit-vendedor') || vendAntigo)
+    : vendAntigo;
+  var mudouVendedor = vendNovo !== vendAntigo;
+
   function gravarEdicao() {
     // Update fields
     p.data    = get('edit-data');
@@ -3549,6 +3574,7 @@ function salvarEdicaoPedido() {
     p.status  = get('edit-status');
     p.veiculo = get('edit-veiculo');
     p.tipoCliente = get('edit-tipo-cliente');
+    p.vendedor = vendNovo;
     p.itens   = editItens.slice();
     p.vTotal  = editItens.reduce(function(s,it){ return s+(it.vTotal||0); }, 0);
     p.cat     = editItens.length === 1 ? editItens[0].cat : 'misto';
@@ -3559,21 +3585,37 @@ function salvarEdicaoPedido() {
       p.dataStatus = new Date().toISOString().split('T')[0];
     }
 
-    dbRef('pedidos/' + pedidoEmEdicao.vendNome + '/' + pedidoEmEdicao.pedidoId).set(p)
-      .then(function() {
-        // Se esse pedido veio de uma negociação convertida, mantém o chamado
-        // sincronizado lá também — pra não ficar o número errado no card do funil.
-        if (p.negociacaoId) {
-          dbRef('negociacoes/' + pedidoEmEdicao.vendNome + '/' + p.negociacaoId).once('value').then(function(snap) {
-            var n = snap.val();
-            if (!n) return;
-            n.pedidoChamado = p.chamado || '';
-            dbRef('negociacoes/' + pedidoEmEdicao.vendNome + '/' + p.negociacaoId).set(n);
-          });
-        }
-        fecharEditarPedido();
-      })
-      .catch(function(e) { alert('Erro ao salvar: ' + e.message); });
+    function sincronizarNegociacao() {
+      // Se esse pedido veio de uma negociação convertida, mantém o chamado
+      // sincronizado lá também — usando o vendedor CORRETO/atual do pedido
+      // (importante quando o pedido acabou de ser reatribuído).
+      if (p.negociacaoId) {
+        dbRef('negociacoes/' + vendNovo + '/' + p.negociacaoId).once('value').then(function(snap) {
+          var n = snap.val();
+          if (!n) return;
+          n.pedidoChamado = p.chamado || '';
+          dbRef('negociacoes/' + vendNovo + '/' + p.negociacaoId).set(n);
+        });
+      }
+    }
+
+    if (mudouVendedor) {
+      // Reatribuição de vendedor: grava no vendedor novo e remove do antigo.
+      dbRef('pedidos/' + vendNovo + '/' + pedidoEmEdicao.pedidoId).set(p)
+        .then(function() { return dbRef('pedidos/' + vendAntigo + '/' + pedidoEmEdicao.pedidoId).remove(); })
+        .then(function() {
+          sincronizarNegociacao();
+          fecharEditarPedido();
+        })
+        .catch(function(e) { alert('Erro ao reatribuir pedido: ' + e.message); });
+    } else {
+      dbRef('pedidos/' + vendAntigo + '/' + pedidoEmEdicao.pedidoId).set(p)
+        .then(function() {
+          sincronizarNegociacao();
+          fecharEditarPedido();
+        })
+        .catch(function(e) { alert('Erro ao salvar: ' + e.message); });
+    }
   }
 
   if (novoChamado && novoChamado.trim().toUpperCase() !== String(p.chamado||'').trim().toUpperCase()) {
@@ -8620,6 +8662,10 @@ function importarArquivo(event) {
             <option value="faturado">Faturado</option>
             <option value="cancelado">Cancelado</option>
           </select>
+        </div>
+        <div class="ped-field" id="edit-vendedor-field" style="display:none;">
+          <label>Vendedor</label>
+          <select id="edit-vendedor"></select>
         </div>
         <div class="ped-field">
           <label>Tipo de Cliente</label>
