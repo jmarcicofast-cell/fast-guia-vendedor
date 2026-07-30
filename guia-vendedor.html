@@ -2126,15 +2126,15 @@
       <!-- DADOS DO PEDIDO -->
       <div class="ped-form-grid" style="margin-bottom:14px;">
         <div class="ped-field">
-          <label>Data do Pedido</label>
+          <label>Data do Pedido <span style="color:#C41E1E;">*</span></label>
           <input type="date" id="pf-data">
         </div>
         <div class="ped-field">
-          <label>Empresa</label>
+          <label>Empresa <span style="color:#C41E1E;">*</span></label>
           <input type="text" id="pf-empresa" placeholder="Nome da empresa">
         </div>
         <div class="ped-field">
-          <label>Estado (UF)</label>
+          <label>Estado (UF) <span style="color:#C41E1E;">*</span></label>
           <select id="pf-estado">
             <option value="">Selecione...</option>
             <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
@@ -2151,7 +2151,7 @@
           <input type="text" id="pf-cliente" placeholder="Nome do cliente">
         </div>
         <div class="ped-field">
-          <label>Código PN (cód. do cliente)</label>
+          <label>Código PN (cód. do cliente) <span style="color:#C41E1E;">*</span></label>
           <input type="text" id="pf-pn" placeholder="Ex: CF11468">
         </div>
         <div class="ped-field">
@@ -2159,7 +2159,7 @@
           <input type="text" id="pf-chamado" placeholder="Ex: 2026070800001">
         </div>
         <div class="ped-field">
-          <label>Status</label>
+          <label>Status <span style="color:#C41E1E;">*</span></label>
           <select id="pf-status">
             <option value="agendamento">Agendamento</option>
             <option value="aguardando-dt">Aguardando DT</option>
@@ -2170,7 +2170,7 @@
           </select>
         </div>
         <div class="ped-field">
-          <label>Tipo de Veículo</label>
+          <label>Tipo de Veículo <span style="color:#C41E1E;">*</span></label>
           <select id="pf-veiculo">
             <option value="">Selecione...</option>
             <option value="truck">🚛 Truck</option>
@@ -2179,9 +2179,9 @@
           </select>
         </div>
         <div class="ped-field">
-          <label>Tipo de Cliente</label>
+          <label>Tipo de Cliente <span style="color:#C41E1E;">*</span></label>
           <select id="pf-tipo-cliente">
-            <option value="">— Não informado —</option>
+            <option value="">Selecione...</option>
             <option value="ativo">Ativo</option>
             <option value="inativo">Inativo</option>
             <option value="novo">Novo</option>
@@ -3551,6 +3551,16 @@ function salvarEdicaoPedido() {
 
     dbRef('pedidos/' + pedidoEmEdicao.vendNome + '/' + pedidoEmEdicao.pedidoId).set(p)
       .then(function() {
+        // Se esse pedido veio de uma negociação convertida, mantém o chamado
+        // sincronizado lá também — pra não ficar o número errado no card do funil.
+        if (p.negociacaoId) {
+          dbRef('negociacoes/' + pedidoEmEdicao.vendNome + '/' + p.negociacaoId).once('value').then(function(snap) {
+            var n = snap.val();
+            if (!n) return;
+            n.pedidoChamado = p.chamado || '';
+            dbRef('negociacoes/' + pedidoEmEdicao.vendNome + '/' + p.negociacaoId).set(n);
+          });
+        }
         fecharEditarPedido();
       })
       .catch(function(e) { alert('Erro ao salvar: ' + e.message); });
@@ -5559,7 +5569,8 @@ function salvarPedido() {
       catch(e) { return ''; }
     };
 
-    const data     = get('pf-data') || new Date().toISOString().split('T')[0];
+    const rawData = get('pf-data');
+    const data     = rawData || new Date().toISOString().split('T')[0];
     const empresa  = get('pf-empresa');
     const cliente  = get('pf-cliente');
     const estado   = get('pf-estado');
@@ -5569,9 +5580,18 @@ function salvarPedido() {
     const status   = get('pf-status') || 'agendamento';
     const tipoCliente = get('pf-tipo-cliente');
 
-    // Highlight missing fields
+    // Highlight missing fields — tudo obrigatório, menos o Nome do Cliente
     var faltando = false;
-    var camposObrigatorios = [['pf-empresa',empresa],['pf-cliente',cliente],['pf-chamado', chamado]];
+    var camposObrigatorios = [
+      ['pf-data', rawData],
+      ['pf-empresa', empresa],
+      ['pf-estado', estado],
+      ['pf-pn', pn],
+      ['pf-chamado', chamado],
+      ['pf-status', status],
+      ['pf-veiculo', veiculo],
+      ['pf-tipo-cliente', tipoCliente]
+    ];
     camposObrigatorios.forEach(function(pair) {
       var id = pair[0], val = pair[1];
       var el = document.getElementById(id);
@@ -5579,7 +5599,7 @@ function salvarPedido() {
       else { if(el) el.style.borderColor='#E2E0D8'; }
     });
     if (faltando) {
-      alert('Preencha os campos obrigatórios (marcados em vermelho). O nº do Chamado é obrigatório em todo pedido.');
+      alert('Preencha os campos obrigatórios (marcados em vermelho).');
       return;
     }
     if (!pedItens.length) { alert('Adicione pelo menos um item ao pedido.'); return; }
@@ -5605,7 +5625,8 @@ function salvarPedido() {
       tipoCliente: tipoCliente,
       dataStatus: data,
       vendedor: currentUser,
-      criadoEm: Date.now()
+      criadoEm: Date.now(),
+      negociacaoId: pedConversaoOrigem ? pedConversaoOrigem.id : null
     };
 
     const btn = document.querySelector('button[onclick="salvarPedido()"]');
