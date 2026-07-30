@@ -5737,6 +5737,8 @@ function salvarPedido() {
     var vTotal = pedItens.reduce(function(s,it) { return s + (it.vTotal||0); }, 0);
     var cat = pedItens.length === 1 ? pedItens[0].cat : 'misto';
 
+    var vendedorDoPedido = pedConversaoOrigem ? pedConversaoOrigem.vend : currentUser;
+
     var pedido = {
       id: Date.now().toString(),
       data: data,
@@ -5752,7 +5754,7 @@ function salvarPedido() {
       status: status,
       tipoCliente: tipoCliente,
       dataStatus: data,
-      vendedor: currentUser,
+      vendedor: vendedorDoPedido,
       criadoEm: Date.now(),
       negociacaoId: pedConversaoOrigem ? pedConversaoOrigem.id : null
     };
@@ -5762,7 +5764,7 @@ function salvarPedido() {
     function gravarPedidoNoFirebase() {
       if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
 
-      dbRef('pedidos/' + currentUser + '/' + pedido.id).set(pedido)
+      dbRef('pedidos/' + vendedorDoPedido + '/' + pedido.id).set(pedido)
         .then(function() {
           if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
 
