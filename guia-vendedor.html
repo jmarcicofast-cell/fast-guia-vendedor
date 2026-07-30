@@ -6240,7 +6240,10 @@ function listenPedidos(vendNome, isGestora) {
     }
 
     let allPedidos = {};
-    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].forEach(vn => {
+    // Inclui o próprio login da gestora na varredura: garante que nenhum pedido
+    // fique invisível/preso caso alguma conversão ou ação acabe salvando sob o
+    // usuário dela por engano (assim sempre dá pra achar e reatribuir na tela).
+    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','JULIANA'].forEach(vn => {
       dbRef('pedidos/' + vn).on('value', snap => {
         allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
         const todos = Object.values(allPedidos).flat();
