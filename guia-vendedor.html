@@ -1810,6 +1810,12 @@
         </div>
       </div>
 
+      <!-- RESUMO DE PRODUTOS DO DIA (PLACAS EM M² + ITENS UNITÁRIOS) -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#2E7D32;margin-bottom:10px;">📐 Resumo de Produtos — Hoje</div>
+        <div id="resumo-produtos-hoje"></div>
+      </div>
+
       <!-- FILTRO DE DATA PERSONALIZADO -->
       <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
         <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#4A148C;margin-bottom:10px;">🔎 Filtro de Período Personalizado</div>
@@ -1849,6 +1855,10 @@
             <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#185FA5;margin-bottom:6px;">🚚 Entregue + Faturado no Período</div>
             <div style="font-size:24px;font-weight:700;color:#1C1C1C;" id="filtro-entregas-total">R$ 0,00</div>
             <div style="font-size:11px;color:#888;margin-top:4px;" id="filtro-entregas-qt">0 pedido(s)</div>
+          </div>
+          <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#2E7D32;margin-bottom:10px;">📐 Resumo de Produtos no Período</div>
+            <div id="resumo-produtos-periodo"></div>
           </div>
           <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
             <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#7A4A00;margin-bottom:10px;">📄 Detalhamento por Status no Período</div>
@@ -5448,6 +5458,124 @@ const CAT_PCT   = { placa:0.005,   grx:0.0075,      aco:0.01  };
 
 // Retorna a lista de produtos com nomes unicos (ha duplicidade entre fabricas MDC/FDS),
 // mantendo o primeiro codigo encontrado para cada nome.
+// Mapa nome-do-material -> {m2, categoria}, construído a partir da Tabela de Produtos
+// (allProducts), que já traz o m² por unidade calculado. Lazy-loaded (só monta na
+// primeira chamada) pra garantir que allProducts já esteja definido nesse momento.
+var _materialM2MapCache = null;
+function getMaterialM2Map() {
+  if (_materialM2MapCache) return _materialM2MapCache;
+  var mapa = {};
+  (typeof allProducts !== 'undefined' ? allProducts : []).forEach(function(p) {
+    var nome = (p.nome || '').trim();
+    if (!nome || mapa[nome]) return;
+    var categoria = String(p.categoria || '').trim().toUpperCase();
+    var m2 = parseFloat(String(p.m2 == null ? '' : p.m2).replace(',', '.')) || 0;
+    mapa[nome] = { m2: m2, categoria: categoria };
+  });
+  _materialM2MapCache = mapa;
+  return mapa;
+}
+
+// Classifica um material (pelo nome, e opcionalmente pela categoria da Tabela de
+// Produtos) numa das famílias de relatório diário definidas pela gestora.
+// Ordem importa: checagens mais específicas (tipo de placa) vêm antes do
+// "catch-all" de largura (2,40), pra não perder RF/Performa/Glasroc/Cimentícia
+// dentro do balde genérico.
+function classificarFamiliaMaterial(nome, categoria) {
+  var n = String(nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  var cat = String(categoria || '').trim().toUpperCase();
+
+  // Parafusos (mesmo com "GLASROC" ou "CIMENTICIA" no nome) não entram nesse
+  // relatório — são fixação, não placa nem balde de massa.
+  if (n.indexOf('PARAFUSO') !== -1) return null;
+
+  if (n.indexOf('GLASROC') !== -1) return 'glasrocx';
+  if (n.indexOf('PERFORMA') !== -1) return (/\bRU\b/.test(n) ? 'performaru' : 'performast');
+  if (n.indexOf('CIMENTICIA') !== -1) return 'cimenticia';
+  if (/\bRF\b/.test(n)) return 'rf';
+  if (n.indexOf('BASECOAT') !== -1) return 'basecoat';
+  if (n.indexOf('PLACOMIX') !== -1 || n.indexOf('MASSA UNICA') !== -1) return 'balde_massa';
+  if (n.indexOf('ROCHA') !== -1) return 'la_rocha';
+  if (n.indexOf('PET') !== -1) return 'la_pet';
+  if (n.indexOf('VIDRO') !== -1) return 'la_vidro';
+  if ((n.indexOf('600X') !== -1 || n.indexOf('0,60') !== -1 || n.indexOf('0.60') !== -1) && cat === 'PLACA') return 'st060';
+  if (n.indexOf('1,80') !== -1) {
+    if (/\bRU\b/.test(n)) return 'ru180';
+    if (/\bST\b/.test(n)) return 'st180';
+  }
+  if (cat === 'PLACA') return 'placa240'; // demais larguras de placa (2,40 / 2,80 / etc.)
+  return null;
+}
+
+var RESUMO_PRODUTOS_FAMILIAS_M2 = ['st180', 'st060', 'ru180', 'glasrocx', 'performast', 'performaru', 'rf', 'placa240', 'cimenticia'];
+var RESUMO_PRODUTOS_FAMILIAS_UN = ['balde_massa', 'basecoat', 'la_vidro', 'la_pet', 'la_rocha'];
+
+// Soma, item a item, quanto foi vendido de cada família — em m² pras placas,
+// em unidades pra massa/basecoat/lãs (conforme definido pela gestora).
+function calcResumoProdutosDia(pedidosList) {
+  var mapa = getMaterialM2Map();
+  var r = {};
+  RESUMO_PRODUTOS_FAMILIAS_M2.concat(RESUMO_PRODUTOS_FAMILIAS_UN).forEach(function(k) { r[k] = 0; });
+
+  (pedidosList || []).forEach(function(p) {
+    if (!p.itens || !p.itens.length) return;
+    p.itens.forEach(function(it) {
+      var info = mapa[it.material];
+      var categoria = info ? info.categoria : '';
+      var familia = classificarFamiliaMaterial(it.material, categoria);
+      if (!familia || !(familia in r)) return;
+      var qtd = Number(it.qtd) || 0;
+      if (RESUMO_PRODUTOS_FAMILIAS_M2.indexOf(familia) !== -1) {
+        var m2Unit = info ? info.m2 : 0;
+        if (!m2Unit) return;
+        r[familia] += qtd * m2Unit;
+      } else {
+        r[familia] += qtd;
+      }
+    });
+  });
+
+  r.total_m2 = RESUMO_PRODUTOS_FAMILIAS_M2.reduce(function(s, k) { return s + (r[k] || 0); }, 0);
+  return r;
+}
+
+function fmtNum2(n) {
+  return Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Renderiza a tabela de resumo de produtos (placas em m² + itens unitários),
+// na mesma ordem em que a gestora pediu pra visualizar.
+function renderResumoProdutos(containerId, pedidosList) {
+  var box = document.getElementById(containerId);
+  if (!box) return;
+  var r = calcResumoProdutosDia(pedidosList);
+  var linhas = [
+    ['PLACA ST 1,80', fmtNum2(r.st180) + ' m²'],
+    ['PLACA ST 0,60', fmtNum2(r.st060) + ' m²'],
+    ['PLACA RU 1,80', fmtNum2(r.ru180) + ' m²'],
+    ['GLASROC X', fmtNum2(r.glasrocx) + ' m²'],
+    ['PERFORMA ST', fmtNum2(r.performast) + ' m²'],
+    ['PERFORMA RU', fmtNum2(r.performaru) + ' m²'],
+    ['PLACA RF', fmtNum2(r.rf) + ' m²'],
+    ['BALDE MASSA', fmtNum2(r.balde_massa) + ' un.'],
+    ['BASECOAT 20KG', fmtNum2(r.basecoat) + ' un.'],
+    ['PLACA 2,40', fmtNum2(r.placa240) + ' m²'],
+    ['PLACA CIMENTICIA', fmtNum2(r.cimenticia) + ' m²'],
+    ['TOTAL DO DIA EM M2', fmtNum2(r.total_m2) + ' m²', true],
+    ['LÃ DE VIDRO', fmtNum2(r.la_vidro) + ' un.'],
+    ['LÃ DE PET', fmtNum2(r.la_pet) + ' un.'],
+    ['LÃ DE ROCHA', fmtNum2(r.la_rocha) + ' un.']
+  ];
+  box.innerHTML = linhas.map(function(l) {
+    var destaque = !!l[2];
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;' +
+        (destaque ? 'background:#1C1C1C;border-radius:6px;margin:6px 0;' : 'border-bottom:1px solid #F0EEEA;') + '">' +
+      '<span style="font-size:12px;font-weight:' + (destaque ? '700' : '600') + ';color:' + (destaque ? '#fff' : '#333') + ';">' + negEsc(l[0]) + '</span>' +
+      '<span style="font-size:12.5px;font-weight:700;color:' + (destaque ? '#4CAF50' : '#1C1C1C') + ';">' + l[1] + '</span>' +
+    '</div>';
+  }).join('');
+}
+
 function obterMateriaisUnicos() {
   var vistos = {};
   var lista = [];
@@ -7386,6 +7514,7 @@ function aplicarFiltroPeriodo() {
   set('filtro-vendas-qt', pedsVendidos.length + ' pedido(s)');
   set('filtro-entregas-total', fmt2(entregasTotal));
   set('filtro-entregas-qt', pedsEntregues.length + ' pedido(s)');
+  renderResumoProdutos('resumo-produtos-periodo', pedsVendidos);
 
   var resBox = document.getElementById('filtro-periodo-resultado');
   if (resBox) resBox.style.display = 'block';
@@ -7431,6 +7560,7 @@ function updateDashboard(pedidos, v) {
   set('dash-hoje-carreta-qt', hojeCarreta.length + ' pedido(s)');
   set('dash-hoje-outros',     fmtBRL(hojeOutros.reduce((s,p)=>s+Number(p.vTotal||0),0)));
   set('dash-hoje-outros-qt',  hojeOutros.length + ' pedido(s)');
+  renderResumoProdutos('resumo-produtos-hoje', hoje);
 
   // METAS
   // Corrigido: precisa remover o "R$ " antes de tratar separadores, senao parseFloat
