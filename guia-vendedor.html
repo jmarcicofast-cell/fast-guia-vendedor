@@ -219,6 +219,7 @@
   .ped-field label { font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#aaa;display:block;margin-bottom:3px; }
   .ped-field input, .ped-field select { width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;font-family:inherit;background:#fff;color:#1a1a18;appearance:auto; }
   .ped-field input:focus, .ped-field select:focus { border-color:#C41E1E; }
+  .ped-form-popup-mode { margin-top:0 !important; border-radius:0 0 12px 12px !important; box-shadow:0 12px 30px rgba(0,0,0,.35); }
   .status-badge { font-size:10px;font-weight:600;padding:3px 8px;border-radius:10px;white-space:nowrap; }
   .s-agendamento    { background:#E3F0FA;color:#0C447C; }
   .s-aguardando-dt  { background:#FEF3E0;color:#7A4A00; }
@@ -2206,6 +2207,8 @@
       </div>
       <div id="ped-toast" style="display:none;background:#1B5E20;color:#fff;padding:8px 12px;border-radius:7px;font-size:12px;text-align:center;margin-top:8px;">✅ Pedido salvo!</div>
     </div>
+    <!-- Âncora: marca o lugar original do #ped-form pra ele voltar quando o popup de conversão fecha -->
+    <span id="ped-form-anchor" style="display:none;"></span>
 
     <!-- TABELA DE PEDIDOS -->
     <div style="display:flex;align-items:center;gap:10px;margin-top:1.25rem;flex-wrap:wrap;">
@@ -5553,8 +5556,28 @@ function salvarPedido() {
       dbRef('pedidos/' + currentUser + '/' + pedido.id).set(pedido)
         .then(function() {
           if (btn) { btn.disabled = false; btn.innerHTML = '💾 Salvar Pedido'; }
+
+          // Se esse pedido veio de uma conversão de negociação, marca a negociação
+          // como convertida, vincula o pedido gerado e fecha o popup.
+          var eraConversao = !!pedConversaoOrigem;
+          if (pedConversaoOrigem) {
+            var origem = pedConversaoOrigem;
+            dbRef('negociacoes/' + origem.vend + '/' + origem.id).once('value').then(function(snap) {
+              var n = snap.val();
+              if (!n) return;
+              n.convertida = true;
+              n.pedidoId = pedido.id;
+              n.pedidoChamado = pedido.chamado || '';
+              n.historico = n.historico || [];
+              n.historico.push({ data: new Date().toISOString(), texto: 'Convertida em pedido' + (pedido.chamado ? ' (chamado ' + pedido.chamado + ')' : '') + '.' });
+              dbRef('negociacoes/' + origem.vend + '/' + origem.id).set(n);
+            });
+            fecharPedidoPopup();
+            alert('✅ Pedido criado e vinculado à negociação!' + (firebaseOK ? '' : '\n\n⚠️ Sem conexão no momento — o pedido está salvo só neste aparelho até sincronizar.'));
+          }
+
           const toast = document.getElementById('ped-toast');
-          if (toast) {
+          if (toast && !eraConversao) {
             if (firebaseOK) {
               toast.style.background = '#1B5E20';
               toast.innerHTML = '✅ Pedido salvo e sincronizado!';
@@ -6159,9 +6182,11 @@ function negCardHtml(n, et, hoje) {
   var etapaOpts = NEG_ETAPAS.map(function(o) {
     return '<option value="' + o.key + '"' + (o.key === n.etapa ? ' selected' : '') + '>' + o.label + '</option>';
   }).join('');
-  var converterBtn = n.etapa === 'fechado'
-    ? '<button onclick="event.stopPropagation();negConverterEmPedido(\'' + n.vendedor + '\',\'' + n.id + '\')" style="margin-top:6px;width:100%;padding:5px;border-radius:5px;border:none;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">➜ Converter em Pedido</button>'
-    : '';
+  var converterBtn = n.convertida
+    ? '<div style="margin-top:6px;width:100%;padding:5px;border-radius:5px;background:#EAF4EA;color:#1B5E20;font-size:11px;font-weight:600;text-align:center;">✅ Convertida em Pedido' + (n.pedidoChamado ? ' — ' + negEsc(n.pedidoChamado) : '') + '</div>'
+    : (n.etapa === 'fechado'
+      ? '<button onclick="event.stopPropagation();abrirPedidoPopupConversao(\'' + n.vendedor + '\',\'' + n.id + '\')" style="margin-top:6px;width:100%;padding:5px;border-radius:5px;border:none;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">➜ Converter em Pedido</button>'
+      : '');
   var faltaTrunc = function(s) { s = String(s || '').trim(); return s.length > 60 ? s.slice(0, 57) + '...' : s; };
   var faltaHtml = n.faltaFechar
     ? '<div style="font-size:10px;color:#7A4A00;background:#FFF3E0;border-radius:5px;padding:4px 6px;margin-top:6px;">🔑 <b>Falta:</b> ' + negEsc(faltaTrunc(n.faltaFechar)) + '</div>'
@@ -6380,26 +6405,62 @@ function negExcluir() {
 
 // Converte uma negociação Fechada em um pedido de verdade: leva o essencial
 // pro formulário de Novo Pedido e deixa o vendedor completar os itens.
-function negConverterEmPedido(vend, id) {
+// Estado da conversão em andamento: quando != null, o próximo salvarPedido()
+// bem-sucedido marca essa negociação como convertida e vincula o pedido gerado.
+var pedConversaoOrigem = null;
+
+function abrirPedidoPopupConversao(vend, id) {
   dbRef('negociacoes/' + vend + '/' + id).once('value').then(function(snap) {
     var n = snap.val();
     if (!n) return;
     if (vend !== currentUser && !negState.isGestora) return;
-    // Muda pra aba de Pedidos e abre o formulário já preenchido
-    var btnPedidos = Array.from(document.querySelectorAll('.nav-btn')).find(function(b) { return b.getAttribute('onclick') === "showTab('pedidos',this)"; });
-    showTab('pedidos', btnPedidos || document.querySelector('.nav-btn'));
+    if (n.convertida) { alert('Essa negociação já foi convertida em pedido.'); return; }
+
+    pedConversaoOrigem = { vend: vend, id: id };
+
     var form = document.getElementById('ped-form');
-    if (form && form.style.display === 'none') togglePedForm();
-    setTimeout(function() {
-      var elEmpresa = document.getElementById('pf-empresa');
-      var elCliente = document.getElementById('pf-cliente');
-      if (elEmpresa) elEmpresa.value = n.empresa || '';
-      if (elCliente) elCliente.value = n.contato || '';
-      var elData = document.getElementById('pf-data');
-      if (elData && !elData.value) elData.value = new Date().toISOString().split('T')[0];
-    }, 50);
-    alert('Dados da negociação levados para o formulário de Novo Pedido. Complete os itens e salve normalmente.');
+    var overlay = document.getElementById('ped-popup-overlay');
+    var inner = document.getElementById('ped-popup-inner');
+    var titulo = document.getElementById('ped-popup-titulo');
+    if (!form || !overlay || !inner) return;
+
+    // Move o formulário real de pedido pra dentro do popup
+    inner.appendChild(form);
+    form.style.display = 'block';
+    form.classList.add('ped-form-popup-mode');
+    overlay.style.display = 'flex';
+    if (titulo) titulo.textContent = '➜ Converter Negociação em Pedido — ' + (n.empresa || '');
+
+    // Reseta itens e pré-preenche o que já se sabe da negociação
+    pedItens = [];
+    renderItensList();
+    var elEmpresa = document.getElementById('pf-empresa');
+    var elCliente = document.getElementById('pf-cliente');
+    var elData = document.getElementById('pf-data');
+    if (elEmpresa) elEmpresa.value = n.empresa || '';
+    if (elCliente) elCliente.value = n.contato || '';
+    if (elData) elData.value = new Date().toISOString().split('T')[0];
+
+    // Ajusta o botão Cancelar do form pra fechar o popup em vez do comportamento padrão (inline)
+    var btnCancelar = form.querySelector('button[onclick="togglePedForm()"]');
+    if (btnCancelar) btnCancelar.setAttribute('onclick', 'fecharPedidoPopup()');
   });
+}
+
+function fecharPedidoPopup() {
+  var form = document.getElementById('ped-form');
+  var overlay = document.getElementById('ped-popup-overlay');
+  var anchor = document.getElementById('ped-form-anchor');
+  if (!form || !overlay || !anchor) return;
+
+  pedConversaoOrigem = null;
+  overlay.style.display = 'none';
+  form.classList.remove('ped-form-popup-mode');
+  form.style.display = 'none';
+  // Devolve o form pro lugar original, na aba Pedidos
+  anchor.parentNode.insertBefore(form, anchor);
+  var btnCancelar = form.querySelector('button[onclick="fecharPedidoPopup()"]');
+  if (btnCancelar) btnCancelar.setAttribute('onclick', 'togglePedForm()');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -8193,5 +8254,14 @@ function importarArquivo(event) {
   </div>
 </div>
 
+<!-- Overlay do popup "Converter Negociação em Pedido" — o #ped-form real é movido pra dentro dele quando ativo -->
+<div id="ped-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:9998;align-items:flex-start;justify-content:center;overflow-y:auto;padding:30px 16px;">
+  <div id="ped-popup-inner" style="max-width:720px;width:100%;">
+    <div style="background:#1B5E20;color:#fff;border-radius:12px 12px 0 0;padding:12px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;">
+      <span id="ped-popup-titulo">➜ Converter Negociação em Pedido</span>
+      <span onclick="fecharPedidoPopup()" style="cursor:pointer;font-size:16px;line-height:1;">✕</span>
+    </div>
+  </div>
+</div>
 </body>
 </html>
