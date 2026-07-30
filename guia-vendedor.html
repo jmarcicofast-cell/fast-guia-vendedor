@@ -1728,7 +1728,7 @@
         <p style="font-size:12px;color:#aaa;" id="ped-periodo">Mês atual</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="togglePedForm()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Novo Pedido</button>
+        <button id="btn-novo-pedido" onclick="togglePedForm()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Novo Pedido</button>
         <button id="btn-sync-local" onclick="sincronizarPedidosLocais()" style="display:none;padding:8px 16px;border-radius:7px;border:1.5px solid #7A0000;background:#FFEBEE;color:#7A0000;font-size:13px;font-weight:700;cursor:pointer;">🔄 Sincronizar pedidos locais<span id="btn-sync-local-count"></span></button>
         <button id="btn-exportar" onclick="exportarPedidosExcel()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #2E7D32;background:#fff;color:#2E7D32;font-size:13px;font-weight:600;cursor:pointer;">📥 Exportar Excel</button>
         <input type="file" id="excel-import-input" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
@@ -7545,6 +7545,10 @@ function entrarComoUsuario(user) {
     if (evGest) evGest.style.display = 'none';
     if (evVend) evVend.style.display = 'block';
   }
+  // "+ Novo Pedido" avulso some pro vendedor — pedido só entra via conversão
+  // de uma negociação fechada no funil. Gestora mantém acesso direto.
+  var btnNovoPed = document.getElementById('btn-novo-pedido');
+  if (btnNovoPed) btnNovoPed.style.display = (v.tipo === 'gestora') ? 'inline-block' : 'none';
     if (v.nome !== 'Juliana') {
       fbListenVendedor(user);
       listenLigacoesVendedor(user);
