@@ -6297,6 +6297,33 @@ var NEG_MOTIVOS = {
   outro:            { label: '❓ Outro',                        cor: '#888' }
 };
 
+// Abre o modal de edição do pedido vinculado a uma negociação convertida.
+// Se o pedido não estiver sob o vendedor esperado (ex: casos antigos salvos
+// com o usuário errado), procura em todos os vendedores antes de desistir.
+function abrirPedidoVinculado(vend, pedidoId) {
+  dbRef('pedidos/' + vend + '/' + pedidoId).once('value').then(function(snap) {
+    if (snap.val()) {
+      abrirEditarPedido(vend, pedidoId);
+      return;
+    }
+    var nomes = Object.keys(vendedores);
+    var achado = null;
+    var pend = nomes.length;
+    if (!pend) { alert('Pedido não encontrado.'); return; }
+    nomes.forEach(function(vn) {
+      dbRef('pedidos/' + vn + '/' + pedidoId).once('value').then(function(snap2) {
+        if (!achado && snap2.val()) achado = vn;
+      }).catch(function() {}).then(function() {
+        pend--;
+        if (pend === 0) {
+          if (achado) abrirEditarPedido(achado, pedidoId);
+          else alert('Pedido não encontrado em nenhum vendedor. Ele pode ter sido excluído.');
+        }
+      });
+    });
+  });
+}
+
 function negEsc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
     return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c];
@@ -6450,6 +6477,9 @@ function negCardHtml(n, et, hoje) {
     return '<option value="' + o.key + '"' + (o.key === n.etapa ? ' selected' : '') + '>' + o.label + '</option>';
   }).join('');
   var SULTS_BASE_URL = 'https://fastdrywall.sults.com.br/chamados/interacoes/';
+  var editarPedidoBtn = (n.convertida && n.pedidoId)
+    ? '<button onclick="event.stopPropagation();abrirPedidoVinculado(\'' + n.vendedor + '\',\'' + n.pedidoId + '\')" style="margin-top:6px;width:100%;padding:5px;border-radius:5px;border:1.5px solid #185FA5;background:#fff;color:#185FA5;font-size:11px;font-weight:600;cursor:pointer;">✏️ Editar Pedido</button>'
+    : '';
   var converterBtn = n.convertida
     ? (n.pedidoChamado
       ? '<a href="' + SULTS_BASE_URL + encodeURIComponent(n.pedidoChamado) + '" target="_blank" onclick="event.stopPropagation();" style="display:block;margin-top:6px;width:100%;padding:5px;border-radius:5px;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;">🔗 Abrir chamado no Sults — ' + negEsc(n.pedidoChamado) + '</a>'
@@ -6457,6 +6487,7 @@ function negCardHtml(n, et, hoje) {
     : (n.etapa === 'fechado'
       ? '<button onclick="event.stopPropagation();abrirPedidoPopupConversao(\'' + n.vendedor + '\',\'' + n.id + '\')" style="margin-top:6px;width:100%;padding:5px;border-radius:5px;border:none;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">➜ Converter em Pedido</button>'
       : '');
+  converterBtn = converterBtn + editarPedidoBtn;
   var faltaTrunc = function(s) { s = String(s || '').trim(); return s.length > 60 ? s.slice(0, 57) + '...' : s; };
   var faltaHtml = n.faltaFechar
     ? '<div style="font-size:10px;color:#7A4A00;background:#FFF3E0;border-radius:5px;padding:4px 6px;margin-top:6px;">🔑 <b>Falta:</b> ' + negEsc(faltaTrunc(n.faltaFechar)) + '</div>'
