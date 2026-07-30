@@ -2418,6 +2418,39 @@
   </div>
 </div>
 
+<!-- MODAL CONTROLE DE COMPRAS SEMANAIS -->
+<div id="cli-semanas-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) cliFecharSemanasModal()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:480px;width:100%;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+      <div style="font-size:14px;font-weight:700;color:#1C1C1C;" id="cli-semanas-titulo">Cliente</div>
+      <span onclick="cliFecharSemanasModal()" style="cursor:pointer;font-size:16px;color:#888;line-height:1;">✕</span>
+    </div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:14px;">Controle de compras — marque semana a semana</div>
+
+    <div class="ped-field" style="margin-bottom:14px;">
+      <label>Frequência de compra esperada</label>
+      <select id="cli-semanas-freq" onchange="cliSalvarFreqModal()">
+        <option value="">Não definido</option>
+        <option value="semanal">🔁 Semanal (toda semana)</option>
+        <option value="quinzenal">📦 Quinzenal (a cada 15 dias)</option>
+        <option value="mensal">🗓️ Mensal (1x por mês)</option>
+      </select>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:12px;">
+      <span onclick="cliSemanasMudarMes(-1)" style="cursor:pointer;font-size:16px;padding:2px 8px;color:#555;">‹</span>
+      <div id="cli-semanas-mes-label" style="font-size:12.5px;font-weight:700;color:#1C1C1C;min-width:110px;text-align:center;"></div>
+      <span onclick="cliSemanasMudarMes(1)" style="cursor:pointer;font-size:16px;padding:2px 8px;color:#555;">›</span>
+    </div>
+
+    <div id="cli-semanas-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:6px;"></div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+      <button onclick="cliFecharSemanasModal()" style="padding:8px 18px;border-radius:6px;border:none;background:#1C1C1C;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ NEGOCIAÇÕES (CRM DE LEADS/OPORTUNIDADES) ══ -->
 <div id="tab-negociacoes" class="tab-content">
   <div class="page-section" style="max-width:100%;">
@@ -2434,6 +2467,16 @@
             <option value="todos">Todos os vendedores</option>
           </select>
         </div>
+        <select id="neg-filtro-estado" onchange="negFiltrarEstado(this.value)" style="padding:8px 10px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;">
+          <option value="todos">Todos os estados</option>
+          <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+          <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+          <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+          <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+          <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+          <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+          <option>SP</option><option>SE</option><option>TO</option>
+        </select>
         <button onclick="abrirNegModal()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Nova Negociação</button>
       </div>
     </div>
@@ -2503,6 +2546,19 @@
       <div class="ped-field">
         <label>Telefone</label>
         <input type="text" id="neg-telefone" placeholder="(00) 00000-0000">
+      </div>
+      <div class="ped-field">
+        <label>Estado (UF)</label>
+        <select id="neg-estado">
+          <option value="">Selecione...</option>
+          <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+          <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+          <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+          <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+          <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+          <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+          <option>SP</option><option>SE</option><option>TO</option>
+        </select>
       </div>
       <div class="ped-field">
         <label>Valor estimado (R$)</label>
@@ -6027,7 +6083,7 @@ var NEG_ETAPAS = [
   { key: 'fechado',    label: '✅ Fechado',              cor: '#1B5E20' },
   { key: 'perdido',    label: '❌ Perdido',              cor: '#7A0000' }
 ];
-var negState = { porVendedor: {}, isGestora: false, currentVend: null, filtroVend: 'todos', editando: null };
+var negState = { porVendedor: {}, isGestora: false, currentVend: null, filtroVend: 'todos', filtroEstado: 'todos', editando: null };
 
 var NEG_MOTIVOS = {
   preco:            { label: '💰 Preço / sem competitividade', cor: '#C41E1E' },
@@ -6097,6 +6153,11 @@ function negFiltrarVendedor(v) {
   renderNegKanban();
 }
 
+function negFiltrarEstado(uf) {
+  negState.filtroEstado = uf;
+  renderNegKanban();
+}
+
 function negTodasListadas() {
   var lista = [];
   Object.keys(negState.porVendedor).forEach(function(vn) {
@@ -6104,6 +6165,9 @@ function negTodasListadas() {
   });
   if (negState.isGestora && negState.filtroVend !== 'todos') {
     lista = lista.filter(function(n) { return n.vendedor === negState.filtroVend; });
+  }
+  if (negState.filtroEstado && negState.filtroEstado !== 'todos') {
+    lista = lista.filter(function(n) { return n.estado === negState.filtroEstado; });
   }
   return lista;
 }
@@ -6175,6 +6239,9 @@ function negCardHtml(n, et, hoje) {
     ? '<div style="font-size:10px;font-weight:700;color:#C41E1E;margin-bottom:3px;">' + negEsc(vendedores[n.vendedor] ? vendedores[n.vendedor].nome : n.vendedor) + '</div>'
     : '';
   var valor = n.valorEstimado ? 'R$ ' + Number(n.valorEstimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '';
+  var estadoHtml = n.estado
+    ? '<span style="display:inline-block;font-size:9.5px;font-weight:700;color:#555;background:#F0EEEA;border-radius:8px;padding:1px 6px;margin-left:5px;">' + negEsc(n.estado) + '</span>'
+    : '';
   var proxHtml = n.proximaData
     ? '<div style="font-size:10px;' + (atrasada ? 'color:#C41E1E;font-weight:700;' : 'color:#888;') + 'margin-top:4px;">' +
         (atrasada ? '⚠️ ' : '📅 ') + negFmtData(n.proximaData) + (n.proximaAcao ? ' — ' + negEsc(n.proximaAcao) : '') + '</div>'
@@ -6182,8 +6249,11 @@ function negCardHtml(n, et, hoje) {
   var etapaOpts = NEG_ETAPAS.map(function(o) {
     return '<option value="' + o.key + '"' + (o.key === n.etapa ? ' selected' : '') + '>' + o.label + '</option>';
   }).join('');
+  var SULTS_BASE_URL = 'https://fastdrywall.sults.com.br/chamados/interacoes/';
   var converterBtn = n.convertida
-    ? '<div style="margin-top:6px;width:100%;padding:5px;border-radius:5px;background:#EAF4EA;color:#1B5E20;font-size:11px;font-weight:600;text-align:center;">✅ Convertida em Pedido' + (n.pedidoChamado ? ' — ' + negEsc(n.pedidoChamado) : '') + '</div>'
+    ? (n.pedidoChamado
+      ? '<a href="' + SULTS_BASE_URL + encodeURIComponent(n.pedidoChamado) + '" target="_blank" onclick="event.stopPropagation();" style="display:block;margin-top:6px;width:100%;padding:5px;border-radius:5px;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;text-align:center;text-decoration:none;box-sizing:border-box;">🔗 Abrir chamado no Sults — ' + negEsc(n.pedidoChamado) + '</a>'
+      : '<div style="margin-top:6px;width:100%;padding:5px;border-radius:5px;background:#EAF4EA;color:#1B5E20;font-size:11px;font-weight:600;text-align:center;">✅ Convertida em Pedido (sem nº de chamado)</div>')
     : (n.etapa === 'fechado'
       ? '<button onclick="event.stopPropagation();abrirPedidoPopupConversao(\'' + n.vendedor + '\',\'' + n.id + '\')" style="margin-top:6px;width:100%;padding:5px;border-radius:5px;border:none;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;cursor:pointer;">➜ Converter em Pedido</button>'
       : '');
@@ -6204,7 +6274,7 @@ function negCardHtml(n, et, hoje) {
     : '';
   return '<div style="background:#fff;border:1.5px solid ' + (atrasada ? '#C41E1E' : '#E8E6E1') + ';border-radius:9px;padding:10px;margin-bottom:8px;cursor:pointer;" onclick="abrirNegModal(\'' + n.vendedor + '\',\'' + n.id + '\')">' +
     vendLabel +
-    '<div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + negEsc(n.empresa || '(sem nome)') + '</div>' +
+    '<div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + negEsc(n.empresa || '(sem nome)') + estadoHtml + '</div>' +
     (n.contato ? '<div style="font-size:11px;color:#888;">' + negEsc(n.contato) + '</div>' : '') +
     (valor ? '<div style="font-size:12px;font-weight:600;color:#2E7D32;margin-top:4px;">' + valor + '</div>' : '') +
     proxHtml +
@@ -6256,6 +6326,7 @@ function abrirNegModal(vend, id) {
   document.getElementById('neg-empresa').value = '';
   document.getElementById('neg-contato').value = '';
   document.getElementById('neg-telefone').value = '';
+  document.getElementById('neg-estado').value = '';
   document.getElementById('neg-valor').value = '';
   document.getElementById('neg-etapa').value = 'contato';
   document.getElementById('neg-proxima-acao').value = '';
@@ -6286,6 +6357,7 @@ function abrirNegModal(vend, id) {
       document.getElementById('neg-empresa').value = n.empresa || '';
       document.getElementById('neg-contato').value = n.contato || '';
       document.getElementById('neg-telefone').value = n.telefone || '';
+      document.getElementById('neg-estado').value = n.estado || '';
       document.getElementById('neg-valor').value = n.valorEstimado ? String(n.valorEstimado).replace('.', ',') : '';
       document.getElementById('neg-etapa').value = n.etapa || 'contato';
       document.getElementById('neg-proxima-acao').value = n.proximaAcao || '';
@@ -6365,6 +6437,7 @@ function negSalvar() {
     empresa: empresa,
     contato: document.getElementById('neg-contato').value.trim(),
     telefone: document.getElementById('neg-telefone').value.trim(),
+    estado: document.getElementById('neg-estado').value,
     valorEstimado: parseValorMonetario(document.getElementById('neg-valor').value) || 0,
     etapa: etapa,
     proximaAcao: document.getElementById('neg-proxima-acao').value.trim(),
@@ -6437,9 +6510,11 @@ function abrirPedidoPopupConversao(vend, id) {
     var elEmpresa = document.getElementById('pf-empresa');
     var elCliente = document.getElementById('pf-cliente');
     var elData = document.getElementById('pf-data');
+    var elEstado = document.getElementById('pf-estado');
     if (elEmpresa) elEmpresa.value = n.empresa || '';
     if (elCliente) elCliente.value = n.contato || '';
     if (elData) elData.value = new Date().toISOString().split('T')[0];
+    if (elEstado) elEstado.value = n.estado || '';
 
     // Ajusta o botão Cancelar do form pra fechar o popup em vez do comportamento padrão (inline)
     var btnCancelar = form.querySelector('button[onclick="togglePedForm()"]');
@@ -6590,6 +6665,62 @@ var cliFiltroVend = 'todos';
 var cliBusca = '';
 var cliIndexPorId = {};
 var cliDetalheAtual = null;
+var cliSemanasState = { vend: null, chave: null, mes: null };
+
+function cliMesAtualStr() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function cliDiasNoMes(anoMes) {
+  var p = anoMes.split('-'); var ano = +p[0], mes = +p[1];
+  return new Date(ano, mes, 0).getDate();
+}
+function cliNumSemanasMes(anoMes) {
+  return Math.ceil(cliDiasNoMes(anoMes) / 7);
+}
+function cliRangeSemana(anoMes, n) {
+  var dias = cliDiasNoMes(anoMes);
+  var ini = (n - 1) * 7 + 1;
+  var fim = Math.min(n * 7, dias);
+  return ini + '–' + fim;
+}
+function cliMesLabel(anoMes) {
+  var p = anoMes.split('-');
+  var meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  return meses[(+p[1]) - 1] + '/' + p[0];
+}
+function cliMesSomar(anoMes, delta) {
+  var p = anoMes.split('-');
+  var d = new Date(+p[0], (+p[1]) - 1 + delta, 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function cliFreqTag(freq) {
+  var map = {
+    semanal:   ['#0C447C', '#E6F1FB', '🔁 Semanal'],
+    quinzenal: ['#7A4A00', '#FFF3E0', '📦 Quinzenal'],
+    mensal:    ['#4A148C', '#F3E5F5', '🗓️ Mensal']
+  };
+  if (!freq || !map[freq]) return '';
+  var m = map[freq];
+  return '<span style="background:' + m[1] + ';color:' + m[0] + ';font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:8px;margin-left:5px;white-space:nowrap;">' + m[2] + '</span>';
+}
+function cliSemanaChipsRowHtml(atend) {
+  var mes = cliMesAtualStr();
+  var dadosMes = (atend && atend.controleCompras) ? atend.controleCompras[mes] : null;
+  var semanas = dadosMes ? (dadosMes.semanas || {}) : {};
+  var num = cliNumSemanasMes(mes);
+  var chips = [];
+  for (var n = 1; n <= num; n++) {
+    var info = semanas[String(n)];
+    var cor, bg, txt;
+    if (!info || !info.status) { cor = '#bbb'; bg = '#F0EEEA'; txt = 'S' + n; }
+    else if (info.status === 'ok') { cor = '#1B5E20'; bg = '#E8F5E9'; txt = 'S' + n + ' ✓'; }
+    else { cor = '#7A0000'; bg = '#FBE9E9'; txt = 'S' + n + ' ✕'; }
+    var title = (info && info.motivo) ? (' title="' + negEsc(info.motivo) + '"') : '';
+    chips.push('<span' + title + ' style="background:' + bg + ';color:' + cor + ';font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:5px;">' + txt + '</span>');
+  }
+  return chips.join(' ');
+}
 var cliAliasState = {}; // mapa chaveVariante -> chaveCanonica, alimentado pela mesclagem manual
 
 // Normaliza o nome (sem acento, maiúsculo, sem pontuação) e remove sufixos
@@ -6870,13 +7001,19 @@ function cliLinhaHtml(c) {
   var compraTxt = c.ultimaCompra
     ? (negFmtData(c.ultimaCompra) + ' · ' + (c.diasSemComprar < 0 ? 'agendado' : c.diasSemComprar + ' dia(s)'))
     : '— (sem pedido no sistema)';
+  var atend = (cliAtendState.porVendedor[c.vendedor] || {})[c.chave] || null;
+  var freqTag = cliFreqTag(atend ? atend.freq : '');
+  var chipsHtml = cliSemanaChipsRowHtml(atend);
   return '<tr style="' + (atrasado ? 'background:#FFF7F5;' : '') + 'border-top:1px solid #F0EEEA;">' +
     vendCol +
-    '<td style="padding:8px 10px;font-weight:700;color:#1C1C1C;font-size:12.5px;cursor:pointer;" onclick="cliAbrirDetalhe(\'' + c.vendedor + '\',\'' + c.chave + '\')">' + negEsc(c.nome) + '</td>' +
+    '<td style="padding:8px 10px;font-weight:700;color:#1C1C1C;font-size:12.5px;cursor:pointer;white-space:nowrap;" onclick="cliAbrirDetalhe(\'' + c.vendedor + '\',\'' + c.chave + '\')">' + negEsc(c.nome) + freqTag + '</td>' +
     '<td style="padding:8px 10px;">' + cliStatusBadge(c.status) + '</td>' +
     '<td style="padding:8px 10px;font-size:11.5px;color:#666;white-space:nowrap;">' + compraTxt + '</td>' +
-    '<td style="padding:8px 10px;font-size:11.5px;white-space:nowrap;' + (atrasado ? 'color:#C41E1E;font-weight:700;' : 'color:#2E7D32;') + '">' + (atrasado ? '⚠️ ' : '✅ ') + atendTxt + '</td>' +
-    '<td style="padding:8px 10px;"><button onclick="cliMarcarAtendido(\'' + c.vendedor + '\',\'' + c.chave + '\')" style="padding:5px 10px;border-radius:6px;border:none;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">✅ Atender hoje</button></td>' +
+    '<td style="padding:8px 10px;font-size:11.5px;white-space:nowrap;">' +
+      '<div style="' + (atrasado ? 'color:#C41E1E;font-weight:700;' : 'color:#2E7D32;') + '">' + (atrasado ? '⚠️ ' : '✅ ') + atendTxt + '</div>' +
+      (chipsHtml ? '<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">' + chipsHtml + '</div>' : '') +
+    '</td>' +
+    '<td style="padding:8px 10px;"><button onclick="cliAbrirSemanasModal(\'' + c.vendedor + '\',\'' + c.chave + '\')" style="padding:5px 10px;border-radius:6px;border:none;background:#1B5E20;color:#fff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">📅 Controle de Compras</button></td>' +
   '</tr>';
 }
 
@@ -6977,6 +7114,107 @@ function cliAbrirDetalhe(vend, chave) {
 function cliFecharModal() {
   document.getElementById('cli-modal-overlay').style.display = 'none';
   cliDetalheAtual = null;
+}
+
+function cliAbrirSemanasModal(vend, chave) {
+  var reg = cliIndexPorId[vend + '||' + chave];
+  cliSemanasState = { vend: vend, chave: chave, mes: cliMesAtualStr() };
+  var tituloEl = document.getElementById('cli-semanas-titulo');
+  if (tituloEl) tituloEl.textContent = reg ? reg.nome : chave;
+  var atend = (cliAtendState.porVendedor[vend] || {})[chave] || {};
+  var freqEl = document.getElementById('cli-semanas-freq');
+  if (freqEl) freqEl.value = atend.freq || '';
+  cliRenderSemanasModal();
+  document.getElementById('cli-semanas-overlay').style.display = 'flex';
+}
+
+function cliFecharSemanasModal() {
+  document.getElementById('cli-semanas-overlay').style.display = 'none';
+  cliSemanasState = { vend: null, chave: null, mes: null };
+}
+
+function cliSemanasMudarMes(delta) {
+  if (!cliSemanasState.mes) return;
+  cliSemanasState.mes = cliMesSomar(cliSemanasState.mes, delta);
+  cliRenderSemanasModal();
+}
+
+function cliRenderSemanasModal() {
+  var vend = cliSemanasState.vend, chave = cliSemanasState.chave, mes = cliSemanasState.mes;
+  if (!vend || !chave || !mes) return;
+  var lbl = document.getElementById('cli-semanas-mes-label');
+  if (lbl) lbl.textContent = cliMesLabel(mes);
+
+  var atend = (cliAtendState.porVendedor[vend] || {})[chave] || {};
+  var dadosMes = (atend.controleCompras || {})[mes] || {};
+  var semanas = dadosMes.semanas || {};
+  var numSemanas = cliNumSemanasMes(mes);
+
+  var box = document.getElementById('cli-semanas-lista');
+  if (!box) return;
+  var html = '';
+  for (var n = 1; n <= numSemanas; n++) {
+    var info = semanas[String(n)] || { status: '', motivo: '' };
+    var rangeTxt = cliRangeSemana(mes, n);
+    var okAtivo = info.status === 'ok';
+    var naoAtivo = info.status === 'nao';
+    html += '<div style="background:#F8F7F3;border-radius:8px;padding:10px 12px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:6px;">' +
+        '<div style="font-size:12px;font-weight:700;color:#1C1C1C;">Semana ' + n + ' <span style="font-weight:400;color:#aaa;">(dia ' + rangeTxt + ')</span></div>' +
+        '<div style="display:flex;gap:6px;">' +
+          '<button onclick="cliMarcarSemana(' + n + ',\'ok\')" style="padding:4px 10px;border-radius:5px;border:1.5px solid ' + (okAtivo ? '#1B5E20' : '#E2E0D8') + ';background:' + (okAtivo ? '#1B5E20' : '#fff') + ';color:' + (okAtivo ? '#fff' : '#888') + ';font-size:11px;font-weight:600;cursor:pointer;">✅ Comprou</button>' +
+          '<button onclick="cliMarcarSemana(' + n + ',\'nao\')" style="padding:4px 10px;border-radius:5px;border:1.5px solid ' + (naoAtivo ? '#C41E1E' : '#E2E0D8') + ';background:' + (naoAtivo ? '#C41E1E' : '#fff') + ';color:' + (naoAtivo ? '#fff' : '#888') + ';font-size:11px;font-weight:600;cursor:pointer;">❌ Não comprou</button>' +
+        '</div>' +
+      '</div>' +
+      (naoAtivo ? '<input type="text" value="' + negEsc(info.motivo || '') + '" placeholder="Por quê? Ex: sem verba, comprou com concorrente..." onchange="cliSalvarMotivoSemana(' + n + ',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;box-sizing:border-box;">' : '') +
+    '</div>';
+  }
+  box.innerHTML = html;
+}
+
+function cliMarcarSemana(n, status) {
+  var vend = cliSemanasState.vend, chave = cliSemanasState.chave, mes = cliSemanasState.mes;
+  if (!vend || !chave) return;
+  var reg = cliIndexPorId[vend + '||' + chave];
+  dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
+    var atual = snap.val() || { nome: reg ? reg.nome : chave, historico: [] };
+    atual.controleCompras = atual.controleCompras || {};
+    atual.controleCompras[mes] = atual.controleCompras[mes] || { semanas: {} };
+    atual.controleCompras[mes].semanas = atual.controleCompras[mes].semanas || {};
+    var atualSemana = atual.controleCompras[mes].semanas[String(n)] || {};
+    atual.controleCompras[mes].semanas[String(n)] = { status: status, motivo: status === 'ok' ? '' : (atualSemana.motivo || '') };
+    dbRef('atendimentos/' + vend + '/' + chave).set(atual).then(function() {
+      cliRenderSemanasModal();
+    });
+  });
+}
+
+function cliSalvarMotivoSemana(n, motivo) {
+  var vend = cliSemanasState.vend, chave = cliSemanasState.chave, mes = cliSemanasState.mes;
+  if (!vend || !chave) return;
+  var reg = cliIndexPorId[vend + '||' + chave];
+  dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
+    var atual = snap.val() || { nome: reg ? reg.nome : chave, historico: [] };
+    atual.controleCompras = atual.controleCompras || {};
+    atual.controleCompras[mes] = atual.controleCompras[mes] || { semanas: {} };
+    atual.controleCompras[mes].semanas = atual.controleCompras[mes].semanas || {};
+    var atualSemana = atual.controleCompras[mes].semanas[String(n)] || { status: 'nao' };
+    atualSemana.motivo = motivo;
+    atual.controleCompras[mes].semanas[String(n)] = atualSemana;
+    dbRef('atendimentos/' + vend + '/' + chave).set(atual);
+  });
+}
+
+function cliSalvarFreqModal() {
+  var vend = cliSemanasState.vend, chave = cliSemanasState.chave;
+  if (!vend || !chave) return;
+  var reg = cliIndexPorId[vend + '||' + chave];
+  var freq = document.getElementById('cli-semanas-freq').value;
+  dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
+    var atual = snap.val() || { nome: reg ? reg.nome : chave, historico: [] };
+    atual.freq = freq;
+    dbRef('atendimentos/' + vend + '/' + chave).set(atual);
+  });
 }
 
 function cliSalvarNotaAtendimento() {
