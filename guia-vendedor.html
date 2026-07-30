@@ -2155,7 +2155,7 @@
           <input type="text" id="pf-pn" placeholder="Ex: CF11468">
         </div>
         <div class="ped-field">
-          <label>Chamado (cód. do pedido)</label>
+          <label id="pf-chamado-label">Chamado (cód. do pedido) <span style="color:#C41E1E;">*obrigatório</span></label>
           <input type="text" id="pf-chamado" placeholder="Ex: 2026070800001">
         </div>
         <div class="ped-field">
@@ -5571,13 +5571,17 @@ function salvarPedido() {
 
     // Highlight missing fields
     var faltando = false;
-    [['pf-empresa',empresa],['pf-cliente',cliente]].forEach(function(pair) {
+    var camposObrigatorios = [['pf-empresa',empresa],['pf-cliente',cliente],['pf-chamado', chamado]];
+    camposObrigatorios.forEach(function(pair) {
       var id = pair[0], val = pair[1];
       var el = document.getElementById(id);
       if (!val) { if(el) el.style.borderColor='#C41E1E'; faltando=true; }
       else { if(el) el.style.borderColor='#E2E0D8'; }
     });
-    if (faltando) { alert('Preencha os campos obrigatórios (marcados em vermelho).'); return; }
+    if (faltando) {
+      alert('Preencha os campos obrigatórios (marcados em vermelho). O nº do Chamado é obrigatório em todo pedido.');
+      return;
+    }
     if (!pedItens.length) { alert('Adicione pelo menos um item ao pedido.'); return; }
     var itemSemCat = pedItens.some(function(it) { return !it.cat || !it.material || !it.qtd || !it.vUnit; });
     if (itemSemCat) { alert('Preencha todos os campos dos itens (categoria, material, qtd e valor).'); return; }
@@ -6532,6 +6536,8 @@ function fecharPedidoPopup() {
   overlay.style.display = 'none';
   form.classList.remove('ped-form-popup-mode');
   form.style.display = 'none';
+  var lblChamado = document.getElementById('pf-chamado-label');
+  if (lblChamado) lblChamado.innerHTML = 'Chamado (cód. do pedido) <span style="color:#C41E1E;">*obrigatório</span>';
   // Devolve o form pro lugar original, na aba Pedidos
   anchor.parentNode.insertBefore(form, anchor);
   var btnCancelar = form.querySelector('button[onclick="fecharPedidoPopup()"]');
