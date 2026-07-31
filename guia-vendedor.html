@@ -2453,6 +2453,15 @@
       </select>
     </div>
 
+    <div class="ped-field" style="margin-bottom:14px;">
+      <label>Tipo de carga que costuma comprar</label>
+      <select id="cli-semanas-carga" onchange="cliSalvarFreqModal()">
+        <option value="">Não definido</option>
+        <option value="truck">🚛 Truck (~R$ 29.000)</option>
+        <option value="carreta">🚚 Carreta (~R$ 69.000)</option>
+      </select>
+    </div>
+
     <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:12px;">
       <span onclick="cliSemanasMudarMes(-1)" style="cursor:pointer;font-size:16px;padding:2px 8px;color:#555;">‹</span>
       <div id="cli-semanas-mes-label" style="font-size:12.5px;font-weight:700;color:#1C1C1C;min-width:110px;text-align:center;"></div>
@@ -6943,6 +6952,15 @@ function cliFreqTag(freq) {
   var m = map[freq];
   return '<span style="background:' + m[1] + ';color:' + m[0] + ';font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:8px;margin-left:5px;white-space:nowrap;">' + m[2] + '</span>';
 }
+function cliCargaTag(tipoCarga) {
+  var map = {
+    truck:   ['#7A4A00', '#FFF3E0', '🚛 Truck'],
+    carreta: ['#0C447C', '#E6F1FB', '🚚 Carreta']
+  };
+  if (!tipoCarga || !map[tipoCarga]) return '';
+  var m = map[tipoCarga];
+  return '<span style="background:' + m[1] + ';color:' + m[0] + ';font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:8px;margin-left:5px;white-space:nowrap;">' + m[2] + '</span>';
+}
 function cliSemanaChipsRowHtml(atend) {
   var mes = cliMesAtualStr();
   var dadosMes = (atend && atend.controleCompras) ? atend.controleCompras[mes] : null;
@@ -7203,14 +7221,18 @@ function cliConstruirBase() {
     var diasSemAtendimento = ultimoAtendimento ? cliDiasEntre(ultimoAtendimento, hojeIso) : null;
     var atendidoEssaSemana = diasSemAtendimento !== null && diasSemAtendimento < CLI_META_ATENDIMENTO_DIAS;
 
-    // Estimativa de compra mensal: ticket médio do cliente (histórico de pedidos)
-    // x quantas vezes por mês ele costuma comprar, conforme a frequência definida
-    // no popup de Controle de Compras. Sem frequência definida, fica sem estimativa.
+    // Estimativa de compra mensal: valor da carga que o cliente costuma comprar
+    // (Truck ~R$29mil / Carreta ~R$69mil) x quantas vezes por mês, conforme
+    // definido no popup de Controle de Compras. Se a carga não foi definida,
+    // cai pro ticket médio histórico do cliente como alternativa.
     var FREQ_VEZES_MES = { semanal: 4, quinzenal: 2, mensal: 1 };
+    var VALOR_CARGA = { truck: 29000, carreta: 69000 };
     var freq = atend ? atend.freq : '';
     var vezesMes = FREQ_VEZES_MES[freq] || 0;
+    var valorCarga = atend ? VALOR_CARGA[atend.tipoCarga] : 0;
     var ticketMedio = r.qtdPedidos ? (r.totalComprado / r.qtdPedidos) : 0;
-    var estimativaMensal = (vezesMes && ticketMedio) ? (ticketMedio * vezesMes) : null;
+    var valorPorCompra = valorCarga || ticketMedio;
+    var estimativaMensal = (vezesMes && valorPorCompra) ? (valorPorCompra * vezesMes) : null;
 
     return {
       vendedor: r.vendedor, chave: r.chave, nome: r.nome, status: status,
@@ -7252,10 +7274,11 @@ function cliLinhaHtml(c) {
     : '<span style="color:#bbb;">— defina a frequência</span>';
   var atend = (cliAtendState.porVendedor[c.vendedor] || {})[c.chave] || null;
   var freqTag = cliFreqTag(atend ? atend.freq : '');
+  var cargaTag = cliCargaTag(atend ? atend.tipoCarga : '');
   var chipsHtml = cliSemanaChipsRowHtml(atend);
   return '<tr style="' + (atrasado ? 'background:#FFF7F5;' : '') + 'border-top:1px solid #F0EEEA;">' +
     vendCol +
-    '<td style="padding:8px 10px;font-weight:700;color:#1C1C1C;font-size:12.5px;cursor:pointer;white-space:nowrap;" onclick="cliAbrirDetalhe(\'' + c.vendedor + '\',\'' + c.chave + '\')">' + negEsc(c.nome) + freqTag + '</td>' +
+    '<td style="padding:8px 10px;font-weight:700;color:#1C1C1C;font-size:12.5px;cursor:pointer;white-space:nowrap;" onclick="cliAbrirDetalhe(\'' + c.vendedor + '\',\'' + c.chave + '\')">' + negEsc(c.nome) + freqTag + cargaTag + '</td>' +
     '<td style="padding:8px 10px;">' + cliStatusBadge(c.status) + '</td>' +
     '<td style="padding:8px 10px;font-size:11.5px;color:#666;white-space:nowrap;">' + compraTxt + '</td>' +
     '<td style="padding:8px 10px;font-size:11.5px;font-weight:700;color:#1B5E20;white-space:nowrap;">' + estimativaTxt + '</td>' +
@@ -7378,6 +7401,8 @@ function cliAbrirSemanasModal(vend, chave) {
   var atend = (cliAtendState.porVendedor[vend] || {})[chave] || {};
   var freqEl = document.getElementById('cli-semanas-freq');
   if (freqEl) freqEl.value = atend.freq || '';
+  var cargaEl = document.getElementById('cli-semanas-carga');
+  if (cargaEl) cargaEl.value = atend.tipoCarga || '';
   cliRenderSemanasModal();
   document.getElementById('cli-semanas-overlay').style.display = 'flex';
 }
@@ -7464,9 +7489,12 @@ function cliSalvarFreqModal() {
   if (!vend || !chave) return;
   var reg = cliIndexPorId[vend + '||' + chave];
   var freq = document.getElementById('cli-semanas-freq').value;
+  var cargaEl = document.getElementById('cli-semanas-carga');
+  var tipoCarga = cargaEl ? cargaEl.value : '';
   dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
     var atual = snap.val() || { nome: reg ? reg.nome : chave, historico: [] };
     atual.freq = freq;
+    atual.tipoCarga = tipoCarga;
     dbRef('atendimentos/' + vend + '/' + chave).set(atual);
   });
 }
