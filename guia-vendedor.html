@@ -930,6 +930,103 @@
   .script-wrapper { padding: 0 !important; }
   .script-wrapper .s-container { max-width: 100% !important; }
 
+  /* ══ Sub-abas dentro da Gestão ══ */
+  .admsub-nav { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .admsub-content { display: none; }
+  .admsub-content.active { display: block; }
+
+  /* ══ Checklist de escuta — Antônio (escopado) ══ */
+  #antonio-escuta-wrap{
+    --ae-bg:#faf9f6; --ae-card:#ffffff; --ae-ink:#1e1e1c; --ae-ink-soft:#5c5b56;
+    --ae-line:#e2e0d8; --ae-accent:#2f5d50; --ae-accent-soft:#e7efec;
+    --ae-bad:#a3402f;
+    background:var(--ae-bg); color:var(--ae-ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.5; padding:20px; border-radius:10px;
+  }
+  #antonio-escuta-wrap *{box-sizing:border-box}
+  #antonio-escuta-wrap .ae-sub{color:var(--ae-ink-soft);font-size:14px;margin-bottom:20px}
+  #antonio-escuta-wrap .ae-card{
+    background:var(--ae-card); border:1px solid var(--ae-line); border-radius:10px;
+    padding:20px 22px; margin-bottom:18px;
+  }
+  #antonio-escuta-wrap .ae-call-header{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
+  }
+  #antonio-escuta-wrap .ae-call-title{font-size:15px;font-weight:600}
+  #antonio-escuta-wrap .ae-remove-btn{
+    background:none;border:none;color:var(--ae-ink-soft);font-size:13px;cursor:pointer;
+    text-decoration:underline;padding:2px;
+  }
+  #antonio-escuta-wrap .ae-remove-btn:hover{color:var(--ae-bad)}
+  #antonio-escuta-wrap .ae-meta-row{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;
+  }
+  #antonio-escuta-wrap .ae-field label{
+    display:block;font-size:11px;color:var(--ae-ink-soft);
+    text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;
+  }
+  #antonio-escuta-wrap .ae-field input[type=text],
+  #antonio-escuta-wrap .ae-field input[type=date]{
+    width:100%;padding:7px 9px;border:1px solid var(--ae-line);
+    border-radius:6px;font-size:13px;background:#fff;color:var(--ae-ink);
+  }
+  #antonio-escuta-wrap table{width:100%;border-collapse:collapse;margin-bottom:14px}
+  #antonio-escuta-wrap thead th{
+    text-align:left;font-size:11px;color:var(--ae-ink-soft);
+    text-transform:uppercase;letter-spacing:.03em;font-weight:500;padding:0 8px 8px;
+  }
+  #antonio-escuta-wrap thead th.center{text-align:center}
+  #antonio-escuta-wrap tbody td{
+    padding:10px 8px;border-top:1px solid var(--ae-line);font-size:13.5px;vertical-align:middle;
+  }
+  #antonio-escuta-wrap tbody td.center{text-align:center}
+  #antonio-escuta-wrap tbody tr td:first-child{width:46%}
+  #antonio-escuta-wrap .ae-radio-wrap{display:inline-flex;align-items:center;justify-content:center}
+  #antonio-escuta-wrap input[type=radio]{width:17px;height:17px;cursor:pointer;accent-color:var(--ae-accent)}
+  #antonio-escuta-wrap textarea{
+    width:100%;min-height:52px;padding:9px 10px;border:1px solid var(--ae-line);border-radius:6px;
+    font-size:13.5px;font-family:inherit;resize:vertical;background:#fff;color:var(--ae-ink);
+  }
+  #antonio-escuta-wrap .ae-diag-label{
+    font-size:11px;color:var(--ae-ink-soft);text-transform:uppercase;letter-spacing:.03em;
+    margin-bottom:6px;display:block;
+  }
+  #antonio-escuta-wrap .ae-add-call{
+    display:block;width:100%;padding:12px;border:1px dashed var(--ae-line);border-radius:10px;
+    background:none;color:var(--ae-ink-soft);font-size:14px;cursor:pointer;margin-bottom:24px;
+  }
+  #antonio-escuta-wrap .ae-add-call:hover{border-color:var(--ae-accent);color:var(--ae-accent)}
+  #antonio-escuta-wrap .ae-section-title{font-size:15px;font-weight:600;margin:0 0 4px}
+  #antonio-escuta-wrap .ae-section-hint{font-size:13px;color:var(--ae-ink-soft);margin:0 0 14px}
+  #antonio-escuta-wrap .ae-compare-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--ae-line);
+    border-radius:8px;overflow:hidden;
+  }
+  #antonio-escuta-wrap .ae-compare-grid .ae-col-head{
+    background:var(--ae-accent-soft);font-size:12px;font-weight:600;padding:8px 10px;color:var(--ae-accent);
+  }
+  #antonio-escuta-wrap .ae-compare-cell{padding:8px 10px;border-top:1px solid var(--ae-line)}
+  #antonio-escuta-wrap .ae-compare-cell input{
+    width:100%;border:none;background:none;font-size:13px;color:var(--ae-ink);padding:2px 0;
+  }
+  #antonio-escuta-wrap .ae-compare-cell input:focus{outline:none}
+  #antonio-escuta-wrap .ae-compare-cell.ae-label{font-size:12.5px;color:var(--ae-ink-soft)}
+  #antonio-escuta-wrap .ae-pattern-options{display:flex;gap:18px;margin:8px 0 16px;flex-wrap:wrap}
+  #antonio-escuta-wrap .ae-pattern-options label{
+    display:flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;
+  }
+  #antonio-escuta-wrap .ae-toolbar{display:flex;gap:10px;margin-top:8px}
+  #antonio-escuta-wrap .ae-btn{
+    padding:9px 16px;border-radius:7px;font-size:13.5px;border:1px solid var(--ae-line);
+    background:#fff;color:var(--ae-ink);cursor:pointer;
+  }
+  #antonio-escuta-wrap .ae-btn.primary{background:var(--ae-accent);border-color:var(--ae-accent);color:#fff}
+  #antonio-escuta-wrap .ae-btn:hover{border-color:var(--ae-accent)}
+  @media (max-width:600px){
+    #antonio-escuta-wrap .ae-meta-row{grid-template-columns:1fr}
+    #antonio-escuta-wrap .ae-compare-grid{grid-template-columns:1fr 1fr}
+  }
 
 </style>
 </head>
@@ -3160,6 +3257,14 @@
 <div id="tab-admin" class="tab-content">
   <div class="page-section" style="max-width:100%;">
 
+    <!-- SUB-ABAS DA GESTÃO -->
+    <div class="admsub-nav">
+      <button class="qf-btn active" id="admsub-btn-avaliacao" onclick="showAdminSub('avaliacao',this)">⭐ Avaliação</button>
+      <button class="qf-btn" id="admsub-btn-antonio" onclick="showAdminSub('antonio',this)">🎧 Antônio — Escuta</button>
+    </div>
+
+    <div id="admsub-avaliacao" class="admsub-content active">
+
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
       <div style="background:#C41E1E;border-radius:8px;padding:6px 10px;font-size:18px;">⭐</div>
       <div>
@@ -3308,6 +3413,96 @@
       </div>
 
     </div>
+    </div><!-- /admsub-avaliacao -->
+
+    <!-- ══ SUB-ABA: CHECKLIST DE ESCUTA — ANTÔNIO ══ -->
+    <div id="admsub-antonio" class="admsub-content">
+      <div id="antonio-escuta-wrap">
+        <div style="margin-bottom:22px;">
+          <h2 style="font-size:16px;font-weight:600;margin:0 0 4px;">🎧 Checklist de escuta — Antônio</h2>
+          <div class="ae-sub">4 a 6 ligações por semana · varie o tipo (abertura, meio de negociação, objeção, fechamento)</div>
+        </div>
+
+        <div id="ae-calls"></div>
+        <button class="ae-add-call" onclick="aeAddCall()">+ Adicionar ligação</button>
+
+        <div class="ae-card">
+          <p class="ae-section-title">Comparação com outro vendedor</p>
+          <p class="ae-section-hint">Escolha uma ligação do Wellington ou Jonathas no mesmo estágio e ouça em sequência.</p>
+
+          <div class="ae-meta-row" style="margin-bottom:14px">
+            <div class="ae-field">
+              <label>Vendedor comparado</label>
+              <input type="text" placeholder="Wellington / Jonathas">
+            </div>
+            <div class="ae-field">
+              <label>Estágio comparado</label>
+              <input type="text" placeholder="Ex: fechamento">
+            </div>
+          </div>
+
+          <div class="ae-compare-grid">
+            <div class="ae-compare-cell ae-label" style="background:var(--ae-bg)"></div>
+            <div class="ae-col-head">Antonio</div>
+            <div class="ae-col-head" style="background:#f0eee6;color:var(--ae-ink-soft)">Outro vendedor</div>
+
+            <div class="ae-compare-cell ae-label">Quantas vezes tenta fechar</div>
+            <div class="ae-compare-cell"><input type="text"></div>
+            <div class="ae-compare-cell"><input type="text"></div>
+
+            <div class="ae-compare-cell ae-label">Reação a "vou pensar"</div>
+            <div class="ae-compare-cell"><input type="text"></div>
+            <div class="ae-compare-cell"><input type="text"></div>
+
+            <div class="ae-compare-cell ae-label">Tom / ritmo da conversa</div>
+            <div class="ae-compare-cell"><input type="text"></div>
+            <div class="ae-compare-cell"><input type="text"></div>
+
+            <div class="ae-compare-cell ae-label">Tempo até chegar na oferta</div>
+            <div class="ae-compare-cell"><input type="text"></div>
+            <div class="ae-compare-cell"><input type="text"></div>
+          </div>
+
+          <div style="margin-top:14px">
+            <span class="ae-diag-label">Diferença principal encontrada</span>
+            <textarea placeholder="O que mais chamou atenção na comparação..."></textarea>
+          </div>
+        </div>
+
+        <div class="ae-card">
+          <p class="ae-section-title">Padrão da semana</p>
+          <p class="ae-section-hint">Preencher depois de ouvir as ligações da semana.</p>
+
+          <span class="ae-diag-label">O problema se repete no mesmo bloco em todas as ligações?</span>
+          <div class="ae-pattern-options">
+            <label><input type="radio" name="ae-repete"> Sim</label>
+            <label><input type="radio" name="ae-repete"> Não</label>
+          </div>
+
+          <div class="ae-field" style="margin-bottom:14px">
+            <label>Se sim, qual bloco</label>
+            <input type="text" placeholder="Ex: fechamento">
+          </div>
+
+          <span class="ae-diag-label">Se não repete, o que varia mais</span>
+          <div class="ae-pattern-options">
+            <label><input type="radio" name="ae-varia"> Qualidade do lead</label>
+            <label><input type="radio" name="ae-varia"> Humor / preparo</label>
+            <label><input type="radio" name="ae-varia"> Tipo de cliente</label>
+          </div>
+
+          <div style="margin-top:6px">
+            <span class="ae-diag-label">Resumo para a conversa de feedback com o Antonio</span>
+            <textarea placeholder="Uma frase específica e acionável..."></textarea>
+          </div>
+        </div>
+
+        <div class="ae-toolbar">
+          <button class="ae-btn primary" onclick="window.print()">Imprimir / salvar em PDF</button>
+        </div>
+      </div>
+    </div><!-- /admsub-antonio -->
+
   </div>
 </div>
 
@@ -8549,6 +8744,84 @@ function showTab(name, btn) {
   if (name === 'tabela') renderTable();
   btn.classList.add('active');
 }
+
+// Sub-abas dentro da aba Gestão (Avaliação / Antônio — Escuta)
+function showAdminSub(name, btn) {
+  document.querySelectorAll('#tab-admin .admsub-content').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('#tab-admin .admsub-nav .qf-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('admsub-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ══ Checklist de escuta — Antônio ══
+var aeCallCount = 0;
+
+function aeCallTemplate(n){
+  return `
+  <div class="ae-card" id="ae-call-${n}">
+    <div class="ae-call-header">
+      <span class="ae-call-title">Ligação ${n}</span>
+      <button class="ae-remove-btn" onclick="aeRemoveCall(${n})">remover</button>
+    </div>
+    <div class="ae-meta-row">
+      <div class="ae-field"><label>Data</label><input type="date"></div>
+      <div class="ae-field"><label>Tipo de ligação</label><input type="text" placeholder="Abertura, objeção..."></div>
+      <div class="ae-field"><label>Cliente</label><input type="text"></div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Bloco</th>
+          <th class="center">Funciona</th>
+          <th class="center">Não funciona</th>
+          <th class="center">Não avaliado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Abertura — prende atenção nos 30s?</td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-abertura-${n}"></span></td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-abertura-${n}"></span></td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-abertura-${n}"></span></td>
+        </tr>
+        <tr>
+          <td>Levantamento — pergunta e escuta, ou só fala?</td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-levantamento-${n}"></span></td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-levantamento-${n}"></span></td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-levantamento-${n}"></span></td>
+        </tr>
+        <tr>
+          <td>Objeção — contorna ou desiste?</td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-objecao-${n}"></span></td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-objecao-${n}"></span></td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-objecao-${n}"></span></td>
+        </tr>
+        <tr>
+          <td>Fechamento — pede a venda ou espera o cliente decidir?</td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-fechamento-${n}"></span></td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-fechamento-${n}"></span></td>
+          <td class="center"><span class="ae-radio-wrap"><input type="radio" name="ae-fechamento-${n}"></span></td>
+        </tr>
+      </tbody>
+    </table>
+    <span class="ae-diag-label">Frase de diagnóstico</span>
+    <textarea placeholder='Ex: "Perde no fechamento — não repete a oferta depois do vou pensar"'></textarea>
+  </div>`;
+}
+
+function aeAddCall(){
+  aeCallCount++;
+  var container = document.getElementById('ae-calls');
+  if (container) container.insertAdjacentHTML('beforeend', aeCallTemplate(aeCallCount));
+}
+
+function aeRemoveCall(n){
+  var el = document.getElementById('ae-call-'+n);
+  if (el) el.remove();
+}
+
+// inicia com 4 ligações no checklist do Antônio
+for (var _aeI = 0; _aeI < 4; _aeI++) aeAddCall();
 
 function filtroRapido(grupo, btn) {
   document.querySelectorAll('.qf-btn').forEach(b => b.classList.remove('active'));
