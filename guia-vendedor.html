@@ -2463,8 +2463,12 @@
       </div>
     </div>
 
-    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;">
-      <button id="cli-mesclar-btn" onclick="cliMesclarComOutro()" style="display:none;padding:8px 12px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;color:#666;font-size:12px;cursor:pointer;">🔗 Mesclar com outro cliente</button>
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="cli-mesclar-btn" onclick="cliMesclarComOutro()" style="display:none;padding:8px 12px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;color:#666;font-size:12px;cursor:pointer;">🔗 Mesclar com outro cliente</button>
+        <button id="cli-editar-btn" onclick="cliAbrirEditarModal()" style="display:none;padding:8px 12px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;color:#185FA5;font-size:12px;font-weight:600;cursor:pointer;">✏️ Editar</button>
+        <button id="cli-excluir-btn" onclick="cliExcluirCliente()" style="display:none;padding:8px 12px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;color:#C41E1E;font-size:12px;font-weight:600;cursor:pointer;">🗑️ Excluir</button>
+      </div>
       <div style="display:flex;gap:8px;margin-left:auto;">
         <button onclick="cliFecharModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Fechar</button>
         <button onclick="cliMarcarAtendidoModal()" style="padding:8px 18px;border-radius:6px;border:none;background:#1B5E20;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ Marcar atendido hoje</button>
@@ -2496,6 +2500,29 @@
   </div>
 </div>
 
+<!-- MODAL EDITAR CLIENTE -->
+<div id="cli-editar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1001;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) cliFecharEditarModal()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:420px;width:100%;">
+    <div style="font-size:14px;font-weight:700;color:#1C1C1C;margin-bottom:12px;">✏️ Editar Cliente</div>
+    <div class="ped-field" style="margin-bottom:10px;">
+      <label>Nome do cliente</label>
+      <input type="text" id="cli-editar-nome" placeholder="Nome da empresa ou cliente" style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+    </div>
+    <div class="ped-field" style="margin-bottom:14px;">
+      <label>Status</label>
+      <select id="cli-editar-status" style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+        <option value="">Automático (calculado pelo sistema)</option>
+        <option value="ativo">🟢 Forçar Ativo</option>
+        <option value="inativo">🔴 Forçar Inativo</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="cliFecharEditarModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Cancelar</button>
+      <button onclick="cliSalvarEditar()" style="padding:8px 18px;border-radius:6px;border:none;background:#185FA5;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CONTROLE DE COMPRAS SEMANAIS -->
 <div id="cli-semanas-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) cliFecharSemanasModal()">
   <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:480px;width:100%;max-height:88vh;overflow-y:auto;">
@@ -2506,22 +2533,17 @@
     <div style="font-size:11px;color:#aaa;margin-bottom:14px;">Controle de compras — marque semana a semana</div>
 
     <div class="ped-field" style="margin-bottom:14px;">
-      <label>Frequência de compra esperada</label>
-      <select id="cli-semanas-freq" onchange="cliSalvarFreqModal()">
-        <option value="">Não definido</option>
-        <option value="semanal">🔁 Semanal (toda semana)</option>
-        <option value="quinzenal">📦 Quinzenal (a cada 15 dias)</option>
-        <option value="mensal">🗓️ Mensal (1x por mês)</option>
-      </select>
-    </div>
-
-    <div class="ped-field" style="margin-bottom:14px;">
       <label>Tipo de carga que costuma comprar</label>
-      <select id="cli-semanas-carga" onchange="cliSalvarFreqModal()">
+      <select id="cli-semanas-carga" onchange="cliSalvarCargaModal()">
         <option value="">Não definido</option>
         <option value="truck">🚛 Truck (~R$ 29.000)</option>
         <option value="carreta">🚚 Carreta (~R$ 69.000)</option>
       </select>
+    </div>
+
+    <div class="ped-field" style="margin-bottom:14px;">
+      <label>Quantas cargas por mês (aproximado)</label>
+      <input type="number" id="cli-semanas-qtd" min="0" step="1" placeholder="Ex: 3, 8, 12..." onchange="cliSalvarCargaModal()" style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;">
     </div>
 
     <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:12px;">
@@ -7040,6 +7062,16 @@ function cliFreqTag(freq) {
   var m = map[freq];
   return '<span style="background:' + m[1] + ';color:' + m[0] + ';font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:8px;margin-left:5px;white-space:nowrap;">' + m[2] + '</span>';
 }
+// Tag de quantidade de cargas/mês (substitui a antiga frequência fixa).
+// Clientes ainda não migrados (só têm freq salva) caem no fallback do cliFreqTag.
+function cliQtdTag(atend) {
+  if (!atend) return '';
+  var qtdMes = Number(atend.qtdMes) || 0;
+  if (qtdMes > 0) {
+    return '<span style="background:#E6F1FB;color:#0C447C;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:8px;margin-left:5px;white-space:nowrap;">🔁 ' + qtdMes + 'x/mês</span>';
+  }
+  return cliFreqTag(atend.freq);
+}
 function cliCargaTag(tipoCarga) {
   var map = {
     truck:   ['#7A4A00', '#FFF3E0', '🚛 Truck'],
@@ -7162,6 +7194,7 @@ function listenAtendimentos(vendNome, isGestora) {
   cliAtendState.isGestora = isGestora;
   cliAtendState.currentVend = vendNome;
   listenClientesAlias(); // todo mundo precisa resolver os mesmos apelidos/mesclagens
+  listenClientesOverrideEOcultos(); // edições manuais de nome/status e clientes ocultos
 
   var filtroBox = document.getElementById('cli-filtro-vend-box');
   var thVend = document.getElementById('cli-th-vendedor');
@@ -7216,6 +7249,58 @@ function listenClientesGeral() {
   dbRef('clientesGeral').on('value', function(snap) {
     cliGeralState = snap.val() || {};
     renderBaseClientes();
+  });
+}
+
+// Overrides manuais (edição de nome/status) e ocultação de clientes —
+// funcionam pra qualquer cliente, venha ele de pedidos ou da carteira geral.
+var cliOverrideState = {};
+var cliOcultosState = {};
+function listenClientesOverrideEOcultos() {
+  dbRef('clientesOverride').on('value', function(snap) {
+    cliOverrideState = snap.val() || {};
+    renderBaseClientes();
+  });
+  dbRef('clientesOcultos').on('value', function(snap) {
+    cliOcultosState = snap.val() || {};
+    renderBaseClientes();
+  });
+}
+
+function cliAbrirEditarModal() {
+  if (!cliDetalheAtual) return;
+  var reg = cliIndexPorId[cliDetalheAtual.vend + '||' + cliDetalheAtual.chave];
+  if (!reg) return;
+  var ov = cliOverrideState[cliDetalheAtual.chave] || {};
+  document.getElementById('cli-editar-nome').value = ov.nome || reg.nome;
+  document.getElementById('cli-editar-status').value = ov.statusManual || '';
+  document.getElementById('cli-editar-overlay').style.display = 'flex';
+}
+
+function cliFecharEditarModal() {
+  document.getElementById('cli-editar-overlay').style.display = 'none';
+}
+
+function cliSalvarEditar() {
+  if (!cliDetalheAtual) return;
+  var nome = document.getElementById('cli-editar-nome').value.trim();
+  if (!nome) { alert('Informe o nome do cliente.'); return; }
+  var status = document.getElementById('cli-editar-status').value;
+  var chave = cliDetalheAtual.chave;
+  dbRef('clientesOverride/' + chave).set({ nome: nome, statusManual: status }).then(function() {
+    cliFecharEditarModal();
+    cliAbrirDetalhe(cliDetalheAtual.vend, cliDetalheAtual.chave);
+  });
+}
+
+function cliExcluirCliente() {
+  if (!cliDetalheAtual) return;
+  var reg = cliIndexPorId[cliDetalheAtual.vend + '||' + cliDetalheAtual.chave];
+  var nome = reg ? reg.nome : cliDetalheAtual.chave;
+  if (!confirm('Excluir "' + nome + '" da Base de Clientes?\n\nIsso apenas tira o cliente dessa lista — os pedidos já feitos continuam existindo normalmente no sistema. Pode ser desfeito removendo depois no Firebase.\n\nConfirmar exclusão?')) return;
+  var chave = cliDetalheAtual.chave;
+  dbRef('clientesOcultos/' + chave).set(true).then(function() {
+    cliFecharModal();
   });
 }
 
@@ -7295,11 +7380,17 @@ function cliConstruirBase() {
     };
   });
 
-  return Object.keys(mapa).map(function(id) {
+  return Object.keys(mapa).filter(function(id) {
+    return !cliOcultosState[mapa[id].chave]; // cliente excluído manualmente da Base de Clientes
+  }).map(function(id) {
     var r = mapa[id];
+    var ov = cliOverrideState[r.chave] || null;
+    var nomeFinal = (ov && ov.nome) ? ov.nome : r.nome;
     var diasSemComprar = r.ultimaCompra ? cliDiasEntre(r.ultimaCompra, hojeIso) : null;
     var status;
-    if (r.tipoClienteRecente === 'novo') status = 'novo';
+    if (ov && ov.statusManual === 'ativo') status = 'ativo';
+    else if (ov && ov.statusManual === 'inativo') status = 'inativo';
+    else if (r.tipoClienteRecente === 'novo') status = 'novo';
     else if (diasSemComprar === null && r.statusManualGeral === 'sim') status = 'ativo';
     else if (diasSemComprar === null || diasSemComprar > CLI_META_INATIVO_DIAS) status = 'inativo';
     else status = 'ativo';
@@ -7313,17 +7404,17 @@ function cliConstruirBase() {
     // (Truck ~R$29mil / Carreta ~R$69mil) x quantas vezes por mês, conforme
     // definido no popup de Controle de Compras. Se a carga não foi definida,
     // cai pro ticket médio histórico do cliente como alternativa.
-    var FREQ_VEZES_MES = { semanal: 4, quinzenal: 2, mensal: 1 };
+    var FREQ_VEZES_MES = { semanal: 4, quinzenal: 2, mensal: 1 }; // fallback p/ clientes ainda não migrados
     var VALOR_CARGA = { truck: 29000, carreta: 69000 };
-    var freq = atend ? atend.freq : '';
-    var vezesMes = FREQ_VEZES_MES[freq] || 0;
+    var qtdMes = atend ? Number(atend.qtdMes) || 0 : 0;
+    if (!qtdMes && atend && atend.freq) qtdMes = FREQ_VEZES_MES[atend.freq] || 0;
     var valorCarga = atend ? VALOR_CARGA[atend.tipoCarga] : 0;
     var ticketMedio = r.qtdPedidos ? (r.totalComprado / r.qtdPedidos) : 0;
     var valorPorCompra = valorCarga || ticketMedio;
-    var estimativaMensal = (vezesMes && valorPorCompra) ? (valorPorCompra * vezesMes) : null;
+    var estimativaMensal = (qtdMes && valorPorCompra) ? (valorPorCompra * qtdMes) : null;
 
     return {
-      vendedor: r.vendedor, chave: r.chave, nome: r.nome, status: status,
+      vendedor: r.vendedor, chave: r.chave, nome: nomeFinal, status: status,
       ultimaCompra: r.ultimaCompra, diasSemComprar: diasSemComprar,
       qtdPedidos: r.qtdPedidos, totalComprado: r.totalComprado,
       ultimoAtendimento: ultimoAtendimento, diasSemAtendimento: diasSemAtendimento,
@@ -7361,7 +7452,7 @@ function cliLinhaHtml(c) {
     ? 'R$ ' + Number(c.estimativaMensal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : '<span style="color:#bbb;">— defina a frequência</span>';
   var atend = (cliAtendState.porVendedor[c.vendedor] || {})[c.chave] || null;
-  var freqTag = cliFreqTag(atend ? atend.freq : '');
+  var freqTag = cliQtdTag(atend);
   var cargaTag = cliCargaTag(atend ? atend.tipoCarga : '');
   var chipsHtml = cliSemanaChipsRowHtml(atend);
   return '<tr style="' + (atrasado ? 'background:#FFF7F5;' : '') + 'border-top:1px solid #F0EEEA;">' +
@@ -7473,6 +7564,10 @@ function cliAbrirDetalhe(vend, chave) {
   document.getElementById('cli-detalhe-nota').value = '';
   var mesclarBtn = document.getElementById('cli-mesclar-btn');
   if (mesclarBtn) mesclarBtn.style.display = cliAtendState.isGestora ? 'inline-block' : 'none';
+  var editarBtn = document.getElementById('cli-editar-btn');
+  if (editarBtn) editarBtn.style.display = cliAtendState.isGestora ? 'inline-block' : 'none';
+  var excluirBtn = document.getElementById('cli-excluir-btn');
+  if (excluirBtn) excluirBtn.style.display = cliAtendState.isGestora ? 'inline-block' : 'none';
   document.getElementById('cli-modal-overlay').style.display = 'flex';
 }
 
@@ -7487,8 +7582,8 @@ function cliAbrirSemanasModal(vend, chave) {
   var tituloEl = document.getElementById('cli-semanas-titulo');
   if (tituloEl) tituloEl.textContent = reg ? reg.nome : chave;
   var atend = (cliAtendState.porVendedor[vend] || {})[chave] || {};
-  var freqEl = document.getElementById('cli-semanas-freq');
-  if (freqEl) freqEl.value = atend.freq || '';
+  var qtdEl = document.getElementById('cli-semanas-qtd');
+  if (qtdEl) qtdEl.value = (atend.qtdMes != null && atend.qtdMes !== '') ? atend.qtdMes : '';
   var cargaEl = document.getElementById('cli-semanas-carga');
   if (cargaEl) cargaEl.value = atend.tipoCarga || '';
   cliRenderSemanasModal();
@@ -7572,16 +7667,17 @@ function cliSalvarMotivoSemana(n, motivo) {
   });
 }
 
-function cliSalvarFreqModal() {
+function cliSalvarCargaModal() {
   var vend = cliSemanasState.vend, chave = cliSemanasState.chave;
   if (!vend || !chave) return;
   var reg = cliIndexPorId[vend + '||' + chave];
-  var freq = document.getElementById('cli-semanas-freq').value;
+  var qtdEl = document.getElementById('cli-semanas-qtd');
+  var qtdMes = qtdEl && qtdEl.value !== '' ? Number(qtdEl.value) : '';
   var cargaEl = document.getElementById('cli-semanas-carga');
   var tipoCarga = cargaEl ? cargaEl.value : '';
   dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
     var atual = snap.val() || { nome: reg ? reg.nome : chave, historico: [] };
-    atual.freq = freq;
+    atual.qtdMes = qtdMes;
     atual.tipoCarga = tipoCarga;
     dbRef('atendimentos/' + vend + '/' + chave).set(atual);
   });
