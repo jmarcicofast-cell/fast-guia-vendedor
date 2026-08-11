@@ -1101,6 +1101,10 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
     Rampa dos Novos
   </button>
+  <button class="nav-btn" id="nav-parana" style="display:none;" onclick="showTab('parana',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 0C17 0 4 12 4 24C4 32.28 9.82 39 17 39C24.18 39 30 32.28 30 24C30 12 17 0 17 0Z"/><circle cx="17" cy="26" r="4.5"/></svg>
+    Plano PR
+  </button>
 </nav>
 
 <!-- ══ ABA MATERIAIS ══ -->
@@ -2523,6 +2527,26 @@
   </div>
 </div>
 
+<!-- MODAL MESCLAR CLIENTE -->
+<div id="cli-mesclar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1001;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) cliFecharMesclarModal()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:460px;width:100%;max-height:88vh;display:flex;flex-direction:column;">
+    <div style="font-size:14px;font-weight:700;color:#1C1C1C;margin-bottom:4px;">🔗 Mesclar Cliente</div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:12px;">"<span id="cli-mesclar-origem-nome"></span>" será mesclado dentro do cliente que você escolher abaixo e some da lista.</div>
+    <div class="ped-field" style="margin-bottom:8px;">
+      <label>Buscar cliente correto</label>
+      <input type="text" id="cli-mesclar-busca" placeholder="Digite parte do nome..." oninput="cliMesclarBuscar(this.value)" style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;">
+    </div>
+    <div id="cli-mesclar-lista" style="flex:1;overflow-y:auto;max-height:280px;display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+    <div id="cli-mesclar-selecionado-box" style="display:none;background:#F0F7EE;border:1.5px solid #1B5E20;border-radius:8px;padding:8px 10px;margin-bottom:12px;font-size:12.5px;color:#1B5E20;font-weight:600;">
+      Selecionado: <span id="cli-mesclar-selecionado-nome"></span>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="cliFecharMesclarModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Cancelar</button>
+      <button onclick="cliMesclarConfirmar()" style="padding:8px 18px;border-radius:6px;border:none;background:#1B5E20;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">🔗 Mesclar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CONTROLE DE COMPRAS SEMANAIS -->
 <div id="cli-semanas-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) cliFecharSemanasModal()">
   <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:480px;width:100%;max-height:88vh;overflow-y:auto;">
@@ -3471,6 +3495,744 @@
 
   </div>
 </div>
+
+
+<!-- ══ ABA PLANO DE AÇÃO — PARANÁ (acesso restrito: Juliana e Eliziane) ══ -->
+<style>
+
+  #tab-parana{
+    --pr-ink:#152318;
+    --pr-paper:#F6F4EC;
+    --pr-paper-2:#EEEADA;
+    --pr-forest:#1F3D2B;
+    --pr-forest-2:#2C5539;
+    --pr-pine:#3D6B4B;
+    --pr-gold:#C9932E;
+    --pr-gold-2:#E4B457;
+    --pr-clay-red:#A8402E;
+    --pr-sage:#8FA694;
+    --pr-line:#D8D2BE;
+    --pr-white:#FFFEFA;
+    --pr-shadow: 0 1px 2px rgba(21,35,24,.06), 0 4px 16px rgba(21,35,24,.06);
+    --pr-radius: 10px;
+    background:var(--pr-paper);
+    color:var(--pr-ink);
+  }
+  #tab-parana *{box-sizing:border-box;}
+  #tab-parana{
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  #tab-parana .pr-wrap{max-width:100%;margin:0 auto;padding:20px 4px 60px;}
+
+  /* ===== Header ===== */
+  header.pr-top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:20px;margin-bottom:26px;flex-wrap:wrap;
+    border-bottom:1px solid var(--pr-line);
+    padding-bottom:18px;
+  }
+  .pr-brand{display:flex;align-items:center;gap:14px;}
+  .pr-brand svg{flex-shrink:0;}
+  .pr-brand h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0;
+    color:var(--pr-forest);
+    letter-spacing:-0.01em;
+  }
+  .pr-brand .pr-eyebrow{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    color:var(--pr-pine);
+    font-weight:600;
+    margin-bottom:2px;
+  }
+  .pr-header-actions{display:flex;gap:10px;align-items:center;}
+  .pr-settings-btn{
+    background:transparent;border:1px solid var(--pr-line);color:var(--pr-forest);
+    padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .pr-settings-btn:hover{background:var(--pr-paper-2);}
+
+  /* ===== Dashboard ===== */
+  .pr-dash{
+    display:grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap:16px;
+    margin-bottom:30px;
+  }
+  @media (max-width:880px){ .pr-dash{grid-template-columns:1fr;} }
+
+  .pr-card{
+    background:var(--pr-white);
+    border:1px solid var(--pr-line);
+    border-radius:var(--pr-radius);
+    box-shadow:var(--pr-shadow);
+    padding:20px 22px;
+  }
+  .pr-card .pr-label{
+    font-size:11px;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--pr-pine);font-weight:700;margin-bottom:10px;
+  }
+
+  /* gauge card */
+  .pr-gauge-card{position:relative;overflow:hidden;}
+  .pr-gauge-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+  .pr-gauge-value{font-family:'Fraunces',serif;font-size:34px;font-weight:600;color:var(--pr-forest);}
+  .pr-gauge-value small{font-size:15px;font-weight:500;color:var(--pr-ink);opacity:.55;font-family:'Inter',sans-serif;}
+  .pr-gauge-meta{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--pr-ink);opacity:.65;text-align:right;}
+  .pr-gauge-track{
+    height:14px;border-radius:7px;background:var(--pr-paper-2);overflow:hidden;position:relative;
+    border:1px solid var(--pr-line);
+  }
+  .pr-gauge-fill{
+    height:100%;border-radius:7px;
+    background:linear-gradient(90deg,var(--pr-pine),var(--pr-gold-2));
+    transition:width .5s cubic-bezier(.4,0,.2,1);
+  }
+  .pr-gauge-pct{margin-top:8px;font-size:12px;color:var(--pr-ink);opacity:.6;font-family:'JetBrains Mono',monospace;}
+
+  .pr-stat-value{font-family:'Fraunces',serif;font-size:28px;font-weight:600;color:var(--pr-forest);}
+  .pr-stat-sub{font-size:12.5px;color:var(--pr-ink);opacity:.6;margin-top:4px;line-height:1.5;}
+
+  .pr-coverage-card{display:flex;flex-direction:column;justify-content:space-between;}
+  .pr-coverage-pill{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:5px 12px;border-radius:100px;font-size:12px;font-weight:700;
+    margin-top:10px;width:fit-content;
+  }
+  .pr-coverage-pill.pr-ok{background:#E3EEE3;color:var(--pr-forest-2);}
+  .pr-coverage-pill.pr-warn{background:#F7ECD6;color:#8A6414;}
+  .pr-coverage-pill.pr-bad{background:#F5E1DC;color:var(--pr-clay-red);}
+  .pr-coverage-pill .pr-dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+
+  /* ===== Toolbar ===== */
+  .pr-toolbar{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:16px;flex-wrap:wrap;gap:12px;
+  }
+  .pr-filters{display:flex;gap:6px;flex-wrap:wrap;}
+  .pr-filter-btn{
+    background:var(--pr-white);border:1px solid var(--pr-line);color:var(--pr-ink);
+    padding:7px 13px;border-radius:100px;font-size:12.5px;font-weight:600;cursor:pointer;
+    font-family:'Inter',sans-serif;
+    display:flex;align-items:center;gap:6px;
+  }
+  .pr-filter-btn .pr-count{
+    background:var(--pr-paper-2);border-radius:100px;padding:1px 7px;font-size:11px;
+  }
+  .pr-filter-btn.pr-active{background:var(--pr-forest);border-color:var(--pr-forest);color:var(--pr-white);}
+  .pr-filter-btn.pr-active .pr-count{background:rgba(255,255,255,.2);}
+
+  .pr-add-btn{
+    background:var(--pr-forest);color:var(--pr-white);border:none;
+    padding:10px 18px;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer;
+    font-family:'Inter',sans-serif;
+    display:flex;align-items:center;gap:7px;
+  }
+  .pr-add-btn:hover{background:var(--pr-forest-2);}
+
+  /* ===== Board ===== */
+  .pr-board{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+  }
+  @media (max-width:1000px){ .pr-board{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:600px){ .pr-board{grid-template-columns:1fr;} }
+
+  .pr-col{background:var(--pr-paper-2);border-radius:var(--pr-radius);padding:12px;min-height:120px;}
+  .pr-col-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:4px 6px 12px;
+  }
+  .pr-col-title{
+    font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+    display:flex;align-items:center;gap:7px;
+  }
+  .pr-col-title .pr-swatch{width:8px;height:8px;border-radius:50%;}
+  .pr-col-count{font-family:'JetBrains Mono',monospace;font-size:12px;opacity:.55;}
+
+  .pr-col[data-status="novo"] .pr-swatch{background:#5C7CFA;}
+  .pr-col[data-status="potencial"] .pr-swatch{background:var(--pr-gold);}
+  .pr-col[data-status="ativo"] .pr-swatch{background:var(--pr-forest-2);}
+  .pr-col[data-status="inativo"] .pr-swatch{background:var(--pr-clay-red);}
+
+  .pr-client-card{
+    background:var(--pr-white);border:1px solid var(--pr-line);border-radius:8px;
+    padding:13px 14px;margin-bottom:9px;cursor:pointer;
+    transition:box-shadow .15s, transform .15s;
+  }
+  .pr-client-card:hover{box-shadow:var(--pr-shadow);transform:translateY(-1px);}
+  .pr-client-name{font-weight:600;font-size:14px;color:var(--pr-ink);margin-bottom:4px;}
+  .pr-client-valor{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--pr-forest);font-weight:500;}
+  .pr-client-motivo{font-size:12px;color:var(--pr-ink);opacity:.6;margin-top:6px;line-height:1.4;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .pr-empty-col{padding:20px 10px;text-align:center;font-size:12px;color:var(--pr-ink);opacity:.4;}
+
+  /* ===== Modal ===== */
+  .pr-overlay{
+    position:fixed;inset:0;background:rgba(21,35,24,.45);
+    display:none;align-items:center;justify-content:center;z-index:10000;
+    padding:20px;
+  }
+  .pr-overlay.pr-show{display:flex;}
+  .pr-modal{
+    background:var(--pr-white);border-radius:14px;max-width:520px;width:100%;
+    max-height:88vh;overflow-y:auto;
+    box-shadow:0 20px 60px rgba(21,35,24,.25);
+  }
+  .pr-modal-head{
+    padding:22px 26px 0;display:flex;justify-content:space-between;align-items:center;
+  }
+  .pr-modal-head h2{font-family:'Fraunces',serif;font-size:20px;font-weight:600;margin:0;color:var(--pr-forest);}
+  .pr-close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--pr-ink);opacity:.5;line-height:1;padding:4px;}
+  .pr-close-btn:hover{opacity:1;}
+  .pr-modal-body{padding:18px 26px 26px;}
+
+  .pr-field{margin-bottom:16px;}
+  .pr-field label{
+    display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--pr-pine);margin-bottom:6px;
+  }
+  .pr-field input, .pr-field textarea, .pr-field select{
+    width:100%;padding:10px 12px;border:1px solid var(--pr-line);border-radius:8px;
+    font-family:'Inter',sans-serif;font-size:14px;color:var(--pr-ink);background:var(--pr-paper);
+  }
+  .pr-field textarea{resize:vertical;min-height:60px;line-height:1.5;}
+  .pr-field input:focus, .pr-field textarea:focus, .pr-field select:focus{
+    outline:none;border-color:var(--pr-pine);background:var(--pr-white);
+  }
+  .pr-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .pr-status-picker{display:flex;gap:6px;flex-wrap:wrap;}
+  .pr-status-opt{
+    flex:1;min-width:80px;text-align:center;padding:9px 6px;border:1.5px solid var(--pr-line);
+    border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--pr-ink);opacity:.6;
+  }
+  .pr-status-opt.pr-sel{opacity:1;border-color:var(--pr-forest);background:#EFF4EF;color:var(--pr-forest-2);}
+
+  .pr-modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px;}
+  .pr-save-btn{
+    background:var(--pr-forest);color:var(--pr-white);border:none;padding:11px 22px;
+    border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer;flex:1;
+  }
+  .pr-save-btn:hover{background:var(--pr-forest-2);}
+  .pr-delete-btn{
+    background:none;border:none;color:var(--pr-clay-red);font-size:13px;font-weight:600;
+    cursor:pointer;padding:8px 10px;
+  }
+  .pr-delete-btn:hover{text-decoration:underline;}
+
+  /* settings modal specifics */
+  .pr-hint{font-size:12px;color:var(--pr-ink);opacity:.55;margin-top:5px;line-height:1.5;}
+
+  /* ===== Carretas / recurring volume ===== */
+  .pr-computed-box{
+    background:var(--pr-paper);border:1px dashed var(--pr-line);border-radius:8px;
+    padding:12px 14px;margin-top:2px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  }
+  .pr-computed-item .pr-k{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--pr-pine);font-weight:700;}
+  .pr-computed-item .pr-v{font-family:'JetBrains Mono',monospace;font-size:14.5px;color:var(--pr-forest);font-weight:600;margin-top:2px;}
+  .pr-history-list{
+    max-height:130px;overflow-y:auto;border:1px solid var(--pr-line);border-radius:8px;
+    background:var(--pr-paper);margin-bottom:8px;
+  }
+  .pr-history-item{
+    display:flex;justify-content:space-between;padding:8px 12px;font-size:12.5px;
+    border-bottom:1px solid var(--pr-line);
+  }
+  .pr-history-item:last-child{border-bottom:none;}
+  .pr-history-item span:first-child{color:var(--pr-ink);opacity:.7;}
+  .pr-history-item span:last-child{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--pr-forest);}
+  .pr-history-add{display:flex;gap:8px;}
+  .pr-history-add input{
+    padding:9px 10px;border:1px solid var(--pr-line);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;
+  }
+  .pr-history-add button{
+    background:var(--pr-gold);border:none;color:var(--pr-ink);font-weight:700;font-size:12.5px;
+    padding:0 14px;border-radius:8px;cursor:pointer;white-space:nowrap;
+  }
+  .pr-history-add button:hover{background:var(--pr-gold-2);}
+
+  .pr-toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--pr-forest);color:var(--pr-white);padding:11px 20px;border-radius:8px;
+    font-size:13px;font-weight:600;opacity:0;transition:all .25s;z-index:10001;pointer-events:none;
+  }
+  .pr-toast.pr-show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .pr-loading-state{padding:60px 20px;text-align:center;color:var(--pr-ink);opacity:.5;font-size:13px;}
+
+</style>
+<div id="tab-parana" class="tab-content">
+
+<div class="pr-wrap">
+
+  <header class="pr-top">
+    <div class="pr-brand">
+      <svg width="34" height="40" viewBox="0 0 34 40" fill="none">
+        <path d="M17 0C17 0 4 12 4 24C4 32.28 9.82 39 17 39C24.18 39 30 32.28 30 24C30 12 17 0 17 0Z" fill="#2C5539"/>
+        <path d="M17 6C17 6 8 15 8 24C8 29.52 12.03 34 17 34C21.97 34 26 29.52 26 24C26 15 17 6 17 6Z" fill="#3D6B4B"/>
+        <circle cx="17" cy="26" r="4.5" fill="#C9932E"/>
+      </svg>
+      <div>
+        <div class="pr-eyebrow">Plano de Ação · Comercial</div>
+        <h1>Paraná — Meta &amp; Carteira</h1>
+      </div>
+    </div>
+    <div class="pr-header-actions">
+      <button class="pr-settings-btn" id="prBtnSettings">⚙ Meta e ticket médio</button>
+      <button class="pr-add-btn" id="prBtnAdd">+ Novo cliente</button>
+    </div>
+  </header>
+
+  <div id="prDashArea">
+    <div class="pr-loading-state">Carregando dados salvos…</div>
+  </div>
+
+  <div class="pr-toolbar">
+    <div class="pr-filters" id="prFilters"></div>
+  </div>
+
+  <div class="pr-board" id="prBoard"></div>
+
+</div>
+
+<div class="pr-overlay" id="prClientOverlay">
+  <div class="pr-modal">
+    <div class="pr-modal-head">
+      <h2 id="prModalTitle">Novo cliente</h2>
+      <button class="pr-close-btn" id="prBtnCloseClient">✕</button>
+    </div>
+    <div class="pr-modal-body">
+      <div class="pr-field">
+        <label>Nome do cliente</label>
+        <input type="text" id="prFNome" placeholder="Ex: Cooperativa Agro Sul">
+      </div>
+      <div class="pr-field">
+        <label>Status</label>
+        <div class="pr-status-picker" id="prStatusPicker">
+          <div class="pr-status-opt" data-v="novo">Novo</div>
+          <div class="pr-status-opt" data-v="potencial">Potencial</div>
+          <div class="pr-status-opt" data-v="ativo">Ativo (fechado)</div>
+          <div class="pr-status-opt" data-v="inativo">Inativo</div>
+        </div>
+      </div>
+      <div class="pr-field">
+        <label>Valor estimado do negócio (R$)</label>
+        <input type="number" id="prFValorEstimado" placeholder="65000">
+        <div class="pr-hint">Referência de pipeline enquanto o cliente ainda não está ativo.</div>
+      </div>
+
+      <div id="prAtivoFields">
+        <div class="pr-field">
+          <label>Cargas por mês (potencial do cliente)</label>
+          <input type="number" id="prFCargasPotencial" placeholder="10">
+          <div class="pr-hint">Quantas cargas esse cliente movimenta por mês no total, considerando todos os fornecedores dele — não só o que ele compra da gente.</div>
+        </div>
+
+        <div class="pr-computed-box" id="prComputedBox"></div>
+
+        <div class="pr-field" style="margin-top:18px;">
+          <label>Cargas vendidas (chamados)</label>
+          <div class="pr-history-list" id="prHistoryList"></div>
+          <div class="pr-history-add">
+            <input type="text" id="prHChamado" placeholder="Nº do chamado" style="flex:1;">
+            <input type="number" id="prHValor" placeholder="Valor da carga (R$)" style="width:150px;">
+            <button type="button" id="prBtnAddHistory">+ Adicionar carga</button>
+          </div>
+          <div class="pr-hint">Cada carga vendida entra aqui com o chamado e o valor. Isso atualiza sozinho quantas cargas já conseguimos vender e o progresso da meta.</div>
+        </div>
+      </div>
+
+      <div class="pr-field">
+        <label>Por que não compra / o que está travando</label>
+        <textarea id="prFMotivo" placeholder="Ex: preço acima do concorrente local, ciclo de decisão em comitê..."></textarea>
+      </div>
+      <div class="pr-field">
+        <label>O que precisamos fazer para fechar</label>
+        <textarea id="prFAcao" placeholder="Ex: enviar proposta com condição de pagamento em 3x, visita técnica..."></textarea>
+      </div>
+      <div class="pr-field">
+        <label>Observações (opcional)</label>
+        <textarea id="prFObs" placeholder="Contato, telefone, histórico..."></textarea>
+      </div>
+      <div class="pr-modal-actions">
+        <button class="pr-delete-btn" id="prBtnDelete" style="display:none;">Excluir cliente</button>
+        <button class="pr-save-btn" id="prBtnSave">Salvar cliente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pr-overlay" id="prSettingsOverlay">
+  <div class="pr-modal" style="max-width:420px;">
+    <div class="pr-modal-head">
+      <h2>Meta e ticket médio</h2>
+      <button class="pr-close-btn" id="prBtnCloseSettings">✕</button>
+    </div>
+    <div class="pr-modal-body">
+      <div class="pr-field">
+        <label>Meta do Paraná (R$)</label>
+        <input type="number" id="prSMeta" placeholder="4000000">
+        <div class="pr-hint">Padrão: R$ 4.000.000</div>
+      </div>
+      <div class="pr-field">
+        <label>Valor médio por carga (R$)</label>
+        <input type="number" id="prSTicket" placeholder="65000">
+        <div class="pr-hint">Usado para estimar quantas cargas ainda faltam para bater a meta, até termos histórico real de cargas vendidas — depois disso, a média real assume.</div>
+      </div>
+      <div class="pr-modal-actions">
+        <button class="pr-save-btn" id="prBtnSaveSettings">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pr-toast" id="prToast"></div>
+
+
+</div>
+<script>
+
+/* ══ Plano de Ação — Paraná (acesso restrito: Juliana e Eliziane) ══ */
+var PR_STATUS_LABELS = { novo:'Novo', potencial:'Potencial', ativo:'Ativo', inativo:'Inativo' };
+var PR_STATUS_ORDER = ['novo','potencial','ativo','inativo'];
+
+var prClients = [];
+var prSettings = { meta: 4000000, ticket: 65000 };
+var prActiveFilter = 'todos';
+var prEditingId = null;
+var prListenersAttached = false;
+
+function prFmtBRL(n){
+  n = Number(n)||0;
+  return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL', maximumFractionDigits:0});
+}
+function prFmtNum(n){ return Number(n||0).toLocaleString('pt-BR'); }
+function prShowToast(msg){
+  var t = document.getElementById('prToast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('pr-show');
+  setTimeout(function(){ t.classList.remove('pr-show'); }, 1800);
+}
+function prUid(){ return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
+
+function prToArray(v){
+  if (!v) return [];
+  if (Array.isArray(v)) return v.filter(function(x){ return x; });
+  return Object.keys(v).map(function(k){ return v[k]; });
+}
+
+// ── Persistência via Firebase (dbRef já existe no app principal, com fallback localStorage) ──
+function prLoadData(){
+  if (prListenersAttached) { prRender(); return; }
+  prListenersAttached = true;
+  dbRef('planoAcaoParana/clients').on('value', function(snap){
+    var v = snap.val();
+    prClients = prToArray(v);
+    prRender();
+  });
+  dbRef('planoAcaoParana/settings').on('value', function(snap){
+    var v = snap.val();
+    prSettings = v || prSettings;
+    prRender();
+  });
+}
+function prSaveClients(){
+  return dbRef('planoAcaoParana/clients').set(prClients).catch(function(e){ prShowToast('Erro ao salvar. Tente novamente.'); });
+}
+function prSaveSettings(){
+  return dbRef('planoAcaoParana/settings').set(prSettings).catch(function(e){ prShowToast('Erro ao salvar configurações.'); });
+}
+
+function prComputeStats(){
+  var ativos = prClients.filter(function(c){ return c.status==='ativo'; });
+  var now = new Date();
+  // valor vendido = soma de todas as cargas (chamados) já registradas para clientes ativos
+  // cargas contam pra meta independente do status do cliente — um cliente "inativo" ou
+  // "potencial" pode ter cargas já vendidas registradas, e isso é receita real
+  var fechado = prClients.reduce(function(s,c){ return s + (c.cargas||[]).reduce(function(s2,g){ return s2+(Number(g.valor)||0); }, 0); }, 0);
+  var totalCargasVendidas = prClients.reduce(function(s,c){ return s + (c.cargas||[]).length; }, 0);
+  var totalCargasVendidasMes = prClients.reduce(function(s,c){
+    return s + (c.cargas||[]).filter(function(g){
+      var d = new Date(g.date);
+      return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+    }).length;
+  }, 0);
+  var totalCargasPotencial = prClients.reduce(function(s,c){ return s+(Number(c.cargasPotencial)||0); }, 0);
+  var clientesComCargas = prClients.filter(function(c){ return (c.cargas||[]).length>0; }).length;
+  var restante = Math.max(prSettings.meta - fechado, 0);
+  var pct = prSettings.meta>0 ? Math.min((fechado/prSettings.meta)*100,100) : 0;
+
+  // valor médio por carga: usa a média real do que já foi vendido, e só recorre à
+  // estimativa das configurações enquanto ainda não há histórico de cargas suficiente
+  var valorMedioPorCarga = totalCargasVendidas>0 ? (fechado/totalCargasVendidas) : (prSettings.ticket||1);
+  var usandoMediaReal = totalCargasVendidas>0;
+  var cargasNecessarias = restante>0 ? Math.ceil(restante/valorMedioPorCarga) : 0;
+
+  var pipeline = prClients.filter(function(c){ return c.status==='novo'||c.status==='potencial'; });
+  var pipelineCount = pipeline.length;
+  var pipelineValor = pipeline.reduce(function(s,c){ return s+(Number(c.valorEstimado)||0); }, 0);
+  // cobertura: quanto do valor que ainda falta o pipeline (em valor estimado) já cobre
+  var ratio = restante>0 ? (pipelineValor/restante) : (pipelineValor>0?2:0);
+  var coverage = 'bad';
+  if(ratio>=1.5) coverage='ok';
+  else if(ratio>=1) coverage='warn';
+  return {fechado: fechado, restante: restante, pct: pct, cargasNecessarias: cargasNecessarias, valorMedioPorCarga: valorMedioPorCarga, usandoMediaReal: usandoMediaReal,
+    pipelineCount: pipelineCount, pipelineValor: pipelineValor, coverage: coverage, ratio: ratio,
+    totalCargasVendidas: totalCargasVendidas, totalCargasVendidasMes: totalCargasVendidasMes, totalCargasPotencial: totalCargasPotencial, clientesComCargas: clientesComCargas, ativosCount: ativos.length};
+}
+
+function prRenderDash(){
+  var s = prComputeStats();
+  var covLabel = s.coverage==='ok' ? 'Carteira suficiente' : s.coverage==='warn' ? 'No limite — atenção' : 'Carteira insuficiente';
+  var el = document.getElementById('prDashArea');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="pr-dash">' +
+      '<div class="pr-card pr-gauge-card">' +
+        '<div class="pr-label">Progresso da meta · Paraná</div>' +
+        '<div class="pr-gauge-top">' +
+          '<div class="pr-gauge-value">' + prFmtBRL(s.fechado) + ' <small>fechado</small></div>' +
+          '<div class="pr-gauge-meta">meta ' + prFmtBRL(prSettings.meta) + '</div>' +
+        '</div>' +
+        '<div class="pr-gauge-track"><div class="pr-gauge-fill" style="width:' + s.pct + '%"></div></div>' +
+        '<div class="pr-gauge-pct">' + s.pct.toFixed(1) + '% da meta · faltam ' + prFmtBRL(s.restante) + ' · ' + prFmtNum(s.totalCargasVendidas) + ' cargas vendidas em ' + prFmtNum(s.clientesComCargas) + ' cliente' + (s.clientesComCargas===1?'':'s') + ' (' + prFmtNum(s.totalCargasVendidasMes) + ' esse mês)</div>' +
+      '</div>' +
+
+      '<div class="pr-card">' +
+        '<div class="pr-label">Cargas necessárias</div>' +
+        '<div class="pr-stat-value">' + prFmtNum(s.cargasNecessarias) + '</div>' +
+        '<div class="pr-stat-sub">para fechar os ' + prFmtBRL(s.restante) + ' restantes, considerando ' + prFmtBRL(s.valorMedioPorCarga) + ' por carga' + (s.usandoMediaReal ? ' (média real do que já foi vendido)' : ' (estimativa das configurações — ainda sem histórico de cargas)') + '</div>' +
+      '</div>' +
+
+      '<div class="pr-card pr-coverage-card">' +
+        '<div>' +
+          '<div class="pr-label">Cobertura de pipeline</div>' +
+          '<div class="pr-stat-value">' + prFmtNum(s.pipelineCount) + ' <span style="font-size:16px;opacity:.5;font-family:Inter,sans-serif;">clientes (novo + potencial)</span></div>' +
+          '<div class="pr-stat-sub">pipeline estimado em ' + prFmtBRL(s.pipelineValor) + ' · cobre ' + Math.round(s.ratio*100) + '% do que falta pra meta</div>' +
+        '</div>' +
+        '<div class="pr-coverage-pill pr-' + s.coverage + '"><span class="pr-dot"></span>' + covLabel + '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+function prRenderFilters(){
+  var counts = {todos: prClients.length};
+  PR_STATUS_ORDER.forEach(function(st){ counts[st] = prClients.filter(function(c){ return c.status===st; }).length; });
+  var filters = [{key:'todos', label:'Todos'}].concat(PR_STATUS_ORDER.map(function(st){ return {key:st,label:PR_STATUS_LABELS[st]}; }));
+  var el = document.getElementById('prFilters');
+  if (!el) return;
+  el.innerHTML = filters.map(function(f){
+    return '<button class="pr-filter-btn ' + (prActiveFilter===f.key?'pr-active':'') + '" data-f="' + f.key + '">' +
+      f.label + ' <span class="pr-count">' + counts[f.key] + '</span>' +
+    '</button>';
+  }).join('');
+  el.querySelectorAll('.pr-filter-btn').forEach(function(b){
+    b.onclick = function(){ prActiveFilter=b.dataset.f; prRender(); };
+  });
+}
+
+function prRenderBoard(){
+  var cols = prActiveFilter==='todos' ? PR_STATUS_ORDER : [prActiveFilter];
+  var el = document.getElementById('prBoard');
+  if (!el) return;
+  el.innerHTML = cols.map(function(st){
+    var items = prClients.filter(function(c){ return c.status===st; }).sort(function(a,b){ return (b.updatedAt||0)-(a.updatedAt||0); });
+    var itemsHtml = items.length===0 ? '<div class="pr-empty-col">Nenhum cliente aqui</div>' :
+      items.map(function(c){
+        var valorLine = ((c.cargas&&c.cargas.length) || c.cargasPotencial) ?
+          (prFmtNum((c.cargas||[]).length) + ' cargas vendidas' + (c.cargasPotencial ? (' de ' + prFmtNum(c.cargasPotencial) + '/mês') : '') + ' · ' + prFmtBRL((c.cargas||[]).reduce(function(s,g){ return s+(Number(g.valor)||0); },0))) :
+          (prFmtBRL(c.valorEstimado) + ' estimado');
+        return '<div class="pr-client-card" data-id="' + c.id + '">' +
+            '<div class="pr-client-name">' + prEscapeHtml(c.nome||'Sem nome') + '</div>' +
+            '<div class="pr-client-valor">' + valorLine + '</div>' +
+            (c.motivo ? ('<div class="pr-client-motivo">' + prEscapeHtml(c.motivo) + '</div>') : '') +
+          '</div>';
+      }).join('');
+    return '<div class="pr-col" data-status="' + st + '">' +
+        '<div class="pr-col-head">' +
+          '<div class="pr-col-title"><span class="pr-swatch"></span>' + PR_STATUS_LABELS[st] + '</div>' +
+          '<div class="pr-col-count">' + items.length + '</div>' +
+        '</div>' +
+        itemsHtml +
+      '</div>';
+  }).join('');
+  el.querySelectorAll('.pr-client-card').forEach(function(cardEl){
+    cardEl.onclick = function(){ prOpenClientModal(cardEl.dataset.id); };
+  });
+}
+
+function prEscapeHtml(str){
+  var d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function prRender(){
+  prRenderDash();
+  prRenderFilters();
+  prRenderBoard();
+}
+
+/* ===== Client modal ===== */
+var prTempCargas = [];
+
+function prOpenClientModal(id){
+  prEditingId = id || null;
+  var c = id ? prClients.find(function(x){ return x.id===id; }) : null;
+  document.getElementById('prModalTitle').textContent = c ? 'Editar cliente' : 'Novo cliente';
+  document.getElementById('prFNome').value = c ? c.nome : '';
+  document.getElementById('prFValorEstimado').value = c ? c.valorEstimado : prSettings.ticket;
+  document.getElementById('prFCargasPotencial').value = c ? (c.cargasPotencial||'') : '';
+  document.getElementById('prFMotivo').value = c ? c.motivo : '';
+  document.getElementById('prFAcao').value = c ? c.acao : '';
+  document.getElementById('prFObs').value = c ? c.obs : '';
+  prTempCargas = c && c.cargas ? c.cargas.slice() : [];
+  prRenderHistoryList();
+  prSetStatus(c ? c.status : 'potencial');
+  prUpdateComputedBox();
+  document.getElementById('prBtnDelete').style.display = c ? 'inline-block' : 'none';
+  document.getElementById('prClientOverlay').classList.add('pr-show');
+  setTimeout(function(){ document.getElementById('prFNome').focus(); }, 50);
+}
+function prCloseClientModal(){
+  document.getElementById('prClientOverlay').classList.remove('pr-show');
+  prEditingId=null;
+}
+function prInitEvents(){
+  if (window._prEventsInit) return;
+  window._prEventsInit = true;
+
+  var prClientOverlayEl = document.getElementById('prClientOverlay');
+  document.getElementById('prBtnCloseClient').onclick = prCloseClientModal;
+  document.getElementById('prBtnAdd').onclick = function(){ prOpenClientModal(null); };
+  prClientOverlayEl.onclick = function(e){ if(e.target===prClientOverlayEl) prCloseClientModal(); };
+
+  document.getElementById('prStatusPicker').onclick = function(e){
+    var opt = e.target.closest('.pr-status-opt');
+    if(opt) prSetStatus(opt.dataset.v);
+  };
+
+  document.getElementById('prFCargasPotencial').addEventListener('input', prUpdateComputedBox);
+
+  document.getElementById('prBtnAddHistory').onclick = function(){
+    var chamado = document.getElementById('prHChamado').value.trim();
+    var valor = Number(document.getElementById('prHValor').value);
+    if(!valor){ prShowToast('Informe o valor da carga.'); return; }
+    prTempCargas.push({ chamado: chamado, valor: valor, date: Date.now() });
+    document.getElementById('prHChamado').value = '';
+    document.getElementById('prHValor').value = '';
+    prRenderHistoryList();
+    prUpdateComputedBox();
+    prShowToast('Carga adicionada.');
+  };
+
+  document.getElementById('prBtnSave').onclick = function(){
+    var nome = document.getElementById('prFNome').value.trim();
+    if(!nome){ prShowToast('Digite o nome do cliente.'); return; }
+    var data = {
+      nome: nome,
+      status: prCurrentStatus,
+      valorEstimado: Number(document.getElementById('prFValorEstimado').value)||0,
+      cargasPotencial: Number(document.getElementById('prFCargasPotencial').value)||0,
+      cargas: prTempCargas,
+      motivo: document.getElementById('prFMotivo').value.trim(),
+      acao: document.getElementById('prFAcao').value.trim(),
+      obs: document.getElementById('prFObs').value.trim(),
+      updatedAt: Date.now()
+    };
+    if(prEditingId){
+      var idx = prClients.findIndex(function(c){ return c.id===prEditingId; });
+      if(idx>-1) prClients[idx] = Object.assign({}, prClients[idx], data);
+    } else {
+      prClients.push(Object.assign({ id: prUid() }, data));
+    }
+    prSaveClients().then(function(){
+      prCloseClientModal();
+      prRender();
+      prShowToast('Cliente salvo.');
+    });
+  };
+
+  document.getElementById('prBtnDelete').onclick = function(){
+    if(!prEditingId) return;
+    if(!confirm('Excluir este cliente? Essa ação não pode ser desfeita.')) return;
+    prClients = prClients.filter(function(c){ return c.id!==prEditingId; });
+    prSaveClients().then(function(){
+      prCloseClientModal();
+      prRender();
+      prShowToast('Cliente excluído.');
+    });
+  };
+
+  /* ===== Settings modal ===== */
+  var prSettingsOverlayEl = document.getElementById('prSettingsOverlay');
+  document.getElementById('prBtnSettings').onclick = function(){
+    document.getElementById('prSMeta').value = prSettings.meta;
+    document.getElementById('prSTicket').value = prSettings.ticket;
+    prSettingsOverlayEl.classList.add('pr-show');
+  };
+  document.getElementById('prBtnCloseSettings').onclick = function(){ prSettingsOverlayEl.classList.remove('pr-show'); };
+  prSettingsOverlayEl.onclick = function(e){ if(e.target===prSettingsOverlayEl) prSettingsOverlayEl.classList.remove('pr-show'); };
+  document.getElementById('prBtnSaveSettings').onclick = function(){
+    prSettings.meta = Number(document.getElementById('prSMeta').value)||4000000;
+    prSettings.ticket = Number(document.getElementById('prSTicket').value)||65000;
+    prSaveSettings().then(function(){
+      prSettingsOverlayEl.classList.remove('pr-show');
+      prRender();
+      prShowToast('Configurações atualizadas.');
+    });
+  };
+}
+
+var prCurrentStatus = 'potencial';
+function prSetStatus(st){
+  prCurrentStatus = st;
+  document.querySelectorAll('#tab-parana .pr-status-opt').forEach(function(o){ o.classList.toggle('pr-sel', o.dataset.v===st); });
+}
+
+function prUpdateComputedBox(){
+  var now = new Date();
+  var potencial = Number(document.getElementById('prFCargasPotencial').value)||0;
+  var vendidasMes = prTempCargas.filter(function(g){
+    var d = new Date(g.date);
+    return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+  }).length;
+  var vendidasTotal = prTempCargas.length;
+  var valorTotal = prTempCargas.reduce(function(s,g){ return s+(Number(g.valor)||0); }, 0);
+  var shareTxt = potencial>0 ? (' (' + Math.round((vendidasMes/potencial)*100) + '% do potencial)') : '';
+  document.getElementById('prComputedBox').innerHTML =
+    '<div class="pr-computed-item"><div class="pr-k">Vendidas esse mês</div><div class="pr-v">' + prFmtNum(vendidasMes) + shareTxt + '</div></div>' +
+    '<div class="pr-computed-item"><div class="pr-k">Total já vendido (cargas)</div><div class="pr-v">' + prFmtNum(vendidasTotal) + '</div></div>' +
+    '<div class="pr-computed-item"><div class="pr-k">Valor total vendido</div><div class="pr-v">' + prFmtBRL(valorTotal) + '</div></div>';
+}
+
+function prRenderHistoryList(){
+  var list = document.getElementById('prHistoryList');
+  if(prTempCargas.length===0){
+    list.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--pr-ink);opacity:.45;">Nenhuma carga registrada ainda.</div>';
+    return;
+  }
+  list.innerHTML = prTempCargas.slice().reverse().map(function(g){
+    return '<div class="pr-history-item"><span>' + prEscapeHtml(g.chamado || 'Sem nº de chamado') + '</span><span>' + prFmtBRL(g.valor) + '</span></div>';
+  }).join('');
+}
+
+// Inicializa os eventos assim que a aba é montada no DOM (chamado a partir do showTab)
+function prInit(){
+  prInitEvents();
+  prLoadData();
+}
+
+</script>
+
 
 <footer><span>FAST</span> Sistemas Construtivos &nbsp;·&nbsp; Portal do Vendedor</footer>
 
@@ -7148,14 +7910,65 @@ function listenClientesAlias() {
 
 // Mescla o cliente atualmente aberto no modal de detalhe dentro de outro
 // (o "correto"), migrando o histórico de atendimento existente.
+var cliMesclarState = { origemVend: null, origemChave: null, selChave: null, selNome: null };
+
 function cliMesclarComOutro() {
   if (!cliDetalheAtual) return;
   var origemVend = cliDetalheAtual.vend, origemChave = cliDetalheAtual.chave;
   var regOrigem = cliIndexPorId[origemVend + '||' + origemChave];
-  var nomeCanonico = prompt('Digite o nome EXATO de como aparece o cliente CORRETO (o cliente atual será mesclado dentro dele e some da lista):', '');
-  if (!nomeCanonico || !nomeCanonico.trim()) return;
-  var chaveCanonicaFinal = cliChave(nomeCanonico);
-  if (chaveCanonicaFinal === origemChave) { alert('Isso já é o mesmo cliente.'); return; }
+  cliMesclarState = { origemVend: origemVend, origemChave: origemChave, selChave: null, selNome: null };
+  document.getElementById('cli-mesclar-origem-nome').textContent = regOrigem ? regOrigem.nome : origemChave;
+  document.getElementById('cli-mesclar-busca').value = '';
+  document.getElementById('cli-mesclar-lista').innerHTML = '<div style="font-size:12px;color:#aaa;padding:6px 2px;">Digite pra buscar o cliente correto...</div>';
+  document.getElementById('cli-mesclar-selecionado-box').style.display = 'none';
+  document.getElementById('cli-mesclar-overlay').style.display = 'flex';
+}
+
+function cliFecharMesclarModal() {
+  document.getElementById('cli-mesclar-overlay').style.display = 'none';
+}
+
+var cliMesclarOpcoesAtuais = [];
+function cliMesclarBuscar(texto) {
+  var box = document.getElementById('cli-mesclar-lista');
+  var q = (texto || '').toLowerCase().trim();
+  if (!q) { box.innerHTML = '<div style="font-size:12px;color:#aaa;padding:6px 2px;">Digite pra buscar o cliente correto...</div>'; return; }
+
+  // Busca em TODOS os clientes (todos os vendedores), menos o próprio cliente de origem.
+  var todos = cliConstruirBase();
+  var vistos = {};
+  var opcoes = todos.filter(function(c) {
+    if (c.chave === cliMesclarState.origemChave) return false;
+    if (c.nome.toLowerCase().indexOf(q) === -1) return false;
+    if (vistos[c.chave]) return false;
+    vistos[c.chave] = true;
+    return true;
+  }).slice(0, 30);
+
+  cliMesclarOpcoesAtuais = opcoes;
+
+  if (!opcoes.length) { box.innerHTML = '<div style="font-size:12px;color:#aaa;padding:6px 2px;">Nenhum cliente encontrado.</div>'; return; }
+
+  box.innerHTML = opcoes.map(function(c, idx) {
+    return '<div onclick="cliMesclarSelecionar(' + idx + ')" style="padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:7px;font-size:12.5px;cursor:pointer;color:#1C1C1C;">' +
+      negEsc(c.nome) + ' <span style="color:#aaa;font-size:10.5px;">(' + c.vendedor + ')</span></div>';
+  }).join('');
+}
+
+function cliMesclarSelecionar(idx) {
+  var c = cliMesclarOpcoesAtuais[idx];
+  if (!c) return;
+  cliMesclarState.selChave = c.chave;
+  cliMesclarState.selNome = c.nome;
+  document.getElementById('cli-mesclar-selecionado-box').style.display = 'block';
+  document.getElementById('cli-mesclar-selecionado-nome').textContent = c.nome;
+}
+
+function cliMesclarConfirmar() {
+  var origemVend = cliMesclarState.origemVend, origemChave = cliMesclarState.origemChave;
+  var chaveCanonicaFinal = cliMesclarState.selChave, nomeCanonico = cliMesclarState.selNome;
+  if (!chaveCanonicaFinal) { alert('Selecione o cliente correto na lista de busca.'); return; }
+  var regOrigem = cliIndexPorId[origemVend + '||' + origemChave];
   if (!confirm('Mesclar "' + (regOrigem ? regOrigem.nome : origemChave) + '" dentro de "' + nomeCanonico + '"?\n\nO histórico de atendimento será unido e essa linha some da lista. Não pode ser desfeito.')) return;
 
   dbRef('clientesAlias/' + origemChave).set(chaveCanonicaFinal)
@@ -7164,7 +7977,7 @@ function cliMesclarComOutro() {
       var antigo = snap.val();
       if (!antigo) return null;
       return dbRef('atendimentos/' + origemVend + '/' + chaveCanonicaFinal).once('value').then(function(snapNovo) {
-        var atual = snapNovo.val() || { nome: nomeCanonico.trim(), historico: [] };
+        var atual = snapNovo.val() || { nome: nomeCanonico, historico: [] };
         atual.historico = (atual.historico || []).concat(antigo.historico || []);
         if (antigo.ultimoAtendimento && (!atual.ultimoAtendimento || antigo.ultimoAtendimento > atual.ultimoAtendimento)) {
           atual.ultimoAtendimento = antigo.ultimoAtendimento;
@@ -7176,6 +7989,7 @@ function cliMesclarComOutro() {
     })
     .then(function() { return dbRef('clientesGeral/' + origemChave).remove(); })
     .then(function() {
+      cliFecharMesclarModal();
       cliFecharModal();
       alert('Mesclado com sucesso.');
     });
@@ -8329,6 +9143,8 @@ function doLogout() {
   if (adminNav) adminNav.style.display = 'none';
   const rampaNav = document.getElementById('nav-rampa');
   if (rampaNav) rampaNav.style.display = 'none';
+  const paranaNav = document.getElementById('nav-parana');
+  if (paranaNav) paranaNav.style.display = 'none';
   // Switch back to materiais if on admin tab
   if (document.getElementById('tab-admin').classList.contains('active')) {
     showTab('materiais', document.querySelector('.nav-btn'));
@@ -8559,6 +9375,18 @@ function checkAdminAccess(nome) {
     adminNav.style.display = 'none';
     if (rampaNav) rampaNav.style.display = 'none';
   }
+  checkParanaAccess();
+}
+
+// Acesso à aba "Plano PR" (Plano de Ação — Paraná): restrito à Juliana (gestora) e Eliziane
+function checkParanaAccess() {
+  const paranaNav = document.getElementById('nav-parana');
+  if (!paranaNav) return;
+  if (currentUser === 'JULIANA' || currentUser === 'ELIZIANE') {
+    paranaNav.style.display = 'flex';
+  } else {
+    paranaNav.style.display = 'none';
+  }
 }
 
 function renderEvolucaoVendedor(v) {
@@ -8780,6 +9608,7 @@ function showTab(name, btn) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'tabela') renderTable();
+  if (name === 'parana') prInit();
   btn.classList.add('active');
 }
 
