@@ -2430,7 +2430,7 @@
     </div>
     <div style="font-size:11px;color:#888;margin-bottom:14px;" id="cli-detalhe-compra">—</div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
       <div style="background:#F8F7F3;border-radius:8px;padding:8px 10px;">
         <div style="font-size:10px;color:#aaa;">Total comprado</div>
         <div style="font-size:13px;font-weight:700;color:#1C1C1C;" id="cli-detalhe-total">R$ 0,00</div>
@@ -2440,6 +2440,8 @@
         <div style="font-size:13px;font-weight:700;color:#1C1C1C;" id="cli-detalhe-qtd">0 pedido(s)</div>
       </div>
     </div>
+
+    <button onclick="cliAbrirHistorico(cliDetalheAtual.vend, cliDetalheAtual.chave)" style="width:100%;padding:9px;border-radius:8px;border:1.5px solid #1B5E20;background:#E8F5E9;color:#1B5E20;font-size:12.5px;font-weight:700;cursor:pointer;margin-bottom:14px;">📊 Ver Histórico de Compras</button>
 
     <div style="background:#F8F7F3;border-radius:10px;padding:12px;margin-bottom:12px;">
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#555;margin-bottom:8px;">Histórico de atendimento</div>
@@ -2460,6 +2462,29 @@
         <button onclick="cliFecharModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Fechar</button>
         <button onclick="cliMarcarAtendidoModal()" style="padding:8px 18px;border-radius:6px;border:none;background:#1B5E20;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">✅ Marcar atendido hoje</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HISTÓRICO DE COMPRAS DO CLIENTE -->
+<div id="cli-historico-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1001;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) cliFecharHistorico()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+      <div style="font-size:15px;font-weight:700;color:#1C1C1C;" id="cli-historico-titulo">Cliente</div>
+      <span onclick="cliFecharHistorico()" style="cursor:pointer;font-size:18px;color:#888;line-height:1;">✕</span>
+    </div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:14px;">📊 Histórico de cargas compradas</div>
+
+    <div style="display:flex;background:#F1EFE8;border-radius:8px;padding:3px;gap:2px;margin-bottom:14px;">
+      <button id="cli-hist-tab-mes" onclick="cliHistoricoSetModo('mes')" style="flex:1;padding:7px;border-radius:6px;border:none;background:#1C1C1C;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Por Mês</button>
+      <button id="cli-hist-tab-ano" onclick="cliHistoricoSetModo('ano')" style="flex:1;padding:7px;border-radius:6px;border:none;background:transparent;color:#888;font-size:12px;font-weight:600;cursor:pointer;">Por Ano</button>
+      <button id="cli-hist-tab-periodo" onclick="cliHistoricoSetModo('periodo')" style="flex:1;padding:7px;border-radius:6px;border:none;background:transparent;color:#888;font-size:12px;font-weight:600;cursor:pointer;">Período</button>
+    </div>
+
+    <div id="cli-historico-body"></div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+      <button onclick="cliFecharHistorico()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Fechar</button>
     </div>
   </div>
 </div>
@@ -2939,59 +2964,177 @@
     <!-- VISÃO DO VENDEDOR -->
     <div id="ev-vendedor-section">
 
-    <!-- METAS -->
-    <!-- LIGAÇÕES DO MÊS - vendedor -->
-    <div style="background:#1C1C1C;border-radius:12px;padding:1.25rem;border-left:4px solid #C41E1E;">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:10px;">📞 Minhas Ligações — Mês Atual</div>
-      <div id="ev-lig-box">
-        <div style="font-size:13px;color:#888;text-align:center;padding:8px;">Carregando...</div>
+    <!-- SUB-NAV -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+      <button class="qf-btn active" id="ev-nav-tempo" onclick="evVendNav('tempo',this)">⏱️ Gestão de Tempo</button>
+      <button class="qf-btn" id="ev-nav-perfil" onclick="evVendNav('perfil',this)">👤 Perfil do Vendedor</button>
+      <button class="qf-btn" id="ev-nav-feedback" onclick="evVendNav('feedback',this)">💬 Feedback</button>
+    </div>
+
+    <!-- ═══════════ SUB-ABA: GESTÃO DE TEMPO ═══════════ -->
+    <div id="ev-sub-tempo" class="ev-sub-panel" style="display:grid;gap:12px;">
+
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:14px;padding:1.25rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1C1C1C;margin-bottom:14px;">🗓️ Rotina Estratégica — 8h às 18h</div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+          <!-- MANHÃ -->
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;background:#E8F5E9;border-radius:8px;padding:7px 12px;margin-bottom:10px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:#2E7D32;display:inline-block;"></span>
+              <span style="font-size:12px;font-weight:700;color:#1B5E20;">MANHÃ — 8h às 12h</span>
+            </div>
+            <div style="display:grid;gap:9px;">
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">8h00</span><div><b style="font-size:12.5px;">Pendências de cargas</b><div style="font-size:11px;color:#888;">respostas e tratativas em aberto</div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">8h30</span><div style="font-size:12px;color:#aaa;">☕ Café — pausa</div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">8h45</span><div><b style="font-size:12.5px;">Continua pendências</b><div style="font-size:11px;color:#888;">finaliza até 10h</div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">9h30</span><div style="font-size:12px;color:#aaa;">⏸️ Pausa — 15 min</div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">10h00</span><div><b style="font-size:12.5px;">Ligações + negociações + implantações</b><div style="margin-top:3px;"><span style="background:#F1EFE8;color:#555;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;">meta: 15 lig · 5 neg</span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">11h45</span><div><b style="font-size:12.5px;">Atualização pré-almoço</b><div style="font-size:11px;color:#888;">lig., neg., fechamentos, planilha</div><div style="margin-top:3px;"><span style="background:#FFF3E0;color:#E65100;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">⚠️ obrigatório</span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">12h00</span><div style="font-size:12px;color:#aaa;">🍽️ Almoço — pausa</div></div>
+            </div>
+          </div>
+          <!-- TARDE -->
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;background:#F3E5F5;border-radius:8px;padding:7px 12px;margin-bottom:10px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:#7B1FA2;display:inline-block;"></span>
+              <span style="font-size:12px;font-weight:700;color:#4A148C;">TARDE — 13h às 18h</span>
+            </div>
+            <div style="display:grid;gap:9px;">
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">13h00</span><div><b style="font-size:12.5px;">Ligações + negociações + implantações</b><div style="margin-top:3px;"><span style="background:#F1EFE8;color:#555;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;">meta: 35 lig · 5 neg</span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">15h30</span><div><b style="font-size:12.5px;">Grade de entrega</b><div style="font-size:11px;color:#888;">inserção na grade até 15h30</div><div style="margin-top:3px;"><span style="background:#FFEBEE;color:#C41E1E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">⏰ deadline 15h30</span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">16h30</span><div><b style="font-size:12.5px;">Alerta: prazo de pedidos</b><div style="font-size:11px;color:#888;">todos os pedidos devem ser implantados até 17h</div><div style="margin-top:3px;"><span style="background:#FFEBEE;color:#C41E1E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">⏰ deadline 17h</span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">17h30</span><div><b style="font-size:12.5px;">Atualização final + encerramento</b><div style="font-size:11px;color:#888;">Qtd ligações · Qtd + valor negociações · Qtd + valor fechamentos · Planilha de vendas</div><div style="margin-top:3px;"><span style="background:#E8F5E9;color:#1B5E20;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">✓ obrigatório antes de sair — saída 18h</span></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
+        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem;text-align:center;">
+          <div style="font-size:26px;font-weight:700;color:#7B1FA2;" id="evt-lig-meta">50</div>
+          <div style="font-size:11px;color:#888;">lig/dia<br><span style="font-size:9.5px;">(15m+35t)</span></div>
+        </div>
+        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem;text-align:center;">
+          <div style="font-size:26px;font-weight:700;color:#2E7D32;">10</div>
+          <div style="font-size:11px;color:#888;">negociações/dia</div>
+        </div>
+        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem;text-align:center;">
+          <div style="font-size:26px;font-weight:700;color:#E65100;">2</div>
+          <div style="font-size:11px;color:#888;">atualizações<br>obrigatórias</div>
+        </div>
+        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem;text-align:center;">
+          <div style="font-size:26px;font-weight:700;color:#C41E1E;">17h</div>
+          <div style="font-size:11px;color:#888;">prazo<br>implantação</div>
+        </div>
+      </div>
+
+      <div style="background:#1C1C1C;border-radius:12px;padding:1rem 1.25rem;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#FAC775;margin-bottom:10px;">📍 Hoje — seu ritmo real</div>
+        <div id="evt-hoje-box" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+          <div style="font-size:12px;color:#888;">Carregando...</div>
+        </div>
       </div>
     </div>
 
-    <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📊 Metas do Período</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:12px;">
-        <div class="meta-card"><div class="meta-label">Meta (R$)</div><div class="meta-value" id="ev-meta">—</div></div>
-        <div class="meta-card"><div class="meta-label">Realizado (R$)</div><div class="meta-value" id="ev-realizado">—</div></div>
-        <div class="meta-card"><div class="meta-label">Ligações</div><div class="meta-value" id="ev-ligacoes">—</div><div class="meta-sub">Meta: 600/mês</div></div>
-        <div class="meta-card"><div class="meta-label">Ticket Médio</div><div class="meta-value" id="ev-ticket">—</div><div class="meta-sub">Meta: R$65k</div></div>
-        <div class="meta-card"><div class="meta-label">Mix médio</div><div class="meta-value" id="ev-mix">—</div><div class="meta-sub">Meta: 5 itens</div></div>
-        <div class="meta-card"><div class="meta-label">Margem</div><div class="meta-value" id="ev-margem">—</div><div class="meta-sub">Meta: 0,97</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="flex:1;">
-          <div style="font-size:11px;color:#aaa;margin-bottom:4px;">% da meta atingida</div>
-          <div class="meta-bar-wrap"><div class="meta-bar" id="ev-bar" style="width:0%"></div></div>
+    <!-- ═══════════ SUB-ABA: PERFIL DO VENDEDOR ═══════════ -->
+    <div id="ev-sub-perfil" class="ev-sub-panel" style="display:none;gap:12px;grid-template-columns:1fr;">
+
+      <!-- LIGAÇÕES DO MÊS -->
+      <div style="background:#1C1C1C;border-radius:12px;padding:1.25rem;border-left:4px solid #C41E1E;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:10px;">📞 Minhas Ligações — Mês Atual</div>
+        <div id="ev-lig-box">
+          <div style="font-size:13px;color:#888;text-align:center;padding:8px;">Carregando...</div>
         </div>
-        <div id="ev-pct-sub" style="font-size:20px;font-weight:700;color:#C41E1E;min-width:48px;text-align:right;">0%</div>
       </div>
+
+      <!-- METAS -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📊 Metas do Período</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:12px;">
+          <div class="meta-card"><div class="meta-label">Meta (R$)</div><div class="meta-value" id="ev-meta">—</div></div>
+          <div class="meta-card"><div class="meta-label">Realizado (R$)</div><div class="meta-value" id="ev-realizado">—</div></div>
+          <div class="meta-card"><div class="meta-label">Ligações</div><div class="meta-value" id="ev-ligacoes">—</div><div class="meta-sub">Meta: 600/mês</div></div>
+          <div class="meta-card"><div class="meta-label">Ticket Médio</div><div class="meta-value" id="ev-ticket">—</div><div class="meta-sub">Meta: R$65k</div></div>
+          <div class="meta-card"><div class="meta-label">Mix médio</div><div class="meta-value" id="ev-mix">—</div><div class="meta-sub">Meta: 5 itens</div></div>
+          <div class="meta-card"><div class="meta-label">Margem</div><div class="meta-value" id="ev-margem">—</div><div class="meta-sub">Meta: 0,97</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="flex:1;">
+            <div style="font-size:11px;color:#aaa;margin-bottom:4px;">% da meta atingida</div>
+            <div class="meta-bar-wrap"><div class="meta-bar" id="ev-bar" style="width:0%"></div></div>
+          </div>
+          <div id="ev-pct-sub" style="font-size:20px;font-weight:700;color:#C41E1E;min-width:48px;text-align:right;">0%</div>
+        </div>
+      </div>
+
+      <!-- COMISSÃO GANHA (com filtro de período) -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;">💰 Comissão Ganha</div>
+          <div style="display:flex;background:#F1EFE8;border-radius:8px;padding:3px;gap:2px;">
+            <button id="evc-tab-mes" onclick="evComissaoSetModo('mes')" style="padding:6px 11px;border-radius:6px;border:none;background:#1C1C1C;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;">Mês</button>
+            <button id="evc-tab-ano" onclick="evComissaoSetModo('ano')" style="padding:6px 11px;border-radius:6px;border:none;background:transparent;color:#888;font-size:11.5px;font-weight:600;cursor:pointer;">Ano</button>
+            <button id="evc-tab-periodo" onclick="evComissaoSetModo('periodo')" style="padding:6px 11px;border-radius:6px;border:none;background:transparent;color:#888;font-size:11.5px;font-weight:600;cursor:pointer;">Período</button>
+          </div>
+        </div>
+        <div id="ev-comissao-body"></div>
+      </div>
+
+      <!-- CONQUISTAS / PREMIAÇÕES -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">🏆 Conquistas & Premiações</div>
+        <div id="ev-conquistas-body"><div style="font-size:12.5px;color:#aaa;text-align:center;padding:1rem;">Carregando...</div></div>
+      </div>
+
+      <!-- VENDAS POR MÊS DO ANO -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;">📈 Vendas por Mês</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button onclick="evVendasMudarAno(-1)" style="border:none;background:#F1EFE8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px;font-weight:700;">‹</button>
+            <span id="ev-vendas-ano" style="font-size:13px;font-weight:700;">—</span>
+            <button onclick="evVendasMudarAno(1)" style="border:none;background:#F1EFE8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px;font-weight:700;">›</button>
+          </div>
+        </div>
+        <div id="ev-vendas-mes-body"></div>
+      </div>
+
+      <!-- RANKING POR MÊS -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">🥇 Meu Lugar no Ranking — Por Mês</div>
+        <div id="ev-ranking-mes-body"><div style="font-size:12.5px;color:#aaa;text-align:center;padding:1rem;">Carregando...</div></div>
+      </div>
+
+      <!-- CRITÉRIOS -->
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📋 Avaliação de Desempenho</div>
+        <div style="display:grid;gap:10px;" id="ev-criterios"></div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid #F0EEEA;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:13px;font-weight:600;color:#1C1C1C;">Nota Geral: <span id="ev-nota-geral" style="color:#C41E1E;font-size:20px;margin-left:4px;">—</span></div>
+          <div id="ev-classificacao" style="font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;background:#F1EFE8;color:#888;">—</div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- CRITÉRIOS -->
-    <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📋 Avaliação de Desempenho</div>
-      <div style="display:grid;gap:10px;" id="ev-criterios"></div>
-      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #F0EEEA;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <div style="font-size:13px;font-weight:600;color:#1C1C1C;">Nota Geral: <span id="ev-nota-geral" style="color:#C41E1E;font-size:20px;margin-left:4px;">—</span></div>
-        <div id="ev-classificacao" style="font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;background:#F1EFE8;color:#888;">—</div>
-      </div>
-    </div>
-
-    <!-- FEEDBACK QUALITATIVO -->
-    <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">✍️ Feedback da Gestão</div>
-      <div style="display:grid;gap:12px;">
-        <div>
-          <div style="font-size:11px;font-weight:600;color:#2E7D32;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">✅ Pontos Fortes</div>
-          <p id="ev-fortes" style="font-size:13px;color:#444;line-height:1.6;background:#F0FBF0;padding:10px 12px;border-radius:7px;border-left:3px solid #2E7D32;">—</p>
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:600;color:#E65100;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">⚠️ Pontos a Melhorar</div>
-          <p id="ev-melhorar" style="font-size:13px;color:#444;line-height:1.6;background:#FFF8F0;padding:10px 12px;border-radius:7px;border-left:3px solid #E65100;">—</p>
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:600;color:#185FA5;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">🎯 Plano de Ação — Suas Tarefas</div>
-          <div id="ev-plano" style="display:grid;gap:8px;"></div>
+    <!-- ═══════════ SUB-ABA: FEEDBACK ═══════════ -->
+    <div id="ev-sub-feedback" class="ev-sub-panel" style="display:none;gap:12px;">
+      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">✍️ Feedback da Gestão</div>
+        <div style="display:grid;gap:12px;">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#2E7D32;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">✅ Pontos Fortes</div>
+            <p id="ev-fortes" style="font-size:13px;color:#444;line-height:1.6;background:#F0FBF0;padding:10px 12px;border-radius:7px;border-left:3px solid #2E7D32;">—</p>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#E65100;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">⚠️ Pontos a Melhorar</div>
+            <p id="ev-melhorar" style="font-size:13px;color:#444;line-height:1.6;background:#FFF8F0;padding:10px 12px;border-radius:7px;border-left:3px solid #E65100;">—</p>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#185FA5;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">🎯 Plano de Ação — Suas Tarefas</div>
+            <div id="ev-plano" style="display:grid;gap:8px;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -4946,6 +5089,8 @@ function listenRanking() {
       allPedidos[vn] = snap.val() ? Object.values(snap.val()).filter(function(p){ return !p.excluido; }) : [];
       renderRanking(allPedidos, allLigacoes);
       renderPremiacoes(allPedidos);
+      _rankingDadosGlobais.pedidos = allPedidos;
+      if (typeof renderEvRankingMes === 'function') renderEvRankingMes();
     });
   });
 }
@@ -6110,7 +6255,318 @@ function listenLigacoesVendedor(vendNome) {
   });
 }
 
+// ══════════════════════════════════════════════════════════════
+// ── EVOLUÇÃO — SUB-NAVEGAÇÃO (Gestão de Tempo / Perfil / Feedback) ──
+function evVendNav(secao, btn) {
+  document.querySelectorAll('#ev-vendedor-section .ev-sub-panel').forEach(function(el) { el.style.display = 'none'; });
+  var alvo = document.getElementById('ev-sub-' + secao);
+  if (alvo) alvo.style.display = 'grid';
+  document.querySelectorAll('#ev-vendedor-section .qf-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  if (secao === 'tempo') renderGestaoTempoHoje();
+  if (secao === 'perfil') { renderEvComissao(); renderEvConquistas(); renderEvVendasMes(); renderEvRankingMes(); }
+}
 
+// ── GESTÃO DE TEMPO — ritmo real de hoje ──
+function renderGestaoTempoHoje() {
+  if (!currentUser) return;
+  var box = document.getElementById('evt-hoje-box');
+  if (!box) return;
+  var hojeIso = new Date().toISOString().split('T')[0];
+
+  dbRef('ligacoes/' + currentUser).once('value').then(function(snap) {
+    var dados = snap.val() || {};
+    var ligHoje = Object.values(dados).filter(function(l){ return l && l.data === hojeIso; }).reduce(function(s,l){ return s+(l.qtd||0); }, 0);
+    var metaLigDia = 50;
+    var pctLig = Math.min(Math.round((ligHoje/metaLigDia)*100), 100);
+
+    var negHoje = (negState.porVendedor[currentUser] || []).filter(function(n) {
+      if (!n.criadoEm) return false;
+      var d = new Date(n.criadoEm);
+      return d.toISOString().split('T')[0] === hojeIso;
+    }).length;
+    var metaNegDia = 10;
+    var pctNeg = Math.min(Math.round((negHoje/metaNegDia)*100), 100);
+
+    var pedHoje = (_pedTodosGeral || []).filter(function(p) { return p.data === hojeIso; });
+
+    var barra = function(pct, cor) {
+      return '<div style="background:#333;border-radius:20px;height:6px;overflow:hidden;margin-top:6px;"><div style="height:100%;border-radius:20px;background:' + cor + ';width:' + pct + '%;"></div></div>';
+    };
+
+    box.innerHTML =
+      '<div>' +
+        '<div style="font-size:11px;color:#888;">📞 Ligações hoje</div>' +
+        '<div style="font-size:20px;font-weight:700;color:#fff;">' + ligHoje + ' <span style="font-size:12px;color:#888;font-weight:400;">/ ' + metaLigDia + '</span></div>' +
+        barra(pctLig, pctLig>=100?'#4CAF50':'#C41E1E') +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:11px;color:#888;">🤝 Negociações hoje</div>' +
+        '<div style="font-size:20px;font-weight:700;color:#fff;">' + negHoje + ' <span style="font-size:12px;color:#888;font-weight:400;">/ ' + metaNegDia + '</span></div>' +
+        barra(pctNeg, pctNeg>=100?'#4CAF50':'#FAC775') +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:11px;color:#888;">📦 Pedidos implantados hoje</div>' +
+        '<div style="font-size:20px;font-weight:700;color:#fff;">' + pedHoje.length + '</div>' +
+      '</div>';
+  });
+}
+
+// ── COMISSÃO GANHA (Mês / Ano / Período) ──
+var evComissaoState = { modo: 'mes', periodoDe: '', periodoAte: '' };
+
+function evComissaoSetModo(modo) {
+  evComissaoState.modo = modo;
+  renderEvComissao();
+}
+
+function renderEvComissaoPeriodoInputs() {
+  var st = evComissaoState;
+  return '<div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+    '<div class="ped-field" style="flex:1;min-width:120px;"><label>De</label><input type="date" id="ev-com-de" value="' + (st.periodoDe||'') + '" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;"></div>' +
+    '<div class="ped-field" style="flex:1;min-width:120px;"><label>Até</label><input type="date" id="ev-com-ate" value="' + (st.periodoAte||'') + '" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;"></div>' +
+    '<button onclick="evComissaoAplicarPeriodo()" style="padding:7px 14px;border-radius:6px;border:none;background:#1C1C1C;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Aplicar</button>' +
+  '</div>';
+}
+
+function evComissaoAplicarPeriodo() {
+  var deEl = document.getElementById('ev-com-de');
+  var ateEl = document.getElementById('ev-com-ate');
+  evComissaoState.periodoDe = deEl ? deEl.value : '';
+  evComissaoState.periodoAte = ateEl ? ateEl.value : '';
+  renderEvComissao();
+}
+
+function renderEvComissao() {
+  if (!currentUser) return;
+  var box = document.getElementById('ev-comissao-body');
+  if (!box) return;
+  var v = vendedores[currentUser];
+  if (!v || v.tipo === 'gestora') return;
+
+  var st = evComissaoState;
+  ['mes','ano','periodo'].forEach(function(m) {
+    var btn = document.getElementById('evc-tab-' + m);
+    if (!btn) return;
+    if (m === st.modo) { btn.style.background = '#1C1C1C'; btn.style.color = '#fff'; }
+    else { btn.style.background = 'transparent'; btn.style.color = '#888'; }
+  });
+
+  var hoje = new Date();
+  var deStr, ateStr, labelPeriodo;
+  if (st.modo === 'mes') {
+    deStr = hoje.toISOString().slice(0,7) + '-01';
+    ateStr = toISO(new Date(hoje.getFullYear(), hoje.getMonth()+1, 0));
+    labelPeriodo = hoje.toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+  } else if (st.modo === 'ano') {
+    deStr = hoje.getFullYear() + '-01-01';
+    ateStr = hoje.getFullYear() + '-12-31';
+    labelPeriodo = 'Ano ' + hoje.getFullYear();
+  } else {
+    deStr = st.periodoDe; ateStr = st.periodoAte;
+    labelPeriodo = (deStr && ateStr) ? (negFmtData(deStr) + ' até ' + negFmtData(ateStr)) : '';
+  }
+
+  if (st.modo === 'periodo') {
+    box.innerHTML = renderEvComissaoPeriodoInputs() + '<div id="ev-comissao-resultado"></div>';
+    if (!deStr || !ateStr) {
+      var res0 = document.getElementById('ev-comissao-resultado');
+      if (res0) res0.innerHTML = '<div style="font-size:12px;color:#aaa;text-align:center;padding:1rem;">Escolha as datas e clique em Aplicar.</div>';
+      return;
+    }
+  } else {
+    box.innerHTML = '<div style="font-size:12px;color:#aaa;text-align:center;padding:1rem;">Calculando...</div>';
+  }
+
+  var pedidos = _pedTodosGeral || [];
+  var pedsPeriodo = pedidos.filter(function(p) { return p.data && p.data >= deStr && p.data <= ateStr && p.status !== 'cancelado'; });
+
+  var vTotalVend = 0, vPlacas = 0, vComp = 0, vAco = 0;
+  pedsPeriodo.forEach(function(p) {
+    if (p.itens && p.itens.length) {
+      p.itens.forEach(function(it) {
+        var val = Math.round((it.qtd||0)*(it.vUnit||0)*100)/100;
+        vTotalVend += val;
+        if (it.cat === 'placa') vPlacas += val*CAT_PCT.placa;
+        else if (it.cat === 'grx') vComp += val*CAT_PCT.grx;
+        else if (it.cat === 'aco') vAco += val*CAT_PCT.aco;
+      });
+    } else {
+      var val2 = Number(p.vTotal||0);
+      vTotalVend += val2;
+      if (p.cat === 'placa') vPlacas += val2*CAT_PCT.placa;
+      else if (p.cat === 'grx') vComp += val2*CAT_PCT.grx;
+      else if (p.cat === 'aco') vAco += val2*CAT_PCT.aco;
+    }
+  });
+
+  dbRef('ligacoes/' + currentUser).once('value').then(function(snap) {
+    var dados = snap.val() || {};
+    var totalLigs = Object.values(dados).filter(function(l) { return l && l.data && l.data >= deStr && l.data <= ateStr; }).reduce(function(s,l) { return s + (l.qtd||0); }, 0);
+    // O redutor (meta de 600 lig/mes) so faz sentido avaliado dentro de um unico mes
+    var redutor = st.modo === 'mes' && totalLigs < 600;
+    var comFinal = redutor ? (vTotalVend * 0.005) : (vPlacas + vComp + vAco);
+    var fmtRS = function(n) { return 'R$ ' + Number(n||0).toLocaleString('pt-BR', {minimumFractionDigits:2}); };
+
+    var html =
+      (labelPeriodo ? '<div style="font-size:11px;color:#aaa;margin-bottom:10px;text-transform:capitalize;">' + labelPeriodo + '</div>' : '') +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:10px;">' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.04em;">Vendido</div><div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + fmtRS(vTotalVend) + '</div></div>' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.04em;">Pedidos</div><div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + pedsPeriodo.length + '</div></div>' +
+        '<div style="background:#E8F5E9;border-radius:8px;padding:10px;text-align:center;border:1.5px solid #2E7D32;"><div style="font-size:10px;color:#1B5E20;text-transform:uppercase;letter-spacing:.04em;">Comissão</div><div style="font-size:16px;font-weight:700;color:#1B5E20;">' + fmtRS(comFinal) + '</div></div>' +
+      '</div>' +
+      (redutor ? '<div style="background:#FFF3E0;border-radius:8px;padding:8px 10px;font-size:11px;color:#E65100;margin-bottom:10px;">⚠️ Meta de ligações não atingida nesse mês (' + totalLigs + '/600) — comissão reduzida para 0,5% em todos os produtos.</div>' : '') +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">' +
+        '<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">Placa (0,5%)</div><div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + fmtRS(vPlacas) + '</div></div>' +
+        '<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">GRX/Comp (0,75%)</div><div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + fmtRS(vComp) + '</div></div>' +
+        '<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">Aço (1%)</div><div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + fmtRS(vAco) + '</div></div>' +
+      '</div>';
+
+    if (st.modo === 'periodo') {
+      var resEl = document.getElementById('ev-comissao-resultado');
+      if (resEl) resEl.innerHTML = html;
+    } else {
+      box.innerHTML = html;
+    }
+  });
+}
+
+// ── CONQUISTAS / PREMIAÇÕES ──
+function renderEvConquistas() {
+  if (!currentUser) return;
+  var v = vendedores[currentUser];
+  if (!v || v.tipo === 'gestora') return;
+  var box = document.getElementById('ev-conquistas-body');
+  if (!box) return;
+
+  dbRef('premios/clientes').once('value').then(function(snap) {
+    var todos = snap.val() ? Object.values(snap.val()) : [];
+    var minhas = todos.filter(function(c) { return c.vend === currentUser; })
+                       .sort(function(a,b) { return (b.data||'').localeCompare(a.data||''); });
+    if (!minhas.length) {
+      box.innerHTML = '<div style="font-size:12.5px;color:#aaa;text-align:center;padding:1rem;">Nenhuma premiação registrada ainda.</div>';
+      return;
+    }
+    var tipoLabel = { novo:'🔵 Cliente Novo', mg:'🟣 MG/Mogi', inativo:'🔴 Cliente Inativo Reativado', aco:'⚙️ Líder em Aço', surpresa:'🎁 Surpresa Poliana' };
+    var totalPago = minhas.filter(function(c){ return c.status==='pago'; }).reduce(function(s,c){ return s + (Number(c.valor)||0); }, 0);
+    var totalPendente = minhas.filter(function(c){ return c.status!=='pago'; }).length;
+
+    box.innerHTML =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
+        '<div style="background:#E8F5E9;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#1B5E20;text-transform:uppercase;">Total já pago</div><div style="font-size:16px;font-weight:700;color:#1B5E20;">R$ ' + totalPago.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div></div>' +
+        '<div style="background:#FFF3E0;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#E65100;text-transform:uppercase;">Aguardando pagamento</div><div style="font-size:16px;font-weight:700;color:#E65100;">' + totalPendente + '</div></div>' +
+      '</div>' +
+      '<div style="display:grid;gap:6px;max-height:220px;overflow-y:auto;">' +
+      minhas.map(function(c) {
+        var pago = c.status === 'pago';
+        var vlStr = c.valor ? 'R$ ' + c.valor : '—';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;background:#F8F7F3;border-radius:7px;padding:8px 10px;gap:8px;flex-wrap:wrap;">' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<span style="font-size:15px;">' + (pago ? '✅' : '⏳') + '</span>' +
+            '<div>' +
+              '<div style="font-size:12px;font-weight:600;color:#1C1C1C;">' + (tipoLabel[c.tipo]||c.tipo) + '</div>' +
+              '<div style="font-size:10.5px;color:#888;">' + (c.data||'') + (c.chamado ? ' · Chamado ' + c.chamado : '') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<span style="font-size:13px;font-weight:700;color:#2E7D32;">' + vlStr + '</span>' +
+        '</div>';
+      }).join('') +
+      '</div>';
+  });
+}
+
+// ── VENDAS POR MÊS DO ANO ──
+var evVendasAnoAtual = new Date().getFullYear();
+
+function evVendasMudarAno(delta) {
+  evVendasAnoAtual += delta;
+  renderEvVendasMes();
+}
+
+function renderEvVendasMes() {
+  if (!currentUser) return;
+  var v = vendedores[currentUser];
+  if (!v || v.tipo === 'gestora') return;
+  var box = document.getElementById('ev-vendas-mes-body');
+  var anoEl = document.getElementById('ev-vendas-ano');
+  if (!box) return;
+  if (anoEl) anoEl.textContent = evVendasAnoAtual;
+
+  var MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  function getValor(p) {
+    if (p.itens && p.itens.length) return p.itens.reduce(function(s,it){ return s+(Number(it.qtd)||0)*(Number(it.vUnit)||0); }, 0);
+    return Number(p.vTotal||0);
+  }
+
+  var pedidos = (_pedTodosGeral || []).filter(function(p) { return p.status !== 'cancelado' && p.data && p.data.startsWith(String(evVendasAnoAtual)); });
+  var porMes = [];
+  for (var m = 0; m < 12; m++) {
+    var mesStr = evVendasAnoAtual + '-' + String(m+1).padStart(2,'0');
+    var peds = pedidos.filter(function(p) { return p.data.startsWith(mesStr); });
+    porMes.push({ mes: m, qtd: peds.length, total: peds.reduce(function(s,p){ return s+getValor(p); }, 0) });
+  }
+  var maiorValor = Math.max.apply(null, porMes.map(function(d){ return d.total; }).concat([1]));
+
+  box.innerHTML = porMes.map(function(d) {
+    var barW = maiorValor > 0 ? Math.round((d.total/maiorValor)*100) : 0;
+    return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;">' +
+      '<span style="font-size:11px;color:#888;min-width:30px;">' + MESES[d.mes] + '</span>' +
+      '<div style="flex:1;background:#F1EFE8;border-radius:20px;height:16px;overflow:hidden;position:relative;">' +
+        '<div style="height:100%;border-radius:20px;background:' + (d.total>0?'#C41E1E':'transparent') + ';width:' + barW + '%;"></div>' +
+      '</div>' +
+      '<span style="font-size:11.5px;font-weight:700;color:#1C1C1C;min-width:88px;text-align:right;">R$ ' + Number(d.total).toLocaleString('pt-BR',{minimumFractionDigits:0}) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+// ── RANKING POR MÊS ──
+var _rankingDadosGlobais = { pedidos: {} };
+
+function renderEvRankingMes() {
+  if (!currentUser) return;
+  var v = vendedores[currentUser];
+  if (!v || v.tipo === 'gestora') return;
+  var box = document.getElementById('ev-ranking-mes-body');
+  if (!box) return;
+  var dadosPedidos = _rankingDadosGlobais.pedidos;
+  if (!dadosPedidos || !Object.keys(dadosPedidos).length) {
+    box.innerHTML = '<div style="font-size:12.5px;color:#aaa;text-align:center;padding:1rem;">Carregando...</div>';
+    return;
+  }
+
+  function getValor(p) {
+    if (p.itens && p.itens.length) return p.itens.reduce(function(s,it){ return s+(Number(it.qtd)||0)*(Number(it.vUnit)||0); }, 0);
+    return Number(p.vTotal||0);
+  }
+
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
+  var MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var hoje = new Date();
+  var anoAtual = hoje.getFullYear();
+  var mesAtualIdx = hoje.getMonth();
+
+  var linhas = '';
+  for (var m = mesAtualIdx; m >= 0; m--) {
+    var mesStr = anoAtual + '-' + String(m+1).padStart(2,'0');
+    var totals = nomes.map(function(vn) {
+      var peds = (dadosPedidos[vn]||[]).filter(function(p){ return p.data && p.data.startsWith(mesStr) && p.status !== 'cancelado'; });
+      return { vn: vn, total: peds.reduce(function(s,p){ return s+getValor(p); }, 0) };
+    }).sort(function(a,b) { return b.total - a.total; });
+    var idx = totals.findIndex(function(t) { return t.vn === currentUser; });
+    if (idx === -1) continue;
+    var posicao = idx + 1;
+    var meuTotal = totals[idx].total;
+    if (meuTotal === 0) continue; // sem vendas nesse mes, nao mostra
+    var corPos = posicao === 1 ? '#FFD700' : posicao === 2 ? '#C0C0C0' : posicao === 3 ? '#CD7F32' : '#aaa';
+    var medalha = posicao <= 3 ? ['🥇','🥈','🥉'][posicao-1] : ('#' + posicao);
+    linhas += '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-bottom:1px solid #F0EEEA;">' +
+      '<span style="font-size:13px;font-weight:600;color:#1C1C1C;">' + MESES[m] + '/' + anoAtual + '</span>' +
+      '<span style="font-size:16px;font-weight:700;color:' + corPos + ';">' + medalha + '</span>' +
+      '<span style="font-size:11.5px;color:#888;">R$ ' + Number(meuTotal).toLocaleString('pt-BR',{minimumFractionDigits:0}) + '</span>' +
+    '</div>';
+  }
+  box.innerHTML = linhas || '<div style="font-size:12.5px;color:#aaa;text-align:center;padding:1rem;">Sem vendas registradas ainda este ano.</div>';
+}
 
 var db = null;
 var firebaseOK = false;
@@ -6971,6 +7427,7 @@ function abrirDetalhePedido(vend, pedidoId) {
       '</div>' +
       '<div style="display:flex;gap:8px;margin-top:16px;">' +
         '<button onclick="fecharDetalhePedido(); abrirEditarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#E3F0FA;color:#185FA5;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">✏️ Editar Pedido</button>' +
+        '<button onclick="fecharDetalhePedido(); abrirDuplicarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#FFF3E0;color:#E65100;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">📋 Duplicar</button>' +
         '<button onclick="fecharDetalhePedido(); deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#FFEBEE;color:#C41E1E;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">🗑️ Excluir</button>' +
       '</div>';
   }
@@ -6981,6 +7438,108 @@ function abrirDetalhePedido(vend, pedidoId) {
 function fecharDetalhePedido() {
   var ov = document.getElementById('ped-detalhe-modal-overlay');
   if (ov) ov.style.display = 'none';
+}
+
+// ── DUPLICAR PEDIDO (com chamado diferente) ──
+var _pedDuplicarOrigem = null;
+
+function abrirDuplicarPedido(vend, pedidoId) {
+  var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vend && x.id === pedidoId; });
+  if (!p) return;
+  _pedDuplicarOrigem = { vend: vend, pedidoId: pedidoId, pedido: p };
+  var resumo = document.getElementById('ped-duplicar-resumo');
+  if (resumo) {
+    resumo.innerHTML = '<div style="font-size:13px;font-weight:700;color:#1C1C1C;">' + (p.empresa || p.cliente || '—') + '</div>' +
+      '<div style="font-size:11.5px;color:#888;margin-top:2px;">Chamado original: <strong>' + (p.chamado || '—') + '</strong> · ' + fmtValorCurto(p.vTotal||0) + '</div>';
+  }
+  var chamadoEl = document.getElementById('ped-duplicar-chamado');
+  if (chamadoEl) { chamadoEl.value = ''; chamadoEl.style.borderColor = '#E2E0D8'; }
+  var dataEl = document.getElementById('ped-duplicar-data');
+  if (dataEl) dataEl.value = new Date().toISOString().split('T')[0];
+  var erroEl = document.getElementById('ped-duplicar-erro');
+  if (erroEl) erroEl.style.display = 'none';
+  var ov = document.getElementById('ped-duplicar-overlay');
+  if (ov) ov.style.display = 'flex';
+}
+
+function fecharDuplicarPedido() {
+  var ov = document.getElementById('ped-duplicar-overlay');
+  if (ov) ov.style.display = 'none';
+  _pedDuplicarOrigem = null;
+}
+
+function fmtValorCurto(n) { return 'R$ ' + Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2}); }
+
+function confirmarDuplicarPedido() {
+  if (!_pedDuplicarOrigem) return;
+  var chamadoEl = document.getElementById('ped-duplicar-chamado');
+  var dataEl = document.getElementById('ped-duplicar-data');
+  var erroEl = document.getElementById('ped-duplicar-erro');
+  var novoChamado = chamadoEl ? chamadoEl.value.trim() : '';
+
+  if (!novoChamado) {
+    if (chamadoEl) chamadoEl.style.borderColor = '#C41E1E';
+    if (erroEl) { erroEl.textContent = 'Informe o número do novo chamado.'; erroEl.style.display = 'block'; }
+    return;
+  }
+  var origem = _pedDuplicarOrigem.pedido;
+  if (novoChamado.trim().toUpperCase() === String(origem.chamado||'').trim().toUpperCase()) {
+    if (chamadoEl) chamadoEl.style.borderColor = '#C41E1E';
+    if (erroEl) { erroEl.textContent = 'O novo chamado precisa ser diferente do original.'; erroEl.style.display = 'block'; }
+    return;
+  }
+
+  var btn = document.getElementById('ped-duplicar-btn-confirmar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando chamado...'; }
+
+  verificarChamadoDuplicado(novoChamado, null, function(dup) {
+    if (dup) {
+      if (btn) { btn.disabled = false; btn.textContent = '📋 Duplicar Pedido'; }
+      if (chamadoEl) chamadoEl.style.borderColor = '#C41E1E';
+      if (erroEl) {
+        erroEl.textContent = '❌ Chamado nº ' + novoChamado + ' já está cadastrado (' + (dup.empresa || '') + ', ' + (vendedores[dup.vendedor] ? vendedores[dup.vendedor].nome : dup.vendedor) + ').';
+        erroEl.style.display = 'block';
+      }
+      return;
+    }
+    if (chamadoEl) chamadoEl.style.borderColor = '#E2E0D8';
+    if (erroEl) erroEl.style.display = 'none';
+
+    var novaData = dataEl && dataEl.value ? dataEl.value : origem.data;
+    var novoPedido = {
+      id: Date.now().toString(),
+      data: novaData,
+      empresa: origem.empresa,
+      estado: origem.estado,
+      cliente: origem.cliente,
+      pn: origem.pn,
+      chamado: novoChamado,
+      itens: origem.itens ? origem.itens.slice() : undefined,
+      material: origem.material,
+      cat: origem.cat,
+      vTotal: origem.vTotal,
+      veiculo: origem.veiculo,
+      status: 'agendamento',
+      tipoCliente: origem.tipoCliente,
+      dataStatus: novaData,
+      vendedor: origem.vendedor,
+      criadoEm: Date.now(),
+      negociacaoId: null
+    };
+    // Remove chaves undefined pra não gravar lixo no Firebase
+    Object.keys(novoPedido).forEach(function(k) { if (novoPedido[k] === undefined) delete novoPedido[k]; });
+
+    dbRef('pedidos/' + origem.vendedor + '/' + novoPedido.id).set(novoPedido)
+      .then(function() {
+        if (btn) { btn.disabled = false; btn.textContent = '📋 Duplicar Pedido'; }
+        fecharDuplicarPedido();
+        alert('✅ Pedido duplicado com sucesso! Novo chamado: ' + novoChamado);
+      })
+      .catch(function(e) {
+        if (btn) { btn.disabled = false; btn.textContent = '📋 Duplicar Pedido'; }
+        alert('Erro ao duplicar pedido: ' + (e && e.message ? e.message : 'Verifique as regras do Firebase.'));
+      });
+  });
 }
 
 function pedidoCasaBusca(p, termo) {
@@ -7335,6 +7894,9 @@ function listenPedidos(vendNome, isGestora) {
       renderPedidos(pedidos, false);
       var pedidosAtivos = pedidos.filter(function(p) { return !p.excluido; });
       updateDashboard(pedidosAtivos, vendedores[vendNome]);
+      if (typeof renderEvComissao === 'function') renderEvComissao();
+      if (typeof renderEvVendasMes === 'function') renderEvVendasMes();
+      if (typeof renderGestaoTempoHoje === 'function') renderGestaoTempoHoje();
     });
   }
 }
@@ -7968,6 +8530,7 @@ var cliBusca = '';
 var cliIndexPorId = {};
 var cliDetalheAtual = null;
 var cliSemanasState = { vend: null, chave: null, mes: null };
+var cliHistoricoState = { vend: null, chave: null, modo: 'mes', ano: new Date().getFullYear(), periodoDe: '', periodoAte: '' };
 
 function cliMesAtualStr() {
   var d = new Date();
@@ -8570,6 +9133,179 @@ function cliAbrirDetalhe(vend, chave) {
 function cliFecharModal() {
   document.getElementById('cli-modal-overlay').style.display = 'none';
   cliDetalheAtual = null;
+}
+
+// ── HISTÓRICO DE COMPRAS DO CLIENTE ──
+function cliValorPedido(p) {
+  if (p.itens && p.itens.length) {
+    return p.itens.reduce(function(s, it) { return s + (Number(it.qtd) || 0) * (Number(it.vUnit) || 0); }, 0);
+  }
+  return Number(p.vTotal || 0);
+}
+
+function cliObterPedidosCliente(vend, chave) {
+  return (_pedTodosGeral || []).filter(function(p) {
+    if (p.status === 'cancelado') return false;
+    if (!p.empresa) return false;
+    var vn = p.vendedor || cliAtendState.currentVend;
+    return vn === vend && cliChave(p.empresa) === chave;
+  }).sort(function(a, b) { return (b.data || '').localeCompare(a.data || ''); });
+}
+
+function cliAbrirHistorico(vend, chave) {
+  if (!vend || !chave) return;
+  var reg = cliIndexPorId[vend + '||' + chave];
+  cliHistoricoState = { vend: vend, chave: chave, modo: 'mes', ano: new Date().getFullYear(), periodoDe: '', periodoAte: '' };
+  var pedidos = cliObterPedidosCliente(vend, chave);
+  if (pedidos.length && pedidos[0].data) {
+    cliHistoricoState.ano = parseInt(pedidos[0].data.slice(0, 4), 10);
+  }
+  var tituloEl = document.getElementById('cli-historico-titulo');
+  if (tituloEl) tituloEl.textContent = reg ? reg.nome : chave;
+  cliRenderHistoricoModal();
+  document.getElementById('cli-historico-overlay').style.display = 'flex';
+}
+
+function cliFecharHistorico() {
+  document.getElementById('cli-historico-overlay').style.display = 'none';
+}
+
+function cliHistoricoSetModo(modo) {
+  cliHistoricoState.modo = modo;
+  cliRenderHistoricoModal();
+}
+
+function cliHistoricoMudarAno(delta) {
+  cliHistoricoState.ano += delta;
+  cliRenderHistoricoModal();
+}
+
+function cliHistoricoAplicarPeriodo() {
+  var deEl = document.getElementById('cli-hist-de');
+  var ateEl = document.getElementById('cli-hist-ate');
+  cliHistoricoState.periodoDe = deEl ? deEl.value : '';
+  cliHistoricoState.periodoAte = ateEl ? ateEl.value : '';
+  cliRenderHistoricoModal();
+}
+
+var CLI_HIST_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function cliRenderHistoricoModal() {
+  var st = cliHistoricoState;
+  var body = document.getElementById('cli-historico-body');
+  if (!body) return;
+
+  ['mes','ano','periodo'].forEach(function(m) {
+    var btn = document.getElementById('cli-hist-tab-' + m);
+    if (!btn) return;
+    if (m === st.modo) { btn.style.background = '#1C1C1C'; btn.style.color = '#fff'; }
+    else { btn.style.background = 'transparent'; btn.style.color = '#888'; }
+  });
+
+  var pedidos = cliObterPedidosCliente(st.vend, st.chave);
+  if (!pedidos.length) {
+    body.innerHTML = '<div style="text-align:center;color:#aaa;padding:2rem;font-size:13px;">Nenhuma compra registrada para este cliente ainda.</div>';
+    return;
+  }
+
+  var fmtRS = function(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var veicLabel = function(v) { return v === 'truck' ? 'Truck' : v === 'carreta' ? 'Carreta' : v === 'outros' ? 'Outros' : '—'; };
+
+  if (st.modo === 'mes') {
+    var pedidosDoAno = pedidos.filter(function(p) { return p.data && p.data.startsWith(String(st.ano)); });
+    var porMes = {};
+    for (var m = 0; m < 12; m++) porMes[m] = { qtd: 0, total: 0 };
+    pedidosDoAno.forEach(function(p) {
+      var mIdx = parseInt(p.data.slice(5, 7), 10) - 1;
+      if (mIdx < 0 || mIdx > 11) return;
+      porMes[mIdx].qtd++;
+      porMes[mIdx].total += cliValorPedido(p);
+    });
+    var totalAno = pedidosDoAno.reduce(function(s, p) { return s + cliValorPedido(p); }, 0);
+
+    var linhas = '';
+    for (var mm = 11; mm >= 0; mm--) {
+      var d = porMes[mm];
+      if (!d.qtd) continue;
+      linhas += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border-bottom:1px solid #F0EEEA;">' +
+        '<span style="font-size:13px;font-weight:600;color:#1C1C1C;">' + CLI_HIST_MESES[mm] + '</span>' +
+        '<span style="font-size:11.5px;color:#888;">' + d.qtd + ' carga(s)</span>' +
+        '<span style="font-size:13px;font-weight:700;color:#1B5E20;">' + fmtRS(d.total) + '</span>' +
+      '</div>';
+    }
+    if (!linhas) linhas = '<div style="text-align:center;color:#aaa;padding:1.5rem;font-size:12.5px;">Nenhuma compra em ' + st.ano + '.</div>';
+
+    body.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px;">' +
+        '<button onclick="cliHistoricoMudarAno(-1)" style="border:none;background:#F1EFE8;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:15px;font-weight:700;">‹</button>' +
+        '<span style="font-size:16px;font-weight:700;color:#1C1C1C;">' + st.ano + '</span>' +
+        '<button onclick="cliHistoricoMudarAno(1)" style="border:none;background:#F1EFE8;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:15px;font-weight:700;">›</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;">Total no Ano</div><div style="font-size:16px;font-weight:700;color:#1B5E20;">' + fmtRS(totalAno) + '</div></div>' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;">Cargas no Ano</div><div style="font-size:16px;font-weight:700;color:#1C1C1C;">' + pedidosDoAno.length + '</div></div>' +
+      '</div>' +
+      '<div>' + linhas + '</div>';
+
+  } else if (st.modo === 'ano') {
+    var porAno = {};
+    pedidos.forEach(function(p) {
+      if (!p.data) return;
+      var ano = p.data.slice(0, 4);
+      if (!porAno[ano]) porAno[ano] = { qtd: 0, total: 0 };
+      porAno[ano].qtd++;
+      porAno[ano].total += cliValorPedido(p);
+    });
+    var anosOrdenados = Object.keys(porAno).sort().reverse();
+    var totalGeral = pedidos.reduce(function(s, p) { return s + cliValorPedido(p); }, 0);
+
+    body.innerHTML =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;">Total Geral</div><div style="font-size:16px;font-weight:700;color:#1B5E20;">' + fmtRS(totalGeral) + '</div></div>' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;">Cargas no Total</div><div style="font-size:16px;font-weight:700;color:#1C1C1C;">' + pedidos.length + '</div></div>' +
+      '</div>' +
+      anosOrdenados.map(function(ano) {
+        var d = porAno[ano];
+        return '<div onclick="cliHistoricoState.ano=' + ano + ';cliHistoricoSetModo(\'mes\')" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border-bottom:1px solid #F0EEEA;cursor:pointer;">' +
+          '<span style="font-size:14px;font-weight:700;color:#1C1C1C;">' + ano + '</span>' +
+          '<span style="font-size:11.5px;color:#888;">' + d.qtd + ' carga(s)</span>' +
+          '<span style="font-size:14px;font-weight:700;color:#1B5E20;">' + fmtRS(d.total) + '</span>' +
+        '</div>';
+      }).join('');
+
+  } else if (st.modo === 'periodo') {
+    var de = st.periodoDe, ate = st.periodoAte;
+    var pedidosFiltrados = pedidos;
+    if (de || ate) {
+      pedidosFiltrados = pedidos.filter(function(p) {
+        if (!p.data) return false;
+        if (de && p.data < de) return false;
+        if (ate && p.data > ate) return false;
+        return true;
+      });
+    }
+    var totalPeriodo = pedidosFiltrados.reduce(function(s, p) { return s + cliValorPedido(p); }, 0);
+    var linhasPeriodo = pedidosFiltrados.map(function(p) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid #F0EEEA;font-size:12px;">' +
+        '<span style="color:#888;white-space:nowrap;">' + (p.data ? negFmtData(p.data) : '—') + '</span>' +
+        '<span style="font-family:monospace;color:#C41E1E;font-weight:700;white-space:nowrap;">' + (p.chamado || '—') + '</span>' +
+        '<span style="color:#666;">' + veicLabel(p.veiculo) + '</span>' +
+        '<span style="font-weight:700;color:#1B5E20;white-space:nowrap;">' + fmtRS(cliValorPedido(p)) + '</span>' +
+      '</div>';
+    }).join('');
+
+    body.innerHTML =
+      '<div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+        '<div class="ped-field" style="flex:1;min-width:120px;"><label>De</label><input type="date" id="cli-hist-de" value="' + (de || '') + '" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;"></div>' +
+        '<div class="ped-field" style="flex:1;min-width:120px;"><label>Até</label><input type="date" id="cli-hist-ate" value="' + (ate || '') + '" style="width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;"></div>' +
+        '<button onclick="cliHistoricoAplicarPeriodo()" style="padding:7px 14px;border-radius:6px;border:none;background:#1C1C1C;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Aplicar</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;">Total no Período</div><div style="font-size:16px;font-weight:700;color:#1B5E20;">' + fmtRS(totalPeriodo) + '</div></div>' +
+        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;">Cargas no Período</div><div style="font-size:16px;font-weight:700;color:#1C1C1C;">' + pedidosFiltrados.length + '</div></div>' +
+      '</div>' +
+      (linhasPeriodo || '<div style="text-align:center;color:#aaa;padding:1.5rem;font-size:12.5px;">Nenhuma compra no período selecionado.</div>');
+  }
 }
 
 function cliAbrirSemanasModal(vend, chave) {
@@ -9264,6 +10000,12 @@ function entrarComoUsuario(user) {
     if (v.nome !== 'Juliana') {
       fbListenVendedor(user);
       listenLigacoesVendedor(user);
+    }
+    if (v.tipo !== 'gestora') {
+      renderGestaoTempoHoje();
+      renderEvComissao();
+      renderEvConquistas();
+      renderEvVendasMes();
     }
     // Ranking aparece para todos
     listenRanking();
@@ -10097,6 +10839,34 @@ function importarArquivo(event) {
       <span onclick="fecharDetalhePedido()" style="cursor:pointer;font-size:18px;color:#888;line-height:1;">✕</span>
     </div>
     <div id="ped-detalhe-modal-body"></div>
+  </div>
+</div>
+
+<!-- Overlay para duplicar pedido com chamado diferente -->
+<div id="ped-duplicar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1001;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) fecharDuplicarPedido()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:420px;width:100%;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-size:15px;font-weight:700;color:#1C1C1C;">📋 Duplicar Pedido</div>
+      <span onclick="fecharDuplicarPedido()" style="cursor:pointer;font-size:18px;color:#888;line-height:1;">✕</span>
+    </div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:14px;">Cria uma cópia deste pedido (mesma empresa, itens e valores) com um número de chamado diferente.</div>
+
+    <div id="ped-duplicar-resumo" style="background:#F8F7F3;border-radius:8px;padding:10px 12px;margin-bottom:14px;"></div>
+
+    <div class="ped-field" style="margin-bottom:10px;">
+      <label>Novo número de chamado</label>
+      <input type="text" id="ped-duplicar-chamado" placeholder="Ex: 449301" style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+    </div>
+    <div class="ped-field" style="margin-bottom:6px;">
+      <label>Data do novo pedido</label>
+      <input type="date" id="ped-duplicar-data" style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+    </div>
+    <div id="ped-duplicar-erro" style="display:none;font-size:11.5px;color:#C41E1E;font-weight:600;margin-bottom:10px;"></div>
+
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button onclick="fecharDuplicarPedido()" style="flex:1;padding:9px;border-radius:8px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:13px;cursor:pointer;">Cancelar</button>
+      <button id="ped-duplicar-btn-confirmar" onclick="confirmarDuplicarPedido()" style="flex:1.5;padding:9px;border-radius:8px;border:none;background:#E65100;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">📋 Duplicar Pedido</button>
+    </div>
   </div>
 </div>
 </body>
