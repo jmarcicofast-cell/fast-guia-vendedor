@@ -1800,6 +1800,7 @@
         <input type="file" id="excel-import-input" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
         <button id="btn-importar-arquivo" onclick="document.getElementById('excel-import-input').click()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #185FA5;background:#fff;color:#185FA5;font-size:13px;font-weight:600;cursor:pointer;display:none;">📂 Importar Excel</button>
         <button onclick="testarConexao()" style="padding:8px 14px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:12px;cursor:pointer;">🔧 Testar</button>
+        <button id="btn-lixeira-pedidos" onclick="abrirLixeiraPedidos()" style="position:relative;padding:8px 16px;border-radius:7px;border:1.5px solid #C41E1E;background:#fff;color:#C41E1E;font-size:13px;font-weight:600;cursor:pointer;">🗑️ Lixeira<span id="lixeira-ped-badge" style="display:none;position:absolute;top:-7px;right:-7px;background:#C41E1E;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;font-weight:700;min-width:14px;text-align:center;"></span></button>
       </div>
     </div>
 
@@ -4386,16 +4387,16 @@ function renderEditItens() {
     var qtdDiv = document.createElement('div');
     qtdDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Qtd</label>';
     var qtdIn = document.createElement('input');
-    qtdIn.type='number'; qtdIn.value=it.qtd||''; qtdIn.placeholder='0'; qtdIn.style.cssText=inp;
-    (function(i,el){ qtdIn.oninput = function(){ editItens[i].qtd=parseFloat(this.value)||0; editItens[i].vTotal=Math.round(editItens[i].qtd*editItens[i].vUnit*100)/100; recalcEditTotal(); }; })(idx);
+    qtdIn.type='text'; qtdIn.inputMode='decimal'; qtdIn.value=it.qtd||''; qtdIn.placeholder='0'; qtdIn.style.cssText=inp;
+    (function(i,el){ qtdIn.oninput = function(){ editItens[i].qtd=parseFloat(String(this.value).replace(',','.'))||0; editItens[i].vTotal=Math.round(editItens[i].qtd*editItens[i].vUnit*100)/100; recalcEditTotal(); }; })(idx);
     qtdDiv.appendChild(qtdIn);
 
     // Vl Unit
     var vuDiv = document.createElement('div');
     vuDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Vl. Unit. (R$)</label>';
     var vuIn = document.createElement('input');
-    vuIn.type='number'; vuIn.step='0.01'; vuIn.value=it.vUnit||''; vuIn.placeholder='0,00'; vuIn.style.cssText=inp;
-    (function(i){ vuIn.oninput = function(){ editItens[i].vUnit=parseFloat(this.value)||0; editItens[i].vTotal=Math.round(editItens[i].qtd*editItens[i].vUnit*100)/100; recalcEditTotal(); }; })(idx);
+    vuIn.type='text'; vuIn.inputMode='decimal'; vuIn.value=it.vUnit||''; vuIn.placeholder='0,00'; vuIn.style.cssText=inp;
+    (function(i){ vuIn.oninput = function(){ editItens[i].vUnit=parseFloat(String(this.value).replace(',','.'))||0; editItens[i].vTotal=Math.round(editItens[i].qtd*editItens[i].vUnit*100)/100; recalcEditTotal(); }; })(idx);
     vuDiv.appendChild(vuIn);
 
     // Total
@@ -4855,7 +4856,7 @@ function exportarPedidosExcel() {
 
   nomes.forEach(function(vn) {
     dbRef('pedidos/' + vn).once('value').then(function(snap) {
-      var peds = snap.val() ? Object.values(snap.val()) : [];
+      var peds = snap.val() ? Object.values(snap.val()).filter(function(p){ return !p.excluido; }) : [];
       allPedidos = allPedidos.concat(peds);
       pendentes--;
       if (pendentes === 0) gerarExcel(allPedidos, btn);
@@ -4960,7 +4961,7 @@ function listenRanking() {
   });
   nomes.forEach(function(vn) {
     dbRef('pedidos/' + vn).on('value', function(snap) {
-      allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
+      allPedidos[vn] = snap.val() ? Object.values(snap.val()).filter(function(p){ return !p.excluido; }) : [];
       renderRanking(allPedidos, allLigacoes);
       renderPremiacoes(allPedidos);
     });
@@ -5004,13 +5005,14 @@ function renderRanking(allPedidos, allLigacoes) {
 
     podio.innerHTML = order.map(function(d, i) {
       var fmtBRL = 'R$ ' + Number(d.total).toLocaleString('pt-BR',{minimumFractionDigits:0});
+      var posLabel = i === 1 ? '1º' : (i === 0 ? '2º' : '3º');
       return '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;max-width:200px;">' +
         '<div style="font-size:32px;">' + podiumMed[i] + '</div>' +
         '<div style="font-size:14px;font-weight:700;color:#1C1C1C;">' + d.nome + '</div>' +
         '<div style="font-size:20px;font-weight:700;color:' + podiumCores[i] + ';">' + d.pct + '%</div>' +
         '<div style="font-size:11px;color:#888;">' + fmtBRL + '</div>' +
         '<div style="width:100%;background:' + podiumCores[i] + ';border-radius:8px 8px 0 0;height:' + heights[i] + ';display:flex;align-items:flex-start;justify-content:center;padding-top:10px;">' +
-          '<span style="font-size:11px;font-weight:600;color:' + (i===1?'#7A5500':'#333') + ';">' + (i===1?'1º':'i'===0?'2º':'3º') + '</span>' +
+          '<span style="font-size:11px;font-weight:600;color:' + (i===1?'#7A5500':'#333') + ';">' + posLabel + '</span>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -5026,17 +5028,20 @@ function renderRanking(allPedidos, allLigacoes) {
       var fmtFalta = 'R$ ' + Number(falta).toLocaleString('pt-BR',{minimumFractionDigits:0});
       var barW = Math.min(d.pct, 100);
       var barCor = d.pct >= 100 ? '#2E7D32' : d.pct >= 80 ? '#E65100' : '#C41E1E';
-      return '<div style="background:#fff;border:2px solid ' + cores[i] + ';border-radius:12px;padding:1.1rem 1.25rem;">' +
+      var medalhaOuPos = medalhas[i] || ('#' + (i+1));
+      var corBorda = cores[i] || '#E2E0D8';
+      var corPct = cores[i] || '#1C1C1C';
+      return '<div style="background:#fff;border:2px solid ' + corBorda + ';border-radius:12px;padding:1.1rem 1.25rem;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
-            '<span style="font-size:24px;">' + medalhas[i] + '</span>' +
+            '<span style="font-size:' + (medalhas[i] ? '24px' : '15px') + ';' + (medalhas[i] ? '' : 'font-weight:700;color:#888;min-width:24px;text-align:center;') + '">' + medalhaOuPos + '</span>' +
             '<div>' +
               '<div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + d.nome + '</div>' +
               '<div style="font-size:11px;color:#888;">Meta: ' + fmtMeta + '</div>' +
             '</div>' +
           '</div>' +
           '<div style="text-align:right;">' +
-            '<div style="font-size:22px;font-weight:700;color:' + cores[i] + ';">' + d.pct + '%</div>' +
+            '<div style="font-size:22px;font-weight:700;color:' + corPct + ';">' + d.pct + '%</div>' +
             '<div style="font-size:12px;color:#888;">' + fmtBRL + '</div>' +
           '</div>' +
         '</div>' +
@@ -5393,10 +5398,11 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
       '<div style="display:grid;gap:8px;">' +
         ranking.map(function(v,i) {
           var barPct = ranking[0].vendSem > 0 ? Math.round((v.vendSem/ranking[0].vendSem)*100) : 0;
+          var medalhaOuPos = medalhas[i] || ('#' + (i+1));
           return '<div style="background:#2A2A2A;border-radius:8px;padding:10px 12px;">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
               '<div style="display:flex;align-items:center;gap:8px;">' +
-                '<span style="font-size:18px;">' + medalhas[i] + '</span>' +
+                '<span style="font-size:' + (medalhas[i] ? '18px' : '12px') + ';' + (medalhas[i] ? '' : 'font-weight:700;color:#aaa;') + '">' + medalhaOuPos + '</span>' +
                 '<span style="font-size:13px;font-weight:600;color:#fff;">' + v.nome + '</span>' +
               '</div>' +
               '<span style="font-size:15px;font-weight:700;color:#FAC775;">' + fmt(v.vendSem) + '</span>' +
@@ -5437,7 +5443,7 @@ function setRampaPeriodo(p) {
 function listenRampaNovos() {
   NOVOS_VENDEDORES.forEach(function(vn) {
     dbRef('pedidos/' + vn).on('value', function(snap) {
-      rampaState.pedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
+      rampaState.pedidos[vn] = snap.val() ? Object.values(snap.val()).filter(function(p){ return !p.excluido; }) : [];
       renderRampaNovos();
     });
     dbRef('ligacoes/' + vn).on('value', function(snap) {
@@ -5757,7 +5763,7 @@ function listenPaineisGestora() {
 
   nomes.forEach(function(vn) {
     dbRef('pedidos/' + vn).on('value', function(snap) {
-      allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
+      allPedidos[vn] = snap.val() ? Object.values(snap.val()).filter(function(p){ return !p.excluido; }) : [];
       renderPaineisGestora(allPedidos, allLigacoes);
     });
     dbRef('ligacoes/' + vn).on('value', function(snap) {
@@ -5775,7 +5781,7 @@ function listenEvolucaoGestora() {
 
   nomes.forEach(function(vn) {
     dbRef('pedidos/' + vn).on('value', function(snap) {
-      allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
+      allPedidos[vn] = snap.val() ? Object.values(snap.val()).filter(function(p){ return !p.excluido; }) : [];
       renderEvolucaoGestora(allPedidos);
     });
   });
@@ -5915,7 +5921,7 @@ function recalcGestora() {
   var pendentes = nomes.length;
   nomes.forEach(function(vn) {
     dbRef('pedidos/' + vn).once('value').then(function(snap) {
-      var peds = snap.val() ? Object.values(snap.val()) : [];
+      var peds = snap.val() ? Object.values(snap.val()).filter(function(p){ return !p.excluido; }) : [];
       todos = todos.concat(peds);
       pendentes--;
       if (pendentes === 0) calcComissaoGestora(todos);
@@ -6604,7 +6610,7 @@ function verificarChamadoDuplicado(chamado, pedidoIdExcluir, callback) {
         Object.keys(val).forEach(function(pid) {
           if (achado || pid === pedidoIdExcluir) return;
           var p = val[pid];
-          if (p && p.chamado && String(p.chamado).trim().toUpperCase() === alvo) {
+          if (p && !p.excluido && p.chamado && String(p.chamado).trim().toUpperCase() === alvo) {
             achado = { vendedor: vn, empresa: p.empresa||'(sem empresa)', cliente: p.cliente||'', data: p.data||'' };
           }
         });
@@ -6788,9 +6794,84 @@ function atualizarStatus(vendNome, pedidoId, novoStatus) {
 }
 
 function deletarPedido(vendNome, pedidoId) {
-  if (!confirm('Excluir este pedido?')) return;
+  if (!confirm('Excluir este pedido?\n\nEle vai para a Lixeira e pode ser restaurado depois, se precisar.')) return;
+  dbRef('pedidos/' + vendNome + '/' + pedidoId).update({
+    excluido: true,
+    excluidoPor: currentUser || '',
+    excluidoEm: new Date().toISOString()
+  }).catch(e => console.error('Erro delete:', e));
+}
+
+function restaurarPedido(vendNome, pedidoId) {
+  dbRef('pedidos/' + vendNome + '/' + pedidoId).update({
+    excluido: false,
+    excluidoPor: null,
+    excluidoEm: null,
+    restauradoPor: currentUser || '',
+    restauradoEm: new Date().toISOString()
+  }).then(function() {
+    renderLixeiraPedidos();
+  }).catch(e => console.error('Erro restaurar:', e));
+}
+
+function excluirPedidoDefinitivo(vendNome, pedidoId) {
+  if (currentUser !== 'JULIANA' && currentUser !== 'ELIZIANE') {
+    alert('Apenas a gestão pode excluir um pedido definitivamente.');
+    return;
+  }
+  if (!confirm('⚠️ EXCLUSÃO DEFINITIVA\n\nEste pedido será apagado para sempre e não poderá mais ser recuperado. Confirma?')) return;
   dbRef('pedidos/' + vendNome + '/' + pedidoId).remove()
-    .catch(e => console.error('Erro delete:', e));
+    .then(function() {
+      renderLixeiraPedidos();
+    })
+    .catch(e => console.error('Erro excluir definitivo:', e));
+}
+
+var _pedExcluidos = [];
+
+function atualizarBadgeLixeira() {
+  var badge = document.getElementById('lixeira-ped-badge');
+  if (!badge) return;
+  var n = _pedExcluidos.length;
+  if (n > 0) { badge.textContent = n; badge.style.display = 'block'; }
+  else { badge.style.display = 'none'; }
+}
+
+function abrirLixeiraPedidos() {
+  renderLixeiraPedidos();
+  var ov = document.getElementById('lixeira-ped-overlay');
+  if (ov) ov.style.display = 'flex';
+}
+
+function fecharLixeiraPedidos() {
+  var ov = document.getElementById('lixeira-ped-overlay');
+  if (ov) ov.style.display = 'none';
+}
+
+function renderLixeiraPedidos() {
+  var box = document.getElementById('lixeira-ped-lista');
+  if (!box) return;
+  if (!_pedExcluidos.length) {
+    box.innerHTML = '<div style="text-align:center;padding:30px 10px;color:#aaa;font-size:13px;">Nenhum pedido excluído no momento.</div>';
+    atualizarBadgeLixeira();
+    return;
+  }
+  var podeExcluirDefinitivo = (currentUser === 'JULIANA' || currentUser === 'ELIZIANE');
+  box.innerHTML = _pedExcluidos.map(function(p) {
+    var quando = p.excluidoEm ? new Date(p.excluidoEm).toLocaleString('pt-BR') : '—';
+    return '<div style="border:1px solid #F0EEEA;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">' +
+      '<div>' +
+        '<div style="font-size:12.5px;font-weight:600;color:#1C1C1C;">' + (p.empresa || p.cliente || 'Sem empresa') + ' <span style="color:#aaa;font-weight:500;">· ' + (p.vendedor || '') + '</span></div>' +
+        '<div style="font-size:11px;color:#888;margin-top:2px;">Chamado ' + (p.chamado || '—') + ' · ' + (p.data || 'sem data') + '</div>' +
+        '<div style="font-size:10.5px;color:#C41E1E;margin-top:2px;">Excluído por ' + (p.excluidoPor || '—') + ' em ' + quando + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button type="button" onclick="restaurarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#E8F5E9;color:#1B5E20;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:11px;font-weight:600;">↩️ Restaurar</button>' +
+        (podeExcluirDefinitivo ? '<button type="button" onclick="excluirPedidoDefinitivo(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:11px;font-weight:600;">🗑️ Excluir definitivo</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+  atualizarBadgeLixeira();
 }
 
 var _pedTodosDoMes = [];
@@ -6982,14 +7063,20 @@ var _pedTodosGeral = [];
 
 function renderPedidos(pedidosList, isGestora) {
   const mesAtual = new Date().toISOString().slice(0,7);
-  const filtrados = pedidosList.filter(p => p.data && p.data.startsWith(mesAtual));
+  const ativos = pedidosList.filter(p => !p.excluido);
+  _pedExcluidos = pedidosList.filter(p => p.excluido).sort(function(a,b) { return (b.excluidoEm||'').localeCompare(a.excluidoEm||''); });
+  atualizarBadgeLixeira();
+  if (document.getElementById('lixeira-ped-overlay') && document.getElementById('lixeira-ped-overlay').style.display === 'flex') {
+    renderLixeiraPedidos();
+  }
+  const filtrados = ativos.filter(p => p.data && p.data.startsWith(mesAtual));
 
   // Sort by date desc
   filtrados.sort((a,b) => b.criadoEm - a.criadoEm);
 
   _pedTodosDoMes = filtrados;
   _pedIsGestora = isGestora;
-  _pedTodosGeral = pedidosList.slice();
+  _pedTodosGeral = ativos.slice();
   renderPedidosFiltrados();
   renderBaseClientes();
   // Se ja tiver um filtro de periodo personalizado aplicado, recalcula com os dados novos
@@ -7135,14 +7222,17 @@ function listenPedidos(vendNome, isGestora) {
         allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
         const todos = Object.values(allPedidos).flat();
         renderPedidos(todos, true);
-        renderResumoEquipe(allPedidos);
+        var allPedidosAtivos = {};
+        Object.keys(allPedidos).forEach(function(k) { allPedidosAtivos[k] = (allPedidos[k]||[]).filter(function(p) { return !p.excluido; }); });
+        renderResumoEquipe(allPedidosAtivos);
         // Dashboard (Hoje / Vendas / Entregas / Detalhamento por status) usando a equipe toda,
         // com a meta do TIME (campo "gest-meta" se preenchido, senao META_EQUIPE).
         var metaEl = document.getElementById('gest-meta');
         var metaTime = metaEl && metaEl.value ? (parseFloat(metaEl.value.replace(/\./g,'').replace(',','.')) || META_EQUIPE) : META_EQUIPE;
         var metaTimeSemana = metaTime / 4;
         var fmtMetaBR = function(n) { return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
-        updateDashboard(todos, { meta: 'R$ ' + fmtMetaBR(metaTime), metaSemana: fmtMetaBR(metaTimeSemana), metaEntregaMes: '', metaEntregaSemana: '' });
+        var todosAtivos = todos.filter(function(p) { return !p.excluido; });
+        updateDashboard(todosAtivos, { meta: 'R$ ' + fmtMetaBR(metaTime), metaSemana: fmtMetaBR(metaTimeSemana), metaEntregaMes: '', metaEntregaSemana: '' });
       });
     });
   } else {
@@ -7152,7 +7242,8 @@ function listenPedidos(vendNome, isGestora) {
     dbRef('pedidos/' + vendNome).on('value', snap => {
       const pedidos = snap.val() ? Object.values(snap.val()) : [];
       renderPedidos(pedidos, false);
-      updateDashboard(pedidos, vendedores[vendNome]);
+      var pedidosAtivos = pedidos.filter(function(p) { return !p.excluido; });
+      updateDashboard(pedidosAtivos, vendedores[vendNome]);
     });
   }
 }
@@ -8873,14 +8964,14 @@ function renderItensList() {
     // Qtd
     var qtdDiv = document.createElement('div'); qtdDiv.className = 'ped-field';
     qtdDiv.innerHTML = '<label>Qtd</label>';
-    var qtdIn = document.createElement('input'); qtdIn.type = 'number'; qtdIn.placeholder = '0'; qtdIn.value = it.qtd || '';
+    var qtdIn = document.createElement('input'); qtdIn.type = 'text'; qtdIn.inputMode = 'decimal'; qtdIn.placeholder = '0'; qtdIn.value = it.qtd || '';
     qtdIn.style.cssText = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
     (function(i){ qtdIn.addEventListener('input', function() { updateItem(i, 'qtd', this.value); }); })(idx);
     qtdDiv.appendChild(qtdIn);
     // Valor Unit
     var vuDiv = document.createElement('div'); vuDiv.className = 'ped-field';
     vuDiv.innerHTML = '<label>Vl. Unit. (R$)</label>';
-    var vuIn = document.createElement('input'); vuIn.type = 'number'; vuIn.step = '0.01'; vuIn.placeholder = '0,00'; vuIn.value = it.vUnit || '';
+    var vuIn = document.createElement('input'); vuIn.type = 'text'; vuIn.inputMode = 'decimal'; vuIn.placeholder = '0,00'; vuIn.value = it.vUnit || '';
     vuIn.style.cssText = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
     (function(i){ vuIn.addEventListener('input', function() { updateItem(i, 'vUnit', this.value); }); })(idx);
     vuDiv.appendChild(vuIn);
@@ -9258,7 +9349,7 @@ function adminSelect(nome, btn) {
   // Auto-preencher Realizado e Pedidos do mês a partir dos registros do Firebase
   var mesAtual = new Date().toISOString().slice(0,7);
   dbRef('pedidos/' + nome).once('value').then(function(snap) {
-    var pedidos = snap.val() ? Object.values(snap.val()) : [];
+    var pedidos = snap.val() ? Object.values(snap.val()).filter(function(p){ return !p.excluido; }) : [];
     var ativos = pedidos.filter(function(p) {
       return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado';
     });
@@ -9882,6 +9973,18 @@ function importarArquivo(event) {
       <span id="ped-popup-titulo">➜ Converter Negociação em Pedido</span>
       <span onclick="fecharPedidoPopup()" style="cursor:pointer;font-size:16px;line-height:1;">✕</span>
     </div>
+  </div>
+</div>
+
+<!-- Overlay da Lixeira de Pedidos (soft delete) -->
+<div id="lixeira-ped-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) fecharLixeiraPedidos()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:760px;width:100%;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+      <div style="font-size:14px;font-weight:700;color:#1C1C1C;">🗑️ Lixeira de Pedidos</div>
+      <span onclick="fecharLixeiraPedidos()" style="cursor:pointer;font-size:16px;color:#888;line-height:1;">✕</span>
+    </div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:14px;">Pedidos excluídos ficam aqui e podem ser restaurados a qualquer momento.</div>
+    <div id="lixeira-ped-lista"></div>
   </div>
 </div>
 </body>
