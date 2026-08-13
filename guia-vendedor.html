@@ -357,14 +357,6 @@
     .ped-table { font-size: 12px; }
     .ped-table th, .ped-table td { padding: 6px 7px; }
   }
-  @media (max-width: 500px) {
-    .ped-table th:nth-child(4),
-    .ped-table td:nth-child(4),
-    .ped-table th:nth-child(5),
-    .ped-table td:nth-child(5),
-    .ped-table th:nth-child(7),
-    .ped-table td:nth-child(7) { display: none; }
-  }
 
   /* Form de pedido */
   @media (max-width: 600px) {
@@ -839,14 +831,6 @@
   @media (max-width: 768px) {
     .ped-table { font-size: 12px; }
     .ped-table th, .ped-table td { padding: 6px 7px; }
-  }
-  @media (max-width: 500px) {
-    .ped-table th:nth-child(4),
-    .ped-table td:nth-child(4),
-    .ped-table th:nth-child(5),
-    .ped-table td:nth-child(5),
-    .ped-table th:nth-child(7),
-    .ped-table td:nth-child(7) { display: none; }
   }
 
   /* Form de pedido */
@@ -2332,24 +2316,15 @@
         <thead>
           <tr>
             <th>Chamado</th>
-            <th>Data</th>
-            <th>Empresa</th>
-            <th>UF</th>
-            <th>Veículo</th>
             <th>Cliente</th>
-            <th>PN Cliente</th>
-            <th>Material</th>
-            <th>Categoria</th>
-            <th>Qtd</th>
-            <th>Vl. Unit.</th>
             <th>Vl. Total</th>
             <th>Status</th>
-            <th>Ações</th>
           </tr>
         </thead>
         <tbody id="ped-tbody"></tbody>
       </table>
       <p id="ped-vazio" style="text-align:center;color:#aaa;font-size:13px;padding:2rem;">Nenhum pedido registrado este mês.</p>
+      <p style="font-size:10.5px;color:#aaa;text-align:center;margin-top:6px;">👆 Clique num pedido pra ver os detalhes completos (materiais, quantidade, PN, UF etc.)</p>
     </div>
 
     <!-- VISUALIZAÇÃO EM CARDS -->
@@ -6892,84 +6867,35 @@ var _pedFiltroItem = '';
 var _pedFiltroStatus = '';
 
 function linhaPedidoHtml(p, isGestora) {
-  const statusOpts = isGestora ? STATUS_TODOS : STATUS_VENDEDOR;
-  var selectOpts = statusOpts.map(function(s) {
-    return '<option value="' + s + '" ' + (p.status===s?'selected':'') + '>' + (STATUS_LABEL[s]||s) + '</option>';
-  }).join('');
   var vendLabel = isGestora ? '<td style="font-size:12px;font-weight:600;color:#C41E1E;">' + (p.vendedor||'') + '</td>' : '';
-  var materiaisFull = p.itens ? p.itens.map(function(it){ return it.material + (it.codigo ? ' (' + it.codigo + ')' : ''); }).join(', ') : (p.material||'');
-  var materiaisCel;
-  if (p.itens && p.itens.length > 1) {
-    materiaisCel = '<div style="display:flex;align-items:center;gap:6px;">' +
-      '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;display:inline-block;" title="' + materiaisFull.replace(/"/g,'&quot;') + '">' + (p.itens[0].material||'') + '</span>' +
-      '<button type="button" onclick="abrirItensPedidoModal(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#E3F0FA;color:#185FA5;border-radius:4px;padding:2px 7px;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;">👁️ +' + (p.itens.length-1) + '</button>' +
-    '</div>';
-  } else {
-    materiaisCel = '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;display:inline-block;" title="' + materiaisFull.replace(/"/g,'&quot;') + '">' + (materiaisFull || '—') + '</span>';
-  }
-  var catLabel  = p.itens ? (p.itens.length + ' item(s)') : (CAT_LABEL[p.cat]||p.cat);
-  var qtdTotal  = p.itens ? p.itens.reduce(function(s,it){return s+(it.qtd||0);},0) : (p.qtd||0);
-  var vlUnit    = p.itens ? '—' : 'R$ ' + Number(p.vUnit||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-  var veicLabel = p.veiculo==='truck' ? 'Truck' : p.veiculo==='carreta' ? 'Carreta' : p.veiculo==='outros' ? 'Outros' : '—';
-  return '<tr>' +
+  var clienteNome = p.empresa || p.cliente || '—';
+  return '<tr onclick="abrirDetalhePedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="cursor:pointer;">' +
     '<td><span style="display:inline-block;background:#1C1C1C;color:#fff;font-family:monospace;font-size:14px;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + '</span></td>' +
-    '<td style="font-size:13px;">' + (p.data||'') + '</td>' +
+    '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;font-weight:600;" title="' + clienteNome.replace(/"/g,'&quot;') + '">' + clienteNome + '</td>' +
     vendLabel +
-    '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;" title="' + (p.empresa||'').replace(/"/g,'&quot;') + '">' + (p.empresa||'') + '</td>' +
-    '<td style="text-align:center;font-weight:700;font-size:12.5px;color:#185FA5;">' + (p.estado||'—') + '</td>' +
-    '<td style="text-align:center;font-size:13px;">' + veicLabel + '</td>' +
-    '<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;" title="' + (p.cliente||'').replace(/"/g,'&quot;') + '">' + (p.cliente||'') + '</td>' +
-    '<td style="font-family:monospace;font-size:12px;">' + (p.pn||'—') + '</td>' +
-    '<td style="font-size:13px;">' + materiaisCel + '</td>' +
-    '<td style="text-align:center;font-size:12px;background:#F8F7F3;border-radius:4px;padding:3px 6px;">' + catLabel + '</td>' +
-    '<td style="text-align:center;font-size:13px;">' + qtdTotal + '</td>' +
-    '<td style="font-size:13px;">' + vlUnit + '</td>' +
-    '<td style="font-weight:700;font-size:13.5px;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
-    '<td><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" style="font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;">' + selectOpts + '</select></td>' +
-    '<td style="white-space:nowrap;">' +
-      '<button onclick="abrirEditarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#E3F0FA;color:#185FA5;border-radius:4px;padding:4px 9px;cursor:pointer;font-size:13px;margin-right:3px;">✏️</button>' +
-      '<button onclick="deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:4px;padding:4px 9px;cursor:pointer;font-size:13px;">✕</button>' +
-    '</td>' +
+    '<td style="font-weight:700;font-size:14px;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
+    '<td onclick="event.stopPropagation()"><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" style="font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;">' + statusSelectOpts(p, isGestora) + '</select></td>' +
   '</tr>';
 }
 
-function cardPedidoHtml(p, isGestora) {
+function statusSelectOpts(p, isGestora) {
   const statusOpts = isGestora ? STATUS_TODOS : STATUS_VENDEDOR;
-  var selectOpts = statusOpts.map(function(s) {
+  return statusOpts.map(function(s) {
     return '<option value="' + s + '" ' + (p.status===s?'selected':'') + '>' + (STATUS_LABEL[s]||s) + '</option>';
   }).join('');
-  var materiaisFull = p.itens ? p.itens.map(function(it){ return it.material + (it.codigo ? ' (' + it.codigo + ')' : ''); }).join(', ') : (p.material||'');
-  var itensResumo;
-  if (p.itens && p.itens.length > 1) {
-    itensResumo = '<span style="color:#555;">' + (p.itens[0].material||'') + '</span> ' +
-      '<button type="button" onclick="abrirItensPedidoModal(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#E3F0FA;color:#185FA5;border-radius:4px;padding:2px 7px;cursor:pointer;font-size:11px;font-weight:600;">👁️ +' + (p.itens.length-1) + ' itens</button>';
-  } else {
-    itensResumo = '<span style="color:#555;">' + (materiaisFull || '—') + '</span>';
-  }
-  var veicLabel = p.veiculo==='truck' ? 'Truck' : p.veiculo==='carreta' ? 'Carreta' : p.veiculo==='outros' ? 'Outros' : '—';
+}
+
+function cardPedidoHtml(p, isGestora) {
+  var clienteNome = p.empresa || p.cliente || '—';
   var vendLine = isGestora ? '<div style="font-size:11px;font-weight:700;color:#C41E1E;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">' + (p.vendedor||'') + '</div>' : '';
-  return '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:14px 16px;">' +
+  return '<div onclick="abrirDetalhePedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:14px 16px;cursor:pointer;">' +
     vendLine +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;">' +
       '<span style="display:inline-block;background:#1C1C1C;color:#fff;font-family:monospace;font-size:15px;font-weight:700;padding:5px 12px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + '</span>' +
       '<span class="status-badge s-' + (p.status||'') + '" style="font-size:11px;">' + (STATUS_LABEL[p.status]||p.status||'') + '</span>' +
     '</div>' +
-    '<div style="font-size:15px;font-weight:700;color:#1C1C1C;margin-bottom:2px;">' + (p.empresa||'—') + '</div>' +
-    '<div style="font-size:12.5px;color:#888;margin-bottom:10px;">' + (p.cliente||'') + (p.pn ? ' · PN ' + p.pn : '') + '</div>' +
-    '<div style="display:flex;gap:14px;font-size:12px;color:#666;margin-bottom:10px;flex-wrap:wrap;">' +
-      '<span>📅 ' + (p.data||'—') + '</span>' +
-      '<span>📍 ' + (p.estado||'—') + '</span>' +
-      '<span>🚛 ' + veicLabel + '</span>' +
-    '</div>' +
-    '<div style="background:#F8F7F3;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:12.5px;">' + itensResumo + '</div>' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-      '<span style="font-size:17px;font-weight:700;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</span>' +
-      '<div style="display:flex;gap:6px;align-items:center;">' +
-        '<select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" style="font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid #E2E0D8;cursor:pointer;">' + selectOpts + '</select>' +
-        '<button onclick="abrirEditarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#E3F0FA;color:#185FA5;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;">✏️</button>' +
-        '<button onclick="deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#FFEBEE;color:#C41E1E;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13px;">✕</button>' +
-      '</div>' +
-    '</div>' +
+    '<div style="font-size:16px;font-weight:700;color:#1C1C1C;margin-bottom:10px;">' + clienteNome + '</div>' +
+    '<div style="font-size:18px;font-weight:700;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
   '</div>';
 }
 
@@ -6997,37 +6923,63 @@ function setPedViewMode(modo) {
   if (scrollFixo) scrollFixo.style.display = modo === 'tabela' ? 'block' : 'none';
 }
 
-function abrirItensPedidoModal(vend, pedidoId) {
+function abrirDetalhePedido(vend, pedidoId) {
   var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vend && x.id === pedidoId; });
-  if (!p || !p.itens) return;
-  var body = document.getElementById('ped-itens-modal-body');
-  var titulo = document.getElementById('ped-itens-modal-titulo');
-  if (titulo) titulo.textContent = (p.empresa || p.cliente || 'Pedido') + ' — Chamado ' + (p.chamado || '—');
+  if (!p) return;
+  var isGestora = _pedIsGestora;
+  var body = document.getElementById('ped-detalhe-modal-body');
+  var titulo = document.getElementById('ped-detalhe-modal-titulo');
+  if (titulo) titulo.textContent = (p.empresa || p.cliente || 'Pedido');
+  var veicLabel = p.veiculo==='truck' ? 'Truck' : p.veiculo==='carreta' ? 'Carreta' : p.veiculo==='outros' ? 'Outros' : '—';
+  var itens = p.itens && p.itens.length ? p.itens : (p.material ? [{material:p.material, qtd:p.qtd||0, vUnit:p.vUnit||0}] : []);
+
   if (body) {
-    body.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
-      '<thead><tr>' +
-        '<th style="text-align:left;padding:6px 8px;background:#F8F7F3;border-bottom:1px solid #E2E0D8;">Material</th>' +
-        '<th style="text-align:center;padding:6px 8px;background:#F8F7F3;border-bottom:1px solid #E2E0D8;">Qtd</th>' +
-        '<th style="text-align:right;padding:6px 8px;background:#F8F7F3;border-bottom:1px solid #E2E0D8;">Vl. Unit.</th>' +
-        '<th style="text-align:right;padding:6px 8px;background:#F8F7F3;border-bottom:1px solid #E2E0D8;">Vl. Total</th>' +
-      '</tr></thead><tbody>' +
-      p.itens.map(function(it) {
-        var vt = Math.round((it.qtd||0)*(it.vUnit||0)*100)/100;
-        return '<tr>' +
-          '<td style="padding:6px 8px;border-bottom:1px solid #F0EEEA;">' + (it.material||'') + (it.codigo ? ' <span style="color:#aaa;font-size:10px;">(' + it.codigo + ')</span>' : '') + '</td>' +
-          '<td style="padding:6px 8px;border-bottom:1px solid #F0EEEA;text-align:center;">' + (it.qtd||0) + '</td>' +
-          '<td style="padding:6px 8px;border-bottom:1px solid #F0EEEA;text-align:right;">R$ ' + Number(it.vUnit||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
-          '<td style="padding:6px 8px;border-bottom:1px solid #F0EEEA;text-align:right;font-weight:600;">R$ ' + vt.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
-        '</tr>';
-      }).join('') +
-      '</tbody></table>';
+    body.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">' +
+        '<span style="display:inline-block;background:#1C1C1C;color:#fff;font-family:monospace;font-size:16px;font-weight:700;padding:6px 14px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + '</span>' +
+        '<span class="status-badge s-' + (p.status||'') + '" style="font-size:12px;">' + (STATUS_LABEL[p.status]||p.status||'') + '</span>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:16px;">' +
+        (isGestora ? '<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Vendedor</div><div style="font-size:13px;font-weight:600;color:#C41E1E;">' + (p.vendedor||'—') + '</div></div>' : '') +
+        '<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Data</div><div style="font-size:13px;font-weight:600;">' + (p.data||'—') + '</div></div>' +
+        '<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">UF</div><div style="font-size:13px;font-weight:600;">' + (p.estado||'—') + '</div></div>' +
+        '<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Veículo</div><div style="font-size:13px;font-weight:600;">' + veicLabel + '</div></div>' +
+        '<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">PN Cliente</div><div style="font-size:13px;font-weight:600;font-family:monospace;">' + (p.pn||'—') + '</div></div>' +
+        (p.cliente && p.empresa ? '<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Contato</div><div style="font-size:13px;font-weight:600;">' + p.cliente + '</div></div>' : '') +
+      '</div>' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:8px;">Materiais</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px;">' +
+        '<thead><tr>' +
+          '<th style="text-align:left;padding:6px 8px;background:#F8F7F3;border-bottom:1px solid #E2E0D8;">Material</th>' +
+          '<th style="text-align:center;padding:6px 8px;background:#F8F7F3;border-bottom:1px solid #E2E0D8;">Qtd</th>' +
+          '<th style="text-align:right;padding:6px 8px;background:#F8F7F3;border-bottom:1px solid #E2E0D8;">Vl. Unit.</th>' +
+          '<th style="text-align:right;padding:6px 8px;background:#F8F7F3;border-bottom:1px solid #E2E0D8;">Vl. Total</th>' +
+        '</tr></thead><tbody>' +
+        itens.map(function(it) {
+          var vt = Math.round((it.qtd||0)*(it.vUnit||0)*100)/100;
+          return '<tr>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #F0EEEA;">' + (it.material||'') + (it.codigo ? ' <span style="color:#aaa;font-size:10px;">(' + it.codigo + ')</span>' : '') + '</td>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #F0EEEA;text-align:center;">' + (it.qtd||0) + '</td>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #F0EEEA;text-align:right;">R$ ' + Number(it.vUnit||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
+            '<td style="padding:6px 8px;border-bottom:1px solid #F0EEEA;text-align:right;font-weight:600;">R$ ' + vt.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1.5px solid #E2E0D8;">' +
+        '<span style="font-size:12px;color:#888;">Total do pedido</span>' +
+        '<span style="font-size:20px;font-weight:700;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:16px;">' +
+        '<button onclick="fecharDetalhePedido(); abrirEditarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#E3F0FA;color:#185FA5;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">✏️ Editar Pedido</button>' +
+        '<button onclick="fecharDetalhePedido(); deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#FFEBEE;color:#C41E1E;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">🗑️ Excluir</button>' +
+      '</div>';
   }
-  var ov = document.getElementById('ped-itens-modal-overlay');
+  var ov = document.getElementById('ped-detalhe-modal-overlay');
   if (ov) ov.style.display = 'flex';
 }
 
-function fecharItensPedidoModal() {
-  var ov = document.getElementById('ped-itens-modal-overlay');
+function fecharDetalhePedido() {
+  var ov = document.getElementById('ped-detalhe-modal-overlay');
   if (ov) ov.style.display = 'none';
 }
 
@@ -7349,7 +7301,7 @@ function listenPedidos(vendNome, isGestora) {
       const th = document.createElement('th');
       th.className = 'vend-col';
       th.textContent = 'Vendedor';
-      thead.insertBefore(th, thead.children[1]);
+      thead.insertBefore(th, thead.children[2]);
     }
 
     let allPedidos = {};
@@ -10137,14 +10089,14 @@ function importarArquivo(event) {
   </div>
 </div>
 
-<!-- Overlay de detalhamento dos itens de um pedido -->
-<div id="ped-itens-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) fecharItensPedidoModal()">
-  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:560px;width:100%;max-height:80vh;overflow-y:auto;">
+<!-- Overlay de detalhes completos de um pedido -->
+<div id="ped-detalhe-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) fecharDetalhePedido()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:600px;width:100%;max-height:88vh;overflow-y:auto;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div style="font-size:14px;font-weight:700;color:#1C1C1C;" id="ped-itens-modal-titulo">Itens do pedido</div>
-      <span onclick="fecharItensPedidoModal()" style="cursor:pointer;font-size:16px;color:#888;line-height:1;">✕</span>
+      <div style="font-size:16px;font-weight:700;color:#1C1C1C;" id="ped-detalhe-modal-titulo">Pedido</div>
+      <span onclick="fecharDetalhePedido()" style="cursor:pointer;font-size:18px;color:#888;line-height:1;">✕</span>
     </div>
-    <div id="ped-itens-modal-body"></div>
+    <div id="ped-detalhe-modal-body"></div>
   </div>
 </div>
 </body>
