@@ -2989,7 +2989,7 @@
               <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">8h30</span><div style="font-size:12px;color:#aaa;">☕ Café — pausa</div></div>
               <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">8h45</span><div><b style="font-size:12.5px;">Continua pendências</b><div style="font-size:11px;color:#888;">finaliza até 10h</div></div></div>
               <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">9h30</span><div style="font-size:12px;color:#aaa;">⏸️ Pausa — 15 min</div></div>
-              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">10h00</span><div><b style="font-size:12.5px;">Ligações + negociações + implantações</b><div style="margin-top:3px;"><span style="background:#F1EFE8;color:#555;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;">meta: 15 lig · 5 neg</span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">10h00</span><div><b style="font-size:12.5px;">Ligações + negociações + implantações</b><div style="margin-top:3px;"><span style="background:#F1EFE8;color:#555;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;">meta: <span id="evt-badge-manha">15 lig · 10 neg</span></span></div></div></div>
               <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">11h45</span><div><b style="font-size:12.5px;">Atualização pré-almoço</b><div style="font-size:11px;color:#888;">lig., neg., fechamentos, planilha</div><div style="margin-top:3px;"><span style="background:#FFF3E0;color:#E65100;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">⚠️ obrigatório</span></div></div></div>
               <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">12h00</span><div style="font-size:12px;color:#aaa;">🍽️ Almoço — pausa</div></div>
             </div>
@@ -3001,10 +3001,10 @@
               <span style="font-size:12px;font-weight:700;color:#4A148C;">TARDE — 13h às 18h</span>
             </div>
             <div style="display:grid;gap:9px;">
-              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">13h00</span><div><b style="font-size:12.5px;">Ligações + negociações + implantações</b><div style="margin-top:3px;"><span style="background:#F1EFE8;color:#555;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;">meta: 35 lig · 5 neg</span></div></div></div>
-              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">15h30</span><div><b style="font-size:12.5px;">Grade de entrega</b><div style="font-size:11px;color:#888;">inserção na grade até 15h30</div><div style="margin-top:3px;"><span style="background:#FFEBEE;color:#C41E1E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">⏰ deadline 15h30</span></div></div></div>
-              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">16h30</span><div><b style="font-size:12.5px;">Alerta: prazo de pedidos</b><div style="font-size:11px;color:#888;">todos os pedidos devem ser implantados até 17h</div><div style="margin-top:3px;"><span style="background:#FFEBEE;color:#C41E1E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">⏰ deadline 17h</span></div></div></div>
-              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">17h30</span><div><b style="font-size:12.5px;">Atualização final + encerramento</b><div style="font-size:11px;color:#888;">Qtd ligações · Qtd + valor negociações · Qtd + valor fechamentos · Planilha de vendas</div><div style="margin-top:3px;"><span style="background:#E8F5E9;color:#1B5E20;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">✓ obrigatório antes de sair — saída 18h</span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">13h00</span><div><b style="font-size:12.5px;">Ligações + negociações + implantações</b><div style="margin-top:3px;"><span style="background:#F1EFE8;color:#555;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;">meta: <span id="evt-badge-tarde">35 lig · 10 neg</span></span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">15h30</span><div><b style="font-size:12.5px;">Grade de entrega</b><div style="font-size:11px;color:#888;">inserção na grade até <span id="evt-txt-prazo-grade">15h30</span></div><div style="margin-top:3px;"><span style="background:#FFEBEE;color:#C41E1E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">⏰ deadline <span id="evt-badge-prazo-grade">15h30</span></span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">16h30</span><div><b style="font-size:12.5px;">Alerta: prazo de pedidos</b><div style="font-size:11px;color:#888;">todos os pedidos devem ser implantados até <span id="evt-txt-prazo-implantacao">17h</span></div><div style="margin-top:3px;"><span style="background:#FFEBEE;color:#C41E1E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">⏰ deadline <span id="evt-badge-prazo-implantacao">17h</span></span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:#888;min-width:38px;">17h30</span><div><b style="font-size:12.5px;">Atualização final + encerramento</b><div style="font-size:11px;color:#888;">Qtd ligações · Qtd + valor negociações · Qtd + valor fechamentos · Planilha de vendas</div><div style="margin-top:3px;"><span style="background:#E8F5E9;color:#1B5E20;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">✓ obrigatório antes de sair — saída <span id="evt-badge-saida">18h</span></span></div></div></div>
             </div>
           </div>
         </div>
@@ -3013,18 +3013,18 @@
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
         <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem;text-align:center;">
           <div style="font-size:26px;font-weight:700;color:#7B1FA2;" id="evt-lig-meta">50</div>
-          <div style="font-size:11px;color:#888;">lig/dia<br><span style="font-size:9.5px;">(15m+35t)</span></div>
+          <div style="font-size:11px;color:#888;">lig/dia<br><span style="font-size:9.5px;" id="evt-lig-meta-detalhe">(15m+35t)</span></div>
         </div>
         <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem;text-align:center;">
-          <div style="font-size:26px;font-weight:700;color:#2E7D32;">10</div>
+          <div style="font-size:26px;font-weight:700;color:#2E7D32;" id="evt-neg-meta">10</div>
           <div style="font-size:11px;color:#888;">negociações/dia</div>
         </div>
         <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem;text-align:center;">
-          <div style="font-size:26px;font-weight:700;color:#E65100;">2</div>
+          <div style="font-size:26px;font-weight:700;color:#E65100;" id="evt-atualiz-meta">2</div>
           <div style="font-size:11px;color:#888;">atualizações<br>obrigatórias</div>
         </div>
         <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem;text-align:center;">
-          <div style="font-size:26px;font-weight:700;color:#C41E1E;">17h</div>
+          <div style="font-size:26px;font-weight:700;color:#C41E1E;" id="evt-prazo-meta">17h</div>
           <div style="font-size:11px;color:#888;">prazo<br>implantação</div>
         </div>
       </div>
@@ -3412,6 +3412,7 @@
     <!-- SUB-ABAS DA GESTÃO -->
     <div class="admsub-nav">
       <button class="qf-btn active" id="admsub-btn-avaliacao" onclick="showAdminSub('avaliacao',this)">⭐ Avaliação</button>
+      <button class="qf-btn" id="admsub-btn-tempo" onclick="showAdminSub('tempo',this)">⏱️ Gestão de Tempo</button>
       <button class="qf-btn" id="admsub-btn-antonio" onclick="showAdminSub('antonio',this)">🎧 Antônio — Escuta</button>
     </div>
 
@@ -3566,6 +3567,87 @@
 
     </div>
     <!-- fecha admsub-avaliacao -->
+    </div>
+
+    <div id="admsub-tempo" class="admsub-content">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+        <div style="background:#7B1FA2;border-radius:8px;padding:6px 10px;font-size:18px;">⏱️</div>
+        <div>
+          <h2 style="font-size:16px;font-weight:600;color:#1C1C1C;">Gestão de Tempo — Ajustar por Vendedor</h2>
+          <p style="font-size:12px;color:#888;">Personalize as metas diárias e os prazos. O vendedor vê isso na sub-aba "Gestão de Tempo" da Evolução dele.</p>
+        </div>
+      </div>
+
+      <!-- SELECTOR -->
+      <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
+        <div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Novos</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <button onclick="admTempoSelect('PEDRO',this)" class="qf-btn active" id="atbtn-PEDRO">Pedro</button>
+          <button onclick="admTempoSelect('WELLINGTON',this)" class="qf-btn" id="atbtn-WELLINGTON">Wellington</button>
+          <button onclick="admTempoSelect('JONATAS',this)" class="qf-btn" id="atbtn-JONATAS">Jonatas</button>
+          <button onclick="admTempoSelect('ANTONIO',this)" class="qf-btn" id="atbtn-ANTONIO">Antônio</button>
+          <button onclick="admTempoSelect('THALES',this)" class="qf-btn" id="atbtn-THALES">Thales</button>
+        </div>
+        <div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Veteranos</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button onclick="admTempoSelect('GESSICA',this)" class="qf-btn" id="atbtn-GESSICA">Géssica</button>
+          <button onclick="admTempoSelect('LETICIA',this)" class="qf-btn" id="atbtn-LETICIA">Letícia</button>
+          <button onclick="admTempoSelect('ELIZIANE',this)" class="qf-btn" id="atbtn-ELIZIANE">Eliziane</button>
+        </div>
+      </div>
+
+      <div style="display:grid;gap:14px;">
+        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7B1FA2;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📞 Metas de Ligações do Dia</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+            <div>
+              <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Manhã</label>
+              <input id="at-lig-manha" type="number" placeholder="15" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Tarde</label>
+              <input id="at-lig-tarde" type="number" placeholder="35" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Negociações/dia</label>
+              <input id="at-neg-dia" type="number" placeholder="10" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Atualizações obrigatórias/dia</label>
+              <input id="at-atualizacoes" type="number" placeholder="2" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7B1FA2;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">⏰ Prazos do Dia</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;">
+            <div>
+              <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Grade de entrega (deadline)</label>
+              <input id="at-prazo-grade" type="text" placeholder="Ex: 15h30" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Implantação de pedidos (deadline)</label>
+              <input id="at-prazo-implantacao" type="text" placeholder="Ex: 17h" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Horário de saída</label>
+              <input id="at-horario-saida" type="text" placeholder="Ex: 18h" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7B1FA2;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📝 Observações / Ajustes específicos</div>
+          <textarea id="at-obs" rows="3" placeholder="Ex: Em ramp-up até dia 30/09, meta reduzida temporariamente." style="width:100%;padding:9px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;resize:vertical;"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button onclick="admTempoRestaurarPadrao()" style="padding:9px 18px;border-radius:7px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">↩️ Restaurar padrão</button>
+          <button onclick="admTempoSalvar()" style="padding:9px 22px;border-radius:7px;border:none;background:#7B1FA2;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Salvar</button>
+        </div>
+        <div id="at-toast" style="display:none;background:#1B5E20;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;text-align:center;">✅ Gestão de tempo salva! O vendedor verá na Evolução dele.</div>
+      </div>
     </div>
 
     <div id="admsub-antonio" class="admsub-content">
@@ -6263,8 +6345,52 @@ function evVendNav(secao, btn) {
   if (alvo) alvo.style.display = 'grid';
   document.querySelectorAll('#ev-vendedor-section .qf-btn').forEach(function(b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
-  if (secao === 'tempo') renderGestaoTempoHoje();
+  if (secao === 'tempo') { aplicarGestaoTempoNaTela(); renderGestaoTempoHoje(); }
   if (secao === 'perfil') { renderEvComissao(); renderEvConquistas(); renderEvVendasMes(); renderEvRankingMes(); }
+}
+
+// ── GESTÃO DE TEMPO — aplica metas/prazos personalizados (definidos pela gestora) na tela ──
+var _minhaGestaoTempo = null;
+
+function aplicarGestaoTempoNaTela() {
+  if (!currentUser) return;
+  dbRef('gestaoTempo/' + currentUser).once('value').then(function(snap) {
+    var g = snap.val() || GESTAO_TEMPO_PADRAO;
+    _minhaGestaoTempo = g;
+    var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+    set('evt-badge-manha', (g.ligManha != null ? g.ligManha : 15) + ' lig · ' + (g.negDia != null ? g.negDia : 10) + ' neg');
+    set('evt-badge-tarde', (g.ligTarde != null ? g.ligTarde : 35) + ' lig · ' + (g.negDia != null ? g.negDia : 10) + ' neg');
+    set('evt-txt-prazo-grade', g.prazoGrade || '15h30');
+    set('evt-badge-prazo-grade', g.prazoGrade || '15h30');
+    set('evt-txt-prazo-implantacao', g.prazoImplantacao || '17h');
+    set('evt-badge-prazo-implantacao', g.prazoImplantacao || '17h');
+    set('evt-badge-saida', g.horarioSaida || '18h');
+    var ligManha = g.ligManha != null ? g.ligManha : 15;
+    var ligTarde = g.ligTarde != null ? g.ligTarde : 35;
+    set('evt-lig-meta', ligManha + ligTarde);
+    set('evt-lig-meta-detalhe', '(' + ligManha + 'm+' + ligTarde + 't)');
+    set('evt-neg-meta', g.negDia != null ? g.negDia : 10);
+    set('evt-atualiz-meta', g.atualizacoes != null ? g.atualizacoes : 2);
+    set('evt-prazo-meta', g.prazoImplantacao || '17h');
+    if (g.obs) {
+      var rotinaBox = document.getElementById('evt-obs-gestora');
+      if (!rotinaBox) {
+        var alvo = document.getElementById('ev-sub-tempo');
+        if (alvo) {
+          var div = document.createElement('div');
+          div.id = 'evt-obs-gestora';
+          div.style.cssText = 'background:#FFF3E0;border-radius:10px;padding:10px 14px;font-size:12px;color:#E65100;border-left:3px solid #E65100;';
+          alvo.insertBefore(div, alvo.firstChild);
+        }
+        rotinaBox = document.getElementById('evt-obs-gestora');
+      }
+      if (rotinaBox) rotinaBox.innerHTML = '📝 <strong>Observação da gestão:</strong> ' + g.obs;
+    } else {
+      var existente = document.getElementById('evt-obs-gestora');
+      if (existente) existente.remove();
+    }
+    renderGestaoTempoHoje();
+  });
 }
 
 // ── GESTÃO DE TEMPO — ritmo real de hoje ──
@@ -6273,11 +6399,13 @@ function renderGestaoTempoHoje() {
   var box = document.getElementById('evt-hoje-box');
   if (!box) return;
   var hojeIso = new Date().toISOString().split('T')[0];
+  var g = _minhaGestaoTempo || GESTAO_TEMPO_PADRAO;
+  var metaLigDia = (g.ligManha != null ? g.ligManha : 15) + (g.ligTarde != null ? g.ligTarde : 35);
+  var metaNegDia = g.negDia != null ? g.negDia : 10;
 
   dbRef('ligacoes/' + currentUser).once('value').then(function(snap) {
     var dados = snap.val() || {};
     var ligHoje = Object.values(dados).filter(function(l){ return l && l.data === hojeIso; }).reduce(function(s,l){ return s+(l.qtd||0); }, 0);
-    var metaLigDia = 50;
     var pctLig = Math.min(Math.round((ligHoje/metaLigDia)*100), 100);
 
     var negHoje = (negState.porVendedor[currentUser] || []).filter(function(n) {
@@ -6285,7 +6413,6 @@ function renderGestaoTempoHoje() {
       var d = new Date(n.criadoEm);
       return d.toISOString().split('T')[0] === hojeIso;
     }).length;
-    var metaNegDia = 10;
     var pctNeg = Math.min(Math.round((negHoje/metaNegDia)*100), 100);
 
     var pedHoje = (_pedTodosGeral || []).filter(function(p) { return p.data === hojeIso; });
@@ -10002,6 +10129,7 @@ function entrarComoUsuario(user) {
       listenLigacoesVendedor(user);
     }
     if (v.tipo !== 'gestora') {
+      aplicarGestaoTempoNaTela();
       renderGestaoTempoHoje();
       renderEvComissao();
       renderEvConquistas();
@@ -10552,6 +10680,76 @@ function showAdminSub(name, btn) {
   document.querySelectorAll('#tab-admin .admsub-nav .qf-btn').forEach(function(b){ b.classList.remove('active'); });
   document.getElementById('admsub-' + name).classList.add('active');
   btn.classList.add('active');
+  if (name === 'tempo') {
+    var atbtn = document.getElementById('atbtn-' + adminVendedor);
+    admTempoSelect(adminVendedor, atbtn);
+  }
+}
+
+// ══ GESTÃO DE TEMPO — metas/prazos personalizados por vendedor ══
+var GESTAO_TEMPO_PADRAO = {
+  ligManha: 15, ligTarde: 35, negDia: 10, atualizacoes: 2,
+  prazoGrade: '15h30', prazoImplantacao: '17h', horarioSaida: '18h', obs: ''
+};
+var admTempoVendedorAtual = null;
+
+function admTempoSelect(nome, btn) {
+  admTempoVendedorAtual = nome;
+  document.querySelectorAll('[id^="atbtn-"]').forEach(function(b) { b.classList.remove('active'); });
+  var abtn = btn || document.getElementById('atbtn-' + nome);
+  if (abtn) abtn.classList.add('active');
+
+  var set = function(id, val) { var el = document.getElementById(id); if (el) el.value = (val === undefined || val === null) ? '' : val; };
+  set('at-lig-manha', ''); set('at-lig-tarde', ''); set('at-neg-dia', ''); set('at-atualizacoes', '');
+  set('at-prazo-grade', ''); set('at-prazo-implantacao', ''); set('at-horario-saida', ''); set('at-obs', '');
+
+  dbRef('gestaoTempo/' + nome).once('value').then(function(snap) {
+    var g = snap.val() || GESTAO_TEMPO_PADRAO;
+    set('at-lig-manha', g.ligManha != null ? g.ligManha : GESTAO_TEMPO_PADRAO.ligManha);
+    set('at-lig-tarde', g.ligTarde != null ? g.ligTarde : GESTAO_TEMPO_PADRAO.ligTarde);
+    set('at-neg-dia', g.negDia != null ? g.negDia : GESTAO_TEMPO_PADRAO.negDia);
+    set('at-atualizacoes', g.atualizacoes != null ? g.atualizacoes : GESTAO_TEMPO_PADRAO.atualizacoes);
+    set('at-prazo-grade', g.prazoGrade || GESTAO_TEMPO_PADRAO.prazoGrade);
+    set('at-prazo-implantacao', g.prazoImplantacao || GESTAO_TEMPO_PADRAO.prazoImplantacao);
+    set('at-horario-saida', g.horarioSaida || GESTAO_TEMPO_PADRAO.horarioSaida);
+    set('at-obs', g.obs || '');
+  }).catch(function() {
+    var g = GESTAO_TEMPO_PADRAO;
+    set('at-lig-manha', g.ligManha); set('at-lig-tarde', g.ligTarde); set('at-neg-dia', g.negDia);
+    set('at-atualizacoes', g.atualizacoes); set('at-prazo-grade', g.prazoGrade);
+    set('at-prazo-implantacao', g.prazoImplantacao); set('at-horario-saida', g.horarioSaida);
+  });
+}
+
+function admTempoRestaurarPadrao() {
+  var g = GESTAO_TEMPO_PADRAO;
+  var set = function(id, val) { var el = document.getElementById(id); if (el) el.value = val; };
+  set('at-lig-manha', g.ligManha); set('at-lig-tarde', g.ligTarde); set('at-neg-dia', g.negDia);
+  set('at-atualizacoes', g.atualizacoes); set('at-prazo-grade', g.prazoGrade);
+  set('at-prazo-implantacao', g.prazoImplantacao); set('at-horario-saida', g.horarioSaida);
+  set('at-obs', '');
+}
+
+function admTempoSalvar() {
+  if (!admTempoVendedorAtual) return;
+  var get = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  var dados = {
+    ligManha: parseInt(get('at-lig-manha'), 10) || GESTAO_TEMPO_PADRAO.ligManha,
+    ligTarde: parseInt(get('at-lig-tarde'), 10) || GESTAO_TEMPO_PADRAO.ligTarde,
+    negDia: parseInt(get('at-neg-dia'), 10) || GESTAO_TEMPO_PADRAO.negDia,
+    atualizacoes: parseInt(get('at-atualizacoes'), 10) || GESTAO_TEMPO_PADRAO.atualizacoes,
+    prazoGrade: get('at-prazo-grade') || GESTAO_TEMPO_PADRAO.prazoGrade,
+    prazoImplantacao: get('at-prazo-implantacao') || GESTAO_TEMPO_PADRAO.prazoImplantacao,
+    horarioSaida: get('at-horario-saida') || GESTAO_TEMPO_PADRAO.horarioSaida,
+    obs: get('at-obs'),
+    updatedAt: Date.now()
+  };
+  dbRef('gestaoTempo/' + admTempoVendedorAtual).set(dados)
+    .then(function() {
+      var toast = document.getElementById('at-toast');
+      if (toast) { toast.style.display = 'block'; setTimeout(function() { toast.style.display = 'none'; }, 2800); }
+    })
+    .catch(function(e) { alert('Erro ao salvar: ' + (e && e.message ? e.message : '')); });
 }
 
 // ══ Checklist de escuta — Antônio ══
