@@ -7471,8 +7471,16 @@ function linhaPedidoHtml(p, isGestora) {
 
 function statusSelectOpts(p, isGestora) {
   const statusOpts = isGestora ? STATUS_TODOS : STATUS_VENDEDOR;
-  return statusOpts.map(function(s) {
-    return '<option value="' + s + '" ' + (p.status===s?'selected':'') + '>' + (STATUS_LABEL[s]||s) + '</option>';
+  var opts = statusOpts.slice();
+  // Se o status atual do pedido nao esta entre as opcoes permitidas pra esse perfil
+  // (ex: vendedor vendo um pedido que a gestora marcou como "Faturado"), o dropdown
+  // precisa mostrar o valor real mesmo assim — senao o navegador cai pra 1a opcao da lista
+  // e parece que o status "voltou" pra Agendamento, quando na verdade os dados estao corretos.
+  var travado = p.status && opts.indexOf(p.status) === -1;
+  if (travado) opts = [p.status].concat(opts);
+  return opts.map(function(s) {
+    var estaTravado = travado && s === p.status;
+    return '<option value="' + s + '" ' + (p.status===s?'selected':'') + (estaTravado ? ' disabled' : '') + '>' + (STATUS_LABEL[s]||s) + (estaTravado ? ' 🔒' : '') + '</option>';
   }).join('');
 }
 
