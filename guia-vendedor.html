@@ -4493,6 +4493,7 @@ function abrirEditarPedido(vendNome, pedidoId) {
   dbRef('pedidos/' + vendNome + '/' + pedidoId).once('value').then(function(snap) {
     var p = snap.val();
     if (!p) { alert('Pedido nao encontrado.'); return; }
+    if (p.status === 'faturado' && currentUser !== 'JULIANA') { avisarPedidoTravado(); return; }
     pedidoEmEdicao = { vendNome: vendNome, pedidoId: pedidoId, pedido: p };
 
     // Fill modal fields
@@ -4552,7 +4553,7 @@ function renderEditItens() {
     if (!it.cat && it.material && mapaComissaoPorMaterialEdit[it.material]) {
       it.cat = mapaComissaoPorMaterialEdit[it.material];
     }
-    var vt = Math.round((it.qtd||0)*(it.vUnit||0)*100)/100;
+    var vt = Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100;
     totalGeral += vt;
     var div = document.createElement('div');
     div.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;background:#F8F7F3;border-radius:8px;padding:10px;margin-bottom:8px;position:relative;';
@@ -5183,7 +5184,7 @@ function renderRanking(allPedidos, allLigacoes) {
 
   function getValor(p) {
     if (p.itens && p.itens.length > 0) {
-      return p.itens.reduce(function(s,it){ return s+Math.round((it.qtd||0)*(it.vUnit||0)*100)/100; },0);
+      return p.itens.reduce(function(s,it){ return s+Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100; },0);
     }
     return Number(p.vTotal||0);
   }
@@ -5295,7 +5296,7 @@ function renderPremiacoes(allPedidos) {
   // Aço: who sold most and if meta was hit
   function getVlAco(p) {
     if (p.itens) return p.itens.filter(function(it){ return it.cat==='aco'; })
-      .reduce(function(s,it){ return s+Math.round((it.qtd||0)*(it.vUnit||0)*100)/100; },0);
+      .reduce(function(s,it){ return s+Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100; },0);
     return p.cat === 'aco' ? Number(p.vTotal||0) : 0;
   }
 
@@ -5484,7 +5485,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
   function notCanceled(p) { return p.status !== 'cancelado'; }
   function getValor(p) {
     if (p.itens && p.itens.length > 0) {
-      return p.itens.reduce(function(s,it){ return s+Math.round((it.qtd||0)*(it.vUnit||0)*100)/100; },0);
+      return p.itens.reduce(function(s,it){ return s+Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100; },0);
     }
     return Number(p.vTotal||0);
   }
@@ -5706,7 +5707,7 @@ function renderRampaNovos() {
 
   function getValor(p) {
     if (p.itens && p.itens.length > 0) {
-      return p.itens.reduce(function(s,it){ return s + Math.round((it.qtd||0)*(it.vUnit||0)*100)/100; },0);
+      return p.itens.reduce(function(s,it){ return s + Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100; },0);
     }
     return Number(p.vTotal||0);
   }
@@ -6024,7 +6025,7 @@ function renderEvolucaoGestora(allPedidos) {
   function getValor(p) {
     if (p.itens && p.itens.length > 0) {
       return p.itens.reduce(function(s,it) {
-        return s + Math.round((it.qtd||0)*(it.vUnit||0)*100)/100;
+        return s + Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100;
       }, 0);
     }
     return Number(p.vTotal||0);
@@ -6164,7 +6165,7 @@ function calcComissaoGestora(pedidosTodosVendedores) {
     }
     if (p.itens && p.itens.length > 0) {
       p.itens.forEach(function(it) {
-        totalEquipe += Math.round((it.qtd||0) * (it.vUnit||0) * 100) / 100;
+        totalEquipe += Math.round(numSafe(it.qtd) * numSafe(it.vUnit) * 100) / 100;
       });
     } else {
       totalEquipe += Number(p.vTotal||0);
@@ -6513,7 +6514,7 @@ function renderEvComissao() {
   pedsPeriodo.forEach(function(p) {
     if (p.itens && p.itens.length) {
       p.itens.forEach(function(it) {
-        var val = Math.round((it.qtd||0)*(it.vUnit||0)*100)/100;
+        var val = Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100;
         vTotalVend += val;
         if (it.cat === 'placa') vPlacas += val*CAT_PCT.placa;
         else if (it.cat === 'grx') vComp += val*CAT_PCT.grx;
@@ -6622,7 +6623,7 @@ function renderEvVendasMes() {
 
   var MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   function getValor(p) {
-    if (p.itens && p.itens.length) return p.itens.reduce(function(s,it){ return s+(Number(it.qtd)||0)*(Number(it.vUnit)||0); }, 0);
+    if (p.itens && p.itens.length) return p.itens.reduce(function(s,it){ return s+numSafe(it.qtd)*numSafe(it.vUnit); }, 0);
     return Number(p.vTotal||0);
   }
 
@@ -6663,7 +6664,7 @@ function renderEvRankingMes() {
   }
 
   function getValor(p) {
-    if (p.itens && p.itens.length) return p.itens.reduce(function(s,it){ return s+(Number(it.qtd)||0)*(Number(it.vUnit)||0); }, 0);
+    if (p.itens && p.itens.length) return p.itens.reduce(function(s,it){ return s+numSafe(it.qtd)*numSafe(it.vUnit); }, 0);
     return Number(p.vTotal||0);
   }
 
@@ -6951,6 +6952,16 @@ const STATUS_LABEL = {
 };
 
 const CAT_LABEL = { placa:'Placa', grx:'GRX/Comp.', aco:'Aço' };
+// Converte qtd/vUnit pra número de forma segura, aceitando tanto número quanto
+// string com vírgula decimal (ex: "15,50") — protege contra itens salvos com
+// valor bruto (bug antigo de formulário) que geravam NaN nos cálculos de comissão.
+function numSafe(v) {
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  if (v === null || v === undefined || v === '') return 0;
+  var n = parseFloat(String(v).replace(',', '.'));
+  return isNaN(n) ? 0 : n;
+}
+
 const CAT_PCT   = { placa:0.005,   grx:0.0075,      aco:0.01  };
 
 // Materiais/produtos usados no select do formulario de pedido vem da base real
@@ -7026,7 +7037,7 @@ function calcResumoProdutosDia(pedidosList) {
       var categoria = info ? info.categoria : '';
       var familia = classificarFamiliaMaterial(it.material, categoria);
       if (!familia || !(familia in r)) return;
-      var qtd = Number(it.qtd) || 0;
+      var qtd = numSafe(it.qtd);
       if (RESUMO_PRODUTOS_FAMILIAS_M2.indexOf(familia) !== -1) {
         var m2Unit = info ? info.m2 : 0;
         if (!m2Unit) return;
@@ -7350,7 +7361,18 @@ function salvarPedido() {
   }
 }
 
+// Trava de edição: uma vez faturado, só a Juliana (gestora principal) pode
+// alterar status, observação, editar ou excluir o pedido.
+function pedidoEstaTravado(vendNome, pedidoId) {
+  var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vendNome && x.id === pedidoId; });
+  return !!(p && p.status === 'faturado' && currentUser !== 'JULIANA');
+}
+function avisarPedidoTravado() {
+  alert('🔒 Este pedido já foi faturado e só pode ser alterado pela Juliana.');
+}
+
 function atualizarStatus(vendNome, pedidoId, novoStatus) {
+  if (pedidoEstaTravado(vendNome, pedidoId)) { avisarPedidoTravado(); renderPedidosFiltrados(); return; }
   var agora = new Date().toISOString().split('T')[0];
   dbRef('pedidos/' + vendNome + '/' + pedidoId + '/status').set(novoStatus)
     .catch(e => console.error('Erro status:', e));
@@ -7361,11 +7383,13 @@ function atualizarStatus(vendNome, pedidoId, novoStatus) {
 }
 
 function salvarObsPedido(vendNome, pedidoId, valor) {
+  if (pedidoEstaTravado(vendNome, pedidoId)) { avisarPedidoTravado(); renderPedidosFiltrados(); return; }
   dbRef('pedidos/' + vendNome + '/' + pedidoId + '/obs').set(valor || '')
     .catch(e => console.error('Erro ao salvar observação:', e));
 }
 
 function deletarPedido(vendNome, pedidoId) {
+  if (pedidoEstaTravado(vendNome, pedidoId)) { avisarPedidoTravado(); return; }
   if (!confirm('Excluir este pedido?\n\nEle vai para a Lixeira e pode ser restaurado depois, se precisar.')) return;
   dbRef('pedidos/' + vendNome + '/' + pedidoId).update({
     excluido: true,
@@ -7459,13 +7483,16 @@ function linhaPedidoHtml(p, isGestora) {
   var vendLabel = isGestora ? '<td style="font-size:12px;font-weight:600;color:#C41E1E;">' + (p.vendedor||'') + '</td>' : '';
   var clienteNome = p.empresa || p.cliente || '—';
   var obsVal = (p.obs || '').replace(/"/g,'&quot;');
+  var travadoNegocio = p.status === 'faturado' && currentUser !== 'JULIANA';
+  var selectAttrs = travadoNegocio ? ' disabled style="font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid #E2E0D8;background:#F5F4F2;color:#aaa;cursor:not-allowed;"' : ' style="font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;"';
+  var obsAttrs = travadoNegocio ? ' readonly style="width:150px;font-size:11.5px;padding:5px 8px;border-radius:5px;border:1px solid #E2E0D8;outline:none;color:#aaa;background:#F5F4F2;cursor:not-allowed;"' : ' style="width:150px;font-size:11.5px;padding:5px 8px;border-radius:5px;border:1px solid #E2E0D8;outline:none;color:#444;"';
   return '<tr onclick="abrirDetalhePedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="cursor:pointer;">' +
-    '<td><span style="display:inline-block;background:#1C1C1C;color:#fff;font-family:monospace;font-size:14px;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + '</span></td>' +
+    '<td><span style="display:inline-block;background:#1C1C1C;color:#fff;font-family:monospace;font-size:14px;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + '</span>' + (travadoNegocio ? ' <span title="Faturado — travado, só a Juliana edita" style="font-size:12px;">🔒</span>' : '') + '</td>' +
     '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;font-weight:600;" title="' + clienteNome.replace(/"/g,'&quot;') + '">' + clienteNome + '</td>' +
     vendLabel +
     '<td style="font-weight:700;font-size:14px;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
-    '<td onclick="event.stopPropagation()"><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" style="font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid #E2E0D8;cursor:pointer;">' + statusSelectOpts(p, isGestora) + '</select></td>' +
-    '<td onclick="event.stopPropagation()"><input type="text" value="' + obsVal + '" placeholder="+ observação" onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()" style="width:150px;font-size:11.5px;padding:5px 8px;border-radius:5px;border:1px solid #E2E0D8;outline:none;color:#444;"></td>' +
+    '<td onclick="event.stopPropagation()"><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)"' + selectAttrs + '>' + statusSelectOpts(p, isGestora) + '</select></td>' +
+    '<td onclick="event.stopPropagation()"><input type="text" value="' + obsVal + '" placeholder="+ observação" onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()"' + obsAttrs + '></td>' +
   '</tr>';
 }
 
@@ -7488,17 +7515,19 @@ function cardPedidoHtml(p, isGestora) {
   var clienteNome = p.empresa || p.cliente || '—';
   var vendLine = isGestora ? '<div style="font-size:11px;font-weight:700;color:#C41E1E;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">' + (p.vendedor||'') + '</div>' : '';
   var obsVal = (p.obs || '').replace(/"/g,'&quot;');
+  var travadoNegocio = p.status === 'faturado' && currentUser !== 'JULIANA';
+  var obsAttrs = travadoNegocio ? ' readonly style="width:100%;margin-top:10px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid #E2E0D8;outline:none;color:#aaa;background:#F5F4F2;cursor:not-allowed;"' : ' style="width:100%;margin-top:10px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid #E2E0D8;outline:none;color:#444;"';
   return '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:14px 16px;">' +
     '<div onclick="abrirDetalhePedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="cursor:pointer;">' +
     vendLine +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;">' +
-      '<span style="display:inline-block;background:#1C1C1C;color:#fff;font-family:monospace;font-size:15px;font-weight:700;padding:5px 12px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + '</span>' +
+      '<span style="display:inline-block;background:#1C1C1C;color:#fff;font-family:monospace;font-size:15px;font-weight:700;padding:5px 12px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + (travadoNegocio ? ' 🔒' : '') + '</span>' +
       '<span class="status-badge s-' + (p.status||'') + '" style="font-size:11px;">' + (STATUS_LABEL[p.status]||p.status||'') + '</span>' +
     '</div>' +
     '<div style="font-size:16px;font-weight:700;color:#1C1C1C;margin-bottom:10px;">' + clienteNome + '</div>' +
     '<div style="font-size:18px;font-weight:700;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
     '</div>' +
-    '<input type="text" value="' + obsVal + '" placeholder="+ observação" onclick="event.stopPropagation()" onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()" style="width:100%;margin-top:10px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid #E2E0D8;outline:none;color:#444;">' +
+    '<input type="text" value="' + obsVal + '" placeholder="+ observação" onclick="event.stopPropagation()" onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()"' + obsAttrs + '>' +
   '</div>';
 }
 
@@ -7535,6 +7564,7 @@ function abrirDetalhePedido(vend, pedidoId) {
   if (titulo) titulo.textContent = (p.empresa || p.cliente || 'Pedido');
   var veicLabel = p.veiculo==='truck' ? 'Truck' : p.veiculo==='carreta' ? 'Carreta' : p.veiculo==='outros' ? 'Outros' : '—';
   var itens = p.itens && p.itens.length ? p.itens : (p.material ? [{material:p.material, qtd:p.qtd||0, vUnit:p.vUnit||0}] : []);
+  var travadoNegocio = p.status === 'faturado' && currentUser !== 'JULIANA';
 
   if (body) {
     body.innerHTML =
@@ -7559,7 +7589,7 @@ function abrirDetalhePedido(vend, pedidoId) {
           '<th style="text-align:right;padding:6px 8px;background:#F8F7F3;border-bottom:1px solid #E2E0D8;">Vl. Total</th>' +
         '</tr></thead><tbody>' +
         itens.map(function(it) {
-          var vt = Math.round((it.qtd||0)*(it.vUnit||0)*100)/100;
+          var vt = Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100;
           return '<tr>' +
             '<td style="padding:6px 8px;border-bottom:1px solid #F0EEEA;">' + (it.material||'') + (it.codigo ? ' <span style="color:#aaa;font-size:10px;">(' + it.codigo + ')</span>' : '') + '</td>' +
             '<td style="padding:6px 8px;border-bottom:1px solid #F0EEEA;text-align:center;">' + (it.qtd||0) + '</td>' +
@@ -7573,12 +7603,19 @@ function abrirDetalhePedido(vend, pedidoId) {
         '<span style="font-size:20px;font-weight:700;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</span>' +
       '</div>' +
       '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px;">📝 Observação</div>' +
-      '<textarea id="ped-detalhe-obs" rows="2" placeholder="Escreva uma observação sobre este pedido..." onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" style="width:100%;padding:9px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12.5px;outline:none;resize:vertical;color:#444;">' + (p.obs||'') + '</textarea>' +
-      '<div style="display:flex;gap:8px;margin-top:16px;">' +
-        '<button onclick="fecharDetalhePedido(); abrirEditarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#E3F0FA;color:#185FA5;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">✏️ Editar Pedido</button>' +
-        '<button onclick="fecharDetalhePedido(); abrirDuplicarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#FFF3E0;color:#E65100;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">📋 Duplicar</button>' +
-        '<button onclick="fecharDetalhePedido(); deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#FFEBEE;color:#C41E1E;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">🗑️ Excluir</button>' +
-      '</div>';
+      '<textarea id="ped-detalhe-obs" rows="2" placeholder="Escreva uma observação sobre este pedido..." onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)"' + (travadoNegocio ? ' readonly style="width:100%;padding:9px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12.5px;outline:none;resize:vertical;color:#aaa;background:#F5F4F2;cursor:not-allowed;"' : ' style="width:100%;padding:9px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12.5px;outline:none;resize:vertical;color:#444;"') + '>' + (p.obs||'') + '</textarea>' +
+      (travadoNegocio ?
+        '<div style="background:#FFF3E0;border-radius:8px;padding:10px 12px;margin-top:12px;font-size:12px;color:#E65100;display:flex;align-items:center;gap:8px;">🔒 <span>Pedido faturado — travado para edição. Só a Juliana pode alterar, editar ou excluir.</span></div>' +
+        '<div style="display:flex;gap:8px;margin-top:16px;">' +
+          '<button onclick="fecharDetalhePedido(); abrirDuplicarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#FFF3E0;color:#E65100;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">📋 Duplicar</button>' +
+        '</div>'
+        :
+        '<div style="display:flex;gap:8px;margin-top:16px;">' +
+          '<button onclick="fecharDetalhePedido(); abrirEditarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#E3F0FA;color:#185FA5;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">✏️ Editar Pedido</button>' +
+          '<button onclick="fecharDetalhePedido(); abrirDuplicarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#FFF3E0;color:#E65100;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">📋 Duplicar</button>' +
+          '<button onclick="fecharDetalhePedido(); deletarPedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="flex:1;border:none;background:#FFEBEE;color:#C41E1E;border-radius:8px;padding:10px;cursor:pointer;font-size:13px;font-weight:600;">🗑️ Excluir</button>' +
+        '</div>'
+      );
   }
   var ov = document.getElementById('ped-detalhe-modal-overlay');
   if (ov) ov.style.display = 'flex';
@@ -7924,7 +7961,7 @@ function atualizarComissao(pedidos, isGestora) {
     porVendedor[vn].forEach(function(p) {
       if (p.itens && p.itens.length > 0) {
         p.itens.forEach(function(it) {
-          var v = Math.round((it.qtd || 0) * (it.vUnit || 0) * 100) / 100;
+          var v = Math.round(numSafe(it.qtd) * numSafe(it.vUnit) * 100) / 100;
           vTotalVend += v;
           if (it.cat === 'placa')      vPlacas += v * CAT_PCT.placa;
           else if (it.cat === 'grx')   vComp   += v * CAT_PCT.grx;
@@ -9045,7 +9082,7 @@ function cliConstruirBase() {
     var id = vn + '||' + chave;
     var vTotalPedido = 0;
     if (p.itens && p.itens.length) {
-      p.itens.forEach(function(it) { vTotalPedido += (Number(it.qtd) || 0) * (Number(it.vUnit) || 0); });
+      p.itens.forEach(function(it) { vTotalPedido += numSafe(it.qtd) * numSafe(it.vUnit); });
     } else {
       vTotalPedido = Number(p.vTotal || 0);
     }
@@ -9287,7 +9324,7 @@ function cliFecharModal() {
 // ── HISTÓRICO DE COMPRAS DO CLIENTE ──
 function cliValorPedido(p) {
   if (p.itens && p.itens.length) {
-    return p.itens.reduce(function(s, it) { return s + (Number(it.qtd) || 0) * (Number(it.vUnit) || 0); }, 0);
+    return p.itens.reduce(function(s, it) { return s + numSafe(it.qtd) * numSafe(it.vUnit); }, 0);
   }
   return Number(p.vTotal || 0);
 }
@@ -9672,7 +9709,7 @@ function aplicarFiltroPeriodo() {
 
   function getValor(p) {
     if (p.itens && p.itens.length > 0) {
-      return p.itens.reduce(function(s,it){ return s + Math.round((it.qtd||0)*(it.vUnit||0)*100)/100; },0);
+      return p.itens.reduce(function(s,it){ return s + Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100; },0);
     }
     return Number(p.vTotal||0);
   }
@@ -9887,6 +9924,11 @@ function updateItem(idx, campo, valor) {
   if (campo === 'qtd' || campo === 'vUnit') {
     var qtd   = parseFloat(String(pedItens[idx].qtd).replace(',','.'))  || 0;
     var vUnit = parseFloat(String(pedItens[idx].vUnit).replace(',','.')) || 0;
+    // Guarda de volta os valores já limpos (número puro) — não o texto bruto digitado.
+    // Sem isso, "qtd"/"vUnit" ficam salvos como string (às vezes com vírgula) no Firebase,
+    // e qualquer cálculo posterior (comissão, ranking, etc.) que multiplique qtd*vUnit vira NaN.
+    pedItens[idx].qtd = qtd;
+    pedItens[idx].vUnit = vUnit;
     pedItens[idx].vTotal = Math.round(qtd * vUnit * 100) / 100;
     var totEl = document.getElementById('item-total-' + idx);
     if (totEl) totEl.textContent = 'R$ ' + pedItens[idx].vTotal.toLocaleString('pt-BR', {minimumFractionDigits:2});
@@ -10352,7 +10394,7 @@ function adminSelect(nome, btn) {
     ativos.forEach(function(p) {
       if (p.itens && p.itens.length > 0) {
         p.itens.forEach(function(it) {
-          totalVendido += Math.round((it.qtd||0) * (it.vUnit||0) * 100) / 100;
+          totalVendido += Math.round(numSafe(it.qtd) * numSafe(it.vUnit) * 100) / 100;
         });
       } else {
         totalVendido += Number(p.vTotal || 0);
