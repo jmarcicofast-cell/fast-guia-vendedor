@@ -9364,26 +9364,12 @@ function pedResumoConstruirBasePorPn() {
     }
   });
 
-  // Nomes (chave) que já viraram pedido — pra negociação/carteira geral não duplicar.
-  var chavesJaRastreadas = {};
-  Object.keys(mapa).forEach(function(id) { chavesJaRastreadas[mapa[id].vendedor + '||' + mapa[id].chave] = true; });
+  // Negociações em aberto que NUNCA viraram pedido são prospecção/lead, não
+  // cliente comprando — NÃO entram no resumo Novos/Ativos/Inativos/Total.
+  // (Antes isso inflava a contagem de "Novos" com gente que nunca comprou nada.)
 
-  // Negociações em aberto ainda não têm PN (só existe depois de virar pedido) —
-  // entram como "novo" agrupadas por nome mesmo.
-  Object.keys(negState.porVendedor || {}).forEach(function(vn) {
-    (negState.porVendedor[vn] || []).forEach(function(n) {
-      if (!n.empresa) return;
-      var chaveNome = cliChave(n.empresa);
-      if (chavesJaRastreadas[vn + '||' + chaveNome]) return;
-      var id = vn + '||NOME#' + chaveNome;
-      if (!mapa[id]) {
-        mapa[id] = { vendedor: vn, chave: chaveNome, nome: n.empresa, ultimaCompra: null, primeiraCompra: null, tipoClientePrimeiro: 'novo', estadoRecente: n.estado || '' };
-      }
-    });
-  });
-
-  // Carteira geral (clientes sem pedido/negociação, cadastrados manualmente
-  // pela gestora) — não tem PN, entra por nome, igual ao cliConstruirBase.
+  // Carteira geral (clientes sem pedido, cadastrados manualmente pela gestora)
+  // — não tem PN, entra por nome, igual ao cliConstruirBase.
   var chavesGerais = {};
   Object.keys(mapa).forEach(function(id) { chavesGerais[mapa[id].chave] = true; });
 
