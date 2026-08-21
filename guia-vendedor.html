@@ -9232,7 +9232,7 @@ function renderResumoClientesPedidos() {
   var elNovo = document.getElementById('ped-resumo-cli-novo');
   if (!elNovo) return; // aba ainda não renderizada / elementos não existem no DOM
 
-  var base = cliConstruirBase();
+  var base = pedResumoConstruirBasePorPn();
   var qtdNovo = 0, qtdAtivo = 0, qtdInativo = 0;
   var porUf = {};
 
@@ -9277,6 +9277,86 @@ function renderResumoClientesPedidos() {
       '<td style="padding:6px 8px;text-align:right;font-weight:700;color:#1C1C1C;">' + total + '</td>' +
     '</tr>';
   }).join('');
+}
+
+// Igual ao cliConstruirBase, mas agrupa os pedidos pelo CÓDIGO PN DO CLIENTE
+// (em vez do nome da empresa) sempre que o pedido tiver PN preenchido — o PN é
+// o identificador confiável do cliente; o nome da empresa varia de digitação
+// (abreviação, razão social x fantasia) e gera contagem errada se usado como
+// chave. Usado só pelo resumo Novos/Ativos/Inativos da aba Pedidos; o resto do
+// sistema (Base de Clientes, atendimento semanal, overrides) continua com a
+// chave por nome normal, sem mudanças.
+function pedResumoConstruirBasePorPn() {
+  var hojeIso = new Date().toISOString().split('T')[0];
+  var mapa = {};
+
+  (_pedTodosGeral || []).forEach(function(p) {
+    if (p.status === 'cancelado') return;
+    if (!p.empresa) return;
+    var vn = p.vendedor || cliAtendState.currentVend;
+    if (!vn) return;
+    var chaveNome = cliChave(p.empresa);
+    var pnNorm = String(p.pn == null ? '' : p.pn).trim().toUpperCase();
+    var chaveGrupo = pnNorm ? ('PN#' + pnNorm) : ('NOME#' + chaveNome);
+    var id = vn + '||' + chaveGrupo;
+    if (!mapa[id]) mapa[id] = { vendedor: vn, chave: chaveNome, nome: p.empresa, ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '', qtdPedidos: 0 };
+    var reg = mapa[id];
+    reg.qtdPedidos++;
+    if (!reg.estadoRecente && p.estado) reg.estadoRecente = p.estado;
+    if (p.data && (!reg.ultimaCompra || p.data > reg.ultimaCompra)) {
+      reg.ultimaCompra = p.data;
+      reg.tipoClienteRecente = p.tipoCliente || reg.tipoClienteRecente;
+      reg.estadoRecente = p.estado || reg.estadoRecente;
+      reg.chave = chaveNome;
+      reg.nome = p.empresa;
+    }
+  });
+
+  // Negociações em aberto ainda não têm PN (só existe depois de virar pedido) —
+  // entram como "novo" agrupadas por nome mesmo.
+  Object.keys(negState.porVendedor || {}).forEach(function(vn) {
+    (negState.porVendedor[vn] || []).forEach(function(n) {
+      if (!n.empresa) return;
+      var chaveNome = cliChave(n.empresa);
+      var id = vn + '||NOME#' + chaveNome;
+      if (!mapa[id]) {
+        mapa[id] = { vendedor: vn, chave: chaveNome, nome: n.empresa, ultimaCompra: null, tipoClienteRecente: 'novo', estadoRecente: n.estado || '', qtdPedidos: 0 };
+      }
+    });
+  });
+
+  // Carteira geral (clientes sem pedido/negociação, cadastrados manualmente
+  // pela gestora) — não tem PN, entra por nome, igual ao cliConstruirBase.
+  var chavesJaRastreadas = {};
+  Object.keys(mapa).forEach(function(id) { chavesJaRastreadas[mapa[id].chave] = true; });
+
+  Object.keys(cliGeralState || {}).forEach(function(chave) {
+    if (chavesJaRastreadas[chave]) return;
+    var g = cliGeralState[chave];
+    var id = 'GERAL||NOME#' + chave;
+    mapa[id] = {
+      vendedor: 'GERAL', chave: chave, nome: g.nome || chave,
+      ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '', qtdPedidos: 0,
+      statusManualGeral: g.statusManual || ''
+    };
+  });
+
+  return Object.keys(mapa).filter(function(id) {
+    return !cliOcultosState[mapa[id].chave]; // cliente excluído manualmente da Base de Clientes (por nome)
+  }).map(function(id) {
+    var r = mapa[id];
+    var ov = cliOverrideState[r.chave] || null; // override é sempre por nome
+    var diasSemComprar = r.ultimaCompra ? cliDiasEntre(r.ultimaCompra, hojeIso) : null;
+    var status;
+    if (ov && ov.statusManual === 'ativo') status = 'ativo';
+    else if (ov && ov.statusManual === 'inativo') status = 'inativo';
+    else if (r.tipoClienteRecente === 'novo') status = 'novo';
+    else if (diasSemComprar === null && r.statusManualGeral === 'sim') status = 'ativo';
+    else if (diasSemComprar === null || diasSemComprar > CLI_META_INATIVO_DIAS) status = 'inativo';
+    else status = 'ativo';
+
+    return { status: status, uf: r.estadoRecente || '' };
+  });
 }
 
 function cliStatusBadge(status) {
