@@ -9130,16 +9130,22 @@ function cliConstruirBase() {
     } else {
       vTotalPedido = Number(p.vTotal || 0);
     }
-    if (!mapa[id]) mapa[id] = { vendedor: vn, chave: chave, nome: p.empresa, ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '', qtdPedidos: 0, totalComprado: 0 };
+    if (!mapa[id]) mapa[id] = { vendedor: vn, chave: chave, nome: p.empresa, ultimaCompra: null, primeiraCompra: null, tipoClientePrimeiro: '', estadoRecente: '', qtdPedidos: 0, totalComprado: 0 };
     var reg = mapa[id];
     reg.qtdPedidos++;
     reg.totalComprado += vTotalPedido;
     if (!reg.estadoRecente && p.estado) reg.estadoRecente = p.estado;
     if (p.data && (!reg.ultimaCompra || p.data > reg.ultimaCompra)) {
       reg.ultimaCompra = p.data;
-      reg.tipoClienteRecente = p.tipoCliente || reg.tipoClienteRecente;
       reg.estadoRecente = p.estado || reg.estadoRecente;
       reg.nome = p.empresa;
+    }
+    // "Tipo de Cliente" é definido pelo PRIMEIRO pedido (marcado na abertura),
+    // não pelo mais recente — um cliente antigo marcado "Novo" por engano num
+    // pedido posterior não deve voltar a contar como novo.
+    if (p.data && (!reg.primeiraCompra || p.data < reg.primeiraCompra)) {
+      reg.primeiraCompra = p.data;
+      reg.tipoClientePrimeiro = p.tipoCliente || reg.tipoClientePrimeiro;
     }
   });
 
@@ -9150,7 +9156,7 @@ function cliConstruirBase() {
       var chave = cliChave(n.empresa);
       var id = vn + '||' + chave;
       if (!mapa[id]) {
-        mapa[id] = { vendedor: vn, chave: chave, nome: n.empresa, ultimaCompra: null, tipoClienteRecente: 'novo', estadoRecente: n.estado || '', qtdPedidos: 0, totalComprado: 0 };
+        mapa[id] = { vendedor: vn, chave: chave, nome: n.empresa, ultimaCompra: null, primeiraCompra: null, tipoClientePrimeiro: 'novo', estadoRecente: n.estado || '', qtdPedidos: 0, totalComprado: 0 };
       }
     });
   });
@@ -9166,7 +9172,7 @@ function cliConstruirBase() {
     var id = 'GERAL||' + chave;
     mapa[id] = {
       vendedor: 'GERAL', chave: chave, nome: g.nome || chave,
-      ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '', qtdPedidos: 0, totalComprado: 0,
+      ultimaCompra: null, primeiraCompra: null, tipoClientePrimeiro: '', estadoRecente: '', qtdPedidos: 0, totalComprado: 0,
       statusManualGeral: g.statusManual || ''
     };
   });
@@ -9181,7 +9187,7 @@ function cliConstruirBase() {
     var status;
     if (ov && ov.statusManual === 'ativo') status = 'ativo';
     else if (ov && ov.statusManual === 'inativo') status = 'inativo';
-    else if (r.tipoClienteRecente === 'novo') status = 'novo';
+    else if (r.tipoClientePrimeiro === 'novo') status = 'novo';
     else if (diasSemComprar === null && r.statusManualGeral === 'sim') status = 'ativo';
     else if (diasSemComprar === null || diasSemComprar > CLI_META_INATIVO_DIAS) status = 'inativo';
     else status = 'ativo';
@@ -9304,16 +9310,22 @@ function pedResumoConstruirBasePorPn() {
     var pnNorm = String(p.pn == null ? '' : p.pn).trim().toUpperCase();
 
     if (!porNome[idNome]) {
-      porNome[idNome] = { vendedor: vn, chave: chaveNome, nome: p.empresa, ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '', pns: {} };
+      porNome[idNome] = { vendedor: vn, chave: chaveNome, nome: p.empresa, ultimaCompra: null, primeiraCompra: null, tipoClientePrimeiro: '', estadoRecente: '', pns: {} };
     }
     var reg = porNome[idNome];
     if (pnNorm) reg.pns[pnNorm] = true;
     if (!reg.estadoRecente && p.estado) reg.estadoRecente = p.estado;
     if (p.data && (!reg.ultimaCompra || p.data > reg.ultimaCompra)) {
       reg.ultimaCompra = p.data;
-      reg.tipoClienteRecente = p.tipoCliente || reg.tipoClienteRecente;
       reg.estadoRecente = p.estado || reg.estadoRecente;
       reg.nome = p.empresa;
+    }
+    // Tipo de Cliente vem do PRIMEIRO pedido (marcado na abertura), não do mais
+    // recente — evita que um pedido posterior marcado "Novo" por engano faça
+    // um cliente antigo voltar a contar como novo.
+    if (p.data && (!reg.primeiraCompra || p.data < reg.primeiraCompra)) {
+      reg.primeiraCompra = p.data;
+      reg.tipoClientePrimeiro = p.tipoCliente || reg.tipoClientePrimeiro;
     }
   });
 
@@ -9336,16 +9348,19 @@ function pedResumoConstruirBasePorPn() {
     }
 
     if (!mapa[identidade]) {
-      mapa[identidade] = { vendedor: reg.vendedor, chave: reg.chave, nome: reg.nome, ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '' };
+      mapa[identidade] = { vendedor: reg.vendedor, chave: reg.chave, nome: reg.nome, ultimaCompra: null, primeiraCompra: null, tipoClientePrimeiro: '', estadoRecente: '' };
     }
     var final = mapa[identidade];
     if (!final.estadoRecente && reg.estadoRecente) final.estadoRecente = reg.estadoRecente;
     if (reg.ultimaCompra && (!final.ultimaCompra || reg.ultimaCompra > final.ultimaCompra)) {
       final.ultimaCompra = reg.ultimaCompra;
-      final.tipoClienteRecente = reg.tipoClienteRecente || final.tipoClienteRecente;
       final.estadoRecente = reg.estadoRecente || final.estadoRecente;
       final.chave = reg.chave;
       final.nome = reg.nome;
+    }
+    if (reg.primeiraCompra && (!final.primeiraCompra || reg.primeiraCompra < final.primeiraCompra)) {
+      final.primeiraCompra = reg.primeiraCompra;
+      final.tipoClientePrimeiro = reg.tipoClientePrimeiro || final.tipoClientePrimeiro;
     }
   });
 
@@ -9362,7 +9377,7 @@ function pedResumoConstruirBasePorPn() {
       if (chavesJaRastreadas[vn + '||' + chaveNome]) return;
       var id = vn + '||NOME#' + chaveNome;
       if (!mapa[id]) {
-        mapa[id] = { vendedor: vn, chave: chaveNome, nome: n.empresa, ultimaCompra: null, tipoClienteRecente: 'novo', estadoRecente: n.estado || '' };
+        mapa[id] = { vendedor: vn, chave: chaveNome, nome: n.empresa, ultimaCompra: null, primeiraCompra: null, tipoClientePrimeiro: 'novo', estadoRecente: n.estado || '' };
       }
     });
   });
@@ -9378,7 +9393,7 @@ function pedResumoConstruirBasePorPn() {
     var id = 'GERAL||NOME#' + chave;
     mapa[id] = {
       vendedor: 'GERAL', chave: chave, nome: g.nome || chave,
-      ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '',
+      ultimaCompra: null, primeiraCompra: null, tipoClientePrimeiro: '', estadoRecente: '',
       statusManualGeral: g.statusManual || ''
     };
   });
@@ -9392,7 +9407,7 @@ function pedResumoConstruirBasePorPn() {
     var status;
     if (ov && ov.statusManual === 'ativo') status = 'ativo';
     else if (ov && ov.statusManual === 'inativo') status = 'inativo';
-    else if (r.tipoClienteRecente === 'novo') status = 'novo';
+    else if (r.tipoClientePrimeiro === 'novo') status = 'novo';
     else if (diasSemComprar === null && r.statusManualGeral === 'sim') status = 'ativo';
     else if (diasSemComprar === null || diasSemComprar > CLI_META_INATIVO_DIAS) status = 'inativo';
     else status = 'ativo';
