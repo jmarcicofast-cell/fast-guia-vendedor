@@ -9288,29 +9288,70 @@ function renderResumoClientesPedidos() {
 // chave por nome normal, sem mudanças.
 function pedResumoConstruirBasePorPn() {
   var hojeIso = new Date().toISOString().split('T')[0];
-  var mapa = {};
 
+  // PASSO 1 — agrupa TODOS os pedidos por nome da empresa (chave normalizada),
+  // que é um campo sempre preenchido. Guarda também todos os PNs vistos nesse
+  // grupo, porque o mesmo cliente pode ter pedidos antigos sem PN preenchido
+  // e pedidos novos com PN — precisam ficar juntos, não separados.
+  var porNome = {};
   (_pedTodosGeral || []).forEach(function(p) {
     if (p.status === 'cancelado') return;
     if (!p.empresa) return;
     var vn = p.vendedor || cliAtendState.currentVend;
     if (!vn) return;
     var chaveNome = cliChave(p.empresa);
+    var idNome = vn + '||' + chaveNome;
     var pnNorm = String(p.pn == null ? '' : p.pn).trim().toUpperCase();
-    var chaveGrupo = pnNorm ? ('PN#' + pnNorm) : ('NOME#' + chaveNome);
-    var id = vn + '||' + chaveGrupo;
-    if (!mapa[id]) mapa[id] = { vendedor: vn, chave: chaveNome, nome: p.empresa, ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '', qtdPedidos: 0 };
-    var reg = mapa[id];
-    reg.qtdPedidos++;
+
+    if (!porNome[idNome]) {
+      porNome[idNome] = { vendedor: vn, chave: chaveNome, nome: p.empresa, ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '', pns: {} };
+    }
+    var reg = porNome[idNome];
+    if (pnNorm) reg.pns[pnNorm] = true;
     if (!reg.estadoRecente && p.estado) reg.estadoRecente = p.estado;
     if (p.data && (!reg.ultimaCompra || p.data > reg.ultimaCompra)) {
       reg.ultimaCompra = p.data;
       reg.tipoClienteRecente = p.tipoCliente || reg.tipoClienteRecente;
       reg.estadoRecente = p.estado || reg.estadoRecente;
-      reg.chave = chaveNome;
       reg.nome = p.empresa;
     }
   });
+
+  // PASSO 2 — decide a identidade final de cada grupo-por-nome: se ele tem
+  // algum PN registrado, a identidade é o PN (assim nomes escritos diferente
+  // pro mesmo PN se juntam); senão, a identidade continua sendo o nome.
+  // Múltiplos grupos-por-nome que caem no mesmo PN são mesclados aqui — é
+  // isso que resolve o caso de "3 cargas, 1 PN, 1 cliente só".
+  var mapa = {};
+  Object.keys(porNome).forEach(function(idNome) {
+    var reg = porNome[idNome];
+    var pnsVistos = Object.keys(reg.pns);
+    var identidade;
+    if (pnsVistos.length >= 1) {
+      // Se por algum motivo houver mais de um PN diferente pro mesmo nome
+      // (correção de cadastro, etc.), usa o PN mais recente como canônico.
+      identidade = reg.vendedor + '||PN#' + pnsVistos[pnsVistos.length - 1];
+    } else {
+      identidade = reg.vendedor + '||NOME#' + reg.chave;
+    }
+
+    if (!mapa[identidade]) {
+      mapa[identidade] = { vendedor: reg.vendedor, chave: reg.chave, nome: reg.nome, ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '' };
+    }
+    var final = mapa[identidade];
+    if (!final.estadoRecente && reg.estadoRecente) final.estadoRecente = reg.estadoRecente;
+    if (reg.ultimaCompra && (!final.ultimaCompra || reg.ultimaCompra > final.ultimaCompra)) {
+      final.ultimaCompra = reg.ultimaCompra;
+      final.tipoClienteRecente = reg.tipoClienteRecente || final.tipoClienteRecente;
+      final.estadoRecente = reg.estadoRecente || final.estadoRecente;
+      final.chave = reg.chave;
+      final.nome = reg.nome;
+    }
+  });
+
+  // Nomes (chave) que já viraram pedido — pra negociação/carteira geral não duplicar.
+  var chavesJaRastreadas = {};
+  Object.keys(mapa).forEach(function(id) { chavesJaRastreadas[mapa[id].vendedor + '||' + mapa[id].chave] = true; });
 
   // Negociações em aberto ainda não têm PN (só existe depois de virar pedido) —
   // entram como "novo" agrupadas por nome mesmo.
@@ -9318,25 +9359,26 @@ function pedResumoConstruirBasePorPn() {
     (negState.porVendedor[vn] || []).forEach(function(n) {
       if (!n.empresa) return;
       var chaveNome = cliChave(n.empresa);
+      if (chavesJaRastreadas[vn + '||' + chaveNome]) return;
       var id = vn + '||NOME#' + chaveNome;
       if (!mapa[id]) {
-        mapa[id] = { vendedor: vn, chave: chaveNome, nome: n.empresa, ultimaCompra: null, tipoClienteRecente: 'novo', estadoRecente: n.estado || '', qtdPedidos: 0 };
+        mapa[id] = { vendedor: vn, chave: chaveNome, nome: n.empresa, ultimaCompra: null, tipoClienteRecente: 'novo', estadoRecente: n.estado || '' };
       }
     });
   });
 
   // Carteira geral (clientes sem pedido/negociação, cadastrados manualmente
   // pela gestora) — não tem PN, entra por nome, igual ao cliConstruirBase.
-  var chavesJaRastreadas = {};
-  Object.keys(mapa).forEach(function(id) { chavesJaRastreadas[mapa[id].chave] = true; });
+  var chavesGerais = {};
+  Object.keys(mapa).forEach(function(id) { chavesGerais[mapa[id].chave] = true; });
 
   Object.keys(cliGeralState || {}).forEach(function(chave) {
-    if (chavesJaRastreadas[chave]) return;
+    if (chavesGerais[chave]) return;
     var g = cliGeralState[chave];
     var id = 'GERAL||NOME#' + chave;
     mapa[id] = {
       vendedor: 'GERAL', chave: chave, nome: g.nome || chave,
-      ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '', qtdPedidos: 0,
+      ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '',
       statusManualGeral: g.statusManual || ''
     };
   });
