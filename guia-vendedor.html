@@ -9118,7 +9118,7 @@ function cliConstruirBase() {
   var mapa = {};
 
   (_pedTodosGeral || []).forEach(function(p) {
-    if (p.status === 'cancelado') return;
+    if (p.status !== 'faturado') return; // só pedido FATURADO conta como compra fechada de verdade
     if (!p.empresa) return;
     var vn = p.vendedor || cliAtendState.currentVend;
     if (!vn) return;
@@ -9301,7 +9301,7 @@ function pedResumoConstruirBasePorPn() {
   // e pedidos novos com PN — precisam ficar juntos, não separados.
   var porNome = {};
   (_pedTodosGeral || []).forEach(function(p) {
-    if (p.status === 'cancelado') return;
+    if (p.status !== 'faturado') return; // só pedido FATURADO conta como compra fechada de verdade
     if (!p.empresa) return;
     var vn = p.vendedor || cliAtendState.currentVend;
     if (!vn) return;
