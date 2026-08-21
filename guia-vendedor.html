@@ -2311,6 +2311,46 @@
     </div>
     <div style="font-size:10.5px;color:#aaa;margin-top:4px;">📅 O período exibido (datas) é controlado pelo <strong>Filtro de Período Personalizado</strong> lá em cima, no topo do Dashboard — ele afeta tanto os cards de resumo quanto esta lista.</div>
 
+    <!-- RESUMO DE CLIENTES: Novos / Ativos / Inativos + quebra por UF -->
+    <div id="ped-resumo-clientes" style="margin-top:1rem;background:#fff;border:1px solid #EDECEA;border-radius:10px;padding:0.9rem 1rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#555;">👥 Clientes na Carteira</div>
+        <button id="ped-resumo-uf-toggle" onclick="pedResumoUfToggle()" style="padding:5px 12px;border-radius:6px;border:1px solid #E2E0D8;background:#fff;color:#666;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">📍 Ver por UF</button>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:120px;background:#E6F1FB;border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10.5px;font-weight:700;color:#0C447C;text-transform:uppercase;letter-spacing:.05em;">🔵 Novos</div>
+          <div id="ped-resumo-cli-novo" style="font-size:22px;font-weight:700;color:#0C447C;">0</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#E8F5E9;border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10.5px;font-weight:700;color:#1B5E20;text-transform:uppercase;letter-spacing:.05em;">🟢 Ativos</div>
+          <div id="ped-resumo-cli-ativo" style="font-size:22px;font-weight:700;color:#1B5E20;">0</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#FBE9E9;border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10.5px;font-weight:700;color:#7A0000;text-transform:uppercase;letter-spacing:.05em;">🔴 Inativos</div>
+          <div id="ped-resumo-cli-inativo" style="font-size:22px;font-weight:700;color:#7A0000;">0</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#F1EFE8;border-radius:8px;padding:10px 12px;">
+          <div style="font-size:10.5px;font-weight:700;color:#1C1C1C;text-transform:uppercase;letter-spacing:.05em;">Total</div>
+          <div id="ped-resumo-cli-total" style="font-size:22px;font-weight:700;color:#1C1C1C;">0</div>
+        </div>
+      </div>
+      <div id="ped-resumo-uf-wrap" style="display:none;margin-top:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table style="border-collapse:collapse;width:100%;font-size:12px;min-width:420px;">
+          <thead>
+            <tr style="border-bottom:1.5px solid #EDECEA;">
+              <th style="text-align:left;padding:6px 8px;color:#aaa;font-weight:600;">UF</th>
+              <th style="text-align:right;padding:6px 8px;color:#0C447C;font-weight:600;">🔵 Novos</th>
+              <th style="text-align:right;padding:6px 8px;color:#1B5E20;font-weight:600;">🟢 Ativos</th>
+              <th style="text-align:right;padding:6px 8px;color:#7A0000;font-weight:600;">🔴 Inativos</th>
+              <th style="text-align:right;padding:6px 8px;color:#555;font-weight:600;">Total</th>
+            </tr>
+          </thead>
+          <tbody id="ped-resumo-uf-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div style="overflow-x:auto;margin-top:0.75rem;-webkit-overflow-scrolling:touch;" id="ped-tabela-wrap">
       <table class="ped-table" id="ped-tabela">
         <thead>
@@ -7915,6 +7955,7 @@ function renderPedidos(pedidosList, isGestora) {
   _pedTodosGeral = ativos.slice();
   renderPedidosFiltrados();
   renderBaseClientes();
+  renderResumoClientesPedidos();
   // Se ja tiver um filtro de periodo personalizado aplicado, recalcula com os dados novos
   if (document.getElementById('filtro-periodo-resultado') && document.getElementById('filtro-periodo-resultado').style.display !== 'none') {
     aplicarFiltroPeriodo();
@@ -8994,6 +9035,7 @@ function listenClientesGeral() {
   dbRef('clientesGeral').on('value', function(snap) {
     cliGeralState = snap.val() || {};
     renderBaseClientes();
+    renderResumoClientesPedidos();
   });
 }
 
@@ -9005,10 +9047,12 @@ function listenClientesOverrideEOcultos() {
   dbRef('clientesOverride').on('value', function(snap) {
     cliOverrideState = snap.val() || {};
     renderBaseClientes();
+    renderResumoClientesPedidos();
   });
   dbRef('clientesOcultos').on('value', function(snap) {
     cliOcultosState = snap.val() || {};
     renderBaseClientes();
+    renderResumoClientesPedidos();
   });
 }
 
@@ -9086,13 +9130,15 @@ function cliConstruirBase() {
     } else {
       vTotalPedido = Number(p.vTotal || 0);
     }
-    if (!mapa[id]) mapa[id] = { vendedor: vn, chave: chave, nome: p.empresa, ultimaCompra: null, tipoClienteRecente: '', qtdPedidos: 0, totalComprado: 0 };
+    if (!mapa[id]) mapa[id] = { vendedor: vn, chave: chave, nome: p.empresa, ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '', qtdPedidos: 0, totalComprado: 0 };
     var reg = mapa[id];
     reg.qtdPedidos++;
     reg.totalComprado += vTotalPedido;
+    if (!reg.estadoRecente && p.estado) reg.estadoRecente = p.estado;
     if (p.data && (!reg.ultimaCompra || p.data > reg.ultimaCompra)) {
       reg.ultimaCompra = p.data;
       reg.tipoClienteRecente = p.tipoCliente || reg.tipoClienteRecente;
+      reg.estadoRecente = p.estado || reg.estadoRecente;
       reg.nome = p.empresa;
     }
   });
@@ -9104,7 +9150,7 @@ function cliConstruirBase() {
       var chave = cliChave(n.empresa);
       var id = vn + '||' + chave;
       if (!mapa[id]) {
-        mapa[id] = { vendedor: vn, chave: chave, nome: n.empresa, ultimaCompra: null, tipoClienteRecente: 'novo', qtdPedidos: 0, totalComprado: 0 };
+        mapa[id] = { vendedor: vn, chave: chave, nome: n.empresa, ultimaCompra: null, tipoClienteRecente: 'novo', estadoRecente: n.estado || '', qtdPedidos: 0, totalComprado: 0 };
       }
     });
   });
@@ -9120,7 +9166,7 @@ function cliConstruirBase() {
     var id = 'GERAL||' + chave;
     mapa[id] = {
       vendedor: 'GERAL', chave: chave, nome: g.nome || chave,
-      ultimaCompra: null, tipoClienteRecente: '', qtdPedidos: 0, totalComprado: 0,
+      ultimaCompra: null, tipoClienteRecente: '', estadoRecente: '', qtdPedidos: 0, totalComprado: 0,
       statusManualGeral: g.statusManual || ''
     };
   });
@@ -9160,12 +9206,77 @@ function cliConstruirBase() {
 
     return {
       vendedor: r.vendedor, chave: r.chave, nome: nomeFinal, status: status,
+      uf: r.estadoRecente || '',
       ultimaCompra: r.ultimaCompra, diasSemComprar: diasSemComprar,
       qtdPedidos: r.qtdPedidos, totalComprado: r.totalComprado,
       ultimoAtendimento: ultimoAtendimento, diasSemAtendimento: diasSemAtendimento,
       atendidoEssaSemana: atendidoEssaSemana, estimativaMensal: estimativaMensal
     };
   });
+}
+
+var pedResumoUfAberto = false;
+function pedResumoUfToggle() {
+  pedResumoUfAberto = !pedResumoUfAberto;
+  var wrap = document.getElementById('ped-resumo-uf-wrap');
+  var btn = document.getElementById('ped-resumo-uf-toggle');
+  if (wrap) wrap.style.display = pedResumoUfAberto ? 'block' : 'none';
+  if (btn) btn.textContent = pedResumoUfAberto ? '📍 Ocultar por UF' : '📍 Ver por UF';
+}
+
+// Resumo de clientes (Novos / Ativos / Inativos, total e por UF) exibido na
+// aba Pedidos. Usa a mesma base de classificação da aba Base de Clientes
+// (cliConstruirBase), então respeita a visão de cada usuário (vendedor vê só
+// a própria carteira; gestora vê a equipe toda).
+function renderResumoClientesPedidos() {
+  var elNovo = document.getElementById('ped-resumo-cli-novo');
+  if (!elNovo) return; // aba ainda não renderizada / elementos não existem no DOM
+
+  var base = cliConstruirBase();
+  var qtdNovo = 0, qtdAtivo = 0, qtdInativo = 0;
+  var porUf = {};
+
+  base.forEach(function(c) {
+    if (c.status === 'novo') qtdNovo++;
+    else if (c.status === 'ativo') qtdAtivo++;
+    else if (c.status === 'inativo') qtdInativo++;
+
+    var uf = (c.uf || '').trim().toUpperCase() || 'Sem UF';
+    if (!porUf[uf]) porUf[uf] = { novo: 0, ativo: 0, inativo: 0 };
+    if (c.status === 'novo') porUf[uf].novo++;
+    else if (c.status === 'ativo') porUf[uf].ativo++;
+    else if (c.status === 'inativo') porUf[uf].inativo++;
+  });
+
+  document.getElementById('ped-resumo-cli-novo').textContent = qtdNovo;
+  document.getElementById('ped-resumo-cli-ativo').textContent = qtdAtivo;
+  document.getElementById('ped-resumo-cli-inativo').textContent = qtdInativo;
+  document.getElementById('ped-resumo-cli-total').textContent = base.length;
+
+  var tbody = document.getElementById('ped-resumo-uf-tbody');
+  if (!tbody) return;
+  var ufs = Object.keys(porUf).sort(function(a, b) {
+    var totalA = porUf[a].novo + porUf[a].ativo + porUf[a].inativo;
+    var totalB = porUf[b].novo + porUf[b].ativo + porUf[b].inativo;
+    return totalB - totalA;
+  });
+
+  if (!ufs.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:10px;">Nenhum cliente na carteira.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = ufs.map(function(uf) {
+    var d = porUf[uf];
+    var total = d.novo + d.ativo + d.inativo;
+    return '<tr style="border-bottom:1px solid #F5F4F2;">' +
+      '<td style="padding:6px 8px;font-weight:600;color:#333;">' + uf + '</td>' +
+      '<td style="padding:6px 8px;text-align:right;color:#0C447C;">' + d.novo + '</td>' +
+      '<td style="padding:6px 8px;text-align:right;color:#1B5E20;">' + d.ativo + '</td>' +
+      '<td style="padding:6px 8px;text-align:right;color:#7A0000;">' + d.inativo + '</td>' +
+      '<td style="padding:6px 8px;text-align:right;font-weight:700;color:#1C1C1C;">' + total + '</td>' +
+    '</tr>';
+  }).join('');
 }
 
 function cliStatusBadge(status) {
