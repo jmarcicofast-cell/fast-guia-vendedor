@@ -1797,18 +1797,9 @@
     <!-- PÓDIO DIÁRIO — VALOR + CARGAS -->
     <div style="background:#fff;border:1.5px solid #E2E0D8;border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1.25rem;">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7A4A00;margin-bottom:12px;">🏆 Pódio do Dia — <span id="podio-dia-data">hoje</span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div>
-          <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px;">💰 Por Valor Vendido</div>
-          <div id="podio-dia-valor" style="display:flex;flex-direction:column;gap:6px;">
-            <div style="font-size:12px;color:#aaa;">Carregando...</div>
-          </div>
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px;">📦 Por Quantidade de Cargas</div>
-          <div id="podio-dia-qtd" style="display:flex;flex-direction:column;gap:6px;">
-            <div style="font-size:12px;color:#aaa;">Carregando...</div>
-          </div>
+      <div style="max-width:420px;">
+        <div id="podio-dia-valor" style="display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:12px;color:#aaa;">Carregando...</div>
         </div>
       </div>
     </div>
@@ -5105,7 +5096,6 @@ function renderPodioDia(allPedidos) {
 
   var ordenadoPorValor = totais.slice().sort(function(a,b){ return b.valor - a.valor; });
   renderPodioDiaBloco('podio-dia-valor', ordenadoPorValor, 'valor');
-  renderPodioDiaBloco('podio-dia-qtd',   ordenadoPorValor, 'qtd');
 }
 
 function renderPodioDiaBloco(elId, ordenado, campo) {
