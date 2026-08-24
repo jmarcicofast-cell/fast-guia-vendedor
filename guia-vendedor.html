@@ -1794,6 +1794,25 @@
       </div>
     </div>
 
+    <!-- PÓDIO DIÁRIO — VALOR + CARGAS -->
+    <div style="background:#fff;border:1.5px solid #E2E0D8;border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1.25rem;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7A4A00;margin-bottom:12px;">🏆 Pódio do Dia — <span id="podio-dia-data">hoje</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px;">💰 Por Valor Vendido</div>
+          <div id="podio-dia-valor" style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font-size:12px;color:#aaa;">Carregando...</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px;">📦 Por Quantidade de Cargas</div>
+          <div id="podio-dia-qtd" style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font-size:12px;color:#aaa;">Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- PLANILHA DE IMPORTAÇÃO EM MASSA -->
     <div id="planilha-import" style="display:none;background:#fff;border:1.5px solid #185FA5;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px;">
@@ -1933,159 +1952,6 @@
         </div>
       </div>
 
-      <!-- METAS VENDAS -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px);">
-
-        <!-- SEMANA VENDAS -->
-        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:10px;">📈 Vendas — Semana</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-            <div>
-              <div style="font-size:10px;color:#aaa;">Meta</div>
-              <div style="font-size:16px;font-weight:700;color:#1C1C1C;" id="dash-sem-meta">—</div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:#aaa;">Realizado</div>
-              <div style="font-size:16px;font-weight:700;color:#2E7D32;" id="dash-sem-real">R$ 0</div>
-            </div>
-          </div>
-          <div style="background:#F1EFE8;border-radius:20px;height:7px;overflow:hidden;margin-bottom:6px;">
-            <div id="dash-sem-bar" style="height:100%;border-radius:20px;background:#C41E1E;width:0%;transition:width .4s;"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;">
-            <span style="color:#C41E1E;font-weight:600;" id="dash-sem-pct">0%</span>
-            <span style="color:#888;">Falta: <strong id="dash-sem-falta" style="color:#C41E1E;">—</strong></span>
-          </div>
-        </div>
-
-        <!-- MÊS VENDAS -->
-        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:10px;">📈 Vendas — Mês</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-            <div>
-              <div style="font-size:10px;color:#aaa;">Meta</div>
-              <div style="font-size:16px;font-weight:700;color:#1C1C1C;" id="dash-mes-meta">—</div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:#aaa;">Realizado</div>
-              <div style="font-size:16px;font-weight:700;color:#2E7D32;" id="dash-mes-real">R$ 0</div>
-            </div>
-          </div>
-          <div style="background:#F1EFE8;border-radius:20px;height:7px;overflow:hidden;margin-bottom:6px;">
-            <div id="dash-mes-bar" style="height:100%;border-radius:20px;background:#C41E1E;width:0%;transition:width .4s;"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;">
-            <span style="color:#C41E1E;font-weight:600;" id="dash-mes-pct">0%</span>
-            <span style="color:#888;">Falta: <strong id="dash-mes-falta" style="color:#C41E1E;">—</strong></span>
-          </div>
-        </div>
-
-        <!-- SEMANA ENTREGAS -->
-        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#185FA5;margin-bottom:10px;">🚚 Entregas — Semana</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-            <div>
-              <div style="font-size:10px;color:#aaa;">Meta</div>
-              <div style="font-size:16px;font-weight:700;color:#1C1C1C;" id="dash-esem-meta">—</div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:#aaa;">Entregue</div>
-              <div style="font-size:16px;font-weight:700;color:#2E7D32;" id="dash-esem-real">R$ 0</div>
-            </div>
-          </div>
-          <div style="background:#F1EFE8;border-radius:20px;height:7px;overflow:hidden;margin-bottom:6px;">
-            <div id="dash-esem-bar" style="height:100%;border-radius:20px;background:#185FA5;width:0%;transition:width .4s;"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;">
-            <span style="color:#185FA5;font-weight:600;" id="dash-esem-pct">0%</span>
-            <span style="color:#888;">Falta: <strong id="dash-esem-falta" style="color:#185FA5;">—</strong></span>
-          </div>
-        </div>
-
-        <!-- MÊS ENTREGAS -->
-        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#185FA5;margin-bottom:10px;">🚚 Entregas — Mês</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-            <div>
-              <div style="font-size:10px;color:#aaa;">Meta</div>
-              <div style="font-size:16px;font-weight:700;color:#1C1C1C;" id="dash-emes-meta">—</div>
-            </div>
-            <div>
-              <div style="font-size:10px;color:#aaa;">Entregue</div>
-              <div style="font-size:16px;font-weight:700;color:#2E7D32;" id="dash-emes-real">R$ 0</div>
-            </div>
-          </div>
-          <div style="background:#F1EFE8;border-radius:20px;height:7px;overflow:hidden;margin-bottom:6px;">
-            <div id="dash-emes-bar" style="height:100%;border-radius:20px;background:#185FA5;width:0%;transition:width .4s;"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;">
-            <span style="color:#185FA5;font-weight:600;" id="dash-emes-pct">0%</span>
-            <span style="color:#888;">Falta: <strong id="dash-emes-falta" style="color:#185FA5;">—</strong></span>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- DETALHAMENTO PRECISO POR STATUS -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px;">
-
-        <!-- SEMANA - STATUS -->
-        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#7A4A00;margin-bottom:10px;">📄 Detalhamento por Status — Semana</div>
-          <div style="display:grid;gap:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:#666;">Com DT</span>
-              <span style="display:flex;flex-direction:column;align-items:flex-end;">
-                <span style="font-size:14px;font-weight:700;color:#7A4A00;" id="dash-sem-comdt">R$ 0,00</span>
-                <span style="font-size:10px;color:#aaa;" id="dash-sem-comdt-qt">(0)</span>
-              </span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:#666;">Entregue</span>
-              <span style="display:flex;flex-direction:column;align-items:flex-end;">
-                <span style="font-size:14px;font-weight:700;color:#1B5E20;" id="dash-sem-entregue">R$ 0,00</span>
-                <span style="font-size:10px;color:#aaa;" id="dash-sem-entregue-qt">(0)</span>
-              </span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:#666;">Faturado</span>
-              <span style="display:flex;flex-direction:column;align-items:flex-end;">
-                <span style="font-size:14px;font-weight:700;color:#1C1C1C;" id="dash-sem-faturado">R$ 0,00</span>
-                <span style="font-size:10px;color:#aaa;" id="dash-sem-faturado-qt">(0)</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- MÊS - STATUS -->
-        <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#7A4A00;margin-bottom:10px;">📄 Detalhamento por Status — Mês</div>
-          <div style="display:grid;gap:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:#666;">Com DT</span>
-              <span style="display:flex;flex-direction:column;align-items:flex-end;">
-                <span style="font-size:14px;font-weight:700;color:#7A4A00;" id="dash-mes-comdt">R$ 0,00</span>
-                <span style="font-size:10px;color:#aaa;" id="dash-mes-comdt-qt">(0)</span>
-              </span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:#666;">Entregue</span>
-              <span style="display:flex;flex-direction:column;align-items:flex-end;">
-                <span style="font-size:14px;font-weight:700;color:#1B5E20;" id="dash-mes-entregue">R$ 0,00</span>
-                <span style="font-size:10px;color:#aaa;" id="dash-mes-entregue-qt">(0)</span>
-              </span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;color:#666;">Faturado</span>
-              <span style="display:flex;flex-direction:column;align-items:flex-end;">
-                <span style="font-size:14px;font-weight:700;color:#1C1C1C;" id="dash-mes-faturado">R$ 0,00</span>
-                <span style="font-size:10px;color:#aaa;" id="dash-mes-faturado-qt">(0)</span>
-              </span>
-            </div>
-          </div>
-        </div>
-
-      </div>
     </div>
 
     <!-- COMISSÃO VENDEDOR -->
@@ -5213,10 +5079,58 @@ function listenRanking() {
       allPedidos[vn] = snap.val() ? Object.values(snap.val()).filter(function(p){ return !p.excluido; }) : [];
       renderRanking(allPedidos, allLigacoes);
       renderPremiacoes(allPedidos);
+      renderPodioDia(allPedidos);
       _rankingDadosGlobais.pedidos = allPedidos;
       if (typeof renderEvRankingMes === 'function') renderEvRankingMes();
     });
   });
+}
+
+// ── PÓDIO DIÁRIO (Valor + Cargas) — aparece pra todo mundo, em qualquer login,
+// na tela de Pedidos. Usa os mesmos dados de allPedidos que já alimentam o
+// Ranking (todos os vendedores), filtrando só os pedidos de HOJE.
+function renderPodioDia(allPedidos) {
+  var hojeIso = new Date().toISOString().split('T')[0];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
+  var dl = document.getElementById('podio-dia-data');
+  if (dl) dl.textContent = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'2-digit'});
+
+  var totais = nomes.map(function(vn) {
+    var pedsHoje = (allPedidos[vn] || []).filter(function(p) {
+      return p.data === hojeIso && p.status !== 'cancelado';
+    });
+    var valor = pedsHoje.reduce(function(s,p){ return s + Number(p.vTotal||0); }, 0);
+    return { vn: vn, nome: (vendedores[vn] && vendedores[vn].nome) || vn, valor: valor, qtd: pedsHoje.length };
+  });
+
+  var ordenadoPorValor = totais.slice().sort(function(a,b){ return b.valor - a.valor; });
+  renderPodioDiaBloco('podio-dia-valor', ordenadoPorValor, 'valor');
+  renderPodioDiaBloco('podio-dia-qtd',   ordenadoPorValor, 'qtd');
+}
+
+function renderPodioDiaBloco(elId, ordenado, campo) {
+  var box = document.getElementById(elId);
+  if (!box) return;
+  var medalhaPos = ['🥇','🥈','🥉'];
+  box.innerHTML = ordenado.map(function(d, i) {
+    var posTxt = medalhaPos[i] || ((i + 1) + 'º');
+    var valorFmt = fmtBRL(d.valor);
+    var cargasFmt = d.qtd + (d.qtd === 1 ? ' carga' : ' cargas');
+    var destaqueTxt = campo === 'valor' ? valorFmt : cargasFmt;
+    var secundarioTxt = campo === 'valor' ? cargasFmt : valorFmt;
+    var corDestaque = i === 0 ? '#1B5E20' : '#1C1C1C';
+    return '' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:8px;background:' + (i === 0 ? '#F5FBF6' : '#FAFAF8') + ';border:1px solid ' + (i === 0 ? '#C8E6C9' : '#F0EEEA') + ';">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<span style="font-size:13px;font-weight:700;color:#888;min-width:26px;">' + posTxt + '</span>' +
+          '<span style="font-size:13px;font-weight:700;color:#1C1C1C;">' + d.nome + '</span>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div style="font-size:13px;font-weight:700;color:' + corDestaque + ';">' + destaqueTxt + '</div>' +
+          '<div style="font-size:10.5px;color:#999;">' + secundarioTxt + '</div>' +
+        '</div>' +
+      '</div>';
+  }).join('');
 }
 
 function renderRanking(allPedidos, allLigacoes) {
