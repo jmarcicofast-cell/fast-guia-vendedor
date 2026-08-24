@@ -9859,17 +9859,17 @@ function aplicarFiltroPeriodo() {
   });
   var vendasTotal = pedsVendidos.reduce(function(s,p){ return s+getValor(p); }, 0);
 
-  // Entregas/Detalhamento = data em que o STATUS mudou (dataStatus), dentro do intervalo
-  var pedsPorStatusData = _pedTodosGeral.filter(function(p) {
-    var d = p.dataStatus || p.data;
-    return d && d >= deStr && d <= ateStr;
-  });
-  var pedsEntregues = pedsPorStatusData.filter(function(p) { return (p.status === 'entregue' || p.status === 'faturado'); });
+  // Entregue+Faturado e Detalhamento por Status usam o MESMO conjunto de pedidos
+  // do período (pedsVendidos, filtrado pela data do pedido) — assim a soma dos
+  // status sempre bate exatamente com o total de "Vendas no Período".
+  var pedsEntregues = pedsVendidos.filter(function(p) { return (p.status === 'entregue' || p.status === 'faturado'); });
   var entregasTotal = pedsEntregues.reduce(function(s,p){ return s+getValor(p); }, 0);
 
   var statusList = ['agendamento','aguardando-dt','com-dt','em-rota','entregue','faturado','cancelado'];
   statusList.forEach(function(st) {
-    var peds = pedsPorStatusData.filter(function(p){ return p.status === st; });
+    var peds = (st === 'cancelado'
+      ? _pedTodosGeral.filter(function(p){ return p.data && p.data >= deStr && p.data <= ateStr && p.status === 'cancelado'; })
+      : pedsVendidos.filter(function(p){ return p.status === st; }));
     var total = peds.reduce(function(s,p){ return s+getValor(p); }, 0);
     var el = document.getElementById('filtro-st-' + st);
     if (el) el.textContent = fmt2(total) + ' (' + peds.length + ')';
