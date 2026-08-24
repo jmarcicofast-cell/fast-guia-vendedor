@@ -6072,7 +6072,7 @@ function renderEvolucaoGestora(allPedidos) {
 function recalcGestora() {
   // Get all pedidos from all vendedores
   var todos = [];
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','JULIANA'];
   var pendentes = nomes.length;
   nomes.forEach(function(vn) {
     dbRef('pedidos/' + vn).once('value').then(function(snap) {
@@ -6100,7 +6100,7 @@ function calcComissaoGestora(pedidosTodosVendedores) {
   var totalEquipe = 0;
 
   pedidosTodosVendedores.forEach(function(p) {
-    if (p.status === 'cancelado') return;
+    if (p.status !== 'faturado') return; // comissão só sobre o que já foi faturado
     if (!p.data) return;
     if (filtroAtivo) {
       if (p.data < deStr || p.data > ateStr) return;
