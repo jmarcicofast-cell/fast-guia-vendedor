@@ -3312,6 +3312,7 @@
       <button class="qf-btn active" id="admsub-btn-avaliacao" onclick="showAdminSub('avaliacao',this)">⭐ Avaliação</button>
       <button class="qf-btn" id="admsub-btn-tempo" onclick="showAdminSub('tempo',this)">⏱️ Gestão de Tempo</button>
       <button class="qf-btn" id="admsub-btn-antonio" onclick="showAdminSub('antonio',this)">🎧 Antônio — Escuta</button>
+      <button class="qf-btn" id="admsub-btn-confpn" onclick="showAdminSub('confpn',this)">🔎 Conferir Chamado em Lote</button>
     </div>
 
     <div id="admsub-avaliacao" class="admsub-content active">
@@ -3561,6 +3562,25 @@
           <button class="ae-btn primary" onclick="aeAddCall()">+ Nova Ligação</button>
         </div>
       </div>
+    </div>
+
+    <!-- CONFERIR CHAMADO EM LOTE -->
+    <div id="admsub-confpn" class="admsub-content">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+        <div style="background:#0C447C;border-radius:8px;padding:6px 10px;font-size:18px;">🔎</div>
+        <div>
+          <h2 style="font-size:16px;font-weight:600;color:#1C1C1C;">Conferir Chamado em Lote</h2>
+          <p style="font-size:12px;color:#888;">Cole uma lista de números de chamado (um por linha, ou separados por espaço/vírgula) e confira quais já estão lançados no Guia e quais estão faltando.</p>
+        </div>
+      </div>
+
+      <textarea id="confpn-input" rows="10" placeholder="Cole aqui a lista de números de chamado, um por linha..." style="width:100%;max-width:420px;padding:10px;border:1px solid #E2E0D8;border-radius:8px;font-size:13px;font-family:monospace;resize:vertical;display:block;"></textarea>
+
+      <div style="margin-top:10px;">
+        <button class="qf-btn" onclick="confPnConferir()" style="background:#0C447C;color:#fff;border-color:#0C447C;">Conferir</button>
+      </div>
+
+      <div id="confpn-resultado" style="margin-top:1.25rem;"></div>
     </div>
 
   </div>
@@ -10886,6 +10906,68 @@ function showAdminSub(name, btn) {
     var atbtn = document.getElementById('atbtn-' + adminVendedor);
     admTempoSelect(adminVendedor, atbtn);
   }
+}
+
+// ══ CONFERIR CHAMADO EM LOTE — cola uma lista de números de chamado e confere
+// contra os pedidos já carregados (ativos + lixeira) de TODOS os vendedores. ══
+function confPnConferir() {
+  var inputEl = document.getElementById('confpn-input');
+  var resEl = document.getElementById('confpn-resultado');
+  var raw = (inputEl && inputEl.value ? inputEl.value : '').trim();
+  if (!raw) { resEl.innerHTML = '<div style="font-size:12px;color:#aaa;">Cole a lista de PNs primeiro.</div>'; return; }
+
+  var lista = raw.split(/[\s,;]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  var vistos = {}, pnsUnicos = [];
+  lista.forEach(function(pn) { if (!vistos[pn]) { vistos[pn] = true; pnsUnicos.push(pn); } });
+
+  var mapaAtivos = {};
+  (_pedTodosGeral || []).forEach(function(p) {
+    var ch = String(p.chamado == null ? '' : p.chamado).trim();
+    if (ch) mapaAtivos[ch] = p;
+  });
+  var mapaExcluidos = {};
+  (_pedExcluidos || []).forEach(function(p) {
+    var ch = String(p.chamado == null ? '' : p.chamado).trim();
+    if (ch) mapaExcluidos[ch] = p;
+  });
+
+  var encontrados = [], excluidos = [], faltando = [];
+  pnsUnicos.forEach(function(ch) {
+    if (mapaAtivos[ch]) encontrados.push(ch);
+    else if (mapaExcluidos[ch]) excluidos.push(ch);
+    else faltando.push(ch);
+  });
+
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;max-width:620px;">' +
+    '<div style="background:#E8F5E9;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#1B5E20;">' + encontrados.length + '</div><div style="font-size:11px;color:#2E7D32;">Encontrados</div></div>' +
+    '<div style="background:#FFF3E0;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#7A4A00;">' + excluidos.length + '</div><div style="font-size:11px;color:#7A4A00;">Na Lixeira</div></div>' +
+    '<div style="background:#FBE9E9;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#7A0000;">' + faltando.length + '</div><div style="font-size:11px;color:#7A0000;">Faltando</div></div>' +
+    '<div style="background:#F1EFE8;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#555;">' + pnsUnicos.length + '</div><div style="font-size:11px;color:#666;">Total Conferido</div></div>' +
+  '</div>';
+
+  if (faltando.length) {
+    html += '<div style="margin-bottom:14px;max-width:620px;"><div style="font-size:12px;font-weight:700;color:#7A0000;margin-bottom:6px;">❌ Chamado faltando no Guia (' + faltando.length + ')</div>' +
+      '<div style="font-family:monospace;font-size:12.5px;background:#FBE9E9;border-radius:8px;padding:10px;line-height:1.8;word-break:break-word;">' + faltando.join(', ') + '</div></div>';
+  }
+
+  if (excluidos.length) {
+    html += '<div style="margin-bottom:14px;max-width:620px;"><div style="font-size:12px;font-weight:700;color:#7A4A00;margin-bottom:6px;">🗑️ Na Lixeira, não conta como lançado (' + excluidos.length + ')</div>' +
+      '<div style="font-family:monospace;font-size:12.5px;background:#FFF3E0;border-radius:8px;padding:10px;line-height:1.8;">' + excluidos.map(function(ch) {
+        var p = mapaExcluidos[ch];
+        return ch + ' — ' + (p.empresa || '(sem empresa)') + ' (excluído por ' + (p.excluidoPor || '?') + ')';
+      }).join('<br>') + '</div></div>';
+  }
+
+  if (encontrados.length) {
+    html += '<details style="max-width:620px;"><summary style="font-size:12px;font-weight:700;color:#1B5E20;cursor:pointer;">✅ Encontrados no Guia (' + encontrados.length + ')</summary>' +
+      '<div style="font-family:monospace;font-size:12.5px;background:#E8F5E9;border-radius:8px;padding:10px;line-height:1.8;margin-top:6px;">' + encontrados.map(function(ch) {
+        var p = mapaAtivos[ch];
+        var statusTxt = STATUS_LABEL[p.status] || p.status || '?';
+        return ch + ' — ' + (p.empresa || '(sem empresa)') + ' (' + (p.vendedor || '?') + ', ' + statusTxt + ')';
+      }).join('<br>') + '</div></details>';
+  }
+
+  resEl.innerHTML = html;
 }
 
 // ══ GESTÃO DE TEMPO — metas/prazos personalizados por vendedor ══
