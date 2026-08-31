@@ -2216,6 +2216,7 @@
             <th>Cliente</th>
             <th>Vl. Total</th>
             <th>Status</th>
+            <th>Nº Doc</th>
             <th>Observação</th>
           </tr>
         </thead>
@@ -7337,13 +7338,72 @@ function avisarPedidoTravado() {
 
 function atualizarStatus(vendNome, pedidoId, novoStatus) {
   if (pedidoEstaTravado(vendNome, pedidoId)) { avisarPedidoTravado(); renderPedidosFiltrados(); return; }
+  var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vendNome && x.id === pedidoId; });
+  // Ao marcar como Faturado (e ainda não estava faturado), pede o número do
+  // documento (DOC) gerado no faturamento antes de gravar a mudança de status.
+  if (novoStatus === 'faturado' && (!p || p.status !== 'faturado')) {
+    abrirModalDocFaturado(vendNome, pedidoId, novoStatus);
+    return;
+  }
+  aplicarNovoStatus(vendNome, pedidoId, novoStatus);
+}
+
+function aplicarNovoStatus(vendNome, pedidoId, novoStatus, numDoc) {
   var agora = new Date().toISOString().split('T')[0];
-  dbRef('pedidos/' + vendNome + '/' + pedidoId + '/status').set(novoStatus)
-    .catch(e => console.error('Erro status:', e));
   // Guarda quando o status mudou de fato, pra "Com DT/Entregue/Faturado" refletirem
   // a data real da mudança (e nao a data em que o pedido foi originalmente lançado).
-  dbRef('pedidos/' + vendNome + '/' + pedidoId + '/dataStatus').set(agora)
-    .catch(e => console.error('Erro dataStatus:', e));
+  var updates = { status: novoStatus, dataStatus: agora };
+  if (typeof numDoc !== 'undefined') updates.numDoc = numDoc;
+  dbRef('pedidos/' + vendNome + '/' + pedidoId).update(updates)
+    .catch(e => console.error('Erro status:', e));
+}
+
+// ── Modal: número do documento (DOC) ao faturar um pedido ──
+var _docFaturadoPendente = null;
+
+function abrirModalDocFaturado(vendNome, pedidoId, novoStatus) {
+  _docFaturadoPendente = { vend: vendNome, pedidoId: pedidoId, novoStatus: novoStatus };
+  var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vendNome && x.id === pedidoId; });
+  var resumo = document.getElementById('doc-faturado-resumo');
+  if (resumo) resumo.textContent = (p ? (p.empresa || p.cliente || '') : '') + ' · Chamado ' + (p && p.chamado ? p.chamado : '—');
+  var input = document.getElementById('doc-faturado-input');
+  if (input) input.value = (p && p.numDoc) || '';
+  var erro = document.getElementById('doc-faturado-erro');
+  if (erro) erro.style.display = 'none';
+  var ov = document.getElementById('doc-faturado-overlay');
+  if (ov) ov.style.display = 'flex';
+  setTimeout(function() { if (input) input.focus(); }, 60);
+}
+
+function fecharModalDocFaturado() {
+  var ov = document.getElementById('doc-faturado-overlay');
+  if (ov) ov.style.display = 'none';
+  _docFaturadoPendente = null;
+  // O status ainda não foi gravado no banco — só reflete no dropdown o valor real.
+  renderPedidosFiltrados();
+}
+
+function confirmarDocFaturado() {
+  if (!_docFaturadoPendente) return;
+  var input = document.getElementById('doc-faturado-input');
+  var numDoc = input ? input.value.trim() : '';
+  if (!numDoc) {
+    var erro = document.getElementById('doc-faturado-erro');
+    if (erro) erro.style.display = 'block';
+    if (input) input.focus();
+    return;
+  }
+  var pend = _docFaturadoPendente;
+  aplicarNovoStatus(pend.vend, pend.pedidoId, pend.novoStatus, numDoc);
+  _docFaturadoPendente = null;
+  var ov = document.getElementById('doc-faturado-overlay');
+  if (ov) ov.style.display = 'none';
+}
+
+function salvarNumDoc(vendNome, pedidoId, valor) {
+  if (currentUser !== 'JULIANA') return;
+  dbRef('pedidos/' + vendNome + '/' + pedidoId + '/numDoc').set(valor || '')
+    .catch(e => console.error('Erro ao salvar nº do documento:', e));
 }
 
 function salvarObsPedido(vendNome, pedidoId, valor) {
@@ -7456,8 +7516,21 @@ function linhaPedidoHtml(p, isGestora) {
     vendLabel +
     '<td style="font-weight:700;font-size:14px;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
     '<td onclick="event.stopPropagation()"><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)"' + selectAttrs + '>' + statusSelectOpts(p, isGestora) + '</select></td>' +
+    '<td onclick="event.stopPropagation()">' + numDocCellHtml(p) + '</td>' +
     '<td onclick="event.stopPropagation()"><input type="text" value="' + obsVal + '" placeholder="+ observação" onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()"' + obsAttrs + '></td>' +
   '</tr>';
+}
+
+// Célula com o número do documento (DOC) do faturamento. Só existe/faz sentido
+// quando o pedido está Faturado; a Juliana pode editar direto na tabela caso
+// precise corrigir, os demais só visualizam.
+function numDocCellHtml(p) {
+  if (p.status !== 'faturado') return '<span style="color:#ccc;font-size:12px;">—</span>';
+  var val = (p.numDoc || '').toString().replace(/"/g,'&quot;');
+  if (currentUser === 'JULIANA') {
+    return '<input type="text" value="' + val + '" placeholder="—" style="width:90px;font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid #E2E0D8;outline:none;font-family:monospace;" onblur="salvarNumDoc(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()">';
+  }
+  return '<span style="font-family:monospace;font-size:12.5px;font-weight:600;">' + (val || '—') + '</span>';
 }
 
 function statusSelectOpts(p, isGestora) {
@@ -7490,6 +7563,7 @@ function cardPedidoHtml(p, isGestora) {
     '</div>' +
     '<div style="font-size:16px;font-weight:700;color:#1C1C1C;margin-bottom:10px;">' + clienteNome + '</div>' +
     '<div style="font-size:18px;font-weight:700;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
+    (p.status === 'faturado' ? '<div style="font-size:11px;color:#888;margin-top:6px;">📄 Doc: <span style="font-family:monospace;font-weight:700;color:#1C1C1C;">' + (p.numDoc || '—') + '</span></div>' : '') +
     '</div>' +
     '<input type="text" value="' + obsVal + '" placeholder="+ observação" onclick="event.stopPropagation()" onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()"' + obsAttrs + '>' +
   '</div>';
@@ -7536,6 +7610,15 @@ function abrirDetalhePedido(vend, pedidoId) {
         '<span style="display:inline-block;background:#1C1C1C;color:#fff;font-family:monospace;font-size:16px;font-weight:700;padding:6px 14px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + '</span>' +
         '<span class="status-badge s-' + (p.status||'') + '" style="font-size:12px;">' + (STATUS_LABEL[p.status]||p.status||'') + '</span>' +
       '</div>' +
+      (p.status === 'faturado' ?
+        '<div style="background:#F8F7F3;border-radius:8px;padding:9px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+          '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#888;">📄 Nº Documento (DOC)</span>' +
+          (currentUser === 'JULIANA' ?
+            '<input type="text" value="' + (p.numDoc||'').toString().replace(/"/g,'&quot;') + '" placeholder="Digite o nº do DOC" style="width:140px;font-size:13px;font-family:monospace;font-weight:700;padding:5px 8px;border-radius:6px;border:1px solid #E2E0D8;outline:none;text-align:right;" onblur="salvarNumDoc(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()">'
+            :
+            '<span style="font-size:13px;font-family:monospace;font-weight:700;color:#1C1C1C;">' + (p.numDoc || '—') + '</span>') +
+        '</div>'
+        : '') +
       '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:16px;">' +
         (isGestora ? '<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Vendedor</div><div style="font-size:13px;font-weight:600;color:#C41E1E;">' + (p.vendedor||'—') + '</div></div>' : '') +
         '<div><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Data</div><div style="font-size:13px;font-weight:600;">' + (p.data||'—') + '</div></div>' +
@@ -11321,6 +11404,26 @@ function importarArquivo(event) {
       <span onclick="fecharDetalhePedido()" style="cursor:pointer;font-size:18px;color:#888;line-height:1;">✕</span>
     </div>
     <div id="ped-detalhe-modal-body"></div>
+  </div>
+</div>
+
+<!-- Overlay para digitar o número do documento (DOC) ao faturar um pedido -->
+<div id="doc-faturado-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1001;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) fecharModalDocFaturado()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:380px;width:100%;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-size:15px;font-weight:700;color:#1C1C1C;">📄 Faturar Pedido</div>
+      <span onclick="fecharModalDocFaturado()" style="cursor:pointer;font-size:18px;color:#888;line-height:1;">✕</span>
+    </div>
+    <div id="doc-faturado-resumo" style="font-size:11.5px;color:#aaa;margin-bottom:14px;"></div>
+    <div class="ped-field" style="margin-bottom:6px;">
+      <label>Número do Documento (DOC)</label>
+      <input type="text" id="doc-faturado-input" placeholder="Ex: 12345" style="width:100%;padding:9px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:14px;font-family:monospace;outline:none;" onkeydown="if(event.key==='Enter') confirmarDocFaturado()">
+    </div>
+    <div id="doc-faturado-erro" style="display:none;font-size:11.5px;color:#C41E1E;font-weight:600;margin-bottom:6px;">Digite o número do documento antes de confirmar.</div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button onclick="fecharModalDocFaturado()" style="flex:1;padding:9px;border-radius:8px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:13px;cursor:pointer;">Cancelar</button>
+      <button onclick="confirmarDocFaturado()" style="flex:1.5;padding:9px;border-radius:8px;border:none;background:#1C1C1C;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">✅ Confirmar Faturamento</button>
+    </div>
   </div>
 </div>
 
