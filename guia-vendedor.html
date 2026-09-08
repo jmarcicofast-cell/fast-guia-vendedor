@@ -4190,7 +4190,7 @@
       </table>
     </div>
 
-    <h3 style="margin-top:20px;">Metas de produto (mês, equipe toda — R$)</h3>
+    <h3 style="margin-top:20px;">Metas de produto (mês, equipe toda — quantidade)</h3>
     <div id="ck-metas-produto" class="ck-metas-equipe"></div>
   </div>
 
@@ -12447,11 +12447,16 @@ function mmRenderTudo(){
   mmRenderProdutos();
 }
 
+function mmFmtQtd(n){
+  n = Number(n) || 0;
+  return n.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+
 function mmItemHTML(label, valor, meta, pct, isMoney){
   var cls = (pct === null || pct === undefined) ? '' : ckStatusClasse(pct);
   var pctW = (pct === null || pct === undefined) ? 0 : Math.min(Math.max(pct, 0), 100);
-  var valTxt = isMoney ? ckFmtBRL(valor) : ckNum(valor);
-  var metaTxt = meta > 0 ? (isMoney ? ckFmtBRL(meta) : Number(meta).toFixed(0)) : 'sem meta cadastrada';
+  var valTxt = isMoney ? ckFmtBRL(valor) : mmFmtQtd(valor);
+  var metaTxt = meta > 0 ? (isMoney ? ckFmtBRL(meta) : mmFmtQtd(meta)) : 'sem meta cadastrada';
   return '<div class="mm-item">' +
     '<div class="mm-item-top">' +
       '<span class="mm-item-label">'+(cls?('<span class="ck-term ck-term-'+cls+'"></span>'):'')+label+'</span>' +
@@ -12556,14 +12561,14 @@ function mmRenderProdutos(){
       if (!d || d < inicio || d > hoje) return;
       (p.itens||[]).forEach(function(it){
         var grupo = ckClassificarProduto(it.material);
-        if (grupo) totais[grupo] += ckNum(it.qtd)*ckNum(it.vUnit);
+        if (grupo) totais[grupo] += ckNum(it.qtd);
       });
     });
   });
   var html = '';
   CK_PRODUTOS.forEach(function(g){
     var meta = (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key]) || 0;
-    html += mmItemHTML(g.label, totais[g.key], meta, meta>0?(totais[g.key]/meta*100):null, true);
+    html += mmItemHTML(g.label, totais[g.key], meta, meta>0?(totais[g.key]/meta*100):null, false);
   });
   box.innerHTML = html;
 }
