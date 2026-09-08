@@ -1095,6 +1095,10 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Check-in Diário
   </button>
+  <button class="nav-btn" id="nav-minhasmetas" style="display:none;" onclick="showTab('minhasmetas',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+    Minhas Metas
+  </button>
 </nav>
 
 <!-- ══ ABA MATERIAIS ══ -->
@@ -4135,7 +4139,7 @@
     </div>
   </div>
 
-  <div class="ck-config">
+  <div class="ck-config" id="ck-settings-mensal">
     <div>
       <label>Meta do mês (R$)</label>
       <input type="number" id="ck-meta-mensal" placeholder="0">
@@ -4150,7 +4154,7 @@
     </div>
   </div>
 
-  <div class="ck-panel">
+  <div class="ck-panel" id="ck-settings-metas">
     <h3>Metas mínimas diárias</h3>
     <div class="ck-config" style="margin-bottom:14px;">
       <div>
@@ -4167,6 +4171,27 @@
     </div>
     <div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Meta de vendido/dia por vendedor(a) (R$)</div>
     <div id="ck-metas-equipe" class="ck-metas-equipe"></div>
+  </div>
+
+  <div class="ck-panel" id="ck-settings-metas2">
+    <h3>Metas semanal, mensal e de clientes (por vendedor)</h3>
+    <div style="overflow-x:auto;">
+      <table class="ck-table" style="min-width:640px;">
+        <thead>
+          <tr>
+            <th>Vendedor(a)</th>
+            <th class="num">Semanal (R$)</th>
+            <th class="num">Mensal (R$)</th>
+            <th class="num">Clientes novos/mês</th>
+            <th class="num">Clientes inativos/mês</th>
+          </tr>
+        </thead>
+        <tbody id="ck-metas-periodo"></tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:20px;">Metas de produto (mês, equipe toda — R$)</h3>
+    <div id="ck-metas-produto" class="ck-metas-equipe"></div>
   </div>
 
   <div class="ck-metrics">
@@ -4227,7 +4252,7 @@
   </table>
   <button class="ck-addrow" id="ck-addrow">+ adicionar vendedor(a)</button>
 
-  <div class="ck-savebar">
+  <div class="ck-savebar" id="ck-savebar">
     <button class="ck-savebtn" id="ck-savebtn">Salvar dia</button>
     <span class="ck-savestatus" id="ck-savestatus"></span>
   </div>
@@ -4262,6 +4287,66 @@
 </div>
 </div>
 <!-- ══ FIM CHECK-IN DIÁRIO ══ -->
+
+<!-- ══ MINHAS METAS (visão pessoal, aparece pra todo mundo) ══ -->
+<style>
+  #tab-minhasmetas .mm-wrap{ max-width:760px; padding:1.25rem 2rem 3rem; }
+  #tab-minhasmetas .mm-head h2{ font-size:15px; font-weight:600; color:#1C1C1C; margin-bottom:2px; }
+  #tab-minhasmetas .mm-head p{ font-size:12px; color:#aaa; margin-bottom:20px; }
+  #tab-minhasmetas .mm-panel{ background:#fff; border:1px solid #E8E6E1; border-radius:12px; padding:1.1rem 1.25rem; margin-bottom:16px; }
+  #tab-minhasmetas .mm-panel h3{ font-size:13px; font-weight:700; color:#1C1C1C; margin-bottom:12px; }
+  #tab-minhasmetas .mm-item{ margin-bottom:14px; }
+  #tab-minhasmetas .mm-item:last-child{ margin-bottom:0; }
+  #tab-minhasmetas .mm-item-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+  #tab-minhasmetas .mm-item-label{ font-size:12.5px; color:#555; display:flex; align-items:center; gap:6px; }
+  #tab-minhasmetas .mm-item-val{ font-size:12.5px; font-weight:700; color:#1C1C1C; }
+  #tab-minhasmetas .mm-bar-bg{ background:#F1EFE8; border-radius:5px; height:9px; overflow:hidden; }
+  #tab-minhasmetas .mm-bar-fill{ height:100%; border-radius:5px; background:#5A87AC; transition:width .25s ease; }
+  #tab-minhasmetas .mm-bar-fill.good{ background:#2E7D32; }
+  #tab-minhasmetas .mm-bar-fill.mid{ background:#E68A00; }
+  #tab-minhasmetas .mm-bar-fill.bad{ background:#C41E1E; }
+  #tab-minhasmetas .ck-term{ width:11px; height:11px; }
+  #tab-minhasmetas .mm-empty{ font-size:12.5px; color:#aaa; }
+  #tab-minhasmetas .mm-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:600px){ #tab-minhasmetas .mm-grid2{ grid-template-columns:1fr; } }
+</style>
+<div id="tab-minhasmetas" class="tab-content">
+<div class="mm-wrap">
+
+  <div class="mm-head">
+    <h2 id="mm-titulo">📍 Minhas Metas</h2>
+    <p>Ligações e propostas vêm do check-in diário. Vendido, clientes e produtos são calculados automaticamente a partir dos seus pedidos.</p>
+  </div>
+
+  <div class="mm-panel">
+    <h3>Hoje</h3>
+    <div id="mm-hoje"></div>
+  </div>
+
+  <div class="mm-grid2">
+    <div class="mm-panel">
+      <h3>Esta semana (vendido)</h3>
+      <div id="mm-semana"></div>
+    </div>
+    <div class="mm-panel">
+      <h3>Este mês (vendido)</h3>
+      <div id="mm-mes"></div>
+    </div>
+  </div>
+
+  <div class="mm-panel">
+    <h3>Clientes este mês</h3>
+    <div id="mm-clientes"></div>
+  </div>
+
+  <div class="mm-panel">
+    <h3>Produtos da equipe este mês</h3>
+    <div id="mm-produtos"></div>
+  </div>
+
+</div>
+</div>
+<!-- ══ FIM MINHAS METAS ══ -->
 
 <script>
 
@@ -10969,10 +11054,13 @@ function checkAdminAccess(nome) {
   const rampaNav = document.getElementById('nav-rampa');
   const checkinNav = document.getElementById('nav-checkin');
   if (!adminNav) return;
+  // Check-in Diário e Minhas Metas: aparecem para todo mundo (edição só pra Juliana)
+  if (checkinNav) checkinNav.style.display = 'flex';
+  var mmNav = document.getElementById('nav-minhasmetas');
+  if (mmNav) mmNav.style.display = 'flex';
   if (nome === 'Juliana') {
     adminNav.style.display = 'flex';
     if (rampaNav) rampaNav.style.display = 'flex';
-    if (checkinNav) checkinNav.style.display = 'flex';
     // Load all vendedores from Firebase
     Promise.all(['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
       .then(function() {
@@ -10983,7 +11071,6 @@ function checkAdminAccess(nome) {
   } else {
     adminNav.style.display = 'none';
     if (rampaNav) rampaNav.style.display = 'none';
-    if (checkinNav) checkinNav.style.display = 'none';
   }
   checkParanaAccess();
 }
@@ -11220,6 +11307,7 @@ function showTab(name, btn) {
   if (name === 'tabela') renderTable();
   if (name === 'parana') prInit();
   if (name === 'checkin') ckInit();
+  if (name === 'minhasmetas') mmInit();
   btn.classList.add('active');
 }
 
@@ -11723,6 +11811,47 @@ const CK_METAS_VENDIDO = {
   THALES: 38132.23
 };
 
+/* Grupos de produto p/ meta mensal da equipe. 'match' recebe o nome do
+   material (maiusculo, sem acento) e diz se pertence ao grupo. A ordem
+   importa: placaVAB é o "resto" da categoria VAB que nao caiu em nenhum
+   grupo mais especifico (evita contar cimenticia/glasroc duas vezes). */
+const CK_PRODUTOS = [
+  { key: 'placomix',        label: 'Massa Placomix',    match: function(n){ return n.indexOf('PLACOMIX') >= 0; } },
+  { key: 'basecoat',        label: 'Basecoat',          match: function(n){ return n.indexOf('BASECOAT') >= 0; } },
+  { key: 'laVidroWF',       label: 'Lã de vidro WF',    match: function(n){ return n.indexOf('LA DE VIDRO') >= 0; } },
+  { key: 'placaCimenticia', label: 'Placa cimentícia',  match: function(n){ return n.indexOf('PLACA CIMENTICIA') >= 0; } },
+  { key: 'laRocha',         label: 'Lã de rocha',       match: function(n){ return n.indexOf('LA DE ROCHA') >= 0; } },
+  { key: 'placaST',         label: 'Placa ST',          match: function(n){ return n.indexOf('PLACA ST') >= 0; } },
+  { key: 'placaVAB',        label: 'Placa VAB (demais)', match: null } // preenchido por categoria, ver ckClassificarProduto
+];
+
+function ckSemAcento(s){
+  return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+}
+
+/* mapa nome->categoria da base de produtos (obterMateriaisUnicos ja dedup por nome) */
+var CK_NOME_PARA_CATEGORIA = null;
+function ckCategoriaDoProduto(nomeMaterial){
+  if (!CK_NOME_PARA_CATEGORIA){
+    CK_NOME_PARA_CATEGORIA = {};
+    (typeof obterMateriaisUnicos === 'function' ? obterMateriaisUnicos() : []).forEach(function(m){
+      CK_NOME_PARA_CATEGORIA[m.nome] = m.categoria;
+    });
+  }
+  return CK_NOME_PARA_CATEGORIA[nomeMaterial] || '';
+}
+
+/* Classifica um item de pedido (it.material) num dos grupos CK_PRODUTOS, ou null */
+function ckClassificarProduto(nomeMaterial){
+  var n = ckSemAcento(nomeMaterial);
+  for (var i = 0; i < CK_PRODUTOS.length; i++){
+    var g = CK_PRODUTOS[i];
+    if (g.match && g.match(n)) return g.key;
+  }
+  if (String(ckCategoriaDoProduto(nomeMaterial)).toUpperCase() === 'VAB') return 'placaVAB';
+  return null;
+}
+
 function ckNormNome(nome){
   return (nome || '')
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -11793,19 +11922,44 @@ let ckListenerAttached = false;
 function ckToday(){ return new Date().toISOString().slice(0,10); }
 function ckFmtBRL(n){ n = Number(n)||0; return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL', maximumFractionDigits:0}); }
 function ckNum(n){ return Number(n)||0; }
+function ckIsAdmin(){ return currentUser === 'JULIANA'; }
+
+function ckAplicarPermissoes(){
+  var admin = ckIsAdmin();
+  var settingsMensal = document.getElementById('ck-settings-mensal');
+  var settingsMetas = document.getElementById('ck-settings-metas');
+  var settingsMetas2 = document.getElementById('ck-settings-metas2');
+  var addRow = document.getElementById('ck-addrow');
+  var saveBar = document.getElementById('ck-savebar');
+  if (settingsMensal) settingsMensal.style.display = admin ? 'flex' : 'none';
+  if (settingsMetas) settingsMetas.style.display = admin ? 'block' : 'none';
+  if (settingsMetas2) settingsMetas2.style.display = admin ? 'block' : 'none';
+  if (addRow) addRow.style.display = admin ? 'block' : 'none';
+  if (saveBar) saveBar.style.display = admin ? 'flex' : 'none';
+}
+
+function ckGarantirDefaults(v){
+  var data = v || { settings: { metaMensal: 0, diasUteis: 22 }, dias: {} };
+  if (!data.settings) data.settings = { metaMensal: 0, diasUteis: 22 };
+  if (!data.settings.metaLigDia) data.settings.metaLigDia = CK_META_LIG_PADRAO;
+  if (!data.settings.metaPropDia) data.settings.metaPropDia = CK_META_PROP_PADRAO;
+  if (!data.settings.metasVendido) data.settings.metasVendido = Object.assign({}, CK_METAS_VENDIDO);
+  if (!data.settings.metaSemanalPorPessoa) data.settings.metaSemanalPorPessoa = {};
+  if (!data.settings.metaMensalPorPessoa) data.settings.metaMensalPorPessoa = {};
+  if (!data.settings.metaClientesNovosPorPessoa) data.settings.metaClientesNovosPorPessoa = {};
+  if (!data.settings.metaClientesInativosPorPessoa) data.settings.metaClientesInativosPorPessoa = {};
+  if (!data.settings.metaProdutosMes) data.settings.metaProdutosMes = {};
+  if (!data.dias) data.dias = {};
+  return data;
+}
 
 function ckInit(){
+  ckAplicarPermissoes();
   if (ckListenerAttached) { ckRenderConfig(); ckLoadDay(document.getElementById('ck-date').value || ckToday()); return; }
   ckListenerAttached = true;
   document.getElementById('ck-date').value = ckToday();
   dbRef('checkinDiario').on('value', function(snap){
-    var v = snap.val();
-    ckData = v || { settings: { metaMensal: 0, diasUteis: 22 }, dias: {} };
-    if (!ckData.settings) ckData.settings = { metaMensal: 0, diasUteis: 22 };
-    if (!ckData.settings.metaLigDia) ckData.settings.metaLigDia = CK_META_LIG_PADRAO;
-    if (!ckData.settings.metaPropDia) ckData.settings.metaPropDia = CK_META_PROP_PADRAO;
-    if (!ckData.settings.metasVendido) ckData.settings.metasVendido = Object.assign({}, CK_METAS_VENDIDO);
-    if (!ckData.dias) ckData.dias = {};
+    ckData = ckGarantirDefaults(snap.val());
     ckRenderConfig();
     ckLoadDay(document.getElementById('ck-date').value || ckToday());
     ckRenderHistory();
@@ -11818,6 +11972,8 @@ function ckRenderConfig(){
   document.getElementById('ck-meta-lig').value = ckData.settings.metaLigDia || CK_META_LIG_PADRAO;
   document.getElementById('ck-meta-prop').value = ckData.settings.metaPropDia || CK_META_PROP_PADRAO;
   ckRenderMetasEquipe();
+  ckRenderMetasPeriodo();
+  ckRenderMetasProduto();
   ckRecalcMetaDia();
 }
 
@@ -11846,6 +12002,57 @@ function ckRenderMetasEquipe(){
   });
 }
 
+function ckRenderMetasPeriodo(){
+  var tbody = document.getElementById('ck-metas-periodo');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  CK_EQUIPE.forEach(function(key){
+    var nomeExibicao = vendedores[key] ? vendedores[key].nome : key;
+    var sem = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[key]) || 0;
+    var men = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[key]) || 0;
+    var novos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[key]) || 0;
+    var inat = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[key]) || 0;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+nomeExibicao+'</td>' +
+      '<td><input type="number" step="0.01" min="0" data-key="'+key+'" data-f="metaSemanalPorPessoa" value="'+sem+'"></td>' +
+      '<td><input type="number" step="0.01" min="0" data-key="'+key+'" data-f="metaMensalPorPessoa" value="'+men+'"></td>' +
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaClientesNovosPorPessoa" value="'+novos+'"></td>' +
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaClientesInativosPorPessoa" value="'+inat+'"></td>';
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('input').forEach(function(inp){
+    inp.addEventListener('input', function(e){
+      var f = e.target.dataset.f, key = e.target.dataset.key;
+      if (!ckData.settings[f]) ckData.settings[f] = {};
+      ckData.settings[f][key] = Number(e.target.value) || 0;
+      ckSaveSettings();
+    });
+  });
+}
+
+function ckRenderMetasProduto(){
+  var box = document.getElementById('ck-metas-produto');
+  if (!box) return;
+  box.innerHTML = '';
+  CK_PRODUTOS.forEach(function(g){
+    var val = (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key]) || 0;
+    var row = document.createElement('div');
+    row.className = 'ck-meta-pessoa';
+    row.innerHTML =
+      '<span>'+g.label+'</span>' +
+      '<input type="number" step="0.01" min="0" data-key="'+g.key+'" value="'+val+'">';
+    box.appendChild(row);
+  });
+  box.querySelectorAll('input').forEach(function(inp){
+    inp.addEventListener('input', function(e){
+      if (!ckData.settings.metaProdutosMes) ckData.settings.metaProdutosMes = {};
+      ckData.settings.metaProdutosMes[e.target.dataset.key] = Number(e.target.value) || 0;
+      ckSaveSettings();
+    });
+  });
+}
+
 function ckRecalcMetaDia(){
   var meta = ckData.settings.diasUteis > 0 ? ckData.settings.metaMensal / ckData.settings.diasUteis : 0;
   document.getElementById('ck-meta-dia-val').textContent = ckFmtBRL(meta);
@@ -11870,30 +12077,45 @@ function ckLoadDay(dateStr){
 function ckRenderTable(){
   var tbody = document.getElementById('ck-tbody');
   var dateStr = document.getElementById('ck-date').value;
+  var admin = ckIsAdmin();
   tbody.innerHTML = '';
   ckRows.forEach(function(row, i){
     var conv = row.propostas > 0 ? (row.vendasN / row.propostas * 100) : 0;
     var av = ckAvaliarLinha(row, dateStr);
     var tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td><input class="ck-nome" data-i="'+i+'" data-f="nome" value="'+row.nome+'"></td>' +
-      '<td><input type="number" min="0" data-i="'+i+'" data-f="ligacoes" value="'+row.ligacoes+'"></td>' +
-      '<td><input type="number" min="0" data-i="'+i+'" data-f="propostas" value="'+row.propostas+'"></td>' +
-      '<td><input type="number" min="0" data-i="'+i+'" data-f="vendasN" value="'+row.vendasN+'"></td>' +
-      '<td><input type="number" min="0" data-i="'+i+'" data-f="vendidoR" value="'+row.vendidoR+'"></td>' +
-      '<td class="ck-conv">'+conv.toFixed(0)+'%</td>' +
-      '<td>'+ckTermometroHTML(av)+'</td>' +
-      '<td><button class="ck-rm" data-i="'+i+'" title="remover">✕</button></td>';
+    if (admin){
+      tr.innerHTML =
+        '<td><input class="ck-nome" data-i="'+i+'" data-f="nome" value="'+row.nome+'"></td>' +
+        '<td><input type="number" min="0" data-i="'+i+'" data-f="ligacoes" value="'+row.ligacoes+'"></td>' +
+        '<td><input type="number" min="0" data-i="'+i+'" data-f="propostas" value="'+row.propostas+'"></td>' +
+        '<td><input type="number" min="0" data-i="'+i+'" data-f="vendasN" value="'+row.vendasN+'"></td>' +
+        '<td><input type="number" min="0" data-i="'+i+'" data-f="vendidoR" value="'+row.vendidoR+'"></td>' +
+        '<td class="ck-conv">'+conv.toFixed(0)+'%</td>' +
+        '<td>'+ckTermometroHTML(av)+'</td>' +
+        '<td><button class="ck-rm" data-i="'+i+'" title="remover">✕</button></td>';
+    } else {
+      tr.innerHTML =
+        '<td>'+(row.nome || '—')+'</td>' +
+        '<td class="num">'+ckNum(row.ligacoes)+'</td>' +
+        '<td class="num">'+ckNum(row.propostas)+'</td>' +
+        '<td class="num">'+ckNum(row.vendasN)+'</td>' +
+        '<td class="num">'+ckFmtBRL(row.vendidoR)+'</td>' +
+        '<td class="ck-conv">'+conv.toFixed(0)+'%</td>' +
+        '<td>'+ckTermometroHTML(av)+'</td>' +
+        '<td></td>';
+    }
     tbody.appendChild(tr);
   });
-  tbody.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', ckOnCellInput); });
-  tbody.querySelectorAll('.ck-rm').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      ckRows.splice(Number(btn.dataset.i), 1);
-      ckRenderTable();
-      ckRecalcMetrics();
+  if (admin){
+    tbody.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', ckOnCellInput); });
+    tbody.querySelectorAll('.ck-rm').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        ckRows.splice(Number(btn.dataset.i), 1);
+        ckRenderTable();
+        ckRecalcMetrics();
+      });
     });
-  });
+  }
   ckRecalcMetrics();
 }
 
@@ -12151,6 +12373,176 @@ document.querySelectorAll('.ck-mode-btn').forEach(function(btn){
 });
 document.getElementById('ck-rank-de').addEventListener('change', function(){ ckUpdateRankTitle(); ckRenderRanking(); });
 document.getElementById('ck-rank-ate').addEventListener('change', function(){ ckUpdateRankTitle(); ckRenderRanking(); });
+
+/* ══════════════════════════════════════════════════════════════
+   MINHAS METAS — visão pessoal e automática por vendedor(a).
+   Ligações/propostas vêm do checkinDiario (única fonte pra isso).
+   Vendido, clientes novos/inativos e produtos vêm dos PEDIDOS reais
+   (dados que já existem no formulário de pedido: tipoCliente e itens),
+   então atualiza sozinho assim que um pedido é salvo — sem digitação extra.
+   ══════════════════════════════════════════════════════════════ */
+var mmPedidosVendedor = [];
+var mmPedidosEquipe = {};
+var mmListenersAttached = false;
+
+function mmInit(){
+  var titulo = document.getElementById('mm-titulo');
+  if (titulo) titulo.textContent = '📍 Minhas Metas — ' + (vendedores[currentUser] ? vendedores[currentUser].nome : '');
+
+  if (!ckListenerAttached) {
+    ckListenerAttached = true;
+    dbRef('checkinDiario').on('value', function(snap){
+      ckData = ckGarantirDefaults(snap.val());
+      mmRenderTudo();
+    });
+  }
+
+  if (mmListenersAttached) { mmRenderTudo(); return; }
+  mmListenersAttached = true;
+
+  if (CK_EQUIPE.indexOf(currentUser) >= 0) {
+    dbRef('pedidos/' + currentUser).on('value', function(snap){
+      var v = snap.val();
+      mmPedidosVendedor = v ? Object.values(v).filter(function(p){ return !p.excluido; }) : [];
+      mmRenderTudo();
+    });
+  }
+
+  CK_EQUIPE.forEach(function(vn){
+    dbRef('pedidos/' + vn).on('value', function(snap){
+      var v = snap.val();
+      mmPedidosEquipe[vn] = v ? Object.values(v).filter(function(p){ return !p.excluido; }) : [];
+      mmRenderTudo();
+    });
+  });
+}
+
+function mmRenderTudo(){
+  mmRenderHoje();
+  mmRenderSemana();
+  mmRenderMes();
+  mmRenderClientes();
+  mmRenderProdutos();
+}
+
+function mmItemHTML(label, valor, meta, pct, isMoney){
+  var cls = (pct === null || pct === undefined) ? '' : ckStatusClasse(pct);
+  var pctW = (pct === null || pct === undefined) ? 0 : Math.min(Math.max(pct, 0), 100);
+  var valTxt = isMoney ? ckFmtBRL(valor) : ckNum(valor);
+  var metaTxt = meta > 0 ? (isMoney ? ckFmtBRL(meta) : Number(meta).toFixed(0)) : 'sem meta cadastrada';
+  return '<div class="mm-item">' +
+    '<div class="mm-item-top">' +
+      '<span class="mm-item-label">'+(cls?('<span class="ck-term ck-term-'+cls+'"></span>'):'')+label+'</span>' +
+      '<span class="mm-item-val">'+valTxt+' / '+metaTxt+'</span>' +
+    '</div>' +
+    '<div class="mm-bar-bg"><div class="mm-bar-fill '+(cls||'')+'" style="width:'+pctW+'%"></div></div>' +
+  '</div>';
+}
+
+function mmRenderHoje(){
+  var box = document.getElementById('mm-hoje');
+  if (!box) return;
+  if (CK_EQUIPE.indexOf(currentUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável para esse usuário.</div>'; return; }
+  var hoje = ckToday();
+  var rows = (ckData.dias[hoje] && ckData.dias[hoje].rows) || [];
+  var meuNome = vendedores[currentUser] ? vendedores[currentUser].nome : '';
+  var minhaLinha = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(meuNome); });
+  if (!minhaLinha){ box.innerHTML = '<div class="mm-empty">O check-in de hoje ainda não foi preenchido.</div>'; return; }
+  var av = ckAvaliarLinha(minhaLinha, hoje);
+  box.innerHTML =
+    mmItemHTML('Ligações', minhaLinha.ligacoes, av.metaLigEf, av.pctLig, false) +
+    mmItemHTML('Propostas', minhaLinha.propostas, av.metaPropEf, av.pctProp, false) +
+    mmItemHTML('Vendido', minhaLinha.vendidoR, av.metaVendEf, av.pctVend, true);
+}
+
+function mmInicioSemana(d){
+  var dt = new Date(d);
+  dt.setHours(0,0,0,0);
+  var dia = dt.getDay();
+  var diff = (dia === 0 ? -6 : 1) - dia;
+  dt.setDate(dt.getDate() + diff);
+  return dt;
+}
+
+function mmDataPedido(p){
+  return p.data ? new Date(p.data + 'T00:00:00') : null;
+}
+
+function mmValorPedido(p){
+  if (p.itens && p.itens.length) return p.itens.reduce(function(s,it){ return s + ckNum(it.qtd)*ckNum(it.vUnit); }, 0);
+  if (p.material) return ckNum(p.qtd)*ckNum(p.vUnit);
+  return 0;
+}
+
+function mmRenderSemana(){
+  var box = document.getElementById('mm-semana');
+  if (!box) return;
+  if (CK_EQUIPE.indexOf(currentUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+  var hoje = new Date();
+  var inicio = mmInicioSemana(hoje);
+  var total = mmPedidosVendedor.reduce(function(s,p){
+    var d = mmDataPedido(p);
+    return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
+  }, 0);
+  var meta = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[currentUser]) || 0;
+  box.innerHTML = mmItemHTML('Vendido na semana', total, meta, meta>0?(total/meta*100):null, true);
+}
+
+function mmRenderMes(){
+  var box = document.getElementById('mm-mes');
+  if (!box) return;
+  if (CK_EQUIPE.indexOf(currentUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+  var hoje = new Date();
+  var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var total = mmPedidosVendedor.reduce(function(s,p){
+    var d = mmDataPedido(p);
+    return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
+  }, 0);
+  var meta = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[currentUser]) || 0;
+  box.innerHTML = mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true);
+}
+
+function mmRenderClientes(){
+  var box = document.getElementById('mm-clientes');
+  if (!box) return;
+  if (CK_EQUIPE.indexOf(currentUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+  var hoje = new Date();
+  var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var pedidosMes = mmPedidosVendedor.filter(function(p){ var d = mmDataPedido(p); return d && d >= inicio && d <= hoje; });
+  var qtdNovos = pedidosMes.filter(function(p){ return p.tipoCliente === 'novo'; }).length;
+  var qtdInativos = pedidosMes.filter(function(p){ return p.tipoCliente === 'inativo'; }).length;
+  var metaNovos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[currentUser]) || 0;
+  var metaInativos = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[currentUser]) || 0;
+  box.innerHTML =
+    mmItemHTML('Clientes novos', qtdNovos, metaNovos, metaNovos>0?(qtdNovos/metaNovos*100):null, false) +
+    mmItemHTML('Clientes inativos reativados', qtdInativos, metaInativos, metaInativos>0?(qtdInativos/metaInativos*100):null, false);
+}
+
+function mmRenderProdutos(){
+  var box = document.getElementById('mm-produtos');
+  if (!box) return;
+  var hoje = new Date();
+  var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var totais = {};
+  CK_PRODUTOS.forEach(function(g){ totais[g.key] = 0; });
+  Object.keys(mmPedidosEquipe).forEach(function(vn){
+    (mmPedidosEquipe[vn]||[]).forEach(function(p){
+      var d = mmDataPedido(p);
+      if (!d || d < inicio || d > hoje) return;
+      (p.itens||[]).forEach(function(it){
+        var grupo = ckClassificarProduto(it.material);
+        if (grupo) totais[grupo] += ckNum(it.qtd)*ckNum(it.vUnit);
+      });
+    });
+  });
+  var html = '';
+  CK_PRODUTOS.forEach(function(g){
+    var meta = (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key]) || 0;
+    html += mmItemHTML(g.label, totais[g.key], meta, meta>0?(totais[g.key]/meta*100):null, true);
+  });
+  box.innerHTML = html;
+}
+
 </script>
 </body>
 </html>
