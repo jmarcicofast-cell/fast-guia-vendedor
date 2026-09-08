@@ -4297,6 +4297,10 @@
   #tab-minhasmetas .mm-panel h3{ font-size:13px; font-weight:700; color:#1C1C1C; margin-bottom:12px; }
   #tab-minhasmetas .mm-item{ margin-bottom:14px; }
   #tab-minhasmetas .mm-item:last-child{ margin-bottom:0; }
+  #tab-minhasmetas .mm-ritmo{ font-size:11.5px; color:#888; margin-top:8px; padding-top:8px; border-top:1px dashed #E8E6E1; line-height:1.5; }
+  #tab-minhasmetas .mm-ritmo b{ color:#1C1C1C; }
+  #tab-minhasmetas .mm-ritmo-ok{ color:#2E7D32; }
+  #tab-minhasmetas .mm-ritmo-ok b{ color:#2E7D32; }
   #tab-minhasmetas .mm-item-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
   #tab-minhasmetas .mm-item-label{ font-size:12.5px; color:#555; display:flex; align-items:center; gap:6px; }
   #tab-minhasmetas .mm-item-val{ font-size:12.5px; font-weight:700; color:#1C1C1C; }
@@ -12516,6 +12520,17 @@ function mmRenderSemana(){
   box.innerHTML = mmItemHTML('Vendido na semana', total, meta, meta>0?(total/meta*100):null, true);
 }
 
+function mmDiasUteisRestantes(hoje){
+  var ano = hoje.getFullYear(), mes = hoje.getMonth();
+  var ultimoDia = new Date(ano, mes + 1, 0).getDate();
+  var count = 0;
+  for (var dia = hoje.getDate(); dia <= ultimoDia; dia++){
+    var d = new Date(ano, mes, dia).getDay(); // 0=domingo, 6=sabado
+    if (d !== 0 && d !== 6) count++;
+  }
+  return count;
+}
+
 function mmRenderMes(){
   var box = document.getElementById('mm-mes');
   if (!box) return;
@@ -12528,7 +12543,23 @@ function mmRenderMes(){
     return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
   }, 0);
   var meta = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[mmSelectedUser]) || 0;
-  box.innerHTML = mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true);
+  var html = mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true);
+
+  if (meta > 0){
+    var falta = meta - total;
+    if (falta <= 0){
+      html += '<div class="mm-ritmo mm-ritmo-ok">✅ Meta do mês já batida — sobrou '+ckFmtBRL(Math.abs(falta))+'.</div>';
+    } else {
+      var diasRest = mmDiasUteisRestantes(hoje);
+      if (diasRest > 0){
+        var porDia = falta / diasRest;
+        html += '<div class="mm-ritmo">Faltam <b>'+ckFmtBRL(falta)+'</b> pra bater a meta, em <b>'+diasRest+'</b> dia(s) útil(eis) — ritmo necessário: <b>'+ckFmtBRL(porDia)+'/dia útil</b>.</div>';
+      } else {
+        html += '<div class="mm-ritmo">Faltam <b>'+ckFmtBRL(falta)+'</b> e não há mais dias úteis no mês.</div>';
+      }
+    }
+  }
+  box.innerHTML = html;
 }
 
 function mmRenderClientes(){
