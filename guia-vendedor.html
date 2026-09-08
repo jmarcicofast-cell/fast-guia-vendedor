@@ -1091,6 +1091,10 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 0C17 0 4 12 4 24C4 32.28 9.82 39 17 39C24.18 39 30 32.28 30 24C30 12 17 0 17 0Z"/><circle cx="17" cy="26" r="4.5"/></svg>
     Plano PR
   </button>
+  <button class="nav-btn" id="nav-checkin" style="display:none;" onclick="showTab('checkin',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Check-in Diário
+  </button>
 </nav>
 
 <!-- ══ ABA MATERIAIS ══ -->
@@ -4024,7 +4028,205 @@
 
 
 </div>
+
+<!-- ══ CHECK-IN DIÁRIO (acesso restrito: Juliana) ══ -->
+<style>
+  #tab-checkin .ck-wrap{ max-width:100%; padding:1.25rem 2rem 3rem; }
+  #tab-checkin .ck-head{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+  #tab-checkin .ck-head h2{ font-size:15px; font-weight:600; color:#1C1C1C; margin-bottom:2px; }
+  #tab-checkin .ck-head p{ font-size:12px; color:#aaa; }
+  #tab-checkin .ck-datenav{ display:flex; align-items:center; gap:6px; }
+  #tab-checkin .ck-datenav button{ width:30px; height:30px; border-radius:7px; border:1px solid #E2E0D8; background:#fff; cursor:pointer; font-size:15px; color:#555; }
+  #tab-checkin .ck-datenav button:hover{ border-color:#C41E1E; color:#C41E1E; }
+  #tab-checkin .ck-datenav input[type=date]{ padding:6px 10px; border-radius:7px; border:1px solid #E2E0D8; font-size:13px; }
+
+  #tab-checkin .ck-config{ display:flex; gap:16px; flex-wrap:wrap; align-items:center; background:#fff; border:1px solid #E8E6E1; border-radius:12px; padding:12px 16px; margin-bottom:16px; }
+  #tab-checkin .ck-config label{ font-size:11px; color:#aaa; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:.06em; }
+  #tab-checkin .ck-config input{ border:1px solid #E2E0D8; border-radius:6px; padding:6px 8px; width:130px; font-size:13px; }
+  #tab-checkin .ck-config .ck-metadia{ margin-left:auto; text-align:right; }
+  #tab-checkin .ck-config .ck-metadia .num{ font-size:20px; font-weight:700; color:#C41E1E; }
+  #tab-checkin .ck-config .ck-metadia .lbl{ font-size:11px; color:#aaa; }
+
+  #tab-checkin .ck-metrics{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  #tab-checkin .ck-metric.status-good{ border-left:4px solid #2E7D32; }
+  #tab-checkin .ck-metric.status-bad{ border-left:4px solid #C41E1E; }
+
+  #tab-checkin table.ck-table{ width:100%; border-collapse:collapse; background:#fff; border:1px solid #E8E6E1; border-radius:12px; overflow:hidden; margin-bottom:10px; }
+  #tab-checkin table.ck-table thead th{ background:#F8F7F3; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#aaa; padding:10px 12px; border-bottom:1px solid #EDECEA; }
+  #tab-checkin table.ck-table thead th.num, #tab-checkin table.ck-table td.num{ text-align:right; }
+  #tab-checkin table.ck-table tbody td{ padding:5px 12px; border-bottom:1px solid #F0EEEA; font-size:13.5px; }
+  #tab-checkin table.ck-table tbody tr:last-child td{ border-bottom:none; }
+  #tab-checkin table.ck-table tbody input{ width:100%; border:none; background:transparent; text-align:right; font-size:13.5px; padding:5px; border-radius:5px; }
+  #tab-checkin table.ck-table tbody input.ck-nome{ text-align:left; }
+  #tab-checkin table.ck-table tbody input:focus{ outline:1.5px solid #C41E1E; background:#FAFAF8; }
+  #tab-checkin table.ck-table tbody .ck-conv{ text-align:right; color:#888; font-size:12.5px; }
+  #tab-checkin table.ck-table tfoot td{ padding:9px 12px; font-weight:700; background:#F8F7F3; border-top:2px solid #EDECEA; font-size:13px; }
+  #tab-checkin .ck-rm{ background:none; border:none; color:#ccc; cursor:pointer; font-size:15px; }
+  #tab-checkin .ck-rm:hover{ color:#C41E1E; }
+  #tab-checkin .ck-addrow{ width:100%; margin-bottom:20px; background:none; border:1px dashed #E2E0D8; color:#aaa; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:12.5px; }
+  #tab-checkin .ck-addrow:hover{ border-color:#C41E1E; color:#C41E1E; }
+
+  #tab-checkin .ck-savebar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+  #tab-checkin .ck-savebtn{ background:#C41E1E; color:#fff; border:none; font-weight:700; padding:10px 22px; border-radius:8px; cursor:pointer; font-size:13px; }
+  #tab-checkin .ck-savebtn:hover{ background:#a91818; }
+  #tab-checkin .ck-savestatus{ font-size:12px; color:#aaa; }
+  #tab-checkin .ck-savestatus.ok{ color:#2E7D32; font-weight:600; }
+
+  #tab-checkin .ck-panel{ background:#fff; border:1px solid #E8E6E1; border-radius:12px; padding:1.1rem 1.25rem; margin-bottom:18px; }
+  #tab-checkin .ck-panel h3{ font-size:13px; font-weight:700; color:#1C1C1C; margin-bottom:10px; }
+
+  #tab-checkin .ck-period{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; padding:9px 12px; background:#F8F7F3; border-radius:8px; }
+  #tab-checkin .ck-period .ck-mode button{ background:#fff; border:1px solid #E2E0D8; color:#888; font-size:11px; padding:5px 10px; border-radius:6px; cursor:pointer; margin-right:6px; }
+  #tab-checkin .ck-period .ck-mode button.active{ border-color:#C41E1E; color:#C41E1E; font-weight:600; }
+  #tab-checkin .ck-period .ck-range{ display:none; align-items:center; gap:6px; }
+  #tab-checkin .ck-period.periodo .ck-range{ display:flex; }
+  #tab-checkin .ck-period .ck-range input{ border:1px solid #E2E0D8; border-radius:6px; padding:5px 8px; font-size:12.5px; }
+  #tab-checkin .ck-period .ck-range span{ font-size:12px; color:#aaa; }
+
+  #tab-checkin .ck-crit{ display:flex; gap:6px; margin-bottom:12px; }
+  #tab-checkin .ck-crit button{ background:#F8F7F3; border:1px solid #E2E0D8; color:#888; font-size:11px; padding:5px 10px; border-radius:6px; cursor:pointer; text-transform:uppercase; letter-spacing:.03em; }
+  #tab-checkin .ck-crit button.active{ background:#C41E1E; color:#fff; border-color:#C41E1E; }
+
+  #tab-checkin .ck-rank-row{ display:grid; grid-template-columns:26px 120px 1fr 90px; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #F0EEEA; }
+  #tab-checkin .ck-rank-row:last-child{ border-bottom:none; }
+  #tab-checkin .ck-rank-pos{ font-weight:700; font-size:13px; color:#aaa; text-align:center; }
+  #tab-checkin .ck-rank-row.top1 .ck-rank-pos{ color:#C41E1E; font-size:15px; }
+  #tab-checkin .ck-rank-bar-bg{ background:#F1EFE8; border-radius:3px; height:8px; overflow:hidden; }
+  #tab-checkin .ck-rank-bar-fill{ height:100%; background:#888; border-radius:3px; }
+  #tab-checkin .ck-rank-row.top1 .ck-rank-bar-fill{ background:#C41E1E; }
+  #tab-checkin .ck-rank-val{ font-size:12.5px; text-align:right; font-weight:600; }
+  #tab-checkin .ck-empty{ font-size:12.5px; color:#aaa; padding:10px 0; }
+
+  #tab-checkin .ck-hist-chart{ display:flex; align-items:flex-end; gap:8px; height:110px; margin-top:8px; padding-bottom:4px; border-bottom:1px solid #EDECEA; }
+  #tab-checkin .ck-hist-bar-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; }
+  #tab-checkin .ck-hist-bar{ width:55%; border-radius:2px 2px 0 0; background:#888; }
+  #tab-checkin .ck-hist-bar.good{ background:#2E7D32; }
+  #tab-checkin .ck-hist-bar.bad{ background:#C41E1E; }
+  #tab-checkin .ck-hist-labels{ display:flex; gap:8px; margin-top:5px; }
+  #tab-checkin .ck-hist-labels div{ flex:1; text-align:center; font-size:9.5px; color:#aaa; }
+
+  @media (max-width:720px){ #tab-checkin .ck-metrics{ grid-template-columns:repeat(2,1fr); } }
+</style>
+
+<div id="tab-checkin" class="tab-content">
+<div class="ck-wrap">
+
+  <div class="ck-head">
+    <div>
+      <h2>📋 Check-in Diário — Ranking da Equipe</h2>
+      <p>Meça hoje, ajuste amanhã</p>
+    </div>
+    <div class="ck-datenav">
+      <button id="ck-prev">‹</button>
+      <input type="date" id="ck-date">
+      <button id="ck-next">›</button>
+    </div>
+  </div>
+
+  <div class="ck-config">
+    <div>
+      <label>Meta do mês (R$)</label>
+      <input type="number" id="ck-meta-mensal" placeholder="0">
+    </div>
+    <div>
+      <label>Dias úteis</label>
+      <input type="number" id="ck-dias-uteis" placeholder="22">
+    </div>
+    <div class="ck-metadia">
+      <div class="num" id="ck-meta-dia-val">R$ 0</div>
+      <div class="lbl">meta do dia (calculada)</div>
+    </div>
+  </div>
+
+  <div class="ck-metrics">
+    <div class="meta-card ck-metric" id="ck-card-vendido">
+      <div class="meta-label">Vendido hoje</div>
+      <div class="meta-value" id="ck-val-vendido" style="font-size:22px;">R$ 0</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px;" id="ck-sub-vendido">0% da meta do dia</div>
+    </div>
+    <div class="meta-card ck-metric">
+      <div class="meta-label">Ligações totais</div>
+      <div class="meta-value" id="ck-val-ligacoes" style="font-size:22px;">0</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px;">contatos feitos hoje</div>
+    </div>
+    <div class="meta-card ck-metric">
+      <div class="meta-label">Conversão</div>
+      <div class="meta-value" id="ck-val-conversao" style="font-size:22px;">0%</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px;">vendas ÷ propostas</div>
+    </div>
+    <div class="meta-card ck-metric">
+      <div class="meta-label">Ticket médio</div>
+      <div class="meta-value" id="ck-val-ticket" style="font-size:22px;">R$ 0</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px;">vendido ÷ nº de vendas</div>
+    </div>
+  </div>
+
+  <h3 style="font-size:13px;font-weight:700;color:#1C1C1C;margin-bottom:8px;">Atividade da equipe hoje</h3>
+  <table class="ck-table">
+    <thead>
+      <tr>
+        <th>Vendedor(a)</th>
+        <th class="num">Ligações</th>
+        <th class="num">Propostas</th>
+        <th class="num">Vendas (nº)</th>
+        <th class="num">Vendido (R$)</th>
+        <th class="num">Conversão</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="ck-tbody"></tbody>
+    <tfoot>
+      <tr>
+        <td>TOTAL</td>
+        <td class="num" id="ck-tot-lig">0</td>
+        <td class="num" id="ck-tot-prop">0</td>
+        <td class="num" id="ck-tot-vendasn">0</td>
+        <td class="num" id="ck-tot-vendido">R$ 0</td>
+        <td class="num" id="ck-tot-conv">0%</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+  <button class="ck-addrow" id="ck-addrow">+ adicionar vendedor(a)</button>
+
+  <div class="ck-savebar">
+    <button class="ck-savebtn" id="ck-savebtn">Salvar dia</button>
+    <span class="ck-savestatus" id="ck-savestatus"></span>
+  </div>
+
+  <div class="ck-panel">
+    <h3 id="ck-rank-title">Ranking do dia</h3>
+    <div class="ck-period" id="ck-period">
+      <div class="ck-mode">
+        <button class="ck-mode-btn active" data-mode="dia">Dia atual</button>
+        <button class="ck-mode-btn" data-mode="periodo">Somar período</button>
+      </div>
+      <div class="ck-range">
+        <span>de</span><input type="date" id="ck-rank-de">
+        <span>até</span><input type="date" id="ck-rank-ate">
+      </div>
+    </div>
+    <div class="ck-crit">
+      <button class="ck-crit-btn active" data-crit="vendidoR">Vendido</button>
+      <button class="ck-crit-btn" data-crit="ligacoes">Ligações</button>
+      <button class="ck-crit-btn" data-crit="propostas">Propostas</button>
+      <button class="ck-crit-btn" data-crit="conv">Conversão</button>
+    </div>
+    <div id="ck-rank-list"></div>
+  </div>
+
+  <div class="ck-panel">
+    <h3>Últimos dias — vendido x meta</h3>
+    <div class="ck-hist-chart" id="ck-hist-chart"></div>
+    <div class="ck-hist-labels" id="ck-hist-labels"></div>
+  </div>
+
+</div>
+</div>
+<!-- ══ FIM CHECK-IN DIÁRIO ══ -->
+
 <script>
+
 
 /* ══ Plano de Ação — Paraná (acesso restrito: Juliana e Eliziane) ══ */
 var PR_STATUS_LABELS = { novo:'Novo', potencial:'Potencial', ativo:'Ativo', inativo:'Inativo' };
@@ -10727,10 +10929,12 @@ function renderAdminResumo() {
 function checkAdminAccess(nome) {
   const adminNav = document.getElementById('nav-admin');
   const rampaNav = document.getElementById('nav-rampa');
+  const checkinNav = document.getElementById('nav-checkin');
   if (!adminNav) return;
   if (nome === 'Juliana') {
     adminNav.style.display = 'flex';
     if (rampaNav) rampaNav.style.display = 'flex';
+    if (checkinNav) checkinNav.style.display = 'flex';
     // Load all vendedores from Firebase
     Promise.all(['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
       .then(function() {
@@ -10741,6 +10945,7 @@ function checkAdminAccess(nome) {
   } else {
     adminNav.style.display = 'none';
     if (rampaNav) rampaNav.style.display = 'none';
+    if (checkinNav) checkinNav.style.display = 'none';
   }
   checkParanaAccess();
 }
@@ -10976,6 +11181,7 @@ function showTab(name, btn) {
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'tabela') renderTable();
   if (name === 'parana') prInit();
+  if (name === 'checkin') ckInit();
   btn.classList.add('active');
 }
 
@@ -11454,5 +11660,320 @@ function importarArquivo(event) {
     </div>
   </div>
 </div>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CHECK-IN DIÁRIO — dados guardados em UM único nó (checkinDiario)
+   para funcionar igual no Firebase e no fallback localStorage do
+   dbRef(), já que o fallback não entende caminhos aninhados.
+   Estrutura: { settings: {metaMensal, diasUteis}, dias: { 'YYYY-MM-DD': { rows:[...] } } }
+   ══════════════════════════════════════════════════════════════ */
+const CK_EQUIPE = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
+let ckData = { settings: { metaMensal: 0, diasUteis: 22 }, dias: {} };
+let ckRows = [];
+let ckRankCrit = 'vendidoR';
+let ckRankModo = 'dia';
+let ckListenerAttached = false;
+
+function ckToday(){ return new Date().toISOString().slice(0,10); }
+function ckFmtBRL(n){ n = Number(n)||0; return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL', maximumFractionDigits:0}); }
+function ckNum(n){ return Number(n)||0; }
+
+function ckInit(){
+  if (ckListenerAttached) { ckRenderConfig(); ckLoadDay(document.getElementById('ck-date').value || ckToday()); return; }
+  ckListenerAttached = true;
+  document.getElementById('ck-date').value = ckToday();
+  dbRef('checkinDiario').on('value', function(snap){
+    var v = snap.val();
+    ckData = v || { settings: { metaMensal: 0, diasUteis: 22 }, dias: {} };
+    if (!ckData.settings) ckData.settings = { metaMensal: 0, diasUteis: 22 };
+    if (!ckData.dias) ckData.dias = {};
+    ckRenderConfig();
+    ckLoadDay(document.getElementById('ck-date').value || ckToday());
+    ckRenderHistory();
+  });
+}
+
+function ckRenderConfig(){
+  document.getElementById('ck-meta-mensal').value = ckData.settings.metaMensal || '';
+  document.getElementById('ck-dias-uteis').value = ckData.settings.diasUteis || '';
+  ckRecalcMetaDia();
+}
+
+function ckRecalcMetaDia(){
+  var meta = ckData.settings.diasUteis > 0 ? ckData.settings.metaMensal / ckData.settings.diasUteis : 0;
+  document.getElementById('ck-meta-dia-val').textContent = ckFmtBRL(meta);
+  return meta;
+}
+
+function ckSaveSettings(){
+  dbRef('checkinDiario').set(ckData).catch(function(){});
+}
+
+function ckLoadDay(dateStr){
+  document.getElementById('ck-date').value = dateStr;
+  var saved = ckData.dias[dateStr];
+  ckRows = (saved && saved.rows) ? saved.rows : CK_EQUIPE.map(function(k){
+    return { nome: vendedores[k].nome, ligacoes:0, propostas:0, vendasN:0, vendidoR:0 };
+  });
+  ckRenderTable();
+  var st = document.getElementById('ck-savestatus');
+  st.textContent = ''; st.className = 'ck-savestatus';
+}
+
+function ckRenderTable(){
+  var tbody = document.getElementById('ck-tbody');
+  tbody.innerHTML = '';
+  ckRows.forEach(function(row, i){
+    var conv = row.propostas > 0 ? (row.vendasN / row.propostas * 100) : 0;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><input class="ck-nome" data-i="'+i+'" data-f="nome" value="'+row.nome+'"></td>' +
+      '<td><input type="number" min="0" data-i="'+i+'" data-f="ligacoes" value="'+row.ligacoes+'"></td>' +
+      '<td><input type="number" min="0" data-i="'+i+'" data-f="propostas" value="'+row.propostas+'"></td>' +
+      '<td><input type="number" min="0" data-i="'+i+'" data-f="vendasN" value="'+row.vendasN+'"></td>' +
+      '<td><input type="number" min="0" data-i="'+i+'" data-f="vendidoR" value="'+row.vendidoR+'"></td>' +
+      '<td class="ck-conv">'+conv.toFixed(0)+'%</td>' +
+      '<td><button class="ck-rm" data-i="'+i+'" title="remover">✕</button></td>';
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', ckOnCellInput); });
+  tbody.querySelectorAll('.ck-rm').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      ckRows.splice(Number(btn.dataset.i), 1);
+      ckRenderTable();
+      ckRecalcMetrics();
+    });
+  });
+  ckRecalcMetrics();
+}
+
+function ckOnCellInput(e){
+  var i = Number(e.target.dataset.i);
+  var f = e.target.dataset.f;
+  var v = e.target.value;
+  if (f !== 'nome') v = Number(v) || 0;
+  ckRows[i][f] = v;
+  if (f === 'ligacoes' || f === 'propostas' || f === 'vendasN'){
+    var row = ckRows[i];
+    var conv = row.propostas > 0 ? (row.vendasN / row.propostas * 100) : 0;
+    e.target.closest('tr').querySelector('.ck-conv').textContent = conv.toFixed(0) + '%';
+  }
+  ckRecalcMetrics();
+}
+
+function ckRecalcMetrics(){
+  var totLig = ckRows.reduce(function(s,r){ return s+ckNum(r.ligacoes); },0);
+  var totProp = ckRows.reduce(function(s,r){ return s+ckNum(r.propostas); },0);
+  var totVendasN = ckRows.reduce(function(s,r){ return s+ckNum(r.vendasN); },0);
+  var totVendido = ckRows.reduce(function(s,r){ return s+ckNum(r.vendidoR); },0);
+  var conv = totProp > 0 ? (totVendasN/totProp*100) : 0;
+  var ticket = totVendasN > 0 ? (totVendido/totVendasN) : 0;
+  var metaDia = ckRecalcMetaDia();
+  var pctMeta = metaDia > 0 ? (totVendido/metaDia*100) : 0;
+
+  document.getElementById('ck-tot-lig').textContent = totLig;
+  document.getElementById('ck-tot-prop').textContent = totProp;
+  document.getElementById('ck-tot-vendasn').textContent = totVendasN;
+  document.getElementById('ck-tot-vendido').textContent = ckFmtBRL(totVendido);
+  document.getElementById('ck-tot-conv').textContent = conv.toFixed(0) + '%';
+
+  document.getElementById('ck-val-vendido').textContent = ckFmtBRL(totVendido);
+  document.getElementById('ck-sub-vendido').textContent = pctMeta.toFixed(0) + '% da meta do dia';
+  document.getElementById('ck-val-ligacoes').textContent = totLig;
+  document.getElementById('ck-val-conversao').textContent = conv.toFixed(0) + '%';
+  document.getElementById('ck-val-ticket').textContent = ckFmtBRL(ticket);
+
+  var card = document.getElementById('ck-card-vendido');
+  card.classList.remove('status-good','status-bad');
+  if (metaDia > 0) card.classList.add(pctMeta >= 100 ? 'status-good' : 'status-bad');
+
+  ckRenderRanking();
+}
+
+function ckSaveDay(){
+  var dateStr = document.getElementById('ck-date').value;
+  ckData.dias[dateStr] = { rows: ckRows };
+  dbRef('checkinDiario').set(ckData).then(function(){
+    var st = document.getElementById('ck-savestatus');
+    st.textContent = 'Salvo ✓';
+    st.className = 'ck-savestatus ok';
+    ckRenderHistory();
+  }).catch(function(){
+    document.getElementById('ck-savestatus').textContent = 'Erro ao salvar';
+  });
+}
+
+/* ── RANKING (dia atual ou soma de período) ── */
+var CK_CRIT_LABEL = {
+  vendidoR: function(v){ return ckFmtBRL(v); },
+  ligacoes: function(v){ return String(v); },
+  propostas: function(v){ return String(v); },
+  conv: function(v){ return v.toFixed(0) + '%'; }
+};
+
+function ckAcumular(mapa, rows){
+  rows.forEach(function(r){
+    var nome = (r.nome||'').trim();
+    if (!nome) return;
+    if (!mapa[nome]) mapa[nome] = { ligacoes:0, propostas:0, vendasN:0, vendidoR:0 };
+    mapa[nome].ligacoes += ckNum(r.ligacoes);
+    mapa[nome].propostas += ckNum(r.propostas);
+    mapa[nome].vendasN += ckNum(r.vendasN);
+    mapa[nome].vendidoR += ckNum(r.vendidoR);
+  });
+}
+
+function ckRankValue(t, crit){
+  if (crit === 'conv') return t.propostas > 0 ? (t.vendasN / t.propostas * 100) : 0;
+  return ckNum(t[crit]);
+}
+
+function ckGetTotais(){
+  var mapa = {};
+  if (ckRankModo === 'dia'){
+    ckAcumular(mapa, ckRows);
+    return mapa;
+  }
+  var de = document.getElementById('ck-rank-de').value;
+  var ate = document.getElementById('ck-rank-ate').value;
+  if (!de || !ate) return mapa;
+  Object.keys(ckData.dias).forEach(function(d){
+    if (d >= de && d <= ate) ckAcumular(mapa, ckData.dias[d].rows || []);
+  });
+  return mapa;
+}
+
+function ckUpdateRankTitle(){
+  var title = document.getElementById('ck-rank-title');
+  if (ckRankModo === 'dia'){
+    title.textContent = 'Ranking do dia';
+  } else {
+    var de = document.getElementById('ck-rank-de').value;
+    var ate = document.getElementById('ck-rank-ate').value;
+    if (de && ate){
+      var f = function(s){ var p = s.split('-'); return p[2]+'/'+p[1]; };
+      title.textContent = 'Ranking — ' + f(de) + ' a ' + f(ate);
+    } else {
+      title.textContent = 'Ranking — selecione o período';
+    }
+  }
+}
+
+function ckRenderRanking(){
+  var list = document.getElementById('ck-rank-list');
+  if (!list) return;
+  var mapa = ckGetTotais();
+  var nomes = Object.keys(mapa);
+  if (nomes.length === 0){
+    list.innerHTML = ckRankModo === 'periodo'
+      ? '<div class="ck-empty">Nenhum dia salvo nesse período ainda.</div>'
+      : '<div class="ck-empty">Preencha os nomes da equipe para ver o ranking.</div>';
+    return;
+  }
+  var ranked = nomes.map(function(nome){ return { nome: nome, val: ckRankValue(mapa[nome], ckRankCrit) }; })
+    .sort(function(a,b){ return b.val - a.val; });
+  var maxVal = Math.max(ranked[0].val, 1);
+  list.innerHTML = '';
+  ranked.forEach(function(r, i){
+    var pct = Math.max((r.val / maxVal) * 100, 2);
+    var row = document.createElement('div');
+    row.className = 'ck-rank-row' + (i === 0 ? ' top1' : '');
+    row.innerHTML =
+      '<div class="ck-rank-pos">'+(i+1)+'º</div>' +
+      '<div>'+r.nome+'</div>' +
+      '<div class="ck-rank-bar-bg"><div class="ck-rank-bar-fill" style="width:'+pct+'%"></div></div>' +
+      '<div class="ck-rank-val">'+CK_CRIT_LABEL[ckRankCrit](r.val)+'</div>';
+    list.appendChild(row);
+  });
+}
+
+/* ── HISTÓRICO (últimos 7 dias salvos) ── */
+function ckRenderHistory(){
+  var chart = document.getElementById('ck-hist-chart');
+  var labels = document.getElementById('ck-hist-labels');
+  if (!chart) return;
+  chart.innerHTML = ''; labels.innerHTML = '';
+  var dates = Object.keys(ckData.dias).sort().slice(-7);
+  if (dates.length === 0){
+    chart.innerHTML = '<div class="ck-empty">Salve o primeiro dia para começar o histórico.</div>';
+    return;
+  }
+  var metaDia = ckRecalcMetaDia();
+  var days = dates.map(function(d){
+    var vendido = (ckData.dias[d].rows||[]).reduce(function(s,x){ return s+ckNum(x.vendidoR); },0);
+    return { date: d, vendido: vendido };
+  });
+  var maxVal = Math.max(metaDia, Math.max.apply(null, days.map(function(d){ return d.vendido; })), 1);
+  days.forEach(function(d){
+    var pct = Math.max((d.vendido / maxVal) * 100, 2);
+    var cls = metaDia > 0 ? (d.vendido >= metaDia ? 'good' : 'bad') : '';
+    var wrap = document.createElement('div');
+    wrap.className = 'ck-hist-bar-wrap';
+    wrap.title = d.date + ' — ' + ckFmtBRL(d.vendido);
+    wrap.innerHTML = '<div class="ck-hist-bar '+cls+'" style="height:'+pct+'%"></div>';
+    chart.appendChild(wrap);
+    var lbl = document.createElement('div');
+    var parts = d.date.split('-');
+    lbl.textContent = parts[2] + '/' + parts[1];
+    labels.appendChild(lbl);
+  });
+}
+
+function ckShiftDate(days){
+  var d = new Date(document.getElementById('ck-date').value + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  ckLoadDay(d.toISOString().slice(0,10));
+}
+
+document.getElementById('ck-meta-mensal').addEventListener('input', function(e){
+  ckData.settings.metaMensal = Number(e.target.value)||0;
+  ckRecalcMetrics();
+  ckSaveSettings();
+});
+document.getElementById('ck-dias-uteis').addEventListener('input', function(e){
+  ckData.settings.diasUteis = Number(e.target.value)||0;
+  ckRecalcMetrics();
+  ckSaveSettings();
+});
+document.getElementById('ck-date').addEventListener('change', function(e){ ckLoadDay(e.target.value); });
+document.getElementById('ck-prev').addEventListener('click', function(){ ckShiftDate(-1); });
+document.getElementById('ck-next').addEventListener('click', function(){ ckShiftDate(1); });
+document.getElementById('ck-addrow').addEventListener('click', function(){
+  ckRows.push({ nome:'', ligacoes:0, propostas:0, vendasN:0, vendidoR:0 });
+  ckRenderTable();
+});
+document.getElementById('ck-savebtn').addEventListener('click', ckSaveDay);
+
+document.querySelectorAll('.ck-crit-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.ck-crit-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    ckRankCrit = btn.dataset.crit;
+    ckRenderRanking();
+  });
+});
+document.querySelectorAll('.ck-mode-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.ck-mode-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    ckRankModo = btn.dataset.mode;
+    document.getElementById('ck-period').classList.toggle('periodo', ckRankModo === 'periodo');
+    if (ckRankModo === 'periodo'){
+      var deInput = document.getElementById('ck-rank-de');
+      var ateInput = document.getElementById('ck-rank-ate');
+      if (!ateInput.value) ateInput.value = document.getElementById('ck-date').value;
+      if (!deInput.value){
+        var d = new Date(ateInput.value + 'T00:00:00');
+        d.setDate(d.getDate() - 6);
+        deInput.value = d.toISOString().slice(0,10);
+      }
+    }
+    ckUpdateRankTitle();
+    ckRenderRanking();
+  });
+});
+document.getElementById('ck-rank-de').addEventListener('change', function(){ ckUpdateRankTitle(); ckRenderRanking(); });
+document.getElementById('ck-rank-ate').addEventListener('change', function(){ ckUpdateRankTitle(); ckRenderRanking(); });
+</script>
 </body>
 </html>
