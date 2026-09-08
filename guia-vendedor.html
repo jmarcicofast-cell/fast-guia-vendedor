@@ -4308,6 +4308,9 @@
   #tab-minhasmetas .ck-term{ width:11px; height:11px; }
   #tab-minhasmetas .mm-empty{ font-size:12.5px; color:#aaa; }
   #tab-minhasmetas .mm-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  #tab-minhasmetas .mm-seletor{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+  #tab-minhasmetas .mm-sel-btn{ background:#F8F7F3; border:1px solid #E2E0D8; color:#666; font-size:12px; padding:6px 12px; border-radius:20px; cursor:pointer; }
+  #tab-minhasmetas .mm-sel-btn.active{ background:#C41E1E; border-color:#C41E1E; color:#fff; font-weight:600; }
   @media (max-width:600px){ #tab-minhasmetas .mm-grid2{ grid-template-columns:1fr; } }
 </style>
 <div id="tab-minhasmetas" class="tab-content">
@@ -4316,6 +4319,7 @@
   <div class="mm-head">
     <h2 id="mm-titulo">📍 Minhas Metas</h2>
     <p>Ligações e propostas vêm do check-in diário. Vendido, clientes e produtos são calculados automaticamente a partir dos seus pedidos.</p>
+    <div id="mm-seletor" class="mm-seletor" style="display:none;"></div>
   </div>
 
   <div class="mm-panel">
@@ -12381,13 +12385,14 @@ document.getElementById('ck-rank-ate').addEventListener('change', function(){ ck
    (dados que já existem no formulário de pedido: tipoCliente e itens),
    então atualiza sozinho assim que um pedido é salvo — sem digitação extra.
    ══════════════════════════════════════════════════════════════ */
-var mmPedidosVendedor = [];
 var mmPedidosEquipe = {};
 var mmListenersAttached = false;
+var mmSelectedUser = null;
 
 function mmInit(){
-  var titulo = document.getElementById('mm-titulo');
-  if (titulo) titulo.textContent = '📍 Minhas Metas — ' + (vendedores[currentUser] ? vendedores[currentUser].nome : '');
+  if (!mmSelectedUser) mmSelectedUser = (CK_EQUIPE.indexOf(currentUser) >= 0) ? currentUser : CK_EQUIPE[0];
+  mmRenderSeletor();
+  mmAtualizarTitulo();
 
   if (!ckListenerAttached) {
     ckListenerAttached = true;
@@ -12400,20 +12405,37 @@ function mmInit(){
   if (mmListenersAttached) { mmRenderTudo(); return; }
   mmListenersAttached = true;
 
-  if (CK_EQUIPE.indexOf(currentUser) >= 0) {
-    dbRef('pedidos/' + currentUser).on('value', function(snap){
-      var v = snap.val();
-      mmPedidosVendedor = v ? Object.values(v).filter(function(p){ return !p.excluido; }) : [];
-      mmRenderTudo();
-    });
-  }
-
   CK_EQUIPE.forEach(function(vn){
     dbRef('pedidos/' + vn).on('value', function(snap){
       var v = snap.val();
       mmPedidosEquipe[vn] = v ? Object.values(v).filter(function(p){ return !p.excluido; }) : [];
       mmRenderTudo();
     });
+  });
+}
+
+function mmAtualizarTitulo(){
+  var titulo = document.getElementById('mm-titulo');
+  if (titulo) titulo.textContent = '📍 Minhas Metas — ' + (vendedores[mmSelectedUser] ? vendedores[mmSelectedUser].nome : mmSelectedUser);
+}
+
+function mmRenderSeletor(){
+  var box = document.getElementById('mm-seletor');
+  if (!box) return;
+  if (!ckIsAdmin()){ box.style.display = 'none'; return; }
+  box.style.display = 'flex';
+  box.innerHTML = '';
+  CK_EQUIPE.forEach(function(key){
+    var btn = document.createElement('button');
+    btn.className = 'mm-sel-btn' + (key === mmSelectedUser ? ' active' : '');
+    btn.textContent = vendedores[key] ? vendedores[key].nome : key;
+    btn.addEventListener('click', function(){
+      mmSelectedUser = key;
+      mmRenderSeletor();
+      mmAtualizarTitulo();
+      mmRenderTudo();
+    });
+    box.appendChild(btn);
   });
 }
 
@@ -12442,10 +12464,10 @@ function mmItemHTML(label, valor, meta, pct, isMoney){
 function mmRenderHoje(){
   var box = document.getElementById('mm-hoje');
   if (!box) return;
-  if (CK_EQUIPE.indexOf(currentUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável para esse usuário.</div>'; return; }
+  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável para esse usuário.</div>'; return; }
   var hoje = ckToday();
   var rows = (ckData.dias[hoje] && ckData.dias[hoje].rows) || [];
-  var meuNome = vendedores[currentUser] ? vendedores[currentUser].nome : '';
+  var meuNome = vendedores[mmSelectedUser] ? vendedores[mmSelectedUser].nome : '';
   var minhaLinha = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(meuNome); });
   if (!minhaLinha){ box.innerHTML = '<div class="mm-empty">O check-in de hoje ainda não foi preenchido.</div>'; return; }
   var av = ckAvaliarLinha(minhaLinha, hoje);
@@ -12477,42 +12499,45 @@ function mmValorPedido(p){
 function mmRenderSemana(){
   var box = document.getElementById('mm-semana');
   if (!box) return;
-  if (CK_EQUIPE.indexOf(currentUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
   var hoje = new Date();
   var inicio = mmInicioSemana(hoje);
-  var total = mmPedidosVendedor.reduce(function(s,p){
+  var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
+  var total = pedidos.reduce(function(s,p){
     var d = mmDataPedido(p);
     return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
   }, 0);
-  var meta = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[currentUser]) || 0;
+  var meta = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[mmSelectedUser]) || 0;
   box.innerHTML = mmItemHTML('Vendido na semana', total, meta, meta>0?(total/meta*100):null, true);
 }
 
 function mmRenderMes(){
   var box = document.getElementById('mm-mes');
   if (!box) return;
-  if (CK_EQUIPE.indexOf(currentUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
   var hoje = new Date();
   var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  var total = mmPedidosVendedor.reduce(function(s,p){
+  var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
+  var total = pedidos.reduce(function(s,p){
     var d = mmDataPedido(p);
     return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
   }, 0);
-  var meta = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[currentUser]) || 0;
+  var meta = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[mmSelectedUser]) || 0;
   box.innerHTML = mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true);
 }
 
 function mmRenderClientes(){
   var box = document.getElementById('mm-clientes');
   if (!box) return;
-  if (CK_EQUIPE.indexOf(currentUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
   var hoje = new Date();
   var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  var pedidosMes = mmPedidosVendedor.filter(function(p){ var d = mmDataPedido(p); return d && d >= inicio && d <= hoje; });
+  var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
+  var pedidosMes = pedidos.filter(function(p){ var d = mmDataPedido(p); return d && d >= inicio && d <= hoje; });
   var qtdNovos = pedidosMes.filter(function(p){ return p.tipoCliente === 'novo'; }).length;
   var qtdInativos = pedidosMes.filter(function(p){ return p.tipoCliente === 'inativo'; }).length;
-  var metaNovos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[currentUser]) || 0;
-  var metaInativos = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[currentUser]) || 0;
+  var metaNovos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[mmSelectedUser]) || 0;
+  var metaInativos = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[mmSelectedUser]) || 0;
   box.innerHTML =
     mmItemHTML('Clientes novos', qtdNovos, metaNovos, metaNovos>0?(qtdNovos/metaNovos*100):null, false) +
     mmItemHTML('Clientes inativos reativados', qtdInativos, metaInativos, metaInativos>0?(qtdInativos/metaInativos*100):null, false);
