@@ -12462,7 +12462,7 @@ var mmListenersAttached = false;
 var mmSelectedUser = null;
 
 function mmInit(){
-  if (!mmSelectedUser) mmSelectedUser = (CK_EQUIPE.indexOf(currentUser) >= 0) ? currentUser : CK_EQUIPE[0];
+  if (!mmSelectedUser) mmSelectedUser = ckIsAdmin() ? 'EQUIPE' : ((CK_EQUIPE.indexOf(currentUser) >= 0) ? currentUser : CK_EQUIPE[0]);
   mmRenderSeletor();
   mmAtualizarTitulo();
 
@@ -12488,7 +12488,9 @@ function mmInit(){
 
 function mmAtualizarTitulo(){
   var titulo = document.getElementById('mm-titulo');
-  if (titulo) titulo.textContent = '📍 Minhas Metas — ' + (vendedores[mmSelectedUser] ? vendedores[mmSelectedUser].nome : mmSelectedUser);
+  if (!titulo) return;
+  if (mmSelectedUser === 'EQUIPE') titulo.textContent = '📍 Minhas Metas — Equipe (todos juntos)';
+  else titulo.textContent = '📍 Minhas Metas — ' + (vendedores[mmSelectedUser] ? vendedores[mmSelectedUser].nome : mmSelectedUser);
 }
 
 function mmRenderSeletor(){
@@ -12497,10 +12499,11 @@ function mmRenderSeletor(){
   if (!ckIsAdmin()){ box.style.display = 'none'; return; }
   box.style.display = 'flex';
   box.innerHTML = '';
-  CK_EQUIPE.forEach(function(key){
+  var opcoes = ['EQUIPE'].concat(CK_EQUIPE);
+  opcoes.forEach(function(key){
     var btn = document.createElement('button');
     btn.className = 'mm-sel-btn' + (key === mmSelectedUser ? ' active' : '');
-    btn.textContent = vendedores[key] ? vendedores[key].nome : key;
+    btn.textContent = key === 'EQUIPE' ? '👥 Equipe' : (vendedores[key] ? vendedores[key].nome : key);
     btn.addEventListener('click', function(){
       mmSelectedUser = key;
       mmRenderSeletor();
@@ -12509,6 +12512,22 @@ function mmRenderSeletor(){
     });
     box.appendChild(btn);
   });
+}
+
+function mmTotalMetaEquipe(mapaKey){
+  var total = 0;
+  CK_EQUIPE.forEach(function(p){
+    total += (ckData.settings[mapaKey] && ckData.settings[mapaKey][p]) || 0;
+  });
+  return total;
+}
+
+function mmTotalMetaProdutoEquipe(produtoKey){
+  var total = 0;
+  CK_EQUIPE.forEach(function(p){
+    total += (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[produtoKey] && ckData.settings.metaProdutosMes[produtoKey][p]) || 0;
+  });
+  return total;
 }
 
 function mmRenderTudo(){
@@ -12570,9 +12589,35 @@ function mmCardHTML(icon, label, valor, meta, pct, isMoney){
 function mmRenderHoje(){
   var box = document.getElementById('mm-hoje');
   if (!box) return;
-  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável para esse usuário.</div>'; return; }
   var hoje = ckToday();
   var rows = (ckData.dias[hoje] && ckData.dias[hoje].rows) || [];
+
+  if (mmSelectedUser === 'EQUIPE'){
+    var totLig=0, totProp=0, totVend=0, totMetaLig=0, totMetaProp=0, totMetaVend=0, achouAlguma=false;
+    CK_EQUIPE.forEach(function(key){
+      var nome = vendedores[key] ? vendedores[key].nome : key;
+      var row = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(nome); });
+      if (!row) return;
+      achouAlguma = true;
+      var av = ckAvaliarLinha(row, hoje);
+      totLig += ckNum(row.ligacoes); totMetaLig += av.metaLigEf;
+      totProp += ckNum(row.propostas); totMetaProp += av.metaPropEf;
+      totVend += ckNum(row.vendidoR); totMetaVend += av.metaVendEf;
+    });
+    if (!achouAlguma){ box.innerHTML = '<div class="mm-empty">O check-in de hoje ainda não foi preenchido.</div>'; mmRenderHero(null); return; }
+    var pctLig = totMetaLig>0 ? (totLig/totMetaLig*100) : null;
+    var pctProp = totMetaProp>0 ? (totProp/totMetaProp*100) : null;
+    var pctVend = totMetaVend>0 ? (totVend/totMetaVend*100) : null;
+    box.innerHTML =
+      mmCardHTML('📞', 'Ligações', totLig, totMetaLig, pctLig, false) +
+      mmCardHTML('📝', 'Propostas', totProp, totMetaProp, pctProp, false) +
+      mmCardHTML('💰', 'Vendido', totVend, totMetaVend, pctVend, true);
+    var pctsEq = [pctLig,pctProp,pctVend].filter(function(p){ return p!==null; });
+    mmRenderHero(pctsEq.length ? Math.min.apply(null, pctsEq) : null);
+    return;
+  }
+
+  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável para esse usuário.</div>'; return; }
   var meuNome = vendedores[mmSelectedUser] ? vendedores[mmSelectedUser].nome : '';
   var minhaLinha = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(meuNome); });
   if (!minhaLinha){
@@ -12631,15 +12676,27 @@ function mmValorPedido(p){
 function mmRenderSemana(){
   var box = document.getElementById('mm-semana');
   if (!box) return;
-  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
   var hoje = new Date();
   var inicio = mmInicioSemana(hoje);
-  var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
-  var total = pedidos.reduce(function(s,p){
-    var d = mmDataPedido(p);
-    return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
-  }, 0);
-  var meta = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[mmSelectedUser]) || 0;
+  var total, meta;
+  if (mmSelectedUser === 'EQUIPE'){
+    total = 0;
+    CK_EQUIPE.forEach(function(p){
+      (mmPedidosEquipe[p]||[]).forEach(function(ped){
+        var d = mmDataPedido(ped);
+        if (d && d >= inicio && d <= hoje) total += mmValorPedido(ped);
+      });
+    });
+    meta = mmTotalMetaEquipe('metaSemanalPorPessoa');
+  } else {
+    if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+    var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
+    total = pedidos.reduce(function(s,p){
+      var d = mmDataPedido(p);
+      return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
+    }, 0);
+    meta = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[mmSelectedUser]) || 0;
+  }
   box.innerHTML = mmItemHTML('Vendido na semana', total, meta, meta>0?(total/meta*100):null, true, '💰');
 }
 
@@ -12657,15 +12714,27 @@ function mmDiasUteisRestantes(hoje){
 function mmRenderMes(){
   var box = document.getElementById('mm-mes');
   if (!box) return;
-  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
   var hoje = new Date();
   var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
-  var total = pedidos.reduce(function(s,p){
-    var d = mmDataPedido(p);
-    return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
-  }, 0);
-  var meta = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[mmSelectedUser]) || 0;
+  var total, meta;
+  if (mmSelectedUser === 'EQUIPE'){
+    total = 0;
+    CK_EQUIPE.forEach(function(p){
+      (mmPedidosEquipe[p]||[]).forEach(function(ped){
+        var d = mmDataPedido(ped);
+        if (d && d >= inicio && d <= hoje) total += mmValorPedido(ped);
+      });
+    });
+    meta = mmTotalMetaEquipe('metaMensalPorPessoa');
+  } else {
+    if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+    var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
+    total = pedidos.reduce(function(s,p){
+      var d = mmDataPedido(p);
+      return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
+    }, 0);
+    meta = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[mmSelectedUser]) || 0;
+  }
   var html = mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true, '💰');
 
   if (meta > 0){
@@ -12688,15 +12757,30 @@ function mmRenderMes(){
 function mmRenderClientes(){
   var box = document.getElementById('mm-clientes');
   if (!box) return;
-  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
   var hoje = new Date();
   var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
-  var pedidosMes = pedidos.filter(function(p){ var d = mmDataPedido(p); return d && d >= inicio && d <= hoje; });
-  var qtdNovos = pedidosMes.filter(function(p){ return p.tipoCliente === 'novo'; }).length;
-  var qtdInativos = pedidosMes.filter(function(p){ return p.tipoCliente === 'inativo'; }).length;
-  var metaNovos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[mmSelectedUser]) || 0;
-  var metaInativos = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[mmSelectedUser]) || 0;
+  var qtdNovos, qtdInativos, metaNovos, metaInativos;
+  if (mmSelectedUser === 'EQUIPE'){
+    qtdNovos = 0; qtdInativos = 0;
+    CK_EQUIPE.forEach(function(p){
+      (mmPedidosEquipe[p]||[]).forEach(function(ped){
+        var d = mmDataPedido(ped);
+        if (!d || d < inicio || d > hoje) return;
+        if (ped.tipoCliente === 'novo') qtdNovos++;
+        if (ped.tipoCliente === 'inativo') qtdInativos++;
+      });
+    });
+    metaNovos = mmTotalMetaEquipe('metaClientesNovosPorPessoa');
+    metaInativos = mmTotalMetaEquipe('metaClientesInativosPorPessoa');
+  } else {
+    if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+    var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
+    var pedidosMes = pedidos.filter(function(p){ var d = mmDataPedido(p); return d && d >= inicio && d <= hoje; });
+    qtdNovos = pedidosMes.filter(function(p){ return p.tipoCliente === 'novo'; }).length;
+    qtdInativos = pedidosMes.filter(function(p){ return p.tipoCliente === 'inativo'; }).length;
+    metaNovos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[mmSelectedUser]) || 0;
+    metaInativos = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[mmSelectedUser]) || 0;
+  }
   box.innerHTML =
     mmItemHTML('Clientes novos', qtdNovos, metaNovos, metaNovos>0?(qtdNovos/metaNovos*100):null, false, '🆕') +
     mmItemHTML('Clientes inativos reativados', qtdInativos, metaInativos, metaInativos>0?(qtdInativos/metaInativos*100):null, false, '♻️');
@@ -12705,23 +12789,30 @@ function mmRenderClientes(){
 function mmRenderProdutos(){
   var box = document.getElementById('mm-produtos');
   if (!box) return;
-  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
   var hoje = new Date();
   var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
   var totais = {};
   CK_PRODUTOS.forEach(function(g){ totais[g.key] = 0; });
-  var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
-  pedidos.forEach(function(p){
-    var d = mmDataPedido(p);
-    if (!d || d < inicio || d > hoje) return;
-    (p.itens||[]).forEach(function(it){
-      var grupo = ckClassificarProduto(it.material);
-      if (grupo) totais[grupo] += ckNum(it.qtd);
+
+  var pessoas = (mmSelectedUser === 'EQUIPE') ? CK_EQUIPE : (CK_EQUIPE.indexOf(mmSelectedUser) >= 0 ? [mmSelectedUser] : []);
+  if (pessoas.length === 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+
+  pessoas.forEach(function(p){
+    (mmPedidosEquipe[p]||[]).forEach(function(ped){
+      var d = mmDataPedido(ped);
+      if (!d || d < inicio || d > hoje) return;
+      (ped.itens||[]).forEach(function(it){
+        var grupo = ckClassificarProduto(it.material);
+        if (grupo) totais[grupo] += ckNum(it.qtd);
+      });
     });
   });
+
   var html = '';
   CK_PRODUTOS.forEach(function(g){
-    var meta = (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key] && ckData.settings.metaProdutosMes[g.key][mmSelectedUser]) || 0;
+    var meta = (mmSelectedUser === 'EQUIPE')
+      ? mmTotalMetaProdutoEquipe(g.key)
+      : ((ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key] && ckData.settings.metaProdutosMes[g.key][mmSelectedUser]) || 0);
     html += mmItemHTML(g.label, totais[g.key], meta, meta>0?(totais[g.key]/meta*100):null, false, '📦');
   });
   box.innerHTML = html;
