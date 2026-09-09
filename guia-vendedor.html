@@ -1047,7 +1047,7 @@
 </header>
 
 <nav>
-  <button class="nav-btn active" onclick="showTab('materiais',this)">
+  <button class="nav-btn" onclick="showTab('materiais',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="8" height="8" rx="1"/><rect x="14" y="3" width="8" height="8" rx="1"/><rect x="2" y="13" width="8" height="8" rx="1"/><rect x="14" y="13" width="8" height="8" rx="1"/></svg>
     Materiais
   </button>
@@ -1103,14 +1103,14 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Check-in Diário
   </button>
-  <button class="nav-btn" id="nav-minhasmetas" style="display:none;" onclick="showTab('minhasmetas',this)">
+  <button class="nav-btn active" id="nav-minhasmetas" style="display:none;" onclick="showTab('minhasmetas',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
     Minhas Metas
   </button>
 </nav>
 
 <!-- ══ ABA MATERIAIS ══ -->
-<div id="tab-materiais" class="tab-content active">
+<div id="tab-materiais" class="tab-content">
 
   <!-- FILTRO RÁPIDO -->
   <div class="quick-filter">
@@ -4380,7 +4380,7 @@
   #tab-minhasmetas .mm-sel-btn.active{ background:#C41E1E; border-color:#C41E1E; color:#fff; font-weight:600; }
   @media (max-width:600px){ #tab-minhasmetas .mm-grid2{ grid-template-columns:1fr; } }
 </style>
-<div id="tab-minhasmetas" class="tab-content">
+<div id="tab-minhasmetas" class="tab-content active">
 <div class="mm-wrap">
 
   <div class="mm-head">
@@ -10824,6 +10824,8 @@ function entrarComoUsuario(user) {
   document.getElementById('vendedor-banner').style.display = 'flex';
   document.getElementById('vb-nome-text').textContent = v.nome;
   checkAdminAccess(v.nome);
+  var mmNavBtn = document.getElementById('nav-minhasmetas');
+  if (mmNavBtn) showTab('minhasmetas', mmNavBtn);
   // Load from Firebase then render, and listen for real-time updates
   fbLoad(user, () => {
     renderEvolucaoVendedor(vendedores[user]);
