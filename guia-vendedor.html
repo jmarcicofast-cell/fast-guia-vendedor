@@ -2714,6 +2714,12 @@
       <p style="font-size:12px;color:#aaa;">Baseado no % de atingimento da meta do mês. Atualizado em tempo real.</p>
     </div>
 
+    <!-- FOTOS DA EQUIPE (admin) -->
+    <div id="rank-fotos-admin" style="display:none;background:#fff;border:1.5px solid #E2E0D8;border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1.5rem;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:12px;">📷 Fotos da equipe — clique numa foto pra trocar</div>
+      <div id="rank-fotos-grid" style="display:flex;flex-wrap:wrap;gap:16px;"></div>
+    </div>
+
     <!-- PÓDIO VISUAL -->
     <div id="rank-podio" style="display:flex;align-items:flex-end;justify-content:center;gap:12px;margin-bottom:2rem;min-height:200px;">
       <div style="text-align:center;color:#aaa;font-size:13px;padding:2rem;">Carregando...</div>
@@ -5508,6 +5514,73 @@ function gerarExcel(pedidos, btn) {
 
 // ── RANKING & RECONHECIMENTO ──
 
+/* ── Fotos da equipe (aparecem no Ranking) ── */
+var RANK_EQUIPE = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
+var vendedorFotos = {};
+
+function avatarHTML(vn, nome, size){
+  var foto = vendedorFotos[vn];
+  if (foto){
+    return '<img src="'+foto+'" style="width:'+size+'px;height:'+size+'px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #E2E0D8;">';
+  }
+  var cores = ['#C41E1E','#1C1C1C','#185FA5','#2E7D32','#7A4A00','#6B3FA0','#B36B00','#455A64'];
+  var inicial = (nome||'?').trim().charAt(0).toUpperCase();
+  var idx = (vn || nome || '').split('').reduce(function(s,c){ return s+c.charCodeAt(0); },0) % cores.length;
+  return '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+cores[idx]+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:'+Math.round(size*0.42)+'px;flex-shrink:0;">'+inicial+'</div>';
+}
+
+function redimensionarFotoBase64(file, callback){
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var tam = 200;
+      var canvas = document.createElement('canvas');
+      canvas.width = tam; canvas.height = tam;
+      var ctx = canvas.getContext('2d');
+      var lado = Math.min(img.width, img.height);
+      var sx = (img.width - lado) / 2, sy = (img.height - lado) / 2;
+      ctx.drawImage(img, sx, sy, lado, lado, 0, 0, tam, tam);
+      callback(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleFotoUpload(vn, input){
+  var file = input.files && input.files[0];
+  if (!file) return;
+  redimensionarFotoBase64(file, function(dataUrl){
+    dbRef('fotosVendedores/' + vn).set(dataUrl).catch(function(e){ alert('Erro ao salvar foto: ' + e.message); });
+  });
+}
+
+function renderFotosAdminPreviews(){
+  var box = document.getElementById('rank-fotos-grid');
+  if (!box) return;
+  box.innerHTML = RANK_EQUIPE.map(function(vn){
+    var nome = vendedores[vn] ? vendedores[vn].nome : vn;
+    return '<div style="text-align:center;">' +
+      '<label style="cursor:pointer;display:inline-block;">' +
+        avatarHTML(vn, nome, 64) +
+        '<input type="file" accept="image/*" style="display:none;" onchange="handleFotoUpload(\''+vn+'\', this)">' +
+      '</label>' +
+      '<div style="font-size:11px;color:#666;margin-top:5px;">' + nome + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function listenFotosVendedores(){
+  dbRef('fotosVendedores').on('value', function(snap){
+    vendedorFotos = snap.val() || {};
+    renderFotosAdminPreviews();
+    if (typeof _rankingDadosGlobais !== 'undefined' && _rankingDadosGlobais.pedidos){
+      renderRanking(_rankingDadosGlobais.pedidos, {});
+    }
+  });
+}
+
 function listenRanking() {
   var allPedidos = {}, allLigacoes = {};
   var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
@@ -5628,6 +5701,7 @@ function renderRanking(allPedidos, allLigacoes) {
       var posLabel = i === 1 ? '1º' : (i === 0 ? '2º' : '3º');
       return '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;max-width:200px;">' +
         '<div style="font-size:32px;">' + podiumMed[i] + '</div>' +
+        avatarHTML(d.vn, d.nome, 52) +
         '<div style="font-size:14px;font-weight:700;color:#1C1C1C;">' + d.nome + '</div>' +
         '<div style="font-size:20px;font-weight:700;color:' + podiumCores[i] + ';">' + d.pct + '%</div>' +
         '<div style="font-size:11px;color:#888;">' + fmtBRL + '</div>' +
@@ -5655,6 +5729,7 @@ function renderRanking(allPedidos, allLigacoes) {
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
             '<span style="font-size:' + (medalhas[i] ? '24px' : '15px') + ';' + (medalhas[i] ? '' : 'font-weight:700;color:#888;min-width:24px;text-align:center;') + '">' + medalhaOuPos + '</span>' +
+            avatarHTML(d.vn, d.nome, 40) +
             '<div>' +
               '<div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + d.nome + '</div>' +
               '<div style="font-size:11px;color:#888;">Meta: ' + fmtMeta + '</div>' +
@@ -10963,11 +11038,14 @@ function entrarComoUsuario(user) {
     }
     // Ranking aparece para todos
     listenRanking();
+    listenFotosVendedores();
     // Formulario de premiacao aparece para todos: gestora registra/aprova,
     // vendedor so solicita a propria (fica pendente ate aprovacao).
     var gestTools = document.getElementById('prem-gestora-tools');
     if (gestTools) gestTools.style.display = 'block';
     configurarFormPremiacao(v.tipo);
+    var fotosAdmin = document.getElementById('rank-fotos-admin');
+    if (fotosAdmin) fotosAdmin.style.display = (v.nome === 'Juliana') ? 'block' : 'none';
   });
   // Start listening to pedidos
   listenPedidos(user, v.tipo === 'gestora');
