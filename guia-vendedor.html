@@ -4381,6 +4381,16 @@
   #tab-minhasmetas .mm-presets{ display:flex; gap:8px; margin-bottom:12px; }
   #tab-minhasmetas .mm-preset-btn{ background:#F8F7F3; border:1px solid #E2E0D8; color:#666; font-size:12px; padding:6px 14px; border-radius:20px; cursor:pointer; }
   #tab-minhasmetas .mm-preset-btn:hover{ border-color:#C41E1E; color:#C41E1E; }
+  #tab-minhasmetas .mm-drag-handle{ cursor:grab; color:#ccc; margin-right:8px; font-size:15px; user-select:none; }
+  #tab-minhasmetas .mm-drag-handle:active{ cursor:grabbing; }
+  #tab-minhasmetas .mm-panel[draggable="true"]{ transition:opacity .15s, outline .15s; }
+  #tab-minhasmetas .mm-panel.mm-dragging{ opacity:.35; }
+  #tab-minhasmetas .mm-panel.mm-drag-over{ outline:2px dashed #C41E1E; outline-offset:3px; }
+
+  #tab-minhasmetas .mm-toast{ position:fixed; top:84px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; opacity:0; transform:translateY(-12px); transition:opacity .3s ease, transform .3s ease; max-width:320px; }
+  #tab-minhasmetas .mm-toast.show{ opacity:1; transform:translateY(0); }
+  #tab-minhasmetas .mm-toast-item{ background:linear-gradient(135deg,#2E7D32,#1B5E20); color:#fff; padding:12px 18px; border-radius:10px; font-size:13px; font-weight:700; box-shadow:0 6px 18px rgba(0,0,0,.18); }
+  @media (max-width:600px){ #tab-minhasmetas .mm-toast{ left:16px; right:16px; top:70px; max-width:none; } }
   #tab-minhasmetas .mm-seletor{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
   #tab-minhasmetas .mm-sel-btn{ background:#F8F7F3; border:1px solid #E2E0D8; color:#666; font-size:12px; padding:6px 12px; border-radius:20px; cursor:pointer; }
   #tab-minhasmetas .mm-sel-btn.active{ background:#C41E1E; border-color:#C41E1E; color:#fff; font-weight:600; }
@@ -4395,26 +4405,28 @@
     <div id="mm-seletor" class="mm-seletor" style="display:none;"></div>
   </div>
 
+  <div id="mm-toast" class="mm-toast"></div>
+
   <div id="mm-hero"></div>
 
-  <div class="mm-panel">
-    <h3>🎯 Hoje</h3>
-    <div id="mm-hoje" class="mm-cards3"></div>
-  </div>
+  <div class="mm-panels-grid" id="mm-panels-grid">
+    <div class="mm-panel" data-panel-id="hoje" draggable="true" style="grid-column:1 / -1;">
+      <h3><span class="mm-drag-handle">⠿</span>🎯 Hoje</h3>
+      <div id="mm-hoje" class="mm-cards3"></div>
+    </div>
 
-  <div class="mm-panels-grid">
-    <div class="mm-panel">
-      <h3>📅 Esta semana (vendido)</h3>
+    <div class="mm-panel" data-panel-id="semana" draggable="true">
+      <h3><span class="mm-drag-handle">⠿</span>📅 Esta semana (vendido)</h3>
       <div id="mm-semana"></div>
     </div>
 
-    <div class="mm-panel">
-      <h3>🏁 Este mês</h3>
+    <div class="mm-panel" data-panel-id="mes" draggable="true">
+      <h3><span class="mm-drag-handle">⠿</span>🏁 Este mês</h3>
       <div id="mm-mes"></div>
     </div>
 
-    <div class="mm-panel" style="grid-column:1 / -1;">
-      <h3>📆 Detalhamento — ligações, propostas, vendido e conversão</h3>
+    <div class="mm-panel" data-panel-id="periodo" draggable="true" style="grid-column:1 / -1;">
+      <h3><span class="mm-drag-handle">⠿</span>📆 Detalhamento — ligações, propostas, vendido e conversão</h3>
       <div class="mm-presets">
         <button class="mm-preset-btn" data-preset="hoje">Hoje</button>
         <button class="mm-preset-btn" data-preset="7dias">Últimos 7 dias</button>
@@ -4433,13 +4445,13 @@
       <div id="mm-periodo"></div>
     </div>
 
-    <div class="mm-panel">
-      <h3>🤝 Clientes este mês</h3>
+    <div class="mm-panel" data-panel-id="clientes" draggable="true">
+      <h3><span class="mm-drag-handle">⠿</span>🤝 Clientes este mês</h3>
       <div id="mm-clientes"></div>
     </div>
 
-    <div class="mm-panel">
-      <h3>📦 Produtos este mês</h3>
+    <div class="mm-panel" data-panel-id="produtos" draggable="true">
+      <h3><span class="mm-drag-handle">⠿</span>📦 Produtos este mês</h3>
       <div id="mm-produtos"></div>
     </div>
   </div>
@@ -12537,6 +12549,8 @@ function mmInit(){
   if (!mmSelectedUser) mmSelectedUser = ckIsAdmin() ? 'EQUIPE' : ((CK_EQUIPE.indexOf(currentUser) >= 0) ? currentUser : CK_EQUIPE[0]);
   mmRenderSeletor();
   mmAtualizarTitulo();
+  mmAplicarOrdemSalva();
+  mmSetupDragDrop();
 
   if (!ckListenerAttached) {
     ckListenerAttached = true;
@@ -12609,6 +12623,7 @@ function mmRenderTudo(){
   mmRenderPeriodo();
   mmRenderClientes();
   mmRenderProdutos();
+  mmVerificarConquistas();
 }
 
 function mmFmtQtd(n){
@@ -12967,6 +12982,182 @@ function mmRenderProdutos(){
     html += mmItemHTML(g.label, totais[g.key], meta, meta>0?(totais[g.key]/meta*100):null, false, '📦');
   });
   box.innerHTML = html;
+}
+
+/* ── Som de conquista: toca quando alguma meta é batida (uma vez por período) ── */
+var mmAudioCtx = null;
+function mmGetAudioCtx(){
+  if (!mmAudioCtx){
+    var AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtxClass){ try { mmAudioCtx = new AudioCtxClass(); } catch(e){} }
+  }
+  if (mmAudioCtx && mmAudioCtx.state === 'suspended'){ mmAudioCtx.resume().catch(function(){}); }
+  return mmAudioCtx;
+}
+// "destrava" o áudio no primeiro clique/toque em qualquer lugar da página
+document.addEventListener('click', function(){ mmGetAudioCtx(); }, { once: true });
+document.addEventListener('touchstart', function(){ mmGetAudioCtx(); }, { once: true });
+
+function mmTocarSom(){
+  var ctx = mmGetAudioCtx();
+  if (!ctx) return;
+  try {
+    var notas = [523.25, 659.25, 783.99]; // acorde alegre (dó-mi-sol)
+    notas.forEach(function(freq, i){
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      var inicio = ctx.currentTime + i * 0.09;
+      gain.gain.setValueAtTime(0, inicio);
+      gain.gain.linearRampToValueAtTime(0.22, inicio + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(inicio); osc.stop(inicio + 0.4);
+    });
+  } catch(e){ /* som indisponível, segue sem quebrar a página */ }
+}
+
+function mmChaveConquista(pessoa, metrica, periodo){
+  return 'fgv_mm_conquista_' + pessoa + '_' + metrica + '_' + periodo;
+}
+
+function mmRegistrarSeNovo(pessoa, metrica, periodo){
+  var chave = mmChaveConquista(pessoa, metrica, periodo);
+  try {
+    if (localStorage.getItem(chave)) return false;
+    localStorage.setItem(chave, '1');
+    return true;
+  } catch(e){ return false; }
+}
+
+function mmMostrarToast(msgs){
+  var box = document.getElementById('mm-toast');
+  if (!box || msgs.length === 0) return;
+  box.innerHTML = msgs.map(function(m){ return '<div class="mm-toast-item">🎉 '+m+'</div>'; }).join('');
+  box.classList.add('show');
+  clearTimeout(mmMostrarToast._t);
+  mmMostrarToast._t = setTimeout(function(){ box.classList.remove('show'); }, 6000);
+}
+
+function mmVerificarConquistas(){
+  if (CK_EQUIPE.indexOf(currentUser) < 0) return; // só dispara pra quem é vendedor(a), não pra Juliana
+  var pessoa = currentUser;
+  var conquistas = [];
+
+  // HOJE — ligações, propostas, vendido
+  var hoje = ckToday();
+  var rows = (ckData.dias[hoje] && ckData.dias[hoje].rows) || [];
+  var meuNome = vendedores[pessoa] ? vendedores[pessoa].nome : '';
+  var minhaLinha = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(meuNome); });
+  if (minhaLinha){
+    var av = ckAvaliarLinha(minhaLinha, hoje);
+    if (av.pctLig !== null && av.pctLig >= 100 && mmRegistrarSeNovo(pessoa,'lig_dia',hoje)) conquistas.push('Meta de ligações de hoje batida!');
+    if (av.pctProp !== null && av.pctProp >= 100 && mmRegistrarSeNovo(pessoa,'prop_dia',hoje)) conquistas.push('Meta de propostas de hoje batida!');
+    if (av.pctVend !== null && av.pctVend >= 100 && mmRegistrarSeNovo(pessoa,'vend_dia',hoje)) conquistas.push('Meta de vendido de hoje batida!');
+  }
+
+  var agora = new Date();
+  var pedidosPessoa = mmPedidosEquipe[pessoa] || [];
+
+  // SEMANA — vendido
+  var inicioSemana = mmInicioSemana(agora);
+  var totalSemana = pedidosPessoa.reduce(function(s,p){ var d=mmDataPedido(p); return (d&&d>=inicioSemana&&d<=agora)?s+mmValorPedido(p):s; },0);
+  var metaSemana = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[pessoa]) || 0;
+  if (metaSemana>0 && totalSemana>=metaSemana && mmRegistrarSeNovo(pessoa,'vend_semana',ckDateToStr(inicioSemana))) conquistas.push('Meta de vendido da semana batida!');
+
+  // MÊS — vendido, clientes novos, clientes inativos
+  var inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  var mesKey = agora.getFullYear() + '-' + (agora.getMonth()+1);
+  var totalMes = pedidosPessoa.reduce(function(s,p){ var d=mmDataPedido(p); return (d&&d>=inicioMes&&d<=agora)?s+mmValorPedido(p):s; },0);
+  var metaMes = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[pessoa]) || 0;
+  if (metaMes>0 && totalMes>=metaMes && mmRegistrarSeNovo(pessoa,'vend_mes',mesKey)) conquistas.push('Meta de vendido do mês batida!');
+
+  var pedidosMes = pedidosPessoa.filter(function(p){ var d=mmDataPedido(p); return d&&d>=inicioMes&&d<=agora; });
+  var qtdNovos = pedidosMes.filter(function(p){ return p.tipoCliente==='novo'; }).length;
+  var qtdInativos = pedidosMes.filter(function(p){ return p.tipoCliente==='inativo'; }).length;
+  var metaNovos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[pessoa]) || 0;
+  var metaInativos = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[pessoa]) || 0;
+  if (metaNovos>0 && qtdNovos>=metaNovos && mmRegistrarSeNovo(pessoa,'clientes_novos_mes',mesKey)) conquistas.push('Meta de clientes novos do mês batida!');
+  if (metaInativos>0 && qtdInativos>=metaInativos && mmRegistrarSeNovo(pessoa,'clientes_inativos_mes',mesKey)) conquistas.push('Meta de clientes inativos reativados do mês batida!');
+
+  if (conquistas.length > 0){
+    mmTocarSom();
+    mmMostrarToast(conquistas);
+  }
+}
+
+/* ── Cards móveis: arrastar pra reordenar, ordem salva por usuário ── */
+var mmDragSrc = null;
+
+function mmChaveOrdem(){
+  return 'fgv_mm_ordem_' + (currentUser || 'anon');
+}
+
+function mmSalvarOrdem(){
+  var grid = document.getElementById('mm-panels-grid');
+  if (!grid) return;
+  var ordem = Array.prototype.map.call(grid.querySelectorAll('.mm-panel[data-panel-id]'), function(el){ return el.dataset.panelId; });
+  try { localStorage.setItem(mmChaveOrdem(), JSON.stringify(ordem)); } catch(e){}
+}
+
+function mmAplicarOrdemSalva(){
+  var grid = document.getElementById('mm-panels-grid');
+  if (!grid) return;
+  var salvo;
+  try { salvo = JSON.parse(localStorage.getItem(mmChaveOrdem()) || 'null'); } catch(e){ salvo = null; }
+  if (!salvo || !Array.isArray(salvo)) return;
+  salvo.forEach(function(id){
+    var el = grid.querySelector('.mm-panel[data-panel-id="'+id+'"]');
+    if (el) grid.appendChild(el);
+  });
+}
+
+function mmSetupDragDrop(){
+  var grid = document.getElementById('mm-panels-grid');
+  if (!grid || grid.dataset.dragReady) return;
+  grid.dataset.dragReady = '1';
+
+  grid.addEventListener('dragstart', function(e){
+    var panel = e.target.closest('.mm-panel[draggable="true"]');
+    if (!panel) return;
+    mmDragSrc = panel;
+    panel.classList.add('mm-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', panel.dataset.panelId); } catch(err){}
+  });
+
+  grid.addEventListener('dragend', function(){
+    if (mmDragSrc) mmDragSrc.classList.remove('mm-dragging');
+    grid.querySelectorAll('.mm-drag-over').forEach(function(el){ el.classList.remove('mm-drag-over'); });
+    mmDragSrc = null;
+  });
+
+  grid.addEventListener('dragover', function(e){
+    var panel = e.target.closest('.mm-panel[draggable="true"]');
+    if (!panel || panel === mmDragSrc) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    grid.querySelectorAll('.mm-drag-over').forEach(function(el){ if (el !== panel) el.classList.remove('mm-drag-over'); });
+    panel.classList.add('mm-drag-over');
+  });
+
+  grid.addEventListener('dragleave', function(e){
+    var panel = e.target.closest('.mm-panel[draggable="true"]');
+    if (panel) panel.classList.remove('mm-drag-over');
+  });
+
+  grid.addEventListener('drop', function(e){
+    var panel = e.target.closest('.mm-panel[draggable="true"]');
+    e.preventDefault();
+    if (!panel || !mmDragSrc || panel === mmDragSrc) return;
+    panel.classList.remove('mm-drag-over');
+    var rect = panel.getBoundingClientRect();
+    var depoisDoAlvo = (e.clientY - rect.top) > (rect.height / 2);
+    if (depoisDoAlvo) panel.parentNode.insertBefore(mmDragSrc, panel.nextSibling);
+    else panel.parentNode.insertBefore(mmDragSrc, panel);
+    mmSalvarOrdem();
+  });
 }
 
 var mmPeriodoDeEl = document.getElementById('mm-periodo-de');
