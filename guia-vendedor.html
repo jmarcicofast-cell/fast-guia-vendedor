@@ -4158,7 +4158,7 @@
     </div>
     <div class="ck-metadia">
       <div class="num" id="ck-meta-dia-val">R$ 0</div>
-      <div class="lbl">meta do dia (calculada)</div>
+      <div class="lbl" title="Recalcula sozinha: (meta do mês − já vendido) ÷ dias úteis que faltam a partir do dia selecionado">meta do dia (ajusta pelo que já foi vendido)</div>
     </div>
   </div>
 
@@ -4332,8 +4332,9 @@
   #tab-minhasmetas .mm-panel h3{ font-size:13.5px; font-weight:800; color:#1C1C1C; margin-bottom:14px; text-transform:uppercase; letter-spacing:.03em; }
 
   /* Grade de cards pro "Hoje" */
-  #tab-minhasmetas .mm-cards3{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
-  @media (max-width:700px){ #tab-minhasmetas .mm-cards3{ grid-template-columns:1fr; } }
+  #tab-minhasmetas .mm-cards3{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  @media (max-width:900px){ #tab-minhasmetas .mm-cards3{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:480px){ #tab-minhasmetas .mm-cards3{ grid-template-columns:1fr; } }
   #tab-minhasmetas .mm-card{ border-radius:12px; padding:14px; background:#FAFAF8; border:1px solid #EDECEA; border-top:4px solid #ccc; }
   #tab-minhasmetas .mm-card.good{ border-top-color:#2E7D32; }
   #tab-minhasmetas .mm-card.mid{ border-top-color:#E68A00; }
@@ -4395,15 +4396,29 @@
     <div id="mm-hoje" class="mm-cards3"></div>
   </div>
 
-  <div class="mm-grid2">
-    <div class="mm-panel">
-      <h3>📅 Esta semana</h3>
-      <div id="mm-semana"></div>
+  <div class="mm-panel">
+    <h3>📅 Esta semana (vendido)</h3>
+    <div id="mm-semana"></div>
+  </div>
+
+  <div class="mm-panel">
+    <h3>🏁 Este mês</h3>
+    <div id="mm-mes"></div>
+  </div>
+
+  <div class="mm-panel">
+    <h3>📆 Período personalizado</h3>
+    <div class="ck-config" style="margin-bottom:14px;padding:10px 12px;">
+      <div>
+        <label>De</label>
+        <input type="date" id="mm-periodo-de">
+      </div>
+      <div>
+        <label>Até</label>
+        <input type="date" id="mm-periodo-ate">
+      </div>
     </div>
-    <div class="mm-panel">
-      <h3>🏁 Este mês</h3>
-      <div id="mm-mes"></div>
-    </div>
+    <div id="mm-periodo"></div>
   </div>
 
   <div class="mm-panel">
@@ -4421,6 +4436,7 @@
 <!-- ══ FIM MINHAS METAS ══ -->
 
 <script>
+
 
 
 /* ══ Plano de Ação — Paraná (acesso restrito: Juliana e Eliziane) ══ */
@@ -11126,13 +11142,13 @@ function checkAdminAccess(nome) {
   const rampaNav = document.getElementById('nav-rampa');
   const checkinNav = document.getElementById('nav-checkin');
   if (!adminNav) return;
-  // Check-in Diário e Minhas Metas: aparecem para todo mundo (edição só pra Juliana)
-  if (checkinNav) checkinNav.style.display = 'flex';
+  // Minhas Metas aparece pra todo mundo. Check-in Diário só pra Juliana.
   var mmNav = document.getElementById('nav-minhasmetas');
   if (mmNav) mmNav.style.display = 'flex';
   if (nome === 'Juliana') {
     adminNav.style.display = 'flex';
     if (rampaNav) rampaNav.style.display = 'flex';
+    if (checkinNav) checkinNav.style.display = 'flex';
     // Load all vendedores from Firebase
     Promise.all(['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
       .then(function() {
@@ -11143,6 +11159,7 @@ function checkAdminAccess(nome) {
   } else {
     adminNav.style.display = 'none';
     if (rampaNav) rampaNav.style.display = 'none';
+    if (checkinNav) checkinNav.style.display = 'none';
   }
   checkParanaAccess();
 }
@@ -11991,7 +12008,10 @@ let ckRankCrit = 'vendidoR';
 let ckRankModo = 'dia';
 let ckListenerAttached = false;
 
-function ckToday(){ return new Date().toISOString().slice(0,10); }
+function ckDateToStr(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function ckToday(){ return ckDateToStr(new Date()); }
 function ckFmtBRL(n){ n = Number(n)||0; return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL', maximumFractionDigits:0}); }
 function ckNum(n){ return Number(n)||0; }
 function ckIsAdmin(){ return currentUser === 'JULIANA'; }
@@ -12129,9 +12149,46 @@ function ckRenderMetasProdutoPessoa(){
   });
 }
 
+function ckDiasUteisRestantesDoMes(dataRef){
+  var ano = dataRef.getFullYear(), mes = dataRef.getMonth();
+  var ultimoDia = new Date(ano, mes + 1, 0).getDate();
+  var count = 0;
+  for (var dia = dataRef.getDate(); dia <= ultimoDia; dia++){
+    var d = new Date(ano, mes, dia).getDay();
+    if (d !== 0 && d !== 6) count++;
+  }
+  return count;
+}
+
+/* soma o vendido de todos os dias do MESMO MÊS já salvos e ESTRITAMENTE
+   ANTERIORES a dataRefStr (não conta o próprio dia, pra não descontar
+   duas vezes o que ainda está sendo digitado nele) */
+function ckVendidoAcumuladoMesAntes(dataRefStr){
+  var mesRef = dataRefStr.slice(0, 7);
+  var total = 0;
+  Object.keys(ckData.dias).forEach(function(d){
+    if (d.slice(0, 7) === mesRef && d < dataRefStr){
+      (ckData.dias[d].rows || []).forEach(function(r){ total += ckNum(r.vendidoR); });
+    }
+  });
+  return total;
+}
+
+/* meta do dia adaptativa: (meta do mês - já vendido no mês até aqui) ÷
+   dias úteis restantes a partir de dataRefStr (inclusive) */
+function ckMetaDiaEm(dataRefStr){
+  var dataRef = new Date(dataRefStr + 'T00:00:00');
+  var jaVendido = ckVendidoAcumuladoMesAntes(dataRefStr);
+  var falta = Math.max((ckData.settings.metaMensal || 0) - jaVendido, 0);
+  var diasRestantes = ckDiasUteisRestantesDoMes(dataRef);
+  return diasRestantes > 0 ? (falta / diasRestantes) : 0;
+}
+
 function ckRecalcMetaDia(){
-  var meta = ckData.settings.diasUteis > 0 ? ckData.settings.metaMensal / ckData.settings.diasUteis : 0;
-  document.getElementById('ck-meta-dia-val').textContent = ckFmtBRL(meta);
+  var dataRefStr = (document.getElementById('ck-date') && document.getElementById('ck-date').value) || ckToday();
+  var meta = ckMetaDiaEm(dataRefStr);
+  var el = document.getElementById('ck-meta-dia-val');
+  if (el) el.textContent = ckFmtBRL(meta);
   return meta;
 }
 
@@ -12363,7 +12420,7 @@ function ckRenderHistory(){
     chart.innerHTML = '<div class="ck-empty">Salve o primeiro dia para começar o histórico.</div>';
     return;
   }
-  var metaDia = ckRecalcMetaDia();
+  var metaDia = ckMetaDiaEm(ckToday());
   var days = dates.map(function(d){
     var vendido = (ckData.dias[d].rows||[]).reduce(function(s,x){ return s+ckNum(x.vendidoR); },0);
     return { date: d, vendido: vendido };
@@ -12387,7 +12444,7 @@ function ckRenderHistory(){
 function ckShiftDate(days){
   var d = new Date(document.getElementById('ck-date').value + 'T00:00:00');
   d.setDate(d.getDate() + days);
-  ckLoadDay(d.toISOString().slice(0,10));
+  ckLoadDay(ckDateToStr(d));
 }
 
 document.getElementById('ck-meta-mensal').addEventListener('input', function(e){
@@ -12440,7 +12497,7 @@ document.querySelectorAll('.ck-mode-btn').forEach(function(btn){
       if (!deInput.value){
         var d = new Date(ateInput.value + 'T00:00:00');
         d.setDate(d.getDate() - 6);
-        deInput.value = d.toISOString().slice(0,10);
+        deInput.value = ckDateToStr(d);
       }
     }
     ckUpdateRankTitle();
@@ -12534,6 +12591,7 @@ function mmRenderTudo(){
   mmRenderHoje();
   mmRenderSemana();
   mmRenderMes();
+  mmRenderPeriodo();
   mmRenderClientes();
   mmRenderProdutos();
 }
@@ -12586,6 +12644,15 @@ function mmCardHTML(icon, label, valor, meta, pct, isMoney){
 }
 
 
+function mmCardSimples(icon, label, valorTxt, sub){
+  return '<div class="mm-card">' +
+    '<div class="mm-card-icon">'+icon+'</div>' +
+    '<div class="mm-card-label">'+label+'</div>' +
+    '<div class="mm-card-val">'+valorTxt+'</div>' +
+    '<div class="mm-card-meta">'+(sub||'')+'</div>' +
+  '</div>';
+}
+
 function mmRenderHoje(){
   var box = document.getElementById('mm-hoje');
   if (!box) return;
@@ -12593,7 +12660,7 @@ function mmRenderHoje(){
   var rows = (ckData.dias[hoje] && ckData.dias[hoje].rows) || [];
 
   if (mmSelectedUser === 'EQUIPE'){
-    var totLig=0, totProp=0, totVend=0, totMetaLig=0, totMetaProp=0, totMetaVend=0, achouAlguma=false;
+    var totLig=0, totProp=0, totVend=0, totVendasN=0, totMetaLig=0, totMetaProp=0, totMetaVend=0, achouAlguma=false;
     CK_EQUIPE.forEach(function(key){
       var nome = vendedores[key] ? vendedores[key].nome : key;
       var row = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(nome); });
@@ -12603,15 +12670,18 @@ function mmRenderHoje(){
       totLig += ckNum(row.ligacoes); totMetaLig += av.metaLigEf;
       totProp += ckNum(row.propostas); totMetaProp += av.metaPropEf;
       totVend += ckNum(row.vendidoR); totMetaVend += av.metaVendEf;
+      totVendasN += ckNum(row.vendasN);
     });
     if (!achouAlguma){ box.innerHTML = '<div class="mm-empty">O check-in de hoje ainda não foi preenchido.</div>'; mmRenderHero(null); return; }
     var pctLig = totMetaLig>0 ? (totLig/totMetaLig*100) : null;
     var pctProp = totMetaProp>0 ? (totProp/totMetaProp*100) : null;
     var pctVend = totMetaVend>0 ? (totVend/totMetaVend*100) : null;
+    var convEq = totProp>0 ? (totVendasN/totProp*100) : 0;
     box.innerHTML =
       mmCardHTML('📞', 'Ligações', totLig, totMetaLig, pctLig, false) +
       mmCardHTML('📝', 'Propostas', totProp, totMetaProp, pctProp, false) +
-      mmCardHTML('💰', 'Vendido', totVend, totMetaVend, pctVend, true);
+      mmCardHTML('💰', 'Vendido', totVend, totMetaVend, pctVend, true) +
+      mmCardSimples('📊', 'Conversão', convEq.toFixed(0)+'%', totVendasN+' venda(s) / '+totProp+' proposta(s)');
     var pctsEq = [pctLig,pctProp,pctVend].filter(function(p){ return p!==null; });
     mmRenderHero(pctsEq.length ? Math.min.apply(null, pctsEq) : null);
     return;
@@ -12626,10 +12696,12 @@ function mmRenderHoje(){
     return;
   }
   var av = ckAvaliarLinha(minhaLinha, hoje);
+  var conv = ckNum(minhaLinha.propostas)>0 ? (ckNum(minhaLinha.vendasN)/ckNum(minhaLinha.propostas)*100) : 0;
   box.innerHTML =
     mmCardHTML('📞', 'Ligações', minhaLinha.ligacoes, av.metaLigEf, av.pctLig, false) +
     mmCardHTML('📝', 'Propostas', minhaLinha.propostas, av.metaPropEf, av.pctProp, false) +
-    mmCardHTML('💰', 'Vendido', minhaLinha.vendidoR, av.metaVendEf, av.pctVend, true);
+    mmCardHTML('💰', 'Vendido', minhaLinha.vendidoR, av.metaVendEf, av.pctVend, true) +
+    mmCardSimples('📊', 'Conversão', conv.toFixed(0)+'%', ckNum(minhaLinha.vendasN)+' venda(s) / '+ckNum(minhaLinha.propostas)+' proposta(s)');
   mmRenderHero(av.overall);
 }
 
@@ -12661,6 +12733,32 @@ function mmInicioSemana(d){
   var diff = (dia === 0 ? -6 : 1) - dia;
   dt.setDate(dt.getDate() + diff);
   return dt;
+}
+
+/* soma ligações/propostas/vendasN vindos do check-in diário, por pessoa
+   (ou 'EQUIPE' pra somar todo mundo), num intervalo de datas [de, ate] */
+function mmSomarCheckinPeriodo(pessoaOuEquipe, deStr, ateStr){
+  var tot = { ligacoes: 0, propostas: 0, vendasN: 0 };
+  Object.keys(ckData.dias).forEach(function(d){
+    if (d < deStr || d > ateStr) return;
+    var rows = (ckData.dias[d] && ckData.dias[d].rows) || [];
+    if (pessoaOuEquipe === 'EQUIPE'){
+      rows.forEach(function(r){
+        tot.ligacoes += ckNum(r.ligacoes);
+        tot.propostas += ckNum(r.propostas);
+        tot.vendasN += ckNum(r.vendasN);
+      });
+    } else {
+      var nome = vendedores[pessoaOuEquipe] ? vendedores[pessoaOuEquipe].nome : pessoaOuEquipe;
+      var row = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(nome); });
+      if (row){
+        tot.ligacoes += ckNum(row.ligacoes);
+        tot.propostas += ckNum(row.propostas);
+        tot.vendasN += ckNum(row.vendasN);
+      }
+    }
+  });
+  return tot;
 }
 
 function mmDataPedido(p){
@@ -12716,6 +12814,7 @@ function mmRenderMes(){
   if (!box) return;
   var hoje = new Date();
   var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var inicioStr = ckDateToStr(inicio), hojeStr = ckDateToStr(hoje);
   var total, meta;
   if (mmSelectedUser === 'EQUIPE'){
     total = 0;
@@ -12735,7 +12834,13 @@ function mmRenderMes(){
     }, 0);
     meta = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[mmSelectedUser]) || 0;
   }
-  var html = mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true, '💰');
+
+  var ckTot = mmSomarCheckinPeriodo(mmSelectedUser, inicioStr, hojeStr);
+  var convMes = ckTot.propostas>0 ? (ckTot.vendasN/ckTot.propostas*100) : 0;
+  var html =
+    mmItemHTML('Ligações no mês', ckTot.ligacoes, 0, null, false, '📞') +
+    mmItemHTML('Propostas no mês', ckTot.propostas, 0, null, false, '📝') +
+    mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true, '💰');
 
   if (meta > 0){
     var falta = meta - total;
@@ -12751,7 +12856,45 @@ function mmRenderMes(){
       }
     }
   }
+  html += '<div class="mm-ritmo">📊 Conversão do mês: <b>'+convMes.toFixed(0)+'%</b> ('+ckTot.vendasN+' venda(s) / '+ckTot.propostas+' proposta(s))</div>';
   box.innerHTML = html;
+}
+
+function mmRenderPeriodo(){
+  var box = document.getElementById('mm-periodo');
+  if (!box) return;
+  var deInput = document.getElementById('mm-periodo-de');
+  var ateInput = document.getElementById('mm-periodo-ate');
+  if (!deInput || !ateInput) return;
+  if (!ateInput.value) ateInput.value = ckToday();
+  if (!deInput.value){
+    var d = new Date(ateInput.value + 'T00:00:00');
+    d.setDate(d.getDate() - 6);
+    deInput.value = ckDateToStr(d);
+  }
+  var deStr = deInput.value, ateStr = ateInput.value;
+  if (deStr > ateStr){ box.innerHTML = '<div class="mm-empty">A data "de" não pode ser depois da data "até".</div>'; return; }
+
+  var pessoas = (mmSelectedUser === 'EQUIPE') ? CK_EQUIPE : (CK_EQUIPE.indexOf(mmSelectedUser) >= 0 ? [mmSelectedUser] : []);
+  if (pessoas.length === 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+
+  var deDate = new Date(deStr + 'T00:00:00'), ateDate = new Date(ateStr + 'T00:00:00');
+  var vendido = 0;
+  pessoas.forEach(function(p){
+    (mmPedidosEquipe[p]||[]).forEach(function(ped){
+      var d = mmDataPedido(ped);
+      if (d && d >= deDate && d <= ateDate) vendido += mmValorPedido(ped);
+    });
+  });
+
+  var ckTot = mmSomarCheckinPeriodo(mmSelectedUser, deStr, ateStr);
+  var conv = ckTot.propostas > 0 ? (ckTot.vendasN / ckTot.propostas * 100) : 0;
+
+  box.innerHTML =
+    mmItemHTML('Ligações', ckTot.ligacoes, 0, null, false, '📞') +
+    mmItemHTML('Propostas', ckTot.propostas, 0, null, false, '📝') +
+    mmItemHTML('Vendido', vendido, 0, null, true, '💰') +
+    '<div class="mm-ritmo">📊 Conversão no período: <b>'+conv.toFixed(0)+'%</b> ('+ckTot.vendasN+' venda(s) / '+ckTot.propostas+' proposta(s))</div>';
 }
 
 function mmRenderClientes(){
@@ -12817,6 +12960,11 @@ function mmRenderProdutos(){
   });
   box.innerHTML = html;
 }
+
+var mmPeriodoDeEl = document.getElementById('mm-periodo-de');
+var mmPeriodoAteEl = document.getElementById('mm-periodo-ate');
+if (mmPeriodoDeEl) mmPeriodoDeEl.addEventListener('change', mmRenderPeriodo);
+if (mmPeriodoAteEl) mmPeriodoAteEl.addEventListener('change', mmRenderPeriodo);
 
 </script>
 </body>
