@@ -988,6 +988,12 @@
 
 
 </style>
+<style>
+  /* Menu de navegação móvel: arrastar pra reordenar as abas */
+  .nav-btn[draggable="true"]{ transition:opacity .15s, box-shadow .15s; }
+  .nav-btn.nav-dragging{ opacity:.35; }
+  .nav-btn.nav-drag-over{ box-shadow:inset 0 -3px 0 #C41E1E; background:#FBEAEA; }
+</style>
 </head>
 <body>
 
@@ -1046,64 +1052,64 @@
   <div class="htitle"><strong>Guia de Treinamento</strong>Portal do Vendedor</div>
 </header>
 
-<nav>
-  <button class="nav-btn" onclick="showTab('materiais',this)">
+<nav id="main-nav">
+  <button class="nav-btn" draggable="true" data-nav-id="materiais" onclick="showTab('materiais',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="8" height="8" rx="1"/><rect x="14" y="3" width="8" height="8" rx="1"/><rect x="2" y="13" width="8" height="8" rx="1"/><rect x="14" y="13" width="8" height="8" rx="1"/></svg>
     Materiais
   </button>
-  <button class="nav-btn" onclick="showTab('tabela',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="tabela" onclick="showTab('tabela',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="5" rx="1"/><rect x="3" y="10" width="18" height="5" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>
     Tabela de Produtos
   </button>
-  <button class="nav-btn" onclick="showTab('empresa',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="empresa" onclick="showTab('empresa',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     Empresa
   </button>
-  <button class="nav-btn" onclick="showTab('pedidos',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="pedidos" onclick="showTab('pedidos',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
     Pedidos
   </button>
-  <button class="nav-btn" onclick="showTab('clientes',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="clientes" onclick="showTab('clientes',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     Base de Clientes
   </button>
-  <button class="nav-btn" onclick="showTab('negociacoes',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="negociacoes" onclick="showTab('negociacoes',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
     Negociações
   </button>
-  <button class="nav-btn" onclick="showTab('treinamentos',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="treinamentos" onclick="showTab('treinamentos',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 3L2 8l10 5 10-5-10-5z"/><path d="M2 16l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
     Treinamentos
   </button>
-  <button class="nav-btn" onclick="showTab('reconhecimento',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="reconhecimento" onclick="showTab('reconhecimento',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
     Ranking
   </button>
-  <button class="nav-btn" onclick="showTab('evolucao',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="evolucao" onclick="showTab('evolucao',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
     Evolução
   </button>
-  <button class="nav-btn" onclick="showTab('outros',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="outros" onclick="showTab('outros',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
     Outros
   </button>
-  <button class="nav-btn" id="nav-admin" style="display:none;" onclick="showTab('admin',this)">
+  <button class="nav-btn" id="nav-admin" draggable="true" data-nav-id="admin" style="display:none;" onclick="showTab('admin',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M20 21a8 8 0 1 0-16 0"/><path d="M16 11l1.5 3h3l-2.5 2 1 3-3-2-3 2 1-3-2.5-2h3z"/></svg>
     Gestão
   </button>
-  <button class="nav-btn" id="nav-rampa" style="display:none;" onclick="showTab('rampa',this)">
+  <button class="nav-btn" id="nav-rampa" draggable="true" data-nav-id="rampa" style="display:none;" onclick="showTab('rampa',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
     Rampa dos Novos
   </button>
-  <button class="nav-btn" id="nav-parana" style="display:none;" onclick="showTab('parana',this)">
+  <button class="nav-btn" id="nav-parana" draggable="true" data-nav-id="parana" style="display:none;" onclick="showTab('parana',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 0C17 0 4 12 4 24C4 32.28 9.82 39 17 39C24.18 39 30 32.28 30 24C30 12 17 0 17 0Z"/><circle cx="17" cy="26" r="4.5"/></svg>
     Plano PR
   </button>
-  <button class="nav-btn" id="nav-checkin" style="display:none;" onclick="showTab('checkin',this)">
+  <button class="nav-btn" id="nav-checkin" draggable="true" data-nav-id="checkin" style="display:none;" onclick="showTab('checkin',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Check-in Diário
   </button>
-  <button class="nav-btn active" id="nav-minhasmetas" style="display:none;" onclick="showTab('minhasmetas',this)">
+  <button class="nav-btn active" id="nav-minhasmetas" draggable="true" data-nav-id="minhasmetas" style="display:none;" onclick="showTab('minhasmetas',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
     Minhas Metas
   </button>
@@ -10824,6 +10830,79 @@ function doLogin() {
   entrarComoUsuario(user);
 }
 
+/* ── Menu de navegação móvel: arrastar as abas pra reordenar ── */
+var navDragSrc = null;
+
+function navChaveOrdem(){
+  return 'fgv_nav_ordem_' + (currentUser || 'anon');
+}
+
+function navSalvarOrdem(){
+  var nav = document.getElementById('main-nav');
+  if (!nav) return;
+  var ordem = Array.prototype.map.call(nav.querySelectorAll('.nav-btn[data-nav-id]'), function(el){ return el.dataset.navId; });
+  try { localStorage.setItem(navChaveOrdem(), JSON.stringify(ordem)); } catch(e){}
+}
+
+function navAplicarOrdemSalva(){
+  var nav = document.getElementById('main-nav');
+  if (!nav) return;
+  var salvo;
+  try { salvo = JSON.parse(localStorage.getItem(navChaveOrdem()) || 'null'); } catch(e){ salvo = null; }
+  if (!salvo || !Array.isArray(salvo)) return;
+  salvo.forEach(function(id){
+    var el = nav.querySelector('.nav-btn[data-nav-id="'+id+'"]');
+    if (el) nav.appendChild(el);
+  });
+}
+
+function navSetupDragDrop(){
+  var nav = document.getElementById('main-nav');
+  if (!nav || nav.dataset.dragReady) return;
+  nav.dataset.dragReady = '1';
+
+  nav.addEventListener('dragstart', function(e){
+    var btn = e.target.closest('.nav-btn[draggable="true"]');
+    if (!btn) return;
+    navDragSrc = btn;
+    btn.classList.add('nav-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', btn.dataset.navId || ''); } catch(err){}
+  });
+
+  nav.addEventListener('dragend', function(){
+    if (navDragSrc) navDragSrc.classList.remove('nav-dragging');
+    nav.querySelectorAll('.nav-drag-over').forEach(function(el){ el.classList.remove('nav-drag-over'); });
+    navDragSrc = null;
+  });
+
+  nav.addEventListener('dragover', function(e){
+    var btn = e.target.closest('.nav-btn[draggable="true"]');
+    if (!btn || btn === navDragSrc) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    nav.querySelectorAll('.nav-drag-over').forEach(function(el){ if (el !== btn) el.classList.remove('nav-drag-over'); });
+    btn.classList.add('nav-drag-over');
+  });
+
+  nav.addEventListener('dragleave', function(e){
+    var btn = e.target.closest('.nav-btn[draggable="true"]');
+    if (btn) btn.classList.remove('nav-drag-over');
+  });
+
+  nav.addEventListener('drop', function(e){
+    var btn = e.target.closest('.nav-btn[draggable="true"]');
+    e.preventDefault();
+    if (!btn || !navDragSrc || btn === navDragSrc) return;
+    btn.classList.remove('nav-drag-over');
+    var rect = btn.getBoundingClientRect();
+    var depoisDoAlvo = (e.clientX - rect.left) > (rect.width / 2);
+    if (depoisDoAlvo) btn.parentNode.insertBefore(navDragSrc, btn.nextSibling);
+    else btn.parentNode.insertBefore(navDragSrc, btn);
+    navSalvarOrdem();
+  });
+}
+
 function entrarComoUsuario(user) {
   const v = vendedores[user];
   if (!v) return;
@@ -10849,6 +10928,8 @@ function entrarComoUsuario(user) {
   document.getElementById('vendedor-banner').style.display = 'flex';
   document.getElementById('vb-nome-text').textContent = v.nome;
   checkAdminAccess(v.nome);
+  navAplicarOrdemSalva();
+  navSetupDragDrop();
   var mmNavBtn = document.getElementById('nav-minhasmetas');
   if (mmNavBtn) showTab('minhasmetas', mmNavBtn);
   // Load from Firebase then render, and listen for real-time updates
