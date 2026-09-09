@@ -4198,8 +4198,24 @@
       </table>
     </div>
 
-    <h3 style="margin-top:20px;">Metas de produto (mês, equipe toda — quantidade)</h3>
-    <div id="ck-metas-produto" class="ck-metas-equipe"></div>
+    <h3 style="margin-top:20px;">Metas de produto por vendedor(a) (mês, quantidade)</h3>
+    <div style="overflow-x:auto;">
+      <table class="ck-table" style="min-width:920px;">
+        <thead>
+          <tr>
+            <th>Vendedor(a)</th>
+            <th class="num">Massa Placomix</th>
+            <th class="num">Basecoat</th>
+            <th class="num">Lã de vidro WF</th>
+            <th class="num">Placa cimentícia</th>
+            <th class="num">Lã de rocha</th>
+            <th class="num">Placa ST</th>
+            <th class="num">Placa VAB</th>
+          </tr>
+        </thead>
+        <tbody id="ck-metas-produto-pessoa"></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="ck-metrics">
@@ -4396,7 +4412,7 @@
   </div>
 
   <div class="mm-panel">
-    <h3>📦 Produtos da equipe este mês</h3>
+    <h3>📦 Produtos este mês</h3>
     <div id="mm-produtos"></div>
   </div>
 
@@ -12029,7 +12045,7 @@ function ckRenderConfig(){
   document.getElementById('ck-meta-prop').value = ckData.settings.metaPropDia || CK_META_PROP_PADRAO;
   ckRenderMetasEquipe();
   ckRenderMetasPeriodo();
-  ckRenderMetasProduto();
+  ckRenderMetasProdutoPessoa();
   ckRecalcMetaDia();
 }
 
@@ -12087,23 +12103,27 @@ function ckRenderMetasPeriodo(){
   });
 }
 
-function ckRenderMetasProduto(){
-  var box = document.getElementById('ck-metas-produto');
-  if (!box) return;
-  box.innerHTML = '';
-  CK_PRODUTOS.forEach(function(g){
-    var val = (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key]) || 0;
-    var row = document.createElement('div');
-    row.className = 'ck-meta-pessoa';
-    row.innerHTML =
-      '<span>'+g.label+'</span>' +
-      '<input type="number" step="0.01" min="0" data-key="'+g.key+'" value="'+val+'">';
-    box.appendChild(row);
+function ckRenderMetasProdutoPessoa(){
+  var tbody = document.getElementById('ck-metas-produto-pessoa');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  CK_EQUIPE.forEach(function(pessoa){
+    var nomeExibicao = vendedores[pessoa] ? vendedores[pessoa].nome : pessoa;
+    var tds = '<td>'+nomeExibicao+'</td>';
+    CK_PRODUTOS.forEach(function(g){
+      var val = (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key] && ckData.settings.metaProdutosMes[g.key][pessoa]) || 0;
+      tds += '<td><input type="number" step="0.01" min="0" data-pessoa="'+pessoa+'" data-produto="'+g.key+'" value="'+val+'"></td>';
+    });
+    var tr = document.createElement('tr');
+    tr.innerHTML = tds;
+    tbody.appendChild(tr);
   });
-  box.querySelectorAll('input').forEach(function(inp){
+  tbody.querySelectorAll('input').forEach(function(inp){
     inp.addEventListener('input', function(e){
+      var pessoa = e.target.dataset.pessoa, produto = e.target.dataset.produto;
       if (!ckData.settings.metaProdutosMes) ckData.settings.metaProdutosMes = {};
-      ckData.settings.metaProdutosMes[e.target.dataset.key] = Number(e.target.value) || 0;
+      if (!ckData.settings.metaProdutosMes[produto]) ckData.settings.metaProdutosMes[produto] = {};
+      ckData.settings.metaProdutosMes[produto][pessoa] = Number(e.target.value) || 0;
       ckSaveSettings();
     });
   });
@@ -12685,23 +12705,23 @@ function mmRenderClientes(){
 function mmRenderProdutos(){
   var box = document.getElementById('mm-produtos');
   if (!box) return;
+  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
   var hoje = new Date();
   var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
   var totais = {};
   CK_PRODUTOS.forEach(function(g){ totais[g.key] = 0; });
-  Object.keys(mmPedidosEquipe).forEach(function(vn){
-    (mmPedidosEquipe[vn]||[]).forEach(function(p){
-      var d = mmDataPedido(p);
-      if (!d || d < inicio || d > hoje) return;
-      (p.itens||[]).forEach(function(it){
-        var grupo = ckClassificarProduto(it.material);
-        if (grupo) totais[grupo] += ckNum(it.qtd);
-      });
+  var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
+  pedidos.forEach(function(p){
+    var d = mmDataPedido(p);
+    if (!d || d < inicio || d > hoje) return;
+    (p.itens||[]).forEach(function(it){
+      var grupo = ckClassificarProduto(it.material);
+      if (grupo) totais[grupo] += ckNum(it.qtd);
     });
   });
   var html = '';
   CK_PRODUTOS.forEach(function(g){
-    var meta = (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key]) || 0;
+    var meta = (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key] && ckData.settings.metaProdutosMes[g.key][mmSelectedUser]) || 0;
     html += mmItemHTML(g.label, totais[g.key], meta, meta>0?(totais[g.key]/meta*100):null, false, '📦');
   });
   box.innerHTML = html;
