@@ -4375,8 +4375,12 @@
   #tab-minhasmetas .ck-term{ width:11px; height:11px; }
   #tab-minhasmetas .mm-empty{ font-size:13px; color:#aaa; padding:6px 0; }
   #tab-minhasmetas .mm-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-  #tab-minhasmetas .mm-panels-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(380px, 1fr)); gap:18px; align-items:start; }
+  #tab-minhasmetas .mm-panels-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
   #tab-minhasmetas .mm-panels-grid .mm-panel{ margin-bottom:0; }
+  @media (max-width:900px){ #tab-minhasmetas .mm-panels-grid{ grid-template-columns:1fr; } #tab-minhasmetas .mm-panels-grid .mm-panel{ grid-column:1 !important; } }
+  #tab-minhasmetas .mm-presets{ display:flex; gap:8px; margin-bottom:12px; }
+  #tab-minhasmetas .mm-preset-btn{ background:#F8F7F3; border:1px solid #E2E0D8; color:#666; font-size:12px; padding:6px 14px; border-radius:20px; cursor:pointer; }
+  #tab-minhasmetas .mm-preset-btn:hover{ border-color:#C41E1E; color:#C41E1E; }
   #tab-minhasmetas .mm-seletor{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
   #tab-minhasmetas .mm-sel-btn{ background:#F8F7F3; border:1px solid #E2E0D8; color:#666; font-size:12px; padding:6px 12px; border-radius:20px; cursor:pointer; }
   #tab-minhasmetas .mm-sel-btn.active{ background:#C41E1E; border-color:#C41E1E; color:#fff; font-weight:600; }
@@ -4409,8 +4413,13 @@
       <div id="mm-mes"></div>
     </div>
 
-    <div class="mm-panel">
-      <h3>📆 Período personalizado</h3>
+    <div class="mm-panel" style="grid-column:1 / -1;">
+      <h3>📆 Detalhamento — ligações, propostas, vendido e conversão</h3>
+      <div class="mm-presets">
+        <button class="mm-preset-btn" data-preset="hoje">Hoje</button>
+        <button class="mm-preset-btn" data-preset="7dias">Últimos 7 dias</button>
+        <button class="mm-preset-btn" data-preset="mes">Este mês</button>
+      </div>
       <div class="ck-config" style="margin-bottom:14px;padding:10px 12px;">
         <div>
           <label>De</label>
@@ -12721,7 +12730,7 @@ var MM_HERO_TEXTO = {
 function mmRenderHero(overallPct){
   var box = document.getElementById('mm-hero');
   if (!box) return;
-  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = ''; return; }
+  if (mmSelectedUser !== 'EQUIPE' && CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = ''; return; }
   var cls = (overallPct === null || overallPct === undefined) ? 'neutro' : ckStatusClasse(overallPct);
   var t = MM_HERO_TEXTO[cls] || MM_HERO_TEXTO.neutro;
   box.innerHTML =
@@ -12820,7 +12829,6 @@ function mmRenderMes(){
   if (!box) return;
   var hoje = new Date();
   var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  var inicioStr = ckDateToStr(inicio), hojeStr = ckDateToStr(hoje);
   var total, meta;
   if (mmSelectedUser === 'EQUIPE'){
     total = 0;
@@ -12841,12 +12849,7 @@ function mmRenderMes(){
     meta = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[mmSelectedUser]) || 0;
   }
 
-  var ckTot = mmSomarCheckinPeriodo(mmSelectedUser, inicioStr, hojeStr);
-  var convMes = ckTot.propostas>0 ? (ckTot.vendasN/ckTot.propostas*100) : 0;
-  var html =
-    mmItemHTML('Ligações no mês', ckTot.ligacoes, 0, null, false, '📞') +
-    mmItemHTML('Propostas no mês', ckTot.propostas, 0, null, false, '📝') +
-    mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true, '💰');
+  var html = mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true, '💰');
 
   if (meta > 0){
     var falta = meta - total;
@@ -12862,7 +12865,6 @@ function mmRenderMes(){
       }
     }
   }
-  html += '<div class="mm-ritmo">📊 Conversão do mês: <b>'+convMes.toFixed(0)+'%</b> ('+ckTot.vendasN+' venda(s) / '+ckTot.propostas+' proposta(s))</div>';
   box.innerHTML = html;
 }
 
@@ -12971,6 +12973,26 @@ var mmPeriodoDeEl = document.getElementById('mm-periodo-de');
 var mmPeriodoAteEl = document.getElementById('mm-periodo-ate');
 if (mmPeriodoDeEl) mmPeriodoDeEl.addEventListener('change', mmRenderPeriodo);
 if (mmPeriodoAteEl) mmPeriodoAteEl.addEventListener('change', mmRenderPeriodo);
+
+document.querySelectorAll('.mm-preset-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var hoje = new Date();
+    var de, ate;
+    if (btn.dataset.preset === 'hoje'){
+      de = ate = ckToday();
+    } else if (btn.dataset.preset === '7dias'){
+      ate = ckToday();
+      var d = new Date(); d.setDate(d.getDate() - 6);
+      de = ckDateToStr(d);
+    } else if (btn.dataset.preset === 'mes'){
+      de = ckDateToStr(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+      ate = ckToday();
+    }
+    document.getElementById('mm-periodo-de').value = de;
+    document.getElementById('mm-periodo-ate').value = ate;
+    mmRenderPeriodo();
+  });
+});
 
 </script>
 </body>
