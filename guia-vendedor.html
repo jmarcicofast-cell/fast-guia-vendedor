@@ -2710,7 +2710,7 @@
 
     <!-- PÓDIO -->
     <div style="margin-bottom:1.5rem;">
-      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">🏅 Ranking & Reconhecimento</h2>
+      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">🏅 TOP 3 - TELEVENDAS</h2>
       <p style="font-size:12px;color:#aaa;">Baseado no % de atingimento da meta do mês. Atualizado em tempo real.</p>
     </div>
 
@@ -2853,6 +2853,27 @@
         <div id="prem-lista-registros" style="display:grid;gap:6px;margin-top:2px;max-height:260px;overflow-y:auto;"></div>
         <div id="prem-toast" style="display:none;background:#1B5E20;color:#fff;padding:8px 12px;border-radius:7px;font-size:12px;text-align:center;margin-top:8px;">✅ Premiação registrada!</div>
       </div>
+    </div>
+
+    <!-- FEED DE ENTREGAS DE PREMIAÇÃO -->
+    <div style="margin-top:2rem;">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1C1C1C;margin-bottom:1rem;">📸 Feed de Entregas de Premiação</div>
+
+      <div id="feed-form-post" style="display:none;background:#fff;border:1.5px solid #E2E0D8;border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1.25rem;">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
+          <label style="cursor:pointer;flex-shrink:0;">
+            <div id="feed-foto-placeholder" style="width:110px;height:110px;border-radius:10px;background:#F1EFE8;border:1.5px dashed #C9C6BE;display:flex;align-items:center;justify-content:center;font-size:24px;color:#aaa;">📷</div>
+            <img id="feed-foto-preview" style="display:none;width:110px;height:110px;border-radius:10px;object-fit:cover;">
+            <input type="file" id="feed-foto-input" accept="image/*" style="display:none;" onchange="handleFeedFotoSelecionada(this)">
+          </label>
+          <div style="flex:1;min-width:220px;">
+            <textarea id="feed-legenda" placeholder="Escreva a legenda dessa entrega de premiação..." rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #E2E0D8;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none;"></textarea>
+            <button onclick="postarFeedPremiacao()" style="margin-top:8px;padding:8px 18px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Postar</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="feed-lista"></div>
     </div>
 
   </div>
@@ -5578,6 +5599,116 @@ function listenFotosVendedores(){
     if (typeof _rankingDadosGlobais !== 'undefined' && _rankingDadosGlobais.pedidos){
       renderRanking(_rankingDadosGlobais.pedidos, {});
     }
+  });
+}
+
+/* ── Feed de Entregas de Premiação ── */
+function escapeHtml(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+var feedFotoSelecionada = null;
+var feedPremiacoesData = { posts: {} };
+
+function redimensionarFotoFeed(file, callback){
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var maxLado = 900;
+      var w = img.width, h = img.height;
+      if (w > h && w > maxLado){ h = Math.round(h * maxLado / w); w = maxLado; }
+      else if (h >= w && h > maxLado){ w = Math.round(w * maxLado / h); h = maxLado; }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleFeedFotoSelecionada(input){
+  var file = input.files && input.files[0];
+  if (!file) return;
+  redimensionarFotoFeed(file, function(dataUrl){
+    feedFotoSelecionada = dataUrl;
+    var prev = document.getElementById('feed-foto-preview');
+    var placeholder = document.getElementById('feed-foto-placeholder');
+    if (prev){ prev.src = dataUrl; prev.style.display = 'block'; }
+    if (placeholder) placeholder.style.display = 'none';
+  });
+}
+
+function postarFeedPremiacao(){
+  var legendaEl = document.getElementById('feed-legenda');
+  var legenda = (legendaEl.value || '').trim();
+  if (!feedFotoSelecionada){ alert('Escolha uma foto primeiro.'); return; }
+  if (!legenda){ alert('Escreva uma legenda.'); return; }
+  var id = 'post_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  if (!feedPremiacoesData.posts) feedPremiacoesData.posts = {};
+  feedPremiacoesData.posts[id] = {
+    foto: feedFotoSelecionada,
+    legenda: legenda,
+    data: new Date().toISOString(),
+    autor: currentUser || 'Juliana'
+  };
+  dbRef('feedPremiacoes').set(feedPremiacoesData).then(function(){
+    feedFotoSelecionada = null;
+    legendaEl.value = '';
+    document.getElementById('feed-foto-preview').style.display = 'none';
+    document.getElementById('feed-foto-placeholder').style.display = 'flex';
+    document.getElementById('feed-foto-input').value = '';
+  }).catch(function(e){ alert('Erro ao postar: ' + e.message); });
+}
+
+function excluirFeedPost(id){
+  if (!confirm('Excluir esse post do feed?')) return;
+  if (feedPremiacoesData.posts) delete feedPremiacoesData.posts[id];
+  dbRef('feedPremiacoes').set(feedPremiacoesData);
+}
+
+function renderFeedPremiacoes(){
+  var box = document.getElementById('feed-lista');
+  if (!box) return;
+  var postsObj = feedPremiacoesData.posts || {};
+  var posts = Object.keys(postsObj).map(function(id){
+    var p = postsObj[id];
+    return { id: id, foto: p.foto, legenda: p.legenda, data: p.data, autor: p.autor };
+  }).sort(function(a,b){ return new Date(b.data) - new Date(a.data); });
+
+  if (posts.length === 0){
+    box.innerHTML = '<div style="text-align:center;color:#aaa;font-size:12.5px;padding:2rem 0;">Nenhuma premiação postada ainda.</div>';
+    return;
+  }
+
+  var admin = (typeof ckIsAdmin === 'function') ? ckIsAdmin() : (currentUser === 'JULIANA');
+  box.innerHTML = posts.map(function(p){
+    var dataFmt = new Date(p.data).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }) +
+      ' às ' + new Date(p.data).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    return '<div style="background:#fff;border:1px solid #E2E0D8;border-radius:12px;overflow:hidden;margin-bottom:16px;max-width:480px;">' +
+      '<img src="' + p.foto + '" style="width:100%;max-height:420px;object-fit:cover;display:block;">' +
+      '<div style="padding:12px 16px;">' +
+        '<div style="font-size:13.5px;color:#1C1C1C;line-height:1.5;margin-bottom:8px;white-space:pre-wrap;">' + escapeHtml(p.legenda) + '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div style="font-size:11px;color:#aaa;">' + dataFmt + '</div>' +
+          (admin ? '<button onclick="excluirFeedPost(\'' + p.id + '\')" style="background:none;border:none;color:#C41E1E;font-size:11px;cursor:pointer;">🗑️ excluir</button>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function listenFeedPremiacoes(){
+  dbRef('feedPremiacoes').on('value', function(snap){
+    var v = snap.val();
+    feedPremiacoesData = v || { posts: {} };
+    if (!feedPremiacoesData.posts) feedPremiacoesData.posts = {};
+    renderFeedPremiacoes();
   });
 }
 
@@ -11021,10 +11152,10 @@ function entrarComoUsuario(user) {
     if (evGest) evGest.style.display = 'none';
     if (evVend) evVend.style.display = 'block';
   }
-  // "+ Novo Pedido" avulso some pro vendedor — pedido só entra via conversão
-  // de uma negociação fechada no funil. Gestora mantém acesso direto.
+  // "+ Novo Pedido" liberado para todo mundo — vendedor(a) e gestora podem
+  // criar pedidos direto, sem precisar passar por uma negociação primeiro.
   var btnNovoPed = document.getElementById('btn-novo-pedido');
-  if (btnNovoPed) btnNovoPed.style.display = (v.tipo === 'gestora') ? 'inline-block' : 'none';
+  if (btnNovoPed) btnNovoPed.style.display = 'inline-block';
     if (v.nome !== 'Juliana') {
       fbListenVendedor(user);
       listenLigacoesVendedor(user);
@@ -11039,6 +11170,7 @@ function entrarComoUsuario(user) {
     // Ranking aparece para todos
     listenRanking();
     listenFotosVendedores();
+    listenFeedPremiacoes();
     // Formulario de premiacao aparece para todos: gestora registra/aprova,
     // vendedor so solicita a propria (fica pendente ate aprovacao).
     var gestTools = document.getElementById('prem-gestora-tools');
@@ -11046,6 +11178,8 @@ function entrarComoUsuario(user) {
     configurarFormPremiacao(v.tipo);
     var fotosAdmin = document.getElementById('rank-fotos-admin');
     if (fotosAdmin) fotosAdmin.style.display = (v.nome === 'Juliana') ? 'block' : 'none';
+    var feedForm = document.getElementById('feed-form-post');
+    if (feedForm) feedForm.style.display = (v.nome === 'Juliana') ? 'block' : 'none';
   });
   // Start listening to pedidos
   listenPedidos(user, v.tipo === 'gestora');
