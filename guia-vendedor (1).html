@@ -263,7 +263,8 @@
   nav {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: #C41E1E #F1EFE8;
     padding: 0 1.5rem;
     justify-content: flex-start;
   }
@@ -271,7 +272,10 @@
     nav { padding: 0 2.5rem; gap: 2px; }
     .nav-btn { padding: 12px 18px; font-size: 13px; }
   }
-  nav::-webkit-scrollbar { display: none; }
+  nav::-webkit-scrollbar { height: 6px; }
+  nav::-webkit-scrollbar-track { background: #F1EFE8; }
+  nav::-webkit-scrollbar-thumb { background: #C41E1E; border-radius: 3px; }
+  nav::-webkit-scrollbar-thumb:hover { background: #a91818; }
 
   @media (max-width: 600px) {
     .nav-btn { padding: 10px 12px; font-size: 12px; gap: 4px; }
@@ -748,10 +752,14 @@
   nav {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: #C41E1E #F1EFE8;
     padding: 0 1rem;
   }
-  nav::-webkit-scrollbar { display: none; }
+  nav::-webkit-scrollbar { height: 6px; }
+  nav::-webkit-scrollbar-track { background: #F1EFE8; }
+  nav::-webkit-scrollbar-thumb { background: #C41E1E; border-radius: 3px; }
+  nav::-webkit-scrollbar-thumb:hover { background: #a91818; }
 
   @media (max-width: 600px) {
     .nav-btn { padding: 10px 12px; font-size: 12px; gap: 4px; }
@@ -980,6 +988,12 @@
 
 
 </style>
+<style>
+  /* Menu de navegação móvel: arrastar pra reordenar as abas */
+  .nav-btn[draggable="true"]{ transition:opacity .15s, box-shadow .15s; }
+  .nav-btn.nav-dragging{ opacity:.35; }
+  .nav-btn.nav-drag-over{ box-shadow:inset 0 -3px 0 #C41E1E; background:#FBEAEA; }
+</style>
 </head>
 <body>
 
@@ -1038,63 +1052,71 @@
   <div class="htitle"><strong>Guia de Treinamento</strong>Portal do Vendedor</div>
 </header>
 
-<nav>
-  <button class="nav-btn active" onclick="showTab('materiais',this)">
+<nav id="main-nav">
+  <button class="nav-btn" draggable="true" data-nav-id="materiais" onclick="showTab('materiais',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="8" height="8" rx="1"/><rect x="14" y="3" width="8" height="8" rx="1"/><rect x="2" y="13" width="8" height="8" rx="1"/><rect x="14" y="13" width="8" height="8" rx="1"/></svg>
     Materiais
   </button>
-  <button class="nav-btn" onclick="showTab('tabela',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="tabela" onclick="showTab('tabela',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="5" rx="1"/><rect x="3" y="10" width="18" height="5" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>
     Tabela de Produtos
   </button>
-  <button class="nav-btn" onclick="showTab('empresa',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="empresa" onclick="showTab('empresa',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     Empresa
   </button>
-  <button class="nav-btn" onclick="showTab('pedidos',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="pedidos" onclick="showTab('pedidos',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
     Pedidos
   </button>
-  <button class="nav-btn" onclick="showTab('clientes',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="clientes" onclick="showTab('clientes',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     Base de Clientes
   </button>
-  <button class="nav-btn" onclick="showTab('negociacoes',this)">
+  <button class="nav-btn" id="nav-negociacoes" draggable="true" data-nav-id="negociacoes" style="display:none;" onclick="showTab('negociacoes',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
     Negociações
   </button>
-  <button class="nav-btn" onclick="showTab('treinamentos',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="treinamentos" onclick="showTab('treinamentos',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 3L2 8l10 5 10-5-10-5z"/><path d="M2 16l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
     Treinamentos
   </button>
-  <button class="nav-btn" onclick="showTab('reconhecimento',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="reconhecimento" onclick="showTab('reconhecimento',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
     Ranking
   </button>
-  <button class="nav-btn" onclick="showTab('evolucao',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="evolucao" onclick="showTab('evolucao',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
     Evolução
   </button>
-  <button class="nav-btn" onclick="showTab('outros',this)">
+  <button class="nav-btn" draggable="true" data-nav-id="outros" onclick="showTab('outros',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
     Outros
   </button>
-  <button class="nav-btn" id="nav-admin" style="display:none;" onclick="showTab('admin',this)">
+  <button class="nav-btn" id="nav-admin" draggable="true" data-nav-id="admin" style="display:none;" onclick="showTab('admin',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M20 21a8 8 0 1 0-16 0"/><path d="M16 11l1.5 3h3l-2.5 2 1 3-3-2-3 2 1-3-2.5-2h3z"/></svg>
     Gestão
   </button>
-  <button class="nav-btn" id="nav-rampa" style="display:none;" onclick="showTab('rampa',this)">
+  <button class="nav-btn" id="nav-rampa" draggable="true" data-nav-id="rampa" style="display:none;" onclick="showTab('rampa',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
     Rampa dos Novos
   </button>
-  <button class="nav-btn" id="nav-parana" style="display:none;" onclick="showTab('parana',this)">
+  <button class="nav-btn" id="nav-parana" draggable="true" data-nav-id="parana" style="display:none;" onclick="showTab('parana',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 0C17 0 4 12 4 24C4 32.28 9.82 39 17 39C24.18 39 30 32.28 30 24C30 12 17 0 17 0Z"/><circle cx="17" cy="26" r="4.5"/></svg>
     Plano PR
+  </button>
+  <button class="nav-btn" id="nav-checkin" draggable="true" data-nav-id="checkin" style="display:none;" onclick="showTab('checkin',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Check-in Diário
+  </button>
+  <button class="nav-btn active" id="nav-minhasmetas" draggable="true" data-nav-id="minhasmetas" style="display:none;" onclick="showTab('minhasmetas',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+    Minhas Metas
   </button>
 </nav>
 
 <!-- ══ ABA MATERIAIS ══ -->
-<div id="tab-materiais" class="tab-content active">
+<div id="tab-materiais" class="tab-content">
 
   <!-- FILTRO RÁPIDO -->
   <div class="quick-filter">
@@ -1946,7 +1968,7 @@
     </div>
 
     <!-- COMISSÃO VENDEDOR -->
-    <div id="ped-com-vendedor">
+    <div id="ped-com-vendedor" style="display:none;">
       <div class="comissao-box" id="ped-comissao-box">
         <div>
           <div class="com-item-label">Total Vendido</div>
@@ -2688,8 +2710,14 @@
 
     <!-- PÓDIO -->
     <div style="margin-bottom:1.5rem;">
-      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">🏅 Ranking & Reconhecimento</h2>
+      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">🏅 TOP 3 - TELEVENDAS</h2>
       <p style="font-size:12px;color:#aaa;">Baseado no % de atingimento da meta do mês. Atualizado em tempo real.</p>
+    </div>
+
+    <!-- FOTOS DA EQUIPE (admin) -->
+    <div id="rank-fotos-admin" style="display:none;background:#fff;border:1.5px solid #E2E0D8;border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1.5rem;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:12px;">📷 Fotos da equipe — clique numa foto pra trocar</div>
+      <div id="rank-fotos-grid" style="display:flex;flex-wrap:wrap;gap:16px;"></div>
     </div>
 
     <!-- PÓDIO VISUAL -->
@@ -2825,6 +2853,27 @@
         <div id="prem-lista-registros" style="display:grid;gap:6px;margin-top:2px;max-height:260px;overflow-y:auto;"></div>
         <div id="prem-toast" style="display:none;background:#1B5E20;color:#fff;padding:8px 12px;border-radius:7px;font-size:12px;text-align:center;margin-top:8px;">✅ Premiação registrada!</div>
       </div>
+    </div>
+
+    <!-- FEED DE ENTREGAS DE PREMIAÇÃO -->
+    <div style="margin-top:2rem;">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1C1C1C;margin-bottom:1rem;">📸 Feed de Entregas de Premiação</div>
+
+      <div id="feed-form-post" style="display:none;background:#fff;border:1.5px solid #E2E0D8;border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1.25rem;">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
+          <label style="cursor:pointer;flex-shrink:0;">
+            <div id="feed-foto-placeholder" style="width:110px;height:110px;border-radius:10px;background:#F1EFE8;border:1.5px dashed #C9C6BE;display:flex;align-items:center;justify-content:center;font-size:24px;color:#aaa;">📷</div>
+            <img id="feed-foto-preview" style="display:none;width:110px;height:110px;border-radius:10px;object-fit:cover;">
+            <input type="file" id="feed-foto-input" accept="image/*" style="display:none;" onchange="handleFeedFotoSelecionada(this)">
+          </label>
+          <div style="flex:1;min-width:220px;">
+            <textarea id="feed-legenda" placeholder="Escreva a legenda dessa entrega de premiação..." rows="3" style="width:100%;padding:9px 12px;border:1.5px solid #E2E0D8;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none;"></textarea>
+            <button onclick="postarFeedPremiacao()" style="margin-top:8px;padding:8px 18px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Postar</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="feed-lista"></div>
     </div>
 
   </div>
@@ -2968,7 +3017,7 @@
       </div>
 
       <!-- COMISSÃO GANHA (com filtro de período) -->
-      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+      <div id="ev-comissao-secao" style="display:none;background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">
           <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;">💰 Comissão Ganha</div>
           <div style="display:flex;background:#F1EFE8;border-radius:8px;padding:3px;gap:2px;">
@@ -3460,7 +3509,7 @@
 
       <!-- RESUMO PEDIDOS EQUIPE -->
       <div style="margin-top:1.5rem;">
-        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:10px;">💰 Pedidos & Comissão do Mês</div>
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:10px;">📦 Pedidos do Mês</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="ped-resumo-equipe"></div>
       </div>
       </div>
@@ -4024,7 +4073,429 @@
 
 
 </div>
+
+<!-- ══ CHECK-IN DIÁRIO (acesso restrito: Juliana) ══ -->
+<style>
+  #tab-checkin .ck-wrap{ max-width:100%; padding:1.25rem 2rem 3rem; }
+  #tab-checkin .ck-head{ display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+  #tab-checkin .ck-head h2{ font-size:15px; font-weight:600; color:#1C1C1C; margin-bottom:2px; }
+  #tab-checkin .ck-head p{ font-size:12px; color:#aaa; }
+  #tab-checkin .ck-datenav{ display:flex; align-items:center; gap:6px; }
+  #tab-checkin .ck-datenav button{ width:30px; height:30px; border-radius:7px; border:1px solid #E2E0D8; background:#fff; cursor:pointer; font-size:15px; color:#555; }
+  #tab-checkin .ck-datenav button:hover{ border-color:#C41E1E; color:#C41E1E; }
+  #tab-checkin .ck-datenav input[type=date]{ padding:6px 10px; border-radius:7px; border:1px solid #E2E0D8; font-size:13px; }
+
+  #tab-checkin .ck-config{ display:flex; gap:16px; flex-wrap:wrap; align-items:center; background:#fff; border:1px solid #E8E6E1; border-radius:12px; padding:12px 16px; margin-bottom:16px; }
+  #tab-checkin .ck-config label{ font-size:11px; color:#aaa; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:.06em; }
+  #tab-checkin .ck-config input{ border:1px solid #E2E0D8; border-radius:6px; padding:6px 8px; width:130px; font-size:13px; }
+  #tab-checkin .ck-config .ck-metadia{ margin-left:auto; text-align:right; }
+  #tab-checkin .ck-config .ck-metadia .num{ font-size:20px; font-weight:700; color:#C41E1E; }
+  #tab-checkin .ck-config .ck-metadia .lbl{ font-size:11px; color:#aaa; }
+
+  #tab-checkin .ck-metrics{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  #tab-checkin .ck-metric.status-good{ border-left:4px solid #2E7D32; }
+  #tab-checkin .ck-metric.status-bad{ border-left:4px solid #C41E1E; }
+
+  #tab-checkin table.ck-table{ width:100%; border-collapse:collapse; background:#fff; border:1px solid #E8E6E1; border-radius:12px; overflow:hidden; margin-bottom:10px; }
+  #tab-checkin table.ck-table thead th{ background:#F8F7F3; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#aaa; padding:10px 12px; border-bottom:1px solid #EDECEA; }
+  #tab-checkin table.ck-table thead th.num, #tab-checkin table.ck-table td.num{ text-align:right; }
+  #tab-checkin table.ck-table tbody td{ padding:5px 12px; border-bottom:1px solid #F0EEEA; font-size:13.5px; }
+  #tab-checkin table.ck-table tbody tr:last-child td{ border-bottom:none; }
+  #tab-checkin table.ck-table tbody input{ width:100%; border:none; background:transparent; text-align:right; font-size:13.5px; padding:5px; border-radius:5px; }
+  #tab-checkin table.ck-table tbody input.ck-nome{ text-align:left; }
+  #tab-checkin table.ck-table tbody input:focus{ outline:1.5px solid #C41E1E; background:#FAFAF8; }
+  #tab-checkin table.ck-table tbody .ck-conv{ text-align:right; color:#888; font-size:12.5px; }
+  #tab-checkin table.ck-table tfoot td{ padding:9px 12px; font-weight:700; background:#F8F7F3; border-top:2px solid #EDECEA; font-size:13px; }
+
+  #tab-checkin .ck-term{ display:inline-block; width:14px; height:14px; border-radius:50%; cursor:help; }
+  #tab-checkin .ck-term-good{ background:#2E7D32; }
+  #tab-checkin .ck-term-mid{ background:#E68A00; }
+  #tab-checkin .ck-term-bad{ background:#C41E1E; }
+  #tab-checkin .ck-term-vazio{ color:#ccc; font-size:12px; }
+
+  #tab-checkin .ck-metas-equipe{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  #tab-checkin .ck-meta-pessoa{ display:flex; align-items:center; justify-content:space-between; gap:8px; background:#F8F7F3; border:1px solid #E2E0D8; border-radius:8px; padding:7px 10px; }
+  #tab-checkin .ck-meta-pessoa span{ font-size:12.5px; color:#555; }
+  #tab-checkin .ck-meta-pessoa input{ width:100px; border:1px solid #E2E0D8; border-radius:6px; padding:4px 6px; font-size:12.5px; text-align:right; }
+  @media (max-width:820px){ #tab-checkin .ck-metas-equipe{ grid-template-columns:repeat(2,1fr); } }
+  #tab-checkin .ck-rm{ background:none; border:none; color:#ccc; cursor:pointer; font-size:15px; }
+  #tab-checkin .ck-rm:hover{ color:#C41E1E; }
+  #tab-checkin .ck-addrow{ width:100%; margin-bottom:20px; background:none; border:1px dashed #E2E0D8; color:#aaa; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:12.5px; }
+  #tab-checkin .ck-addrow:hover{ border-color:#C41E1E; color:#C41E1E; }
+
+  #tab-checkin .ck-savebar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+  #tab-checkin .ck-savebtn{ background:#C41E1E; color:#fff; border:none; font-weight:700; padding:10px 22px; border-radius:8px; cursor:pointer; font-size:13px; }
+  #tab-checkin .ck-savebtn:hover{ background:#a91818; }
+  #tab-checkin .ck-savestatus{ font-size:12px; color:#aaa; }
+  #tab-checkin .ck-savestatus.ok{ color:#2E7D32; font-weight:600; }
+
+  #tab-checkin .ck-panel{ background:#fff; border:1px solid #E8E6E1; border-radius:12px; padding:1.1rem 1.25rem; margin-bottom:18px; }
+  #tab-checkin .ck-panel h3{ font-size:13px; font-weight:700; color:#1C1C1C; margin-bottom:10px; }
+
+  #tab-checkin .ck-period{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; padding:9px 12px; background:#F8F7F3; border-radius:8px; }
+  #tab-checkin .ck-period .ck-mode button{ background:#fff; border:1px solid #E2E0D8; color:#888; font-size:11px; padding:5px 10px; border-radius:6px; cursor:pointer; margin-right:6px; }
+  #tab-checkin .ck-period .ck-mode button.active{ border-color:#C41E1E; color:#C41E1E; font-weight:600; }
+  #tab-checkin .ck-period .ck-range{ display:none; align-items:center; gap:6px; }
+  #tab-checkin .ck-period.periodo .ck-range{ display:flex; }
+  #tab-checkin .ck-period .ck-range input{ border:1px solid #E2E0D8; border-radius:6px; padding:5px 8px; font-size:12.5px; }
+  #tab-checkin .ck-period .ck-range span{ font-size:12px; color:#aaa; }
+
+  #tab-checkin .ck-crit{ display:flex; gap:6px; margin-bottom:12px; }
+  #tab-checkin .ck-crit button{ background:#F8F7F3; border:1px solid #E2E0D8; color:#888; font-size:11px; padding:5px 10px; border-radius:6px; cursor:pointer; text-transform:uppercase; letter-spacing:.03em; }
+  #tab-checkin .ck-crit button.active{ background:#C41E1E; color:#fff; border-color:#C41E1E; }
+
+  #tab-checkin .ck-rank-row{ display:grid; grid-template-columns:26px 120px 1fr 90px; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #F0EEEA; }
+  #tab-checkin .ck-rank-row:last-child{ border-bottom:none; }
+  #tab-checkin .ck-rank-pos{ font-weight:700; font-size:13px; color:#aaa; text-align:center; }
+  #tab-checkin .ck-rank-row.top1 .ck-rank-pos{ color:#C41E1E; font-size:15px; }
+  #tab-checkin .ck-rank-bar-bg{ background:#F1EFE8; border-radius:3px; height:8px; overflow:hidden; }
+  #tab-checkin .ck-rank-bar-fill{ height:100%; background:#888; border-radius:3px; }
+  #tab-checkin .ck-rank-row.top1 .ck-rank-bar-fill{ background:#C41E1E; }
+  #tab-checkin .ck-rank-val{ font-size:12.5px; text-align:right; font-weight:600; }
+  #tab-checkin .ck-empty{ font-size:12.5px; color:#aaa; padding:10px 0; }
+
+  #tab-checkin .ck-hist-chart{ display:flex; align-items:flex-end; gap:8px; height:110px; margin-top:8px; padding-bottom:4px; border-bottom:1px solid #EDECEA; }
+  #tab-checkin .ck-hist-bar-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; }
+  #tab-checkin .ck-hist-bar{ width:55%; border-radius:2px 2px 0 0; background:#888; }
+  #tab-checkin .ck-hist-bar.good{ background:#2E7D32; }
+  #tab-checkin .ck-hist-bar.bad{ background:#C41E1E; }
+  #tab-checkin .ck-hist-labels{ display:flex; gap:8px; margin-top:5px; }
+  #tab-checkin .ck-hist-labels div{ flex:1; text-align:center; font-size:9.5px; color:#aaa; }
+
+  @media (max-width:720px){ #tab-checkin .ck-metrics{ grid-template-columns:repeat(2,1fr); } }
+</style>
+
+<div id="tab-checkin" class="tab-content">
+<div class="ck-wrap">
+
+  <div class="ck-head">
+    <div>
+      <h2>📋 Check-in Diário — Ranking da Equipe</h2>
+      <p>Meça hoje, ajuste amanhã</p>
+    </div>
+    <div class="ck-datenav">
+      <button id="ck-prev">‹</button>
+      <input type="date" id="ck-date">
+      <button id="ck-next">›</button>
+    </div>
+  </div>
+
+  <div class="ck-config" id="ck-settings-mensal">
+    <div>
+      <label>Meta do mês (R$)</label>
+      <input type="number" id="ck-meta-mensal" placeholder="0">
+    </div>
+    <div>
+      <label>Dias úteis</label>
+      <input type="number" id="ck-dias-uteis" placeholder="22">
+    </div>
+    <div class="ck-metadia">
+      <div class="num" id="ck-meta-dia-val">R$ 0</div>
+      <div class="lbl" title="Recalcula sozinha: (meta do mês − já vendido) ÷ dias úteis que faltam a partir do dia selecionado">meta do dia (ajusta pelo que já foi vendido)</div>
+    </div>
+  </div>
+
+  <div class="ck-panel" id="ck-settings-metas">
+    <h3>Metas mínimas diárias</h3>
+    <div class="ck-config" style="margin-bottom:14px;">
+      <div>
+        <label>Ligações (todos)</label>
+        <input type="number" id="ck-meta-lig" placeholder="35">
+      </div>
+      <div>
+        <label>Propostas (todos)</label>
+        <input type="number" id="ck-meta-prop" placeholder="10">
+      </div>
+      <div style="margin-left:auto;font-size:11px;color:#aaa;max-width:280px;text-align:right;">
+        Quem não bate a meta do dia soma a diferença na meta do dia seguinte.
+      </div>
+    </div>
+    <div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Meta de vendido/dia por vendedor(a) (R$)</div>
+    <div id="ck-metas-equipe" class="ck-metas-equipe"></div>
+  </div>
+
+  <div class="ck-panel" id="ck-settings-metas2">
+    <h3>Metas semanal, mensal e de clientes (por vendedor)</h3>
+    <div style="overflow-x:auto;">
+      <table class="ck-table" style="min-width:640px;">
+        <thead>
+          <tr>
+            <th>Vendedor(a)</th>
+            <th class="num">Semanal (R$)</th>
+            <th class="num">Mensal (R$)</th>
+            <th class="num">Clientes novos/mês</th>
+            <th class="num">Clientes inativos/mês</th>
+          </tr>
+        </thead>
+        <tbody id="ck-metas-periodo"></tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:20px;">Metas de produto por vendedor(a) (mês, quantidade)</h3>
+    <div style="overflow-x:auto;">
+      <table class="ck-table" style="min-width:920px;">
+        <thead>
+          <tr>
+            <th>Vendedor(a)</th>
+            <th class="num">Massa Placomix</th>
+            <th class="num">Basecoat</th>
+            <th class="num">Lã de vidro WF</th>
+            <th class="num">Placa cimentícia</th>
+            <th class="num">Lã de rocha</th>
+            <th class="num">Placa ST</th>
+            <th class="num">Placa VAB</th>
+          </tr>
+        </thead>
+        <tbody id="ck-metas-produto-pessoa"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ck-metrics">
+    <div class="meta-card ck-metric" id="ck-card-vendido">
+      <div class="meta-label">Vendido hoje</div>
+      <div class="meta-value" id="ck-val-vendido" style="font-size:22px;">R$ 0</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px;" id="ck-sub-vendido">0% da meta do dia</div>
+    </div>
+    <div class="meta-card ck-metric">
+      <div class="meta-label">Ligações totais</div>
+      <div class="meta-value" id="ck-val-ligacoes" style="font-size:22px;">0</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px;">contatos feitos hoje</div>
+    </div>
+    <div class="meta-card ck-metric">
+      <div class="meta-label">Conversão</div>
+      <div class="meta-value" id="ck-val-conversao" style="font-size:22px;">0%</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px;">vendas ÷ propostas</div>
+    </div>
+    <div class="meta-card ck-metric">
+      <div class="meta-label">Ticket médio</div>
+      <div class="meta-value" id="ck-val-ticket" style="font-size:22px;">R$ 0</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px;">vendido ÷ nº de vendas</div>
+    </div>
+  </div>
+
+  <h3 style="font-size:13px;font-weight:700;color:#1C1C1C;margin-bottom:8px;">Atividade da equipe hoje</h3>
+  <div style="display:flex;gap:14px;align-items:center;margin-bottom:8px;font-size:11px;color:#888;">
+    <span><span class="ck-term ck-term-good" style="margin-right:4px;"></span>bateu a meta</span>
+    <span><span class="ck-term ck-term-mid" style="margin-right:4px;"></span>70–99% da meta</span>
+    <span><span class="ck-term ck-term-bad" style="margin-right:4px;"></span>abaixo de 70%</span>
+  </div>
+  <table class="ck-table">
+    <thead>
+      <tr>
+        <th>Vendedor(a)</th>
+        <th class="num">Ligações</th>
+        <th class="num">Propostas</th>
+        <th class="num">Vendas (nº)</th>
+        <th class="num">Vendido (R$)</th>
+        <th class="num">Conversão</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="ck-tbody"></tbody>
+    <tfoot>
+      <tr>
+        <td>TOTAL</td>
+        <td class="num" id="ck-tot-lig">0</td>
+        <td class="num" id="ck-tot-prop">0</td>
+        <td class="num" id="ck-tot-vendasn">0</td>
+        <td class="num" id="ck-tot-vendido">R$ 0</td>
+        <td class="num" id="ck-tot-conv">0%</td>
+        <td></td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+  <button class="ck-addrow" id="ck-addrow">+ adicionar vendedor(a)</button>
+
+  <div class="ck-savebar" id="ck-savebar">
+    <button class="ck-savebtn" id="ck-savebtn">Salvar dia</button>
+    <span class="ck-savestatus" id="ck-savestatus"></span>
+  </div>
+
+  <div class="ck-panel">
+    <h3 id="ck-rank-title">Ranking do dia</h3>
+    <div class="ck-period" id="ck-period">
+      <div class="ck-mode">
+        <button class="ck-mode-btn active" data-mode="dia">Dia atual</button>
+        <button class="ck-mode-btn" data-mode="periodo">Somar período</button>
+      </div>
+      <div class="ck-range">
+        <span>de</span><input type="date" id="ck-rank-de">
+        <span>até</span><input type="date" id="ck-rank-ate">
+      </div>
+    </div>
+    <div class="ck-crit">
+      <button class="ck-crit-btn active" data-crit="vendidoR">Vendido</button>
+      <button class="ck-crit-btn" data-crit="ligacoes">Ligações</button>
+      <button class="ck-crit-btn" data-crit="propostas">Propostas</button>
+      <button class="ck-crit-btn" data-crit="conv">Conversão</button>
+    </div>
+    <div id="ck-rank-list"></div>
+  </div>
+
+  <div class="ck-panel">
+    <h3>Últimos dias — vendido x meta</h3>
+    <div class="ck-hist-chart" id="ck-hist-chart"></div>
+    <div class="ck-hist-labels" id="ck-hist-labels"></div>
+  </div>
+
+</div>
+</div>
+<!-- ══ FIM CHECK-IN DIÁRIO ══ -->
+
+<!-- ══ MINHAS METAS (visão pessoal, aparece pra todo mundo) ══ -->
+<style>
+  #tab-minhasmetas .mm-wrap{ max-width:1400px; padding:1.25rem 2.5rem 3rem; }
+  #tab-minhasmetas .mm-head h2{ font-size:19px; font-weight:800; color:#1C1C1C; margin-bottom:2px; }
+  #tab-minhasmetas .mm-head p{ font-size:12.5px; color:#999; margin-bottom:18px; }
+
+  /* HERO — resumo do dia */
+  #tab-minhasmetas .mm-hero{ border-radius:16px; padding:1.4rem 1.5rem; margin-bottom:20px; color:#fff; display:flex; align-items:center; gap:16px; }
+  #tab-minhasmetas .mm-hero.good{ background:linear-gradient(135deg,#2E7D32,#1B5E20); }
+  #tab-minhasmetas .mm-hero.mid{ background:linear-gradient(135deg,#E68A00,#B36B00); }
+  #tab-minhasmetas .mm-hero.bad{ background:linear-gradient(135deg,#C41E1E,#8E1616); }
+  #tab-minhasmetas .mm-hero.neutro{ background:linear-gradient(135deg,#555,#333); }
+  #tab-minhasmetas .mm-hero-emoji{ font-size:40px; line-height:1; }
+  #tab-minhasmetas .mm-hero-txt h4{ font-size:16px; font-weight:800; margin-bottom:3px; }
+  #tab-minhasmetas .mm-hero-txt p{ font-size:12.5px; opacity:.9; margin:0; }
+
+  #tab-minhasmetas .mm-panel{ background:#fff; border:1px solid #E8E6E1; border-radius:14px; padding:1.25rem 1.35rem; margin-bottom:18px; box-shadow:0 1px 3px rgba(0,0,0,.03); }
+  #tab-minhasmetas .mm-panel h3{ font-size:13.5px; font-weight:800; color:#1C1C1C; margin-bottom:14px; text-transform:uppercase; letter-spacing:.03em; }
+
+  /* Grade de cards pro "Hoje" */
+  #tab-minhasmetas .mm-cards3{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  @media (max-width:900px){ #tab-minhasmetas .mm-cards3{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:480px){ #tab-minhasmetas .mm-cards3{ grid-template-columns:1fr; } }
+  #tab-minhasmetas .mm-card{ border-radius:12px; padding:14px; background:#FAFAF8; border:1px solid #EDECEA; border-top:4px solid #ccc; }
+  #tab-minhasmetas .mm-card.good{ border-top-color:#2E7D32; }
+  #tab-minhasmetas .mm-card.mid{ border-top-color:#E68A00; }
+  #tab-minhasmetas .mm-card.bad{ border-top-color:#C41E1E; }
+  #tab-minhasmetas .mm-card-icon{ font-size:20px; margin-bottom:4px; }
+  #tab-minhasmetas .mm-card-label{ font-size:11.5px; color:#999; text-transform:uppercase; letter-spacing:.03em; font-weight:700; margin-bottom:6px; }
+  #tab-minhasmetas .mm-card-val{ font-size:26px; font-weight:800; color:#1C1C1C; line-height:1; }
+  #tab-minhasmetas .mm-card-meta{ font-size:12px; color:#aaa; margin-bottom:10px; }
+  #tab-minhasmetas .mm-card-pct{ display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; margin-bottom:8px; }
+  #tab-minhasmetas .mm-card.good .mm-card-pct{ background:#E5F2E6; color:#2E7D32; }
+  #tab-minhasmetas .mm-card.mid .mm-card-pct{ background:#FCEEDA; color:#B36B00; }
+  #tab-minhasmetas .mm-card.bad .mm-card-pct{ background:#FBE3E0; color:#C41E1E; }
+
+  /* Item de lista (semana/mes/clientes/produtos) */
+  #tab-minhasmetas .mm-item{ margin-bottom:18px; }
+  #tab-minhasmetas .mm-item:last-child{ margin-bottom:0; }
+  #tab-minhasmetas .mm-item-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  #tab-minhasmetas .mm-item-label{ font-size:13.5px; color:#333; font-weight:600; display:flex; align-items:center; gap:7px; }
+  #tab-minhasmetas .mm-item-icon{ font-size:15px; }
+  #tab-minhasmetas .mm-item-val{ font-size:15px; font-weight:800; color:#1C1C1C; }
+  #tab-minhasmetas .mm-item-val small{ font-weight:500; color:#aaa; font-size:12px; }
+  #tab-minhasmetas .mm-frase{ font-size:11.5px; margin-top:5px; font-weight:600; }
+  #tab-minhasmetas .mm-frase.good{ color:#2E7D32; }
+  #tab-minhasmetas .mm-frase.mid{ color:#B36B00; }
+  #tab-minhasmetas .mm-frase.bad{ color:#C41E1E; }
+
+  #tab-minhasmetas .mm-ritmo{ font-size:12px; color:#888; margin-top:10px; padding-top:10px; border-top:1px dashed #E8E6E1; line-height:1.6; }
+  #tab-minhasmetas .mm-ritmo b{ color:#1C1C1C; }
+  #tab-minhasmetas .mm-ritmo-ok{ color:#2E7D32; font-weight:700; }
+  #tab-minhasmetas .mm-ritmo-ok b{ color:#2E7D32; }
+
+  #tab-minhasmetas .mm-bar-bg{ background:#EFEDE7; border-radius:8px; height:14px; overflow:hidden; }
+  #tab-minhasmetas .mm-bar-fill{ height:100%; border-radius:8px; background:#5A87AC; transition:width .3s ease; }
+  #tab-minhasmetas .mm-bar-fill.good{ background:linear-gradient(90deg,#3d9142,#2E7D32); }
+  #tab-minhasmetas .mm-bar-fill.mid{ background:linear-gradient(90deg,#f0a53a,#E68A00); }
+  #tab-minhasmetas .mm-bar-fill.bad{ background:linear-gradient(90deg,#d94b3a,#C41E1E); }
+
+  #tab-minhasmetas .ck-term{ width:11px; height:11px; }
+  #tab-minhasmetas .mm-empty{ font-size:13px; color:#aaa; padding:6px 0; }
+  #tab-minhasmetas .mm-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  #tab-minhasmetas .mm-panels-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
+  #tab-minhasmetas .mm-panels-grid .mm-panel{ margin-bottom:0; }
+  @media (max-width:900px){ #tab-minhasmetas .mm-panels-grid{ grid-template-columns:1fr; } #tab-minhasmetas .mm-panels-grid .mm-panel{ grid-column:1 !important; } }
+  #tab-minhasmetas .mm-presets{ display:flex; gap:8px; margin-bottom:12px; }
+  #tab-minhasmetas .mm-preset-btn{ background:#F8F7F3; border:1px solid #E2E0D8; color:#666; font-size:12px; padding:6px 14px; border-radius:20px; cursor:pointer; }
+  #tab-minhasmetas .mm-preset-btn:hover{ border-color:#C41E1E; color:#C41E1E; }
+  #tab-minhasmetas .mm-drag-handle{ cursor:grab; color:#ccc; margin-right:8px; font-size:15px; user-select:none; }
+  #tab-minhasmetas .mm-drag-handle:active{ cursor:grabbing; }
+  #tab-minhasmetas .mm-panel[draggable="true"]{ transition:opacity .15s, outline .15s; }
+  #tab-minhasmetas .mm-panel.mm-dragging{ opacity:.35; }
+  #tab-minhasmetas .mm-panel.mm-drag-over{ outline:2px dashed #C41E1E; outline-offset:3px; }
+
+  #tab-minhasmetas .mm-toast{ position:fixed; top:84px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; opacity:0; transform:translateY(-12px); transition:opacity .3s ease, transform .3s ease; max-width:320px; }
+  #tab-minhasmetas .mm-toast.show{ opacity:1; transform:translateY(0); }
+  #tab-minhasmetas .mm-toast-item{ background:linear-gradient(135deg,#2E7D32,#1B5E20); color:#fff; padding:12px 18px; border-radius:10px; font-size:13px; font-weight:700; box-shadow:0 6px 18px rgba(0,0,0,.18); }
+  @media (max-width:600px){ #tab-minhasmetas .mm-toast{ left:16px; right:16px; top:70px; max-width:none; } }
+  #tab-minhasmetas .mm-seletor{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+  #tab-minhasmetas .mm-sel-btn{ background:#F8F7F3; border:1px solid #E2E0D8; color:#666; font-size:12px; padding:6px 12px; border-radius:20px; cursor:pointer; }
+  #tab-minhasmetas .mm-sel-btn.active{ background:#C41E1E; border-color:#C41E1E; color:#fff; font-weight:600; }
+  @media (max-width:600px){ #tab-minhasmetas .mm-grid2{ grid-template-columns:1fr; } }
+</style>
+<div id="tab-minhasmetas" class="tab-content active">
+<div class="mm-wrap">
+
+  <div class="mm-head">
+    <h2 id="mm-titulo">📍 Minhas Metas</h2>
+    <p>Ligações e propostas vêm do check-in diário. Vendido, clientes e produtos são calculados automaticamente a partir dos seus pedidos.</p>
+    <div id="mm-seletor" class="mm-seletor" style="display:none;"></div>
+  </div>
+
+  <div id="mm-toast" class="mm-toast"></div>
+
+  <div id="mm-hero"></div>
+
+  <div class="mm-panels-grid" id="mm-panels-grid">
+    <div class="mm-panel" data-panel-id="hoje" draggable="true" style="grid-column:1 / -1;">
+      <h3><span class="mm-drag-handle">⠿</span>🎯 Hoje</h3>
+      <div id="mm-hoje" class="mm-cards3"></div>
+    </div>
+
+    <div class="mm-panel" data-panel-id="semana" draggable="true">
+      <h3><span class="mm-drag-handle">⠿</span>📅 Esta semana (vendido)</h3>
+      <div id="mm-semana"></div>
+    </div>
+
+    <div class="mm-panel" data-panel-id="mes" draggable="true">
+      <h3><span class="mm-drag-handle">⠿</span>🏁 Este mês</h3>
+      <div id="mm-mes"></div>
+    </div>
+
+    <div class="mm-panel" data-panel-id="periodo" draggable="true" style="grid-column:1 / -1;">
+      <h3><span class="mm-drag-handle">⠿</span>📆 Detalhamento — ligações, propostas, vendido e conversão</h3>
+      <div class="mm-presets">
+        <button class="mm-preset-btn" data-preset="hoje">Hoje</button>
+        <button class="mm-preset-btn" data-preset="7dias">Últimos 7 dias</button>
+        <button class="mm-preset-btn" data-preset="mes">Este mês</button>
+      </div>
+      <div class="ck-config" style="margin-bottom:14px;padding:10px 12px;">
+        <div>
+          <label>De</label>
+          <input type="date" id="mm-periodo-de">
+        </div>
+        <div>
+          <label>Até</label>
+          <input type="date" id="mm-periodo-ate">
+        </div>
+      </div>
+      <div id="mm-periodo"></div>
+    </div>
+
+    <div class="mm-panel" data-panel-id="clientes" draggable="true">
+      <h3><span class="mm-drag-handle">⠿</span>🤝 Clientes este mês</h3>
+      <div id="mm-clientes"></div>
+    </div>
+
+    <div class="mm-panel" data-panel-id="produtos" draggable="true">
+      <h3><span class="mm-drag-handle">⠿</span>📦 Produtos este mês</h3>
+      <div id="mm-produtos"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+<!-- ══ FIM MINHAS METAS ══ -->
+
 <script>
+
+
 
 /* ══ Plano de Ação — Paraná (acesso restrito: Juliana e Eliziane) ══ */
 var PR_STATUS_LABELS = { novo:'Novo', potencial:'Potencial', ativo:'Ativo', inativo:'Inativo' };
@@ -5064,6 +5535,183 @@ function gerarExcel(pedidos, btn) {
 
 // ── RANKING & RECONHECIMENTO ──
 
+/* ── Fotos da equipe (aparecem no Ranking) ── */
+var RANK_EQUIPE = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
+var vendedorFotos = {};
+
+function avatarHTML(vn, nome, size){
+  var foto = vendedorFotos[vn];
+  if (foto){
+    return '<img src="'+foto+'" style="width:'+size+'px;height:'+size+'px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #E2E0D8;">';
+  }
+  var cores = ['#C41E1E','#1C1C1C','#185FA5','#2E7D32','#7A4A00','#6B3FA0','#B36B00','#455A64'];
+  var inicial = (nome||'?').trim().charAt(0).toUpperCase();
+  var idx = (vn || nome || '').split('').reduce(function(s,c){ return s+c.charCodeAt(0); },0) % cores.length;
+  return '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+cores[idx]+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:'+Math.round(size*0.42)+'px;flex-shrink:0;">'+inicial+'</div>';
+}
+
+function redimensionarFotoBase64(file, callback){
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var tam = 200;
+      var canvas = document.createElement('canvas');
+      canvas.width = tam; canvas.height = tam;
+      var ctx = canvas.getContext('2d');
+      var lado = Math.min(img.width, img.height);
+      var sx = (img.width - lado) / 2, sy = (img.height - lado) / 2;
+      ctx.drawImage(img, sx, sy, lado, lado, 0, 0, tam, tam);
+      callback(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleFotoUpload(vn, input){
+  var file = input.files && input.files[0];
+  if (!file) return;
+  redimensionarFotoBase64(file, function(dataUrl){
+    dbRef('fotosVendedores/' + vn).set(dataUrl).catch(function(e){ alert('Erro ao salvar foto: ' + e.message); });
+  });
+}
+
+function renderFotosAdminPreviews(){
+  var box = document.getElementById('rank-fotos-grid');
+  if (!box) return;
+  box.innerHTML = RANK_EQUIPE.map(function(vn){
+    var nome = vendedores[vn] ? vendedores[vn].nome : vn;
+    return '<div style="text-align:center;">' +
+      '<label style="cursor:pointer;display:inline-block;">' +
+        avatarHTML(vn, nome, 64) +
+        '<input type="file" accept="image/*" style="display:none;" onchange="handleFotoUpload(\''+vn+'\', this)">' +
+      '</label>' +
+      '<div style="font-size:11px;color:#666;margin-top:5px;">' + nome + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function listenFotosVendedores(){
+  dbRef('fotosVendedores').on('value', function(snap){
+    vendedorFotos = snap.val() || {};
+    renderFotosAdminPreviews();
+    if (typeof _rankingDadosGlobais !== 'undefined' && _rankingDadosGlobais.pedidos){
+      renderRanking(_rankingDadosGlobais.pedidos, {});
+    }
+  });
+}
+
+/* ── Feed de Entregas de Premiação ── */
+function escapeHtml(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+var feedFotoSelecionada = null;
+var feedPremiacoesData = { posts: {} };
+
+function redimensionarFotoFeed(file, callback){
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var maxLado = 900;
+      var w = img.width, h = img.height;
+      if (w > h && w > maxLado){ h = Math.round(h * maxLado / w); w = maxLado; }
+      else if (h >= w && h > maxLado){ w = Math.round(w * maxLado / h); h = maxLado; }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleFeedFotoSelecionada(input){
+  var file = input.files && input.files[0];
+  if (!file) return;
+  redimensionarFotoFeed(file, function(dataUrl){
+    feedFotoSelecionada = dataUrl;
+    var prev = document.getElementById('feed-foto-preview');
+    var placeholder = document.getElementById('feed-foto-placeholder');
+    if (prev){ prev.src = dataUrl; prev.style.display = 'block'; }
+    if (placeholder) placeholder.style.display = 'none';
+  });
+}
+
+function postarFeedPremiacao(){
+  var legendaEl = document.getElementById('feed-legenda');
+  var legenda = (legendaEl.value || '').trim();
+  if (!feedFotoSelecionada){ alert('Escolha uma foto primeiro.'); return; }
+  if (!legenda){ alert('Escreva uma legenda.'); return; }
+  var id = 'post_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  if (!feedPremiacoesData.posts) feedPremiacoesData.posts = {};
+  feedPremiacoesData.posts[id] = {
+    foto: feedFotoSelecionada,
+    legenda: legenda,
+    data: new Date().toISOString(),
+    autor: currentUser || 'Juliana'
+  };
+  dbRef('feedPremiacoes').set(feedPremiacoesData).then(function(){
+    feedFotoSelecionada = null;
+    legendaEl.value = '';
+    document.getElementById('feed-foto-preview').style.display = 'none';
+    document.getElementById('feed-foto-placeholder').style.display = 'flex';
+    document.getElementById('feed-foto-input').value = '';
+  }).catch(function(e){ alert('Erro ao postar: ' + e.message); });
+}
+
+function excluirFeedPost(id){
+  if (!confirm('Excluir esse post do feed?')) return;
+  if (feedPremiacoesData.posts) delete feedPremiacoesData.posts[id];
+  dbRef('feedPremiacoes').set(feedPremiacoesData);
+}
+
+function renderFeedPremiacoes(){
+  var box = document.getElementById('feed-lista');
+  if (!box) return;
+  var postsObj = feedPremiacoesData.posts || {};
+  var posts = Object.keys(postsObj).map(function(id){
+    var p = postsObj[id];
+    return { id: id, foto: p.foto, legenda: p.legenda, data: p.data, autor: p.autor };
+  }).sort(function(a,b){ return new Date(b.data) - new Date(a.data); });
+
+  if (posts.length === 0){
+    box.innerHTML = '<div style="text-align:center;color:#aaa;font-size:12.5px;padding:2rem 0;">Nenhuma premiação postada ainda.</div>';
+    return;
+  }
+
+  var admin = (typeof ckIsAdmin === 'function') ? ckIsAdmin() : (currentUser === 'JULIANA');
+  box.innerHTML = posts.map(function(p){
+    var dataFmt = new Date(p.data).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }) +
+      ' às ' + new Date(p.data).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    return '<div style="background:#fff;border:1px solid #E2E0D8;border-radius:12px;overflow:hidden;margin-bottom:16px;max-width:480px;">' +
+      '<img src="' + p.foto + '" style="width:100%;max-height:420px;object-fit:cover;display:block;">' +
+      '<div style="padding:12px 16px;">' +
+        '<div style="font-size:13.5px;color:#1C1C1C;line-height:1.5;margin-bottom:8px;white-space:pre-wrap;">' + escapeHtml(p.legenda) + '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div style="font-size:11px;color:#aaa;">' + dataFmt + '</div>' +
+          (admin ? '<button onclick="excluirFeedPost(\'' + p.id + '\')" style="background:none;border:none;color:#C41E1E;font-size:11px;cursor:pointer;">🗑️ excluir</button>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function listenFeedPremiacoes(){
+  dbRef('feedPremiacoes').on('value', function(snap){
+    var v = snap.val();
+    feedPremiacoesData = v || { posts: {} };
+    if (!feedPremiacoesData.posts) feedPremiacoesData.posts = {};
+    renderFeedPremiacoes();
+  });
+}
+
 function listenRanking() {
   var allPedidos = {}, allLigacoes = {};
   var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
@@ -5184,6 +5832,7 @@ function renderRanking(allPedidos, allLigacoes) {
       var posLabel = i === 1 ? '1º' : (i === 0 ? '2º' : '3º');
       return '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;max-width:200px;">' +
         '<div style="font-size:32px;">' + podiumMed[i] + '</div>' +
+        avatarHTML(d.vn, d.nome, 52) +
         '<div style="font-size:14px;font-weight:700;color:#1C1C1C;">' + d.nome + '</div>' +
         '<div style="font-size:20px;font-weight:700;color:' + podiumCores[i] + ';">' + d.pct + '%</div>' +
         '<div style="font-size:11px;color:#888;">' + fmtBRL + '</div>' +
@@ -5211,6 +5860,7 @@ function renderRanking(allPedidos, allLigacoes) {
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
             '<span style="font-size:' + (medalhas[i] ? '24px' : '15px') + ';' + (medalhas[i] ? '' : 'font-weight:700;color:#888;min-width:24px;text-align:center;') + '">' + medalhaOuPos + '</span>' +
+            avatarHTML(d.vn, d.nome, 40) +
             '<div>' +
               '<div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + d.nome + '</div>' +
               '<div style="font-size:11px;color:#888;">Meta: ' + fmtMeta + '</div>' +
@@ -9867,14 +10517,11 @@ function renderResumoEquipe(allPedidos) {
   box.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p) { return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado'; });
     var total = peds.reduce(function(s,p) { return s + Number(p.vTotal||0); }, 0);
-    var com   = peds.reduce(function(s,p) { return s + Number(p.vTotal||0) * (CAT_PCT[p.cat]||0); }, 0);
     if (!vendedores[vn]) return '';
     return '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">' +
       '<div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:6px;">' + vendedores[vn].nome + '</div>' +
       '<div style="font-size:11px;color:#aaa;">Total vendido</div>' +
       '<div style="font-size:14px;font-weight:600;color:#333;margin-bottom:4px;">R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
-      '<div style="font-size:11px;color:#aaa;">Previsao comissao</div>' +
-      '<div style="font-size:14px;font-weight:600;color:#2E7D32;">R$ ' + com.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
       '<div style="font-size:11px;color:#aaa;margin-top:4px;">' + peds.length + ' pedido(s) no mes</div>' +
     '</div>';
   }).join('');
@@ -10386,6 +11033,79 @@ function doLogin() {
   entrarComoUsuario(user);
 }
 
+/* ── Menu de navegação móvel: arrastar as abas pra reordenar ── */
+var navDragSrc = null;
+
+function navChaveOrdem(){
+  return 'fgv_nav_ordem_' + (currentUser || 'anon');
+}
+
+function navSalvarOrdem(){
+  var nav = document.getElementById('main-nav');
+  if (!nav) return;
+  var ordem = Array.prototype.map.call(nav.querySelectorAll('.nav-btn[data-nav-id]'), function(el){ return el.dataset.navId; });
+  try { localStorage.setItem(navChaveOrdem(), JSON.stringify(ordem)); } catch(e){}
+}
+
+function navAplicarOrdemSalva(){
+  var nav = document.getElementById('main-nav');
+  if (!nav) return;
+  var salvo;
+  try { salvo = JSON.parse(localStorage.getItem(navChaveOrdem()) || 'null'); } catch(e){ salvo = null; }
+  if (!salvo || !Array.isArray(salvo)) return;
+  salvo.forEach(function(id){
+    var el = nav.querySelector('.nav-btn[data-nav-id="'+id+'"]');
+    if (el) nav.appendChild(el);
+  });
+}
+
+function navSetupDragDrop(){
+  var nav = document.getElementById('main-nav');
+  if (!nav || nav.dataset.dragReady) return;
+  nav.dataset.dragReady = '1';
+
+  nav.addEventListener('dragstart', function(e){
+    var btn = e.target.closest('.nav-btn[draggable="true"]');
+    if (!btn) return;
+    navDragSrc = btn;
+    btn.classList.add('nav-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', btn.dataset.navId || ''); } catch(err){}
+  });
+
+  nav.addEventListener('dragend', function(){
+    if (navDragSrc) navDragSrc.classList.remove('nav-dragging');
+    nav.querySelectorAll('.nav-drag-over').forEach(function(el){ el.classList.remove('nav-drag-over'); });
+    navDragSrc = null;
+  });
+
+  nav.addEventListener('dragover', function(e){
+    var btn = e.target.closest('.nav-btn[draggable="true"]');
+    if (!btn || btn === navDragSrc) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    nav.querySelectorAll('.nav-drag-over').forEach(function(el){ if (el !== btn) el.classList.remove('nav-drag-over'); });
+    btn.classList.add('nav-drag-over');
+  });
+
+  nav.addEventListener('dragleave', function(e){
+    var btn = e.target.closest('.nav-btn[draggable="true"]');
+    if (btn) btn.classList.remove('nav-drag-over');
+  });
+
+  nav.addEventListener('drop', function(e){
+    var btn = e.target.closest('.nav-btn[draggable="true"]');
+    e.preventDefault();
+    if (!btn || !navDragSrc || btn === navDragSrc) return;
+    btn.classList.remove('nav-drag-over');
+    var rect = btn.getBoundingClientRect();
+    var depoisDoAlvo = (e.clientX - rect.left) > (rect.width / 2);
+    if (depoisDoAlvo) btn.parentNode.insertBefore(navDragSrc, btn.nextSibling);
+    else btn.parentNode.insertBefore(navDragSrc, btn);
+    navSalvarOrdem();
+  });
+}
+
 function entrarComoUsuario(user) {
   const v = vendedores[user];
   if (!v) return;
@@ -10411,6 +11131,10 @@ function entrarComoUsuario(user) {
   document.getElementById('vendedor-banner').style.display = 'flex';
   document.getElementById('vb-nome-text').textContent = v.nome;
   checkAdminAccess(v.nome);
+  navAplicarOrdemSalva();
+  navSetupDragDrop();
+  var mmNavBtn = document.getElementById('nav-minhasmetas');
+  if (mmNavBtn) showTab('minhasmetas', mmNavBtn);
   // Load from Firebase then render, and listen for real-time updates
   fbLoad(user, () => {
     renderEvolucaoVendedor(vendedores[user]);
@@ -10425,10 +11149,10 @@ function entrarComoUsuario(user) {
     if (evGest) evGest.style.display = 'none';
     if (evVend) evVend.style.display = 'block';
   }
-  // "+ Novo Pedido" avulso some pro vendedor — pedido só entra via conversão
-  // de uma negociação fechada no funil. Gestora mantém acesso direto.
+  // "+ Novo Pedido" liberado para todo mundo — vendedor(a) e gestora podem
+  // criar pedidos direto, sem precisar passar por uma negociação primeiro.
   var btnNovoPed = document.getElementById('btn-novo-pedido');
-  if (btnNovoPed) btnNovoPed.style.display = (v.tipo === 'gestora') ? 'inline-block' : 'none';
+  if (btnNovoPed) btnNovoPed.style.display = 'inline-block';
     if (v.nome !== 'Juliana') {
       fbListenVendedor(user);
       listenLigacoesVendedor(user);
@@ -10442,30 +11166,31 @@ function entrarComoUsuario(user) {
     }
     // Ranking aparece para todos
     listenRanking();
+    listenFotosVendedores();
+    listenFeedPremiacoes();
     // Formulario de premiacao aparece para todos: gestora registra/aprova,
     // vendedor so solicita a propria (fica pendente ate aprovacao).
     var gestTools = document.getElementById('prem-gestora-tools');
     if (gestTools) gestTools.style.display = 'block';
     configurarFormPremiacao(v.tipo);
+    var fotosAdmin = document.getElementById('rank-fotos-admin');
+    if (fotosAdmin) fotosAdmin.style.display = (v.nome === 'Juliana') ? 'block' : 'none';
+    var feedForm = document.getElementById('feed-form-post');
+    if (feedForm) feedForm.style.display = (v.nome === 'Juliana') ? 'block' : 'none';
   });
   // Start listening to pedidos
   listenPedidos(user, v.tipo === 'gestora');
   listenNegociacoes(user, v.tipo === 'gestora');
   listenAtendimentos(user, v.tipo === 'gestora');
   checarPedidosLocaisPendentes();
-  // Show correct commission section
+  // Comissão removida do sistema — as duas caixas ficam sempre ocultas
   var comVend = document.getElementById('ped-com-vendedor');
   var comGest = document.getElementById('ped-com-gestora');
+  if (comVend) comVend.style.display = 'none';
+  if (comGest) comGest.style.display = 'none';
   if (v.tipo === 'gestora') {
-    if (comVend) comVend.style.display = 'none';
-    if (comGest) comGest.style.display = 'block';
-    // Trigger gestora commission calculation
-    setTimeout(recalcGestora, 1500);
     listenEvolucaoGestora();
     listenPaineisGestora();
-  } else {
-    if (comVend) comVend.style.display = 'block';
-    if (comGest) comGest.style.display = 'none';
   }
   // Render personal credentials
   const credBox = document.getElementById('credenciais-box');
@@ -10727,10 +11452,15 @@ function renderAdminResumo() {
 function checkAdminAccess(nome) {
   const adminNav = document.getElementById('nav-admin');
   const rampaNav = document.getElementById('nav-rampa');
+  const checkinNav = document.getElementById('nav-checkin');
   if (!adminNav) return;
+  // Minhas Metas aparece pra todo mundo. Check-in Diário só pra Juliana.
+  var mmNav = document.getElementById('nav-minhasmetas');
+  if (mmNav) mmNav.style.display = 'flex';
   if (nome === 'Juliana') {
     adminNav.style.display = 'flex';
     if (rampaNav) rampaNav.style.display = 'flex';
+    if (checkinNav) checkinNav.style.display = 'flex';
     // Load all vendedores from Firebase
     Promise.all(['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
       .then(function() {
@@ -10741,6 +11471,7 @@ function checkAdminAccess(nome) {
   } else {
     adminNav.style.display = 'none';
     if (rampaNav) rampaNav.style.display = 'none';
+    if (checkinNav) checkinNav.style.display = 'none';
   }
   checkParanaAccess();
 }
@@ -10976,6 +11707,8 @@ function showTab(name, btn) {
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'tabela') renderTable();
   if (name === 'parana') prInit();
+  if (name === 'checkin') ckInit();
+  if (name === 'minhasmetas') mmInit();
   btn.classList.add('active');
 }
 
@@ -11454,5 +12187,1289 @@ function importarArquivo(event) {
     </div>
   </div>
 </div>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CHECK-IN DIÁRIO — dados guardados em UM único nó (checkinDiario)
+   para funcionar igual no Firebase e no fallback localStorage do
+   dbRef(), já que o fallback não entende caminhos aninhados.
+   Estrutura: { settings: {metaMensal, diasUteis}, dias: { 'YYYY-MM-DD': { rows:[...] } } }
+   ══════════════════════════════════════════════════════════════ */
+const CK_EQUIPE = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'];
+
+/* Metas individuais de vendido/dia + mínimos universais de ligação/proposta.
+   Se o vendedor não bater a meta do dia, a diferença some para a meta do dia
+   seguinte (meta efetiva = meta base + dívida acumulada). */
+const CK_META_LIG_PADRAO = 35;
+const CK_META_PROP_PADRAO = 10;
+const CK_METAS_VENDIDO = {
+  PEDRO: 31818.18,
+  WELLINGTON: 22727.27,
+  JONATAS: 22727.27,
+  ANTONIO: 22727.27,
+  GESSICA: 56818.18,
+  LETICIA: 79545.45,
+  ELIZIANE: 56818.18,
+  THALES: 38132.23
+};
+
+/* Grupos de produto p/ meta mensal da equipe. 'match' recebe o nome do
+   material (maiusculo, sem acento) e diz se pertence ao grupo. A ordem
+   importa: placaVAB é o "resto" da categoria VAB que nao caiu em nenhum
+   grupo mais especifico (evita contar cimenticia/glasroc duas vezes). */
+const CK_PRODUTOS = [
+  { key: 'placomix',        label: 'Massa Placomix',    match: function(n){ return n.indexOf('PLACOMIX') >= 0; } },
+  { key: 'basecoat',        label: 'Basecoat',          match: function(n){ return n.indexOf('BASECOAT') >= 0; } },
+  { key: 'laVidroWF',       label: 'Lã de vidro WF',    match: function(n){ return n.indexOf('LA DE VIDRO') >= 0; } },
+  { key: 'placaCimenticia', label: 'Placa cimentícia',  match: function(n){ return n.indexOf('PLACA CIMENTICIA') >= 0; } },
+  { key: 'laRocha',         label: 'Lã de rocha',       match: function(n){ return n.indexOf('LA DE ROCHA') >= 0; } },
+  { key: 'placaST',         label: 'Placa ST',          match: function(n){ return n.indexOf('PLACA ST') >= 0; } },
+  { key: 'placaVAB',        label: 'Placa VAB (demais)', match: null } // preenchido por categoria, ver ckClassificarProduto
+];
+
+function ckSemAcento(s){
+  return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+}
+
+/* mapa nome->categoria da base de produtos (obterMateriaisUnicos ja dedup por nome) */
+var CK_NOME_PARA_CATEGORIA = null;
+function ckCategoriaDoProduto(nomeMaterial){
+  if (!CK_NOME_PARA_CATEGORIA){
+    CK_NOME_PARA_CATEGORIA = {};
+    (typeof obterMateriaisUnicos === 'function' ? obterMateriaisUnicos() : []).forEach(function(m){
+      CK_NOME_PARA_CATEGORIA[m.nome] = m.categoria;
+    });
+  }
+  return CK_NOME_PARA_CATEGORIA[nomeMaterial] || '';
+}
+
+/* Classifica um item de pedido (it.material) num dos grupos CK_PRODUTOS, ou null */
+function ckClassificarProduto(nomeMaterial){
+  var n = ckSemAcento(nomeMaterial);
+  for (var i = 0; i < CK_PRODUTOS.length; i++){
+    var g = CK_PRODUTOS[i];
+    if (g.match && g.match(n)) return g.key;
+  }
+  if (String(ckCategoriaDoProduto(nomeMaterial)).toUpperCase() === 'VAB') return 'placaVAB';
+  return null;
+}
+
+function ckNormNome(nome){
+  return (nome || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .trim().toUpperCase()
+    .replace(/^JONATHAS$/, 'JONATAS');
+}
+
+/* dívida acumulada de um vendedor num campo (ligacoes|propostas|vendidoR),
+   considerando todos os dias salvos ANTES de ateData, em ordem cronológica. */
+function ckDividaAcumulada(nomeNorm, campo, metaBase, ateData){
+  if (!metaBase || metaBase <= 0) return 0;
+  var datas = Object.keys(ckData.dias).filter(function(d){ return d < ateData; }).sort();
+  var divida = 0;
+  datas.forEach(function(d){
+    var rows = (ckData.dias[d] && ckData.dias[d].rows) || [];
+    var row = rows.find(function(r){ return ckNormNome(r.nome) === nomeNorm; });
+    var realizado = row ? ckNum(row[campo]) : 0;
+    var metaEfetiva = metaBase + divida;
+    divida = (realizado >= metaEfetiva) ? 0 : (metaEfetiva - realizado);
+  });
+  return divida;
+}
+
+function ckStatusClasse(pct){
+  if (pct === null) return '';
+  if (pct >= 100) return 'good';
+  if (pct >= 70) return 'mid';
+  return 'bad';
+}
+
+/* calcula o desempenho completo (ligações, propostas, vendido) de uma linha,
+   já considerando a meta efetiva (base + dívida acumulada) daquele dia */
+function ckAvaliarLinha(row, dateStr){
+  var nomeNorm = ckNormNome(row.nome);
+  var metaLigBase = (ckData.settings.metaLigDia) || CK_META_LIG_PADRAO;
+  var metaPropBase = (ckData.settings.metaPropDia) || CK_META_PROP_PADRAO;
+  var metaVendBase = (ckData.settings.metasVendido && ckData.settings.metasVendido[nomeNorm] != null)
+    ? ckData.settings.metasVendido[nomeNorm]
+    : (CK_METAS_VENDIDO[nomeNorm] || 0);
+
+  var dividaLig = ckDividaAcumulada(nomeNorm, 'ligacoes', metaLigBase, dateStr);
+  var dividaProp = ckDividaAcumulada(nomeNorm, 'propostas', metaPropBase, dateStr);
+  var dividaVend = ckDividaAcumulada(nomeNorm, 'vendidoR', metaVendBase, dateStr);
+
+  var metaLigEf = metaLigBase + dividaLig;
+  var metaPropEf = metaPropBase + dividaProp;
+  var metaVendEf = metaVendBase + dividaVend;
+
+  var pctLig = metaLigEf > 0 ? (ckNum(row.ligacoes) / metaLigEf * 100) : null;
+  var pctProp = metaPropEf > 0 ? (ckNum(row.propostas) / metaPropEf * 100) : null;
+  var pctVend = metaVendEf > 0 ? (ckNum(row.vendidoR) / metaVendEf * 100) : null;
+
+  var pcts = [pctLig, pctProp, pctVend].filter(function(p){ return p !== null; });
+  var pior = pcts.length ? Math.min.apply(null, pcts) : null;
+
+  return {
+    metaLigEf: metaLigEf, metaPropEf: metaPropEf, metaVendEf: metaVendEf,
+    pctLig: pctLig, pctProp: pctProp, pctVend: pctVend,
+    overall: pior
+  };
+}
+let ckData = { settings: { metaMensal: 0, diasUteis: 22 }, dias: {} };
+let ckRows = [];
+let ckRankCrit = 'vendidoR';
+let ckRankModo = 'dia';
+let ckListenerAttached = false;
+
+function ckDateToStr(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function ckToday(){ return ckDateToStr(new Date()); }
+function ckFmtBRL(n){ n = Number(n)||0; return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL', maximumFractionDigits:0}); }
+function ckNum(n){ return Number(n)||0; }
+function ckIsAdmin(){ return currentUser === 'JULIANA'; }
+
+function ckAplicarPermissoes(){
+  var admin = ckIsAdmin();
+  var settingsMensal = document.getElementById('ck-settings-mensal');
+  var settingsMetas = document.getElementById('ck-settings-metas');
+  var settingsMetas2 = document.getElementById('ck-settings-metas2');
+  var addRow = document.getElementById('ck-addrow');
+  var saveBar = document.getElementById('ck-savebar');
+  if (settingsMensal) settingsMensal.style.display = admin ? 'flex' : 'none';
+  if (settingsMetas) settingsMetas.style.display = admin ? 'block' : 'none';
+  if (settingsMetas2) settingsMetas2.style.display = admin ? 'block' : 'none';
+  if (addRow) addRow.style.display = admin ? 'block' : 'none';
+  if (saveBar) saveBar.style.display = admin ? 'flex' : 'none';
+}
+
+function ckGarantirDefaults(v){
+  var data = v || { settings: { metaMensal: 0, diasUteis: 22 }, dias: {} };
+  if (!data.settings) data.settings = { metaMensal: 0, diasUteis: 22 };
+  if (!data.settings.metaLigDia) data.settings.metaLigDia = CK_META_LIG_PADRAO;
+  if (!data.settings.metaPropDia) data.settings.metaPropDia = CK_META_PROP_PADRAO;
+  if (!data.settings.metasVendido) data.settings.metasVendido = Object.assign({}, CK_METAS_VENDIDO);
+  if (!data.settings.metaSemanalPorPessoa) data.settings.metaSemanalPorPessoa = {};
+  if (!data.settings.metaMensalPorPessoa) data.settings.metaMensalPorPessoa = {};
+  if (!data.settings.metaClientesNovosPorPessoa) data.settings.metaClientesNovosPorPessoa = {};
+  if (!data.settings.metaClientesInativosPorPessoa) data.settings.metaClientesInativosPorPessoa = {};
+  if (!data.settings.metaProdutosMes) data.settings.metaProdutosMes = {};
+  if (!data.dias) data.dias = {};
+  return data;
+}
+
+function ckInit(){
+  ckAplicarPermissoes();
+  if (ckListenerAttached) { ckRenderConfig(); ckLoadDay(document.getElementById('ck-date').value || ckToday()); return; }
+  ckListenerAttached = true;
+  document.getElementById('ck-date').value = ckToday();
+  dbRef('checkinDiario').on('value', function(snap){
+    ckData = ckGarantirDefaults(snap.val());
+    ckRenderConfig();
+    ckLoadDay(document.getElementById('ck-date').value || ckToday());
+    ckRenderHistory();
+  });
+}
+
+function ckRenderConfig(){
+  document.getElementById('ck-meta-mensal').value = ckData.settings.metaMensal || '';
+  document.getElementById('ck-dias-uteis').value = ckData.settings.diasUteis || '';
+  document.getElementById('ck-meta-lig').value = ckData.settings.metaLigDia || CK_META_LIG_PADRAO;
+  document.getElementById('ck-meta-prop').value = ckData.settings.metaPropDia || CK_META_PROP_PADRAO;
+  ckRenderMetasEquipe();
+  ckRenderMetasPeriodo();
+  ckRenderMetasProdutoPessoa();
+  ckRecalcMetaDia();
+}
+
+function ckRenderMetasEquipe(){
+  var box = document.getElementById('ck-metas-equipe');
+  if (!box) return;
+  box.innerHTML = '';
+  CK_EQUIPE.forEach(function(key){
+    var nomeExibicao = vendedores[key] ? vendedores[key].nome : key;
+    var val = (ckData.settings.metasVendido && ckData.settings.metasVendido[key] != null)
+      ? ckData.settings.metasVendido[key] : (CK_METAS_VENDIDO[key] || 0);
+    var row = document.createElement('div');
+    row.className = 'ck-meta-pessoa';
+    row.innerHTML =
+      '<span>'+nomeExibicao+'</span>' +
+      '<input type="number" step="0.01" min="0" data-key="'+key+'" value="'+val+'">';
+    box.appendChild(row);
+  });
+  box.querySelectorAll('input').forEach(function(inp){
+    inp.addEventListener('input', function(e){
+      if (!ckData.settings.metasVendido) ckData.settings.metasVendido = {};
+      ckData.settings.metasVendido[e.target.dataset.key] = Number(e.target.value) || 0;
+      ckSaveSettings();
+      ckRenderTable();
+    });
+  });
+}
+
+function ckRenderMetasPeriodo(){
+  var tbody = document.getElementById('ck-metas-periodo');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  CK_EQUIPE.forEach(function(key){
+    var nomeExibicao = vendedores[key] ? vendedores[key].nome : key;
+    var sem = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[key]) || 0;
+    var men = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[key]) || 0;
+    var novos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[key]) || 0;
+    var inat = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[key]) || 0;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>'+nomeExibicao+'</td>' +
+      '<td><input type="number" step="0.01" min="0" data-key="'+key+'" data-f="metaSemanalPorPessoa" value="'+sem+'"></td>' +
+      '<td><input type="number" step="0.01" min="0" data-key="'+key+'" data-f="metaMensalPorPessoa" value="'+men+'"></td>' +
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaClientesNovosPorPessoa" value="'+novos+'"></td>' +
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaClientesInativosPorPessoa" value="'+inat+'"></td>';
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('input').forEach(function(inp){
+    inp.addEventListener('input', function(e){
+      var f = e.target.dataset.f, key = e.target.dataset.key;
+      if (!ckData.settings[f]) ckData.settings[f] = {};
+      ckData.settings[f][key] = Number(e.target.value) || 0;
+      ckSaveSettings();
+    });
+  });
+}
+
+function ckRenderMetasProdutoPessoa(){
+  var tbody = document.getElementById('ck-metas-produto-pessoa');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  CK_EQUIPE.forEach(function(pessoa){
+    var nomeExibicao = vendedores[pessoa] ? vendedores[pessoa].nome : pessoa;
+    var tds = '<td>'+nomeExibicao+'</td>';
+    CK_PRODUTOS.forEach(function(g){
+      var val = (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key] && ckData.settings.metaProdutosMes[g.key][pessoa]) || 0;
+      tds += '<td><input type="number" step="0.01" min="0" data-pessoa="'+pessoa+'" data-produto="'+g.key+'" value="'+val+'"></td>';
+    });
+    var tr = document.createElement('tr');
+    tr.innerHTML = tds;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('input').forEach(function(inp){
+    inp.addEventListener('input', function(e){
+      var pessoa = e.target.dataset.pessoa, produto = e.target.dataset.produto;
+      if (!ckData.settings.metaProdutosMes) ckData.settings.metaProdutosMes = {};
+      if (!ckData.settings.metaProdutosMes[produto]) ckData.settings.metaProdutosMes[produto] = {};
+      ckData.settings.metaProdutosMes[produto][pessoa] = Number(e.target.value) || 0;
+      ckSaveSettings();
+    });
+  });
+}
+
+function ckDiasUteisRestantesDoMes(dataRef){
+  var ano = dataRef.getFullYear(), mes = dataRef.getMonth();
+  var ultimoDia = new Date(ano, mes + 1, 0).getDate();
+  var count = 0;
+  for (var dia = dataRef.getDate(); dia <= ultimoDia; dia++){
+    var d = new Date(ano, mes, dia).getDay();
+    if (d !== 0 && d !== 6) count++;
+  }
+  return count;
+}
+
+/* soma o vendido de todos os dias do MESMO MÊS já salvos e ESTRITAMENTE
+   ANTERIORES a dataRefStr (não conta o próprio dia, pra não descontar
+   duas vezes o que ainda está sendo digitado nele) */
+function ckVendidoAcumuladoMesAntes(dataRefStr){
+  var mesRef = dataRefStr.slice(0, 7);
+  var total = 0;
+  Object.keys(ckData.dias).forEach(function(d){
+    if (d.slice(0, 7) === mesRef && d < dataRefStr){
+      (ckData.dias[d].rows || []).forEach(function(r){ total += ckNum(r.vendidoR); });
+    }
+  });
+  return total;
+}
+
+/* meta do dia adaptativa: (meta do mês - já vendido no mês até aqui) ÷
+   dias úteis restantes a partir de dataRefStr (inclusive) */
+function ckMetaDiaEm(dataRefStr){
+  var dataRef = new Date(dataRefStr + 'T00:00:00');
+  var jaVendido = ckVendidoAcumuladoMesAntes(dataRefStr);
+  var falta = Math.max((ckData.settings.metaMensal || 0) - jaVendido, 0);
+  var diasRestantes = ckDiasUteisRestantesDoMes(dataRef);
+  return diasRestantes > 0 ? (falta / diasRestantes) : 0;
+}
+
+function ckRecalcMetaDia(){
+  var dataRefStr = (document.getElementById('ck-date') && document.getElementById('ck-date').value) || ckToday();
+  var meta = ckMetaDiaEm(dataRefStr);
+  var el = document.getElementById('ck-meta-dia-val');
+  if (el) el.textContent = ckFmtBRL(meta);
+  return meta;
+}
+
+function ckSaveSettings(){
+  dbRef('checkinDiario').set(ckData).catch(function(){});
+}
+
+function ckLoadDay(dateStr){
+  document.getElementById('ck-date').value = dateStr;
+  var saved = ckData.dias[dateStr];
+  ckRows = (saved && saved.rows) ? saved.rows : CK_EQUIPE.map(function(k){
+    return { nome: vendedores[k].nome, ligacoes:0, propostas:0, vendasN:0, vendidoR:0 };
+  });
+  ckRenderTable();
+  var st = document.getElementById('ck-savestatus');
+  st.textContent = ''; st.className = 'ck-savestatus';
+}
+
+function ckRenderTable(){
+  var tbody = document.getElementById('ck-tbody');
+  var dateStr = document.getElementById('ck-date').value;
+  var admin = ckIsAdmin();
+  tbody.innerHTML = '';
+  ckRows.forEach(function(row, i){
+    var conv = row.propostas > 0 ? (row.vendasN / row.propostas * 100) : 0;
+    var av = ckAvaliarLinha(row, dateStr);
+    var tr = document.createElement('tr');
+    if (admin){
+      tr.innerHTML =
+        '<td><input class="ck-nome" data-i="'+i+'" data-f="nome" value="'+row.nome+'"></td>' +
+        '<td><input type="number" min="0" data-i="'+i+'" data-f="ligacoes" value="'+row.ligacoes+'"></td>' +
+        '<td><input type="number" min="0" data-i="'+i+'" data-f="propostas" value="'+row.propostas+'"></td>' +
+        '<td><input type="number" min="0" data-i="'+i+'" data-f="vendasN" value="'+row.vendasN+'"></td>' +
+        '<td><input type="number" min="0" data-i="'+i+'" data-f="vendidoR" value="'+row.vendidoR+'"></td>' +
+        '<td class="ck-conv">'+conv.toFixed(0)+'%</td>' +
+        '<td>'+ckTermometroHTML(av)+'</td>' +
+        '<td><button class="ck-rm" data-i="'+i+'" title="remover">✕</button></td>';
+    } else {
+      tr.innerHTML =
+        '<td>'+(row.nome || '—')+'</td>' +
+        '<td class="num">'+ckNum(row.ligacoes)+'</td>' +
+        '<td class="num">'+ckNum(row.propostas)+'</td>' +
+        '<td class="num">'+ckNum(row.vendasN)+'</td>' +
+        '<td class="num">'+ckFmtBRL(row.vendidoR)+'</td>' +
+        '<td class="ck-conv">'+conv.toFixed(0)+'%</td>' +
+        '<td>'+ckTermometroHTML(av)+'</td>' +
+        '<td></td>';
+    }
+    tbody.appendChild(tr);
+  });
+  if (admin){
+    tbody.querySelectorAll('input').forEach(function(inp){ inp.addEventListener('input', ckOnCellInput); });
+    tbody.querySelectorAll('.ck-rm').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        ckRows.splice(Number(btn.dataset.i), 1);
+        ckRenderTable();
+        ckRecalcMetrics();
+      });
+    });
+  }
+  ckRecalcMetrics();
+}
+
+function ckTermometroHTML(av){
+  var cls = ckStatusClasse(av.overall);
+  if (!cls) return '<span class="ck-term-vazio" title="Sem meta cadastrada para esse nome">—</span>';
+  var titulo =
+    'Ligações: ' + (av.pctLig !== null ? av.pctLig.toFixed(0)+'% (meta do dia: '+av.metaLigEf.toFixed(0)+')' : 'sem meta') + '\n' +
+    'Propostas: ' + (av.pctProp !== null ? av.pctProp.toFixed(0)+'% (meta do dia: '+av.metaPropEf.toFixed(0)+')' : 'sem meta') + '\n' +
+    'Vendido: ' + (av.pctVend !== null ? av.pctVend.toFixed(0)+'% (meta do dia: '+ckFmtBRL(av.metaVendEf)+')' : 'sem meta');
+  return '<span class="ck-term ck-term-'+cls+'" title="'+titulo+'"></span>';
+}
+
+function ckOnCellInput(e){
+  var i = Number(e.target.dataset.i);
+  var f = e.target.dataset.f;
+  var v = e.target.value;
+  if (f !== 'nome') v = Number(v) || 0;
+  ckRows[i][f] = v;
+  var tr = e.target.closest('tr');
+  if (f === 'ligacoes' || f === 'propostas' || f === 'vendasN'){
+    var row = ckRows[i];
+    var conv = row.propostas > 0 ? (row.vendasN / row.propostas * 100) : 0;
+    tr.querySelector('.ck-conv').textContent = conv.toFixed(0) + '%';
+  }
+  if (f === 'ligacoes' || f === 'propostas' || f === 'vendidoR' || f === 'nome'){
+    var dateStr = document.getElementById('ck-date').value;
+    var av = ckAvaliarLinha(ckRows[i], dateStr);
+    var termCell = tr.querySelector('td:nth-last-child(2)');
+    if (termCell) termCell.innerHTML = ckTermometroHTML(av);
+  }
+  ckRecalcMetrics();
+}
+
+function ckRecalcMetrics(){
+  var totLig = ckRows.reduce(function(s,r){ return s+ckNum(r.ligacoes); },0);
+  var totProp = ckRows.reduce(function(s,r){ return s+ckNum(r.propostas); },0);
+  var totVendasN = ckRows.reduce(function(s,r){ return s+ckNum(r.vendasN); },0);
+  var totVendido = ckRows.reduce(function(s,r){ return s+ckNum(r.vendidoR); },0);
+  var conv = totProp > 0 ? (totVendasN/totProp*100) : 0;
+  var ticket = totVendasN > 0 ? (totVendido/totVendasN) : 0;
+  var metaDia = ckRecalcMetaDia();
+  var pctMeta = metaDia > 0 ? (totVendido/metaDia*100) : 0;
+
+  document.getElementById('ck-tot-lig').textContent = totLig;
+  document.getElementById('ck-tot-prop').textContent = totProp;
+  document.getElementById('ck-tot-vendasn').textContent = totVendasN;
+  document.getElementById('ck-tot-vendido').textContent = ckFmtBRL(totVendido);
+  document.getElementById('ck-tot-conv').textContent = conv.toFixed(0) + '%';
+
+  document.getElementById('ck-val-vendido').textContent = ckFmtBRL(totVendido);
+  document.getElementById('ck-sub-vendido').textContent = pctMeta.toFixed(0) + '% da meta do dia';
+  document.getElementById('ck-val-ligacoes').textContent = totLig;
+  document.getElementById('ck-val-conversao').textContent = conv.toFixed(0) + '%';
+  document.getElementById('ck-val-ticket').textContent = ckFmtBRL(ticket);
+
+  var card = document.getElementById('ck-card-vendido');
+  card.classList.remove('status-good','status-bad');
+  if (metaDia > 0) card.classList.add(pctMeta >= 100 ? 'status-good' : 'status-bad');
+
+  ckRenderRanking();
+}
+
+function ckSaveDay(){
+  var dateStr = document.getElementById('ck-date').value;
+  ckData.dias[dateStr] = { rows: ckRows };
+  dbRef('checkinDiario').set(ckData).then(function(){
+    var st = document.getElementById('ck-savestatus');
+    st.textContent = 'Salvo ✓';
+    st.className = 'ck-savestatus ok';
+    ckRenderHistory();
+  }).catch(function(){
+    document.getElementById('ck-savestatus').textContent = 'Erro ao salvar';
+  });
+}
+
+/* ── RANKING (dia atual ou soma de período) ── */
+var CK_CRIT_LABEL = {
+  vendidoR: function(v){ return ckFmtBRL(v); },
+  ligacoes: function(v){ return String(v); },
+  propostas: function(v){ return String(v); },
+  conv: function(v){ return v.toFixed(0) + '%'; }
+};
+
+function ckAcumular(mapa, rows){
+  rows.forEach(function(r){
+    var nome = (r.nome||'').trim();
+    if (!nome) return;
+    if (!mapa[nome]) mapa[nome] = { ligacoes:0, propostas:0, vendasN:0, vendidoR:0 };
+    mapa[nome].ligacoes += ckNum(r.ligacoes);
+    mapa[nome].propostas += ckNum(r.propostas);
+    mapa[nome].vendasN += ckNum(r.vendasN);
+    mapa[nome].vendidoR += ckNum(r.vendidoR);
+  });
+}
+
+function ckRankValue(t, crit){
+  if (crit === 'conv') return t.propostas > 0 ? (t.vendasN / t.propostas * 100) : 0;
+  return ckNum(t[crit]);
+}
+
+function ckGetTotais(){
+  var mapa = {};
+  if (ckRankModo === 'dia'){
+    ckAcumular(mapa, ckRows);
+    return mapa;
+  }
+  var de = document.getElementById('ck-rank-de').value;
+  var ate = document.getElementById('ck-rank-ate').value;
+  if (!de || !ate) return mapa;
+  Object.keys(ckData.dias).forEach(function(d){
+    if (d >= de && d <= ate) ckAcumular(mapa, ckData.dias[d].rows || []);
+  });
+  return mapa;
+}
+
+function ckUpdateRankTitle(){
+  var title = document.getElementById('ck-rank-title');
+  if (ckRankModo === 'dia'){
+    title.textContent = 'Ranking do dia';
+  } else {
+    var de = document.getElementById('ck-rank-de').value;
+    var ate = document.getElementById('ck-rank-ate').value;
+    if (de && ate){
+      var f = function(s){ var p = s.split('-'); return p[2]+'/'+p[1]; };
+      title.textContent = 'Ranking — ' + f(de) + ' a ' + f(ate);
+    } else {
+      title.textContent = 'Ranking — selecione o período';
+    }
+  }
+}
+
+function ckRenderRanking(){
+  var list = document.getElementById('ck-rank-list');
+  if (!list) return;
+  var mapa = ckGetTotais();
+  var nomes = Object.keys(mapa);
+  if (nomes.length === 0){
+    list.innerHTML = ckRankModo === 'periodo'
+      ? '<div class="ck-empty">Nenhum dia salvo nesse período ainda.</div>'
+      : '<div class="ck-empty">Preencha os nomes da equipe para ver o ranking.</div>';
+    return;
+  }
+  var ranked = nomes.map(function(nome){ return { nome: nome, val: ckRankValue(mapa[nome], ckRankCrit) }; })
+    .sort(function(a,b){ return b.val - a.val; });
+  var maxVal = Math.max(ranked[0].val, 1);
+  list.innerHTML = '';
+  ranked.forEach(function(r, i){
+    var pct = Math.max((r.val / maxVal) * 100, 2);
+    var row = document.createElement('div');
+    row.className = 'ck-rank-row' + (i === 0 ? ' top1' : '');
+    row.innerHTML =
+      '<div class="ck-rank-pos">'+(i+1)+'º</div>' +
+      '<div>'+r.nome+'</div>' +
+      '<div class="ck-rank-bar-bg"><div class="ck-rank-bar-fill" style="width:'+pct+'%"></div></div>' +
+      '<div class="ck-rank-val">'+CK_CRIT_LABEL[ckRankCrit](r.val)+'</div>';
+    list.appendChild(row);
+  });
+}
+
+/* ── HISTÓRICO (últimos 7 dias salvos) ── */
+function ckRenderHistory(){
+  var chart = document.getElementById('ck-hist-chart');
+  var labels = document.getElementById('ck-hist-labels');
+  if (!chart) return;
+  chart.innerHTML = ''; labels.innerHTML = '';
+  var dates = Object.keys(ckData.dias).sort().slice(-7);
+  if (dates.length === 0){
+    chart.innerHTML = '<div class="ck-empty">Salve o primeiro dia para começar o histórico.</div>';
+    return;
+  }
+  var metaDia = ckMetaDiaEm(ckToday());
+  var days = dates.map(function(d){
+    var vendido = (ckData.dias[d].rows||[]).reduce(function(s,x){ return s+ckNum(x.vendidoR); },0);
+    return { date: d, vendido: vendido };
+  });
+  var maxVal = Math.max(metaDia, Math.max.apply(null, days.map(function(d){ return d.vendido; })), 1);
+  days.forEach(function(d){
+    var pct = Math.max((d.vendido / maxVal) * 100, 2);
+    var cls = metaDia > 0 ? (d.vendido >= metaDia ? 'good' : 'bad') : '';
+    var wrap = document.createElement('div');
+    wrap.className = 'ck-hist-bar-wrap';
+    wrap.title = d.date + ' — ' + ckFmtBRL(d.vendido);
+    wrap.innerHTML = '<div class="ck-hist-bar '+cls+'" style="height:'+pct+'%"></div>';
+    chart.appendChild(wrap);
+    var lbl = document.createElement('div');
+    var parts = d.date.split('-');
+    lbl.textContent = parts[2] + '/' + parts[1];
+    labels.appendChild(lbl);
+  });
+}
+
+function ckShiftDate(days){
+  var d = new Date(document.getElementById('ck-date').value + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  ckLoadDay(ckDateToStr(d));
+}
+
+document.getElementById('ck-meta-mensal').addEventListener('input', function(e){
+  ckData.settings.metaMensal = Number(e.target.value)||0;
+  ckRecalcMetrics();
+  ckSaveSettings();
+});
+document.getElementById('ck-dias-uteis').addEventListener('input', function(e){
+  ckData.settings.diasUteis = Number(e.target.value)||0;
+  ckRecalcMetrics();
+  ckSaveSettings();
+});
+document.getElementById('ck-meta-lig').addEventListener('input', function(e){
+  ckData.settings.metaLigDia = Number(e.target.value)||CK_META_LIG_PADRAO;
+  ckSaveSettings();
+  ckRenderTable();
+});
+document.getElementById('ck-meta-prop').addEventListener('input', function(e){
+  ckData.settings.metaPropDia = Number(e.target.value)||CK_META_PROP_PADRAO;
+  ckSaveSettings();
+  ckRenderTable();
+});
+document.getElementById('ck-date').addEventListener('change', function(e){ ckLoadDay(e.target.value); });
+document.getElementById('ck-prev').addEventListener('click', function(){ ckShiftDate(-1); });
+document.getElementById('ck-next').addEventListener('click', function(){ ckShiftDate(1); });
+document.getElementById('ck-addrow').addEventListener('click', function(){
+  ckRows.push({ nome:'', ligacoes:0, propostas:0, vendasN:0, vendidoR:0 });
+  ckRenderTable();
+});
+document.getElementById('ck-savebtn').addEventListener('click', ckSaveDay);
+
+document.querySelectorAll('.ck-crit-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.ck-crit-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    ckRankCrit = btn.dataset.crit;
+    ckRenderRanking();
+  });
+});
+document.querySelectorAll('.ck-mode-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.ck-mode-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    ckRankModo = btn.dataset.mode;
+    document.getElementById('ck-period').classList.toggle('periodo', ckRankModo === 'periodo');
+    if (ckRankModo === 'periodo'){
+      var deInput = document.getElementById('ck-rank-de');
+      var ateInput = document.getElementById('ck-rank-ate');
+      if (!ateInput.value) ateInput.value = document.getElementById('ck-date').value;
+      if (!deInput.value){
+        var d = new Date(ateInput.value + 'T00:00:00');
+        d.setDate(d.getDate() - 6);
+        deInput.value = ckDateToStr(d);
+      }
+    }
+    ckUpdateRankTitle();
+    ckRenderRanking();
+  });
+});
+document.getElementById('ck-rank-de').addEventListener('change', function(){ ckUpdateRankTitle(); ckRenderRanking(); });
+document.getElementById('ck-rank-ate').addEventListener('change', function(){ ckUpdateRankTitle(); ckRenderRanking(); });
+
+/* ══════════════════════════════════════════════════════════════
+   MINHAS METAS — visão pessoal e automática por vendedor(a).
+   Ligações/propostas vêm do checkinDiario (única fonte pra isso).
+   Vendido, clientes novos/inativos e produtos vêm dos PEDIDOS reais
+   (dados que já existem no formulário de pedido: tipoCliente e itens),
+   então atualiza sozinho assim que um pedido é salvo — sem digitação extra.
+   ══════════════════════════════════════════════════════════════ */
+var mmPedidosEquipe = {};
+var mmListenersAttached = false;
+var mmSelectedUser = null;
+
+function mmInit(){
+  if (!mmSelectedUser) mmSelectedUser = ckIsAdmin() ? 'EQUIPE' : ((CK_EQUIPE.indexOf(currentUser) >= 0) ? currentUser : CK_EQUIPE[0]);
+  mmRenderSeletor();
+  mmAtualizarTitulo();
+  mmAplicarOrdemSalva();
+  mmSetupDragDrop();
+
+  if (!ckListenerAttached) {
+    ckListenerAttached = true;
+    dbRef('checkinDiario').on('value', function(snap){
+      ckData = ckGarantirDefaults(snap.val());
+      mmRenderTudo();
+    });
+  }
+
+  if (mmListenersAttached) { mmRenderTudo(); return; }
+  mmListenersAttached = true;
+
+  CK_EQUIPE.forEach(function(vn){
+    dbRef('pedidos/' + vn).on('value', function(snap){
+      var v = snap.val();
+      mmPedidosEquipe[vn] = v ? Object.values(v).filter(function(p){ return !p.excluido; }) : [];
+      mmRenderTudo();
+    });
+  });
+}
+
+function mmAtualizarTitulo(){
+  var titulo = document.getElementById('mm-titulo');
+  if (!titulo) return;
+  if (mmSelectedUser === 'EQUIPE') titulo.textContent = '📍 Minhas Metas — Equipe (todos juntos)';
+  else titulo.textContent = '📍 Minhas Metas — ' + (vendedores[mmSelectedUser] ? vendedores[mmSelectedUser].nome : mmSelectedUser);
+}
+
+function mmRenderSeletor(){
+  var box = document.getElementById('mm-seletor');
+  if (!box) return;
+  if (!ckIsAdmin()){ box.style.display = 'none'; return; }
+  box.style.display = 'flex';
+  box.innerHTML = '';
+  var opcoes = ['EQUIPE'].concat(CK_EQUIPE);
+  opcoes.forEach(function(key){
+    var btn = document.createElement('button');
+    btn.className = 'mm-sel-btn' + (key === mmSelectedUser ? ' active' : '');
+    btn.textContent = key === 'EQUIPE' ? '👥 Equipe' : (vendedores[key] ? vendedores[key].nome : key);
+    btn.addEventListener('click', function(){
+      mmSelectedUser = key;
+      mmRenderSeletor();
+      mmAtualizarTitulo();
+      mmRenderTudo();
+    });
+    box.appendChild(btn);
+  });
+}
+
+function mmTotalMetaEquipe(mapaKey){
+  var total = 0;
+  CK_EQUIPE.forEach(function(p){
+    total += (ckData.settings[mapaKey] && ckData.settings[mapaKey][p]) || 0;
+  });
+  return total;
+}
+
+function mmTotalMetaProdutoEquipe(produtoKey){
+  var total = 0;
+  CK_EQUIPE.forEach(function(p){
+    total += (ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[produtoKey] && ckData.settings.metaProdutosMes[produtoKey][p]) || 0;
+  });
+  return total;
+}
+
+function mmRenderTudo(){
+  mmRenderHoje();
+  mmRenderSemana();
+  mmRenderMes();
+  mmRenderPeriodo();
+  mmRenderClientes();
+  mmRenderProdutos();
+  mmVerificarConquistas();
+}
+
+function mmFmtQtd(n){
+  n = Number(n) || 0;
+  return n.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+
+var MM_FRASES = {
+  good: ['Mandou muito bem! 🎉', 'Meta batida, parabéns! 🚀', 'Show de bola! 🔥'],
+  mid: ['Quase lá, falta pouco! 💪', 'Bom ritmo, não para agora!', 'Você tá perto, insiste!'],
+  bad: ['Foco total, ainda dá tempo! 💪', 'Bora acelerar o ritmo!', 'Hora de dar um gás! 🔥']
+};
+function mmFrase(cls){
+  if (!cls || !MM_FRASES[cls]) return '';
+  var lista = MM_FRASES[cls];
+  return lista[0];
+}
+
+function mmItemHTML(label, valor, meta, pct, isMoney, icon){
+  var cls = (pct === null || pct === undefined) ? '' : ckStatusClasse(pct);
+  var pctW = (pct === null || pct === undefined) ? 0 : Math.min(Math.max(pct, 0), 100);
+  var valTxt = isMoney ? ckFmtBRL(valor) : mmFmtQtd(valor);
+  var metaTxt = meta > 0 ? (isMoney ? ckFmtBRL(meta) : mmFmtQtd(meta)) : 'sem meta cadastrada';
+  var frase = cls ? '<div class="mm-frase '+cls+'">'+mmFrase(cls)+'</div>' : '';
+  return '<div class="mm-item">' +
+    '<div class="mm-item-top">' +
+      '<span class="mm-item-label">'+(icon?('<span class="mm-item-icon">'+icon+'</span>'):'')+label+'</span>' +
+      '<span class="mm-item-val">'+valTxt+' <small>/ '+metaTxt+'</small></span>' +
+    '</div>' +
+    '<div class="mm-bar-bg"><div class="mm-bar-fill '+(cls||'')+'" style="width:'+pctW+'%"></div></div>' +
+    frase +
+  '</div>';
+}
+
+function mmCardHTML(icon, label, valor, meta, pct, isMoney){
+  var cls = (pct === null || pct === undefined) ? '' : ckStatusClasse(pct);
+  var pctW = (pct === null || pct === undefined) ? 0 : Math.min(Math.max(pct, 0), 100);
+  var valTxt = isMoney ? ckFmtBRL(valor) : mmFmtQtd(valor);
+  var metaTxt = meta > 0 ? ('meta: '+(isMoney ? ckFmtBRL(meta) : mmFmtQtd(meta))) : 'sem meta cadastrada';
+  return '<div class="mm-card '+(cls||'')+'">' +
+    '<div class="mm-card-icon">'+icon+'</div>' +
+    '<div class="mm-card-label">'+label+'</div>' +
+    (cls ? '<div class="mm-card-pct">'+pctW.toFixed(0)+'%</div><br>' : '') +
+    '<div class="mm-card-val">'+valTxt+'</div>' +
+    '<div class="mm-card-meta">'+metaTxt+'</div>' +
+    '<div class="mm-bar-bg"><div class="mm-bar-fill '+(cls||'')+'" style="width:'+pctW+'%"></div></div>' +
+  '</div>';
+}
+
+
+function mmCardSimples(icon, label, valorTxt, sub){
+  return '<div class="mm-card">' +
+    '<div class="mm-card-icon">'+icon+'</div>' +
+    '<div class="mm-card-label">'+label+'</div>' +
+    '<div class="mm-card-val">'+valorTxt+'</div>' +
+    '<div class="mm-card-meta">'+(sub||'')+'</div>' +
+  '</div>';
+}
+
+function mmRenderHoje(){
+  var box = document.getElementById('mm-hoje');
+  if (!box) return;
+  var hoje = ckToday();
+  var rows = (ckData.dias[hoje] && ckData.dias[hoje].rows) || [];
+
+  if (mmSelectedUser === 'EQUIPE'){
+    var totLig=0, totProp=0, totVend=0, totVendasN=0, totMetaLig=0, totMetaProp=0, totMetaVend=0, achouAlguma=false;
+    CK_EQUIPE.forEach(function(key){
+      var nome = vendedores[key] ? vendedores[key].nome : key;
+      var row = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(nome); });
+      if (!row) return;
+      achouAlguma = true;
+      var av = ckAvaliarLinha(row, hoje);
+      totLig += ckNum(row.ligacoes); totMetaLig += av.metaLigEf;
+      totProp += ckNum(row.propostas); totMetaProp += av.metaPropEf;
+      totVend += ckNum(row.vendidoR); totMetaVend += av.metaVendEf;
+      totVendasN += ckNum(row.vendasN);
+    });
+    if (!achouAlguma){ box.innerHTML = '<div class="mm-empty">O check-in de hoje ainda não foi preenchido.</div>'; mmRenderHero(null); return; }
+    var pctLig = totMetaLig>0 ? (totLig/totMetaLig*100) : null;
+    var pctProp = totMetaProp>0 ? (totProp/totMetaProp*100) : null;
+    var pctVend = totMetaVend>0 ? (totVend/totMetaVend*100) : null;
+    var convEq = totProp>0 ? (totVendasN/totProp*100) : 0;
+    box.innerHTML =
+      mmCardHTML('📞', 'Ligações', totLig, totMetaLig, pctLig, false) +
+      mmCardHTML('📝', 'Propostas', totProp, totMetaProp, pctProp, false) +
+      mmCardHTML('💰', 'Vendido', totVend, totMetaVend, pctVend, true) +
+      mmCardSimples('📊', 'Conversão', convEq.toFixed(0)+'%', totVendasN+' venda(s) / '+totProp+' proposta(s)');
+    var pctsEq = [pctLig,pctProp,pctVend].filter(function(p){ return p!==null; });
+    mmRenderHero(pctsEq.length ? Math.min.apply(null, pctsEq) : null);
+    return;
+  }
+
+  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável para esse usuário.</div>'; return; }
+  var meuNome = vendedores[mmSelectedUser] ? vendedores[mmSelectedUser].nome : '';
+  var minhaLinha = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(meuNome); });
+  if (!minhaLinha){
+    box.innerHTML = '<div class="mm-empty">O check-in de hoje ainda não foi preenchido.</div>';
+    mmRenderHero(null);
+    return;
+  }
+  var av = ckAvaliarLinha(minhaLinha, hoje);
+  var conv = ckNum(minhaLinha.propostas)>0 ? (ckNum(minhaLinha.vendasN)/ckNum(minhaLinha.propostas)*100) : 0;
+  box.innerHTML =
+    mmCardHTML('📞', 'Ligações', minhaLinha.ligacoes, av.metaLigEf, av.pctLig, false) +
+    mmCardHTML('📝', 'Propostas', minhaLinha.propostas, av.metaPropEf, av.pctProp, false) +
+    mmCardHTML('💰', 'Vendido', minhaLinha.vendidoR, av.metaVendEf, av.pctVend, true) +
+    mmCardSimples('📊', 'Conversão', conv.toFixed(0)+'%', ckNum(minhaLinha.vendasN)+' venda(s) / '+ckNum(minhaLinha.propostas)+' proposta(s)');
+  mmRenderHero(av.overall);
+}
+
+var MM_HERO_TEXTO = {
+  good: { emoji: '🔥', titulo: 'Você tá arrasando hoje!', sub: 'Continue nesse ritmo até o fim do dia.' },
+  mid: { emoji: '💪', titulo: 'Bom começo, falta um empurrão!', sub: 'Mais algumas ligações e propostas e a meta de hoje sai.' },
+  bad: { emoji: '🚨', titulo: 'Hora de acelerar!', sub: 'Ainda dá tempo de virar o dia — foco nas ligações agora.' },
+  neutro: { emoji: '📋', titulo: 'Preencha o check-in de hoje', sub: 'Assim que tiver dados, o resumo do dia aparece aqui.' }
+};
+
+function mmRenderHero(overallPct){
+  var box = document.getElementById('mm-hero');
+  if (!box) return;
+  if (mmSelectedUser !== 'EQUIPE' && CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = ''; return; }
+  var cls = (overallPct === null || overallPct === undefined) ? 'neutro' : ckStatusClasse(overallPct);
+  var t = MM_HERO_TEXTO[cls] || MM_HERO_TEXTO.neutro;
+  box.innerHTML =
+    '<div class="mm-hero '+cls+'">' +
+      '<div class="mm-hero-emoji">'+t.emoji+'</div>' +
+      '<div class="mm-hero-txt"><h4>'+t.titulo+'</h4><p>'+t.sub+'</p></div>' +
+    '</div>';
+}
+
+
+function mmInicioSemana(d){
+  var dt = new Date(d);
+  dt.setHours(0,0,0,0);
+  var dia = dt.getDay();
+  var diff = (dia === 0 ? -6 : 1) - dia;
+  dt.setDate(dt.getDate() + diff);
+  return dt;
+}
+
+/* soma ligações/propostas/vendasN vindos do check-in diário, por pessoa
+   (ou 'EQUIPE' pra somar todo mundo), num intervalo de datas [de, ate] */
+function mmSomarCheckinPeriodo(pessoaOuEquipe, deStr, ateStr){
+  var tot = { ligacoes: 0, propostas: 0, vendasN: 0 };
+  Object.keys(ckData.dias).forEach(function(d){
+    if (d < deStr || d > ateStr) return;
+    var rows = (ckData.dias[d] && ckData.dias[d].rows) || [];
+    if (pessoaOuEquipe === 'EQUIPE'){
+      rows.forEach(function(r){
+        tot.ligacoes += ckNum(r.ligacoes);
+        tot.propostas += ckNum(r.propostas);
+        tot.vendasN += ckNum(r.vendasN);
+      });
+    } else {
+      var nome = vendedores[pessoaOuEquipe] ? vendedores[pessoaOuEquipe].nome : pessoaOuEquipe;
+      var row = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(nome); });
+      if (row){
+        tot.ligacoes += ckNum(row.ligacoes);
+        tot.propostas += ckNum(row.propostas);
+        tot.vendasN += ckNum(row.vendasN);
+      }
+    }
+  });
+  return tot;
+}
+
+function mmDataPedido(p){
+  return p.data ? new Date(p.data + 'T00:00:00') : null;
+}
+
+function mmValorPedido(p){
+  if (p.itens && p.itens.length) return p.itens.reduce(function(s,it){ return s + ckNum(it.qtd)*ckNum(it.vUnit); }, 0);
+  if (p.material) return ckNum(p.qtd)*ckNum(p.vUnit);
+  return 0;
+}
+
+function mmRenderSemana(){
+  var box = document.getElementById('mm-semana');
+  if (!box) return;
+  var hoje = new Date();
+  var inicio = mmInicioSemana(hoje);
+  var total, meta;
+  if (mmSelectedUser === 'EQUIPE'){
+    total = 0;
+    CK_EQUIPE.forEach(function(p){
+      (mmPedidosEquipe[p]||[]).forEach(function(ped){
+        var d = mmDataPedido(ped);
+        if (d && d >= inicio && d <= hoje) total += mmValorPedido(ped);
+      });
+    });
+    meta = mmTotalMetaEquipe('metaSemanalPorPessoa');
+  } else {
+    if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+    var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
+    total = pedidos.reduce(function(s,p){
+      var d = mmDataPedido(p);
+      return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
+    }, 0);
+    meta = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[mmSelectedUser]) || 0;
+  }
+  box.innerHTML = mmItemHTML('Vendido na semana', total, meta, meta>0?(total/meta*100):null, true, '💰');
+}
+
+function mmDiasUteisRestantes(hoje){
+  var ano = hoje.getFullYear(), mes = hoje.getMonth();
+  var ultimoDia = new Date(ano, mes + 1, 0).getDate();
+  var count = 0;
+  for (var dia = hoje.getDate(); dia <= ultimoDia; dia++){
+    var d = new Date(ano, mes, dia).getDay(); // 0=domingo, 6=sabado
+    if (d !== 0 && d !== 6) count++;
+  }
+  return count;
+}
+
+function mmRenderMes(){
+  var box = document.getElementById('mm-mes');
+  if (!box) return;
+  var hoje = new Date();
+  var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var total, meta;
+  if (mmSelectedUser === 'EQUIPE'){
+    total = 0;
+    CK_EQUIPE.forEach(function(p){
+      (mmPedidosEquipe[p]||[]).forEach(function(ped){
+        var d = mmDataPedido(ped);
+        if (d && d >= inicio && d <= hoje) total += mmValorPedido(ped);
+      });
+    });
+    meta = mmTotalMetaEquipe('metaMensalPorPessoa');
+  } else {
+    if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+    var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
+    total = pedidos.reduce(function(s,p){
+      var d = mmDataPedido(p);
+      return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
+    }, 0);
+    meta = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[mmSelectedUser]) || 0;
+  }
+
+  var html = mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true, '💰');
+
+  if (meta > 0){
+    var falta = meta - total;
+    if (falta <= 0){
+      html += '<div class="mm-ritmo mm-ritmo-ok">✅ Meta do mês já batida — sobrou '+ckFmtBRL(Math.abs(falta))+'.</div>';
+    } else {
+      var diasRest = mmDiasUteisRestantes(hoje);
+      if (diasRest > 0){
+        var porDia = falta / diasRest;
+        html += '<div class="mm-ritmo">Faltam <b>'+ckFmtBRL(falta)+'</b> pra bater a meta, em <b>'+diasRest+'</b> dia(s) útil(eis) — ritmo necessário: <b>'+ckFmtBRL(porDia)+'/dia útil</b>.</div>';
+      } else {
+        html += '<div class="mm-ritmo">Faltam <b>'+ckFmtBRL(falta)+'</b> e não há mais dias úteis no mês.</div>';
+      }
+    }
+  }
+  box.innerHTML = html;
+}
+
+function mmRenderPeriodo(){
+  var box = document.getElementById('mm-periodo');
+  if (!box) return;
+  var deInput = document.getElementById('mm-periodo-de');
+  var ateInput = document.getElementById('mm-periodo-ate');
+  if (!deInput || !ateInput) return;
+  if (!ateInput.value) ateInput.value = ckToday();
+  if (!deInput.value){
+    var d = new Date(ateInput.value + 'T00:00:00');
+    d.setDate(d.getDate() - 6);
+    deInput.value = ckDateToStr(d);
+  }
+  var deStr = deInput.value, ateStr = ateInput.value;
+  if (deStr > ateStr){ box.innerHTML = '<div class="mm-empty">A data "de" não pode ser depois da data "até".</div>'; return; }
+
+  var pessoas = (mmSelectedUser === 'EQUIPE') ? CK_EQUIPE : (CK_EQUIPE.indexOf(mmSelectedUser) >= 0 ? [mmSelectedUser] : []);
+  if (pessoas.length === 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+
+  var deDate = new Date(deStr + 'T00:00:00'), ateDate = new Date(ateStr + 'T00:00:00');
+  var vendido = 0;
+  pessoas.forEach(function(p){
+    (mmPedidosEquipe[p]||[]).forEach(function(ped){
+      var d = mmDataPedido(ped);
+      if (d && d >= deDate && d <= ateDate) vendido += mmValorPedido(ped);
+    });
+  });
+
+  var ckTot = mmSomarCheckinPeriodo(mmSelectedUser, deStr, ateStr);
+  var conv = ckTot.propostas > 0 ? (ckTot.vendasN / ckTot.propostas * 100) : 0;
+
+  box.innerHTML =
+    mmItemHTML('Ligações', ckTot.ligacoes, 0, null, false, '📞') +
+    mmItemHTML('Propostas', ckTot.propostas, 0, null, false, '📝') +
+    mmItemHTML('Vendido', vendido, 0, null, true, '💰') +
+    '<div class="mm-ritmo">📊 Conversão no período: <b>'+conv.toFixed(0)+'%</b> ('+ckTot.vendasN+' venda(s) / '+ckTot.propostas+' proposta(s))</div>';
+}
+
+function mmRenderClientes(){
+  var box = document.getElementById('mm-clientes');
+  if (!box) return;
+  var hoje = new Date();
+  var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var qtdNovos, qtdInativos, metaNovos, metaInativos;
+  if (mmSelectedUser === 'EQUIPE'){
+    qtdNovos = 0; qtdInativos = 0;
+    CK_EQUIPE.forEach(function(p){
+      (mmPedidosEquipe[p]||[]).forEach(function(ped){
+        var d = mmDataPedido(ped);
+        if (!d || d < inicio || d > hoje) return;
+        if (ped.tipoCliente === 'novo') qtdNovos++;
+        if (ped.tipoCliente === 'inativo') qtdInativos++;
+      });
+    });
+    metaNovos = mmTotalMetaEquipe('metaClientesNovosPorPessoa');
+    metaInativos = mmTotalMetaEquipe('metaClientesInativosPorPessoa');
+  } else {
+    if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+    var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
+    var pedidosMes = pedidos.filter(function(p){ var d = mmDataPedido(p); return d && d >= inicio && d <= hoje; });
+    qtdNovos = pedidosMes.filter(function(p){ return p.tipoCliente === 'novo'; }).length;
+    qtdInativos = pedidosMes.filter(function(p){ return p.tipoCliente === 'inativo'; }).length;
+    metaNovos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[mmSelectedUser]) || 0;
+    metaInativos = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[mmSelectedUser]) || 0;
+  }
+  box.innerHTML =
+    mmItemHTML('Clientes novos', qtdNovos, metaNovos, metaNovos>0?(qtdNovos/metaNovos*100):null, false, '🆕') +
+    mmItemHTML('Clientes inativos reativados', qtdInativos, metaInativos, metaInativos>0?(qtdInativos/metaInativos*100):null, false, '♻️');
+}
+
+function mmRenderProdutos(){
+  var box = document.getElementById('mm-produtos');
+  if (!box) return;
+  var hoje = new Date();
+  var inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  var totais = {};
+  CK_PRODUTOS.forEach(function(g){ totais[g.key] = 0; });
+
+  var pessoas = (mmSelectedUser === 'EQUIPE') ? CK_EQUIPE : (CK_EQUIPE.indexOf(mmSelectedUser) >= 0 ? [mmSelectedUser] : []);
+  if (pessoas.length === 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
+
+  pessoas.forEach(function(p){
+    (mmPedidosEquipe[p]||[]).forEach(function(ped){
+      var d = mmDataPedido(ped);
+      if (!d || d < inicio || d > hoje) return;
+      (ped.itens||[]).forEach(function(it){
+        var grupo = ckClassificarProduto(it.material);
+        if (grupo) totais[grupo] += ckNum(it.qtd);
+      });
+    });
+  });
+
+  var html = '';
+  CK_PRODUTOS.forEach(function(g){
+    var meta = (mmSelectedUser === 'EQUIPE')
+      ? mmTotalMetaProdutoEquipe(g.key)
+      : ((ckData.settings.metaProdutosMes && ckData.settings.metaProdutosMes[g.key] && ckData.settings.metaProdutosMes[g.key][mmSelectedUser]) || 0);
+    html += mmItemHTML(g.label, totais[g.key], meta, meta>0?(totais[g.key]/meta*100):null, false, '📦');
+  });
+  box.innerHTML = html;
+}
+
+/* ── Som de conquista: toca quando alguma meta é batida (uma vez por período) ── */
+var mmAudioCtx = null;
+function mmGetAudioCtx(){
+  if (!mmAudioCtx){
+    var AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtxClass){ try { mmAudioCtx = new AudioCtxClass(); } catch(e){} }
+  }
+  if (mmAudioCtx && mmAudioCtx.state === 'suspended'){ mmAudioCtx.resume().catch(function(){}); }
+  return mmAudioCtx;
+}
+// "destrava" o áudio no primeiro clique/toque em qualquer lugar da página
+document.addEventListener('click', function(){ mmGetAudioCtx(); }, { once: true });
+document.addEventListener('touchstart', function(){ mmGetAudioCtx(); }, { once: true });
+
+function mmTocarSom(){
+  var ctx = mmGetAudioCtx();
+  if (!ctx) return;
+  try {
+    var notas = [523.25, 659.25, 783.99]; // acorde alegre (dó-mi-sol)
+    notas.forEach(function(freq, i){
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      var inicio = ctx.currentTime + i * 0.09;
+      gain.gain.setValueAtTime(0, inicio);
+      gain.gain.linearRampToValueAtTime(0.22, inicio + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(inicio); osc.stop(inicio + 0.4);
+    });
+  } catch(e){ /* som indisponível, segue sem quebrar a página */ }
+}
+
+function mmChaveConquista(pessoa, metrica, periodo){
+  return 'fgv_mm_conquista_' + pessoa + '_' + metrica + '_' + periodo;
+}
+
+function mmRegistrarSeNovo(pessoa, metrica, periodo){
+  var chave = mmChaveConquista(pessoa, metrica, periodo);
+  try {
+    if (localStorage.getItem(chave)) return false;
+    localStorage.setItem(chave, '1');
+    return true;
+  } catch(e){ return false; }
+}
+
+function mmMostrarToast(msgs){
+  var box = document.getElementById('mm-toast');
+  if (!box || msgs.length === 0) return;
+  box.innerHTML = msgs.map(function(m){ return '<div class="mm-toast-item">🎉 '+m+'</div>'; }).join('');
+  box.classList.add('show');
+  clearTimeout(mmMostrarToast._t);
+  mmMostrarToast._t = setTimeout(function(){ box.classList.remove('show'); }, 6000);
+}
+
+function mmVerificarConquistas(){
+  if (CK_EQUIPE.indexOf(currentUser) < 0) return; // só dispara pra quem é vendedor(a), não pra Juliana
+  var pessoa = currentUser;
+  var conquistas = [];
+
+  // HOJE — ligações, propostas, vendido
+  var hoje = ckToday();
+  var rows = (ckData.dias[hoje] && ckData.dias[hoje].rows) || [];
+  var meuNome = vendedores[pessoa] ? vendedores[pessoa].nome : '';
+  var minhaLinha = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(meuNome); });
+  if (minhaLinha){
+    var av = ckAvaliarLinha(minhaLinha, hoje);
+    if (av.pctLig !== null && av.pctLig >= 100 && mmRegistrarSeNovo(pessoa,'lig_dia',hoje)) conquistas.push('Meta de ligações de hoje batida!');
+    if (av.pctProp !== null && av.pctProp >= 100 && mmRegistrarSeNovo(pessoa,'prop_dia',hoje)) conquistas.push('Meta de propostas de hoje batida!');
+    if (av.pctVend !== null && av.pctVend >= 100 && mmRegistrarSeNovo(pessoa,'vend_dia',hoje)) conquistas.push('Meta de vendido de hoje batida!');
+  }
+
+  var agora = new Date();
+  var pedidosPessoa = mmPedidosEquipe[pessoa] || [];
+
+  // SEMANA — vendido
+  var inicioSemana = mmInicioSemana(agora);
+  var totalSemana = pedidosPessoa.reduce(function(s,p){ var d=mmDataPedido(p); return (d&&d>=inicioSemana&&d<=agora)?s+mmValorPedido(p):s; },0);
+  var metaSemana = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[pessoa]) || 0;
+  if (metaSemana>0 && totalSemana>=metaSemana && mmRegistrarSeNovo(pessoa,'vend_semana',ckDateToStr(inicioSemana))) conquistas.push('Meta de vendido da semana batida!');
+
+  // MÊS — vendido, clientes novos, clientes inativos
+  var inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  var mesKey = agora.getFullYear() + '-' + (agora.getMonth()+1);
+  var totalMes = pedidosPessoa.reduce(function(s,p){ var d=mmDataPedido(p); return (d&&d>=inicioMes&&d<=agora)?s+mmValorPedido(p):s; },0);
+  var metaMes = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[pessoa]) || 0;
+  if (metaMes>0 && totalMes>=metaMes && mmRegistrarSeNovo(pessoa,'vend_mes',mesKey)) conquistas.push('Meta de vendido do mês batida!');
+
+  var pedidosMes = pedidosPessoa.filter(function(p){ var d=mmDataPedido(p); return d&&d>=inicioMes&&d<=agora; });
+  var qtdNovos = pedidosMes.filter(function(p){ return p.tipoCliente==='novo'; }).length;
+  var qtdInativos = pedidosMes.filter(function(p){ return p.tipoCliente==='inativo'; }).length;
+  var metaNovos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[pessoa]) || 0;
+  var metaInativos = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[pessoa]) || 0;
+  if (metaNovos>0 && qtdNovos>=metaNovos && mmRegistrarSeNovo(pessoa,'clientes_novos_mes',mesKey)) conquistas.push('Meta de clientes novos do mês batida!');
+  if (metaInativos>0 && qtdInativos>=metaInativos && mmRegistrarSeNovo(pessoa,'clientes_inativos_mes',mesKey)) conquistas.push('Meta de clientes inativos reativados do mês batida!');
+
+  if (conquistas.length > 0){
+    mmTocarSom();
+    mmMostrarToast(conquistas);
+  }
+}
+
+/* ── Cards móveis: arrastar pra reordenar, ordem salva por usuário ── */
+var mmDragSrc = null;
+
+function mmChaveOrdem(){
+  return 'fgv_mm_ordem_' + (currentUser || 'anon');
+}
+
+function mmSalvarOrdem(){
+  var grid = document.getElementById('mm-panels-grid');
+  if (!grid) return;
+  var ordem = Array.prototype.map.call(grid.querySelectorAll('.mm-panel[data-panel-id]'), function(el){ return el.dataset.panelId; });
+  try { localStorage.setItem(mmChaveOrdem(), JSON.stringify(ordem)); } catch(e){}
+}
+
+function mmAplicarOrdemSalva(){
+  var grid = document.getElementById('mm-panels-grid');
+  if (!grid) return;
+  var salvo;
+  try { salvo = JSON.parse(localStorage.getItem(mmChaveOrdem()) || 'null'); } catch(e){ salvo = null; }
+  if (!salvo || !Array.isArray(salvo)) return;
+  salvo.forEach(function(id){
+    var el = grid.querySelector('.mm-panel[data-panel-id="'+id+'"]');
+    if (el) grid.appendChild(el);
+  });
+}
+
+function mmSetupDragDrop(){
+  var grid = document.getElementById('mm-panels-grid');
+  if (!grid || grid.dataset.dragReady) return;
+  grid.dataset.dragReady = '1';
+
+  grid.addEventListener('dragstart', function(e){
+    var panel = e.target.closest('.mm-panel[draggable="true"]');
+    if (!panel) return;
+    mmDragSrc = panel;
+    panel.classList.add('mm-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', panel.dataset.panelId); } catch(err){}
+  });
+
+  grid.addEventListener('dragend', function(){
+    if (mmDragSrc) mmDragSrc.classList.remove('mm-dragging');
+    grid.querySelectorAll('.mm-drag-over').forEach(function(el){ el.classList.remove('mm-drag-over'); });
+    mmDragSrc = null;
+  });
+
+  grid.addEventListener('dragover', function(e){
+    var panel = e.target.closest('.mm-panel[draggable="true"]');
+    if (!panel || panel === mmDragSrc) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    grid.querySelectorAll('.mm-drag-over').forEach(function(el){ if (el !== panel) el.classList.remove('mm-drag-over'); });
+    panel.classList.add('mm-drag-over');
+  });
+
+  grid.addEventListener('dragleave', function(e){
+    var panel = e.target.closest('.mm-panel[draggable="true"]');
+    if (panel) panel.classList.remove('mm-drag-over');
+  });
+
+  grid.addEventListener('drop', function(e){
+    var panel = e.target.closest('.mm-panel[draggable="true"]');
+    e.preventDefault();
+    if (!panel || !mmDragSrc || panel === mmDragSrc) return;
+    panel.classList.remove('mm-drag-over');
+    var rect = panel.getBoundingClientRect();
+    var depoisDoAlvo = (e.clientY - rect.top) > (rect.height / 2);
+    if (depoisDoAlvo) panel.parentNode.insertBefore(mmDragSrc, panel.nextSibling);
+    else panel.parentNode.insertBefore(mmDragSrc, panel);
+    mmSalvarOrdem();
+  });
+}
+
+var mmPeriodoDeEl = document.getElementById('mm-periodo-de');
+var mmPeriodoAteEl = document.getElementById('mm-periodo-ate');
+if (mmPeriodoDeEl) mmPeriodoDeEl.addEventListener('change', mmRenderPeriodo);
+if (mmPeriodoAteEl) mmPeriodoAteEl.addEventListener('change', mmRenderPeriodo);
+
+document.querySelectorAll('.mm-preset-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var hoje = new Date();
+    var de, ate;
+    if (btn.dataset.preset === 'hoje'){
+      de = ate = ckToday();
+    } else if (btn.dataset.preset === '7dias'){
+      ate = ckToday();
+      var d = new Date(); d.setDate(d.getDate() - 6);
+      de = ckDateToStr(d);
+    } else if (btn.dataset.preset === 'mes'){
+      de = ckDateToStr(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+      ate = ckToday();
+    }
+    document.getElementById('mm-periodo-de').value = de;
+    document.getElementById('mm-periodo-ate').value = ate;
+    mmRenderPeriodo();
+  });
+});
+
+</script>
 </body>
 </html>
