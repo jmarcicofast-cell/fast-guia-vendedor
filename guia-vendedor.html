@@ -994,6 +994,19 @@
   .nav-btn.nav-dragging{ opacity:.35; }
   .nav-btn.nav-drag-over{ box-shadow:inset 0 -3px 0 #C41E1E; background:#FBEAEA; }
 </style>
+<style>
+  /* Impressão do Relatório de Negociações: some com o resto do app e imprime
+     só o conteúdo do modal, sem os botões de imprimir/fechar. */
+  @media print {
+    body > *:not(#neg-relatorio-overlay) { display:none !important; }
+    #neg-relatorio-overlay {
+      position:static !important; background:#fff !important; padding:0 !important;
+      display:block !important;
+    }
+    #neg-relatorio-card { max-height:none !important; box-shadow:none !important; max-width:100% !important; }
+    .neg-rel-noprint button { display:none !important; }
+  }
+</style>
 </head>
 <body>
 
@@ -2539,6 +2552,7 @@
           <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
           <option>SP</option><option>SE</option><option>TO</option>
         </select>
+        <button id="neg-btn-relatorio" onclick="abrirRelatorioNeg()" style="display:none;padding:8px 16px;border-radius:7px;border:1.5px solid #1C1C1C;background:#fff;color:#1C1C1C;font-size:13px;font-weight:600;cursor:pointer;">📊 Relatório diretoria</button>
         <button onclick="abrirNegModal()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Nova Negociação</button>
       </div>
     </div>
@@ -2701,6 +2715,56 @@
         <button onclick="negSalvar()" style="padding:8px 18px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Salvar</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- MODAL RELATÓRIO PARA DIRETORIA -->
+<div id="neg-relatorio-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) fecharRelatorioNeg()">
+  <div id="neg-relatorio-card" style="background:#fff;border-radius:14px;padding:1.6rem;max-width:760px;width:100%;max-height:90vh;overflow-y:auto;">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px;" class="neg-rel-noprint">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#1C1C1C;">📊 Relatório de Negociações</div>
+        <input type="text" id="neg-rel-periodo" value="Período: setembro/2026" style="font-size:12px;color:#888;border:none;border-bottom:1px dashed #ddd;background:transparent;padding:2px 0;margin-top:2px;width:240px;">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="window.print()" style="padding:7px 12px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:12px;font-weight:600;cursor:pointer;">🖨️ Imprimir / PDF</button>
+        <button onclick="fecharRelatorioNeg()" style="padding:7px 12px;border-radius:6px;border:none;background:#F1EFE8;font-size:12px;font-weight:600;cursor:pointer;">Fechar</button>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:16px;" id="neg-rel-escopo">Considerando os filtros ativos na aba Negociações.</div>
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:#E8E6E1;border:1px solid #E8E6E1;border-radius:8px;overflow:hidden;margin-bottom:1.4rem;">
+      <div style="background:#fff;padding:12px 10px;">
+        <div style="font-size:10px;color:#999;margin-bottom:6px;">Trazidas</div>
+        <div style="font-size:20px;font-weight:700;color:#1C1C1C;" id="neg-rel-total">0</div>
+      </div>
+      <div style="background:#fff;padding:12px 10px;">
+        <div style="font-size:10px;color:#999;margin-bottom:6px;">Fechadas</div>
+        <div style="font-size:20px;font-weight:700;color:#1B5E20;" id="neg-rel-fechadas">0</div>
+        <div style="font-size:10.5px;color:#888;" id="neg-rel-fechadas-valor">R$ 0</div>
+      </div>
+      <div style="background:#fff;padding:12px 10px;">
+        <div style="font-size:10px;color:#999;margin-bottom:6px;">Perdidas</div>
+        <div style="font-size:20px;font-weight:700;color:#7A0000;" id="neg-rel-perdidas">0</div>
+        <div style="font-size:10.5px;color:#888;" id="neg-rel-perdidas-valor">R$ 0</div>
+      </div>
+      <div style="background:#fff;padding:12px 10px;">
+        <div style="font-size:10px;color:#999;margin-bottom:6px;">Taxa de conversão</div>
+        <div style="font-size:20px;font-weight:700;color:#1C1C1C;" id="neg-rel-conversao">0%</div>
+      </div>
+      <div style="background:#fff;padding:12px 10px;">
+        <div style="font-size:10px;color:#999;margin-bottom:6px;">Valor perdido</div>
+        <div style="font-size:20px;font-weight:700;color:#7A0000;" id="neg-rel-valor-perdido">R$ 0</div>
+      </div>
+    </div>
+
+    <!-- MOTIVOS COM VALOR -->
+    <div style="font-size:13px;font-weight:700;color:#1C1C1C;margin-bottom:2px;">Motivo das perdas — por valor (R$)</div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:12px;">Soma do valor estimado de todas as negociações perdidas, agrupadas por motivo</div>
+    <div id="neg-rel-motivos-valor" style="display:flex;flex-direction:column;gap:10px;"></div>
+
   </div>
 </div>
 
@@ -8855,6 +8919,8 @@ function listenNegociacoes(vendNome, isGestora) {
 
   var filtroBox = document.getElementById('neg-filtro-vend-box');
   var vendField = document.getElementById('neg-vend-field');
+  var relBtn = document.getElementById('neg-btn-relatorio');
+  if (relBtn) relBtn.style.display = isGestora ? 'inline-block' : 'none';
   if (isGestora) {
     if (filtroBox) filtroBox.style.display = 'block';
     if (vendField) vendField.style.display = 'block';
@@ -8973,6 +9039,87 @@ function renderNegMotivosResumo(todas) {
       '</div>' +
     '</div>';
   }).join('');
+}
+
+// ── Relatório para diretoria: KPIs + valor perdido por motivo (categoria fixa) ──
+// Usa os mesmos filtros de vendedor/estado já ativos na aba de Negociações,
+// pra somar sempre pelo motivoCategoria (não pelo texto livre) e dar números
+// comparáveis entre negociações.
+function abrirRelatorioNeg() {
+  renderRelatorioNeg();
+  document.getElementById('neg-relatorio-overlay').style.display = 'flex';
+}
+
+function fecharRelatorioNeg() {
+  document.getElementById('neg-relatorio-overlay').style.display = 'none';
+}
+
+function renderRelatorioNeg() {
+  var todas = negTodasListadas();
+
+  var fechadas = todas.filter(function(n) { return n.etapa === 'fechado'; });
+  var perdidas = todas.filter(function(n) { return n.etapa === 'perdido'; });
+  var valorFechadas = fechadas.reduce(function(s, n) { return s + (Number(n.valorEstimado) || 0); }, 0);
+  var valorPerdidas = perdidas.reduce(function(s, n) { return s + (Number(n.valorEstimado) || 0); }, 0);
+  var conversao = (fechadas.length + perdidas.length) > 0
+    ? Math.round(fechadas.length / (fechadas.length + perdidas.length) * 100)
+    : 0;
+
+  document.getElementById('neg-rel-total').textContent = todas.length;
+  document.getElementById('neg-rel-fechadas').textContent = fechadas.length;
+  document.getElementById('neg-rel-fechadas-valor').textContent = negRelFmt(valorFechadas);
+  document.getElementById('neg-rel-perdidas').textContent = perdidas.length;
+  document.getElementById('neg-rel-perdidas-valor').textContent = negRelFmt(valorPerdidas);
+  document.getElementById('neg-rel-conversao').textContent = conversao + '%';
+  document.getElementById('neg-rel-valor-perdido').textContent = negRelFmt(valorPerdidas);
+
+  var escopoEl = document.getElementById('neg-rel-escopo');
+  if (escopoEl) {
+    var partes = [];
+    if (negState.isGestora && negState.filtroVend !== 'todos') {
+      partes.push('vendedor: ' + (vendedores[negState.filtroVend] ? vendedores[negState.filtroVend].nome : negState.filtroVend));
+    }
+    if (negState.filtroEstado !== 'todos') partes.push('estado: ' + negState.filtroEstado);
+    escopoEl.textContent = partes.length ? ('Filtros ativos — ' + partes.join(' · ')) : 'Todas as negociações registradas (sem filtro).';
+  }
+
+  var contagem = {};
+  perdidas.forEach(function(n) {
+    var key = n.motivoCategoria || '_sem_motivo';
+    if (!contagem[key]) contagem[key] = { valor: 0, qtd: 0 };
+    contagem[key].valor += (Number(n.valorEstimado) || 0);
+    contagem[key].qtd += 1;
+  });
+
+  var linhas = Object.keys(contagem).map(function(k) {
+    var info = NEG_MOTIVOS[k] || { label: 'Sem motivo informado', cor: '#999' };
+    return { label: info.label, cor: info.cor, valor: contagem[k].valor, qtd: contagem[k].qtd };
+  }).sort(function(a, b) { return b.valor - a.valor; });
+
+  var box = document.getElementById('neg-rel-motivos-valor');
+  if (!linhas.length) {
+    box.innerHTML = '<div style="font-size:12px;color:#bbb;font-style:italic;">Nenhuma negociação perdida registrada ainda.</div>';
+    return;
+  }
+
+  var max = linhas[0].valor || 1;
+  box.innerHTML = linhas.map(function(l, idx) {
+    var pct = Math.max(3, Math.round(l.valor / max * 100));
+    return '<div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">' +
+        '<span style="color:#333;">' + negEsc(l.label) + ' <span style="color:#aaa;font-size:11px;">(' + l.qtd + ')</span></span>' +
+        '<span style="font-weight:700;color:#1C1C1C;">' + negRelFmt(l.valor) + '</span>' +
+      '</div>' +
+      '<div style="background:#F1EFE8;border-radius:20px;height:10px;overflow:hidden;">' +
+        '<div style="height:100%;border-radius:20px;background:' + (idx === 0 ? '#C41E1E' : l.cor) + ';width:' + pct + '%;"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function negRelFmt(n) {
+  var v = isFinite(n) ? n : 0;
+  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function negCardHtml(n, et, hoje) {
