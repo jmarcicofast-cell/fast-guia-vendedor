@@ -1968,7 +1968,7 @@
     </div>
 
     <!-- COMISSÃO VENDEDOR -->
-    <div id="ped-com-vendedor">
+    <div id="ped-com-vendedor" style="display:none;">
       <div class="comissao-box" id="ped-comissao-box">
         <div>
           <div class="com-item-label">Total Vendido</div>
@@ -3017,7 +3017,7 @@
       </div>
 
       <!-- COMISSÃO GANHA (com filtro de período) -->
-      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+      <div id="ev-comissao-secao" style="display:none;background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">
           <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;">💰 Comissão Ganha</div>
           <div style="display:flex;background:#F1EFE8;border-radius:8px;padding:3px;gap:2px;">
@@ -3509,7 +3509,7 @@
 
       <!-- RESUMO PEDIDOS EQUIPE -->
       <div style="margin-top:1.5rem;">
-        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:10px;">💰 Pedidos & Comissão do Mês</div>
+        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#aaa;margin-bottom:10px;">📦 Pedidos do Mês</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;" id="ped-resumo-equipe"></div>
       </div>
       </div>
@@ -10517,14 +10517,11 @@ function renderResumoEquipe(allPedidos) {
   box.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES'].map(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p) { return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado'; });
     var total = peds.reduce(function(s,p) { return s + Number(p.vTotal||0); }, 0);
-    var com   = peds.reduce(function(s,p) { return s + Number(p.vTotal||0) * (CAT_PCT[p.cat]||0); }, 0);
     if (!vendedores[vn]) return '';
     return '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:10px;padding:1rem;">' +
       '<div style="font-size:13px;font-weight:600;color:#1C1C1C;margin-bottom:6px;">' + vendedores[vn].nome + '</div>' +
       '<div style="font-size:11px;color:#aaa;">Total vendido</div>' +
       '<div style="font-size:14px;font-weight:600;color:#333;margin-bottom:4px;">R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
-      '<div style="font-size:11px;color:#aaa;">Previsao comissao</div>' +
-      '<div style="font-size:14px;font-weight:600;color:#2E7D32;">R$ ' + com.toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
       '<div style="font-size:11px;color:#aaa;margin-top:4px;">' + peds.length + ' pedido(s) no mes</div>' +
     '</div>';
   }).join('');
@@ -11186,19 +11183,14 @@ function entrarComoUsuario(user) {
   listenNegociacoes(user, v.tipo === 'gestora');
   listenAtendimentos(user, v.tipo === 'gestora');
   checarPedidosLocaisPendentes();
-  // Show correct commission section
+  // Comissão removida do sistema — as duas caixas ficam sempre ocultas
   var comVend = document.getElementById('ped-com-vendedor');
   var comGest = document.getElementById('ped-com-gestora');
+  if (comVend) comVend.style.display = 'none';
+  if (comGest) comGest.style.display = 'none';
   if (v.tipo === 'gestora') {
-    if (comVend) comVend.style.display = 'none';
-    if (comGest) comGest.style.display = 'block';
-    // Trigger gestora commission calculation
-    setTimeout(recalcGestora, 1500);
     listenEvolucaoGestora();
     listenPaineisGestora();
-  } else {
-    if (comVend) comVend.style.display = 'block';
-    if (comGest) comGest.style.display = 'none';
   }
   // Render personal credentials
   const credBox = document.getElementById('credenciais-box');
@@ -11710,6 +11702,7 @@ function sortTable(col) {
 }
 
 function showTab(name, btn) {
+  if (typeof ckFlushPendingSave === 'function') ckFlushPendingSave();
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
@@ -12516,6 +12509,45 @@ function ckSaveSettings(){
   dbRef('checkinDiario').set(ckData).catch(function(){});
 }
 
+/* ── Auto-save do dia: grava ckRows dentro de ckData.dias[dateStr] e persiste.
+   showStatus controla se atualiza o texto "Salvo ✓" (evita piscar em flush silencioso). */
+var ckSaveTimer = null;
+function ckPersistDia(dateStr, showStatus){
+  ckData.dias[dateStr] = { rows: ckRows };
+  dbRef('checkinDiario').set(ckData).then(function(){
+    if (showStatus){
+      var st = document.getElementById('ck-savestatus');
+      if (st){ st.textContent = 'Salvo automaticamente ✓'; st.className = 'ck-savestatus ok'; }
+    }
+    ckRenderHistory();
+  }).catch(function(){
+    var st = document.getElementById('ck-savestatus');
+    if (st){ st.textContent = 'Erro ao salvar'; st.className = 'ck-savestatus'; }
+  });
+}
+
+/* dispara salvamento ~800ms depois da última tecla digitada */
+function ckAutoSave(){
+  var st = document.getElementById('ck-savestatus');
+  if (st){ st.textContent = 'Salvando…'; st.className = 'ck-savestatus'; }
+  var dateStr = document.getElementById('ck-date').value;
+  if (ckSaveTimer) clearTimeout(ckSaveTimer);
+  ckSaveTimer = setTimeout(function(){
+    ckSaveTimer = null;
+    ckPersistDia(dateStr, true);
+  }, 800);
+}
+
+/* salva imediatamente qualquer alteração pendente (chamado antes de trocar de dia/aba/fechar a página) */
+function ckFlushPendingSave(){
+  if (ckSaveTimer){
+    clearTimeout(ckSaveTimer);
+    ckSaveTimer = null;
+    var dateStr = document.getElementById('ck-date').value;
+    ckPersistDia(dateStr, false);
+  }
+}
+
 function ckLoadDay(dateStr){
   document.getElementById('ck-date').value = dateStr;
   var saved = ckData.dias[dateStr];
@@ -12566,6 +12598,7 @@ function ckRenderTable(){
         ckRows.splice(Number(btn.dataset.i), 1);
         ckRenderTable();
         ckRecalcMetrics();
+        ckPersistDia(document.getElementById('ck-date').value, true);
       });
     });
   }
@@ -12601,6 +12634,7 @@ function ckOnCellInput(e){
     if (termCell) termCell.innerHTML = ckTermometroHTML(av);
   }
   ckRecalcMetrics();
+  ckAutoSave();
 }
 
 function ckRecalcMetrics(){
@@ -12633,16 +12667,9 @@ function ckRecalcMetrics(){
 }
 
 function ckSaveDay(){
+  if (ckSaveTimer){ clearTimeout(ckSaveTimer); ckSaveTimer = null; }
   var dateStr = document.getElementById('ck-date').value;
-  ckData.dias[dateStr] = { rows: ckRows };
-  dbRef('checkinDiario').set(ckData).then(function(){
-    var st = document.getElementById('ck-savestatus');
-    st.textContent = 'Salvo ✓';
-    st.className = 'ck-savestatus ok';
-    ckRenderHistory();
-  }).catch(function(){
-    document.getElementById('ck-savestatus').textContent = 'Erro ao salvar';
-  });
+  ckPersistDia(dateStr, true);
 }
 
 /* ── RANKING (dia atual ou soma de período) ── */
@@ -12762,6 +12789,7 @@ function ckRenderHistory(){
 }
 
 function ckShiftDate(days){
+  ckFlushPendingSave();
   var d = new Date(document.getElementById('ck-date').value + 'T00:00:00');
   d.setDate(d.getDate() + days);
   ckLoadDay(ckDateToStr(d));
@@ -12787,14 +12815,16 @@ document.getElementById('ck-meta-prop').addEventListener('input', function(e){
   ckSaveSettings();
   ckRenderTable();
 });
-document.getElementById('ck-date').addEventListener('change', function(e){ ckLoadDay(e.target.value); });
+document.getElementById('ck-date').addEventListener('change', function(e){ ckFlushPendingSave(); ckLoadDay(e.target.value); });
 document.getElementById('ck-prev').addEventListener('click', function(){ ckShiftDate(-1); });
 document.getElementById('ck-next').addEventListener('click', function(){ ckShiftDate(1); });
 document.getElementById('ck-addrow').addEventListener('click', function(){
   ckRows.push({ nome:'', ligacoes:0, propostas:0, vendasN:0, vendidoR:0 });
   ckRenderTable();
+  ckPersistDia(document.getElementById('ck-date').value, true);
 });
 document.getElementById('ck-savebtn').addEventListener('click', ckSaveDay);
+window.addEventListener('beforeunload', function(){ ckFlushPendingSave(); });
 
 document.querySelectorAll('.ck-crit-btn').forEach(function(btn){
   btn.addEventListener('click', function(){
