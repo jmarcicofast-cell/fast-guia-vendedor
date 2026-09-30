@@ -2252,6 +2252,7 @@
             <th>Vl. Total</th>
             <th>Status</th>
             <th>Nº Doc</th>
+            <th>Conciliação</th>
             <th>Observação</th>
           </tr>
         </thead>
@@ -8056,6 +8057,11 @@ function avisarPedidoTravado() {
 function atualizarStatus(vendNome, pedidoId, novoStatus) {
   if (pedidoEstaTravado(vendNome, pedidoId)) { avisarPedidoTravado(); renderPedidosFiltrados(); return; }
   var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vendNome && x.id === pedidoId; });
+  if (p && p.conciliado && novoStatus !== 'faturado') {
+    alert('⚖️ Esta carga já está conciliada. Desfaça a conciliação (no detalhe do pedido) antes de mudar o status.');
+    renderPedidosFiltrados();
+    return;
+  }
   // Ao marcar como Faturado (e ainda não estava faturado), pede o número do
   // documento (DOC) gerado no faturamento antes de gravar a mudança de status.
   if (novoStatus === 'faturado' && (!p || p.status !== 'faturado')) {
@@ -8234,6 +8240,7 @@ function linhaPedidoHtml(p, isGestora) {
     '<td style="font-weight:700;font-size:14px;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
     '<td onclick="event.stopPropagation()"><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)"' + selectAttrs + '>' + statusSelectOpts(p, isGestora) + '</select></td>' +
     '<td onclick="event.stopPropagation()">' + numDocCellHtml(p) + '</td>' +
+    '<td onclick="event.stopPropagation()">' + conciliacaoCellHtml(p) + '</td>' +
     '<td onclick="event.stopPropagation()"><input type="text" value="' + obsVal + '" placeholder="+ observação" onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()"' + obsAttrs + '></td>' +
   '</tr>';
 }
@@ -8248,6 +8255,165 @@ function numDocCellHtml(p) {
     return '<input type="text" value="' + val + '" placeholder="—" style="width:90px;font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid #E2E0D8;outline:none;font-family:monospace;" onblur="salvarNumDoc(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()">';
   }
   return '<span style="font-family:monospace;font-size:12.5px;font-weight:600;">' + (val || '—') + '</span>';
+}
+
+// ══════════ CONCILIAÇÃO ══════════
+// Último passo depois do Faturamento. Só a Juliana concilia. Ao conciliar, a
+// comissão daquela carga é calculada e CONGELADA no pedido (comissaoConc), pra
+// não mudar depois se a meta de ligações ou os itens forem alterados.
+// Regras: Placa 0,5% · Complemento/VAB (GRX) 0,75% · Aço/Aço Placo/Piso 1%.
+// Redutor: vendedor com menos de 600 ligações no mês do pedido -> 0,5% flat.
+var META_LIGACOES_COMISSAO = 600;
+
+function fmtBRLConc(n) { return 'R$ ' + Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function conciliacaoCellHtml(p) {
+  if (p.status !== 'faturado') return '<span style="color:#ccc;font-size:12px;">—</span>';
+  if (p.conciliado) {
+    var val = p.comissaoConc ? fmtBRLConc(p.comissaoConc.valor) : '—';
+    var red = p.comissaoConc && p.comissaoConc.redutor ? ' <span title="Redutor aplicado: abaixo de ' + META_LIGACOES_COMISSAO + ' ligações no mês" style="font-size:10px;color:#E65100;font-weight:700;">⚠️0,5%</span>' : '';
+    return '<div style="display:flex;flex-direction:column;gap:2px;min-width:120px;">' +
+      '<span style="display:inline-block;background:#E8F5E9;color:#1B5E20;font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;width:fit-content;">✅ Conciliado</span>' +
+      '<span style="font-size:12.5px;font-weight:700;color:#1B5E20;" title="Comissão do vendedor nesta carga">💰 ' + val + red + '</span>' +
+    '</div>';
+  }
+  if (currentUser === 'JULIANA') {
+    return '<button type="button" onclick="abrirModalConciliar(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:1.5px solid #1B5E20;background:#fff;color:#1B5E20;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;font-weight:700;white-space:nowrap;">⚖️ Conciliar</button>';
+  }
+  return '<span style="font-size:11px;color:#E65100;font-weight:600;">⏳ Pendente</span>';
+}
+
+// Calcula a comissão cheia (por categoria) de um pedido.
+function calcComissaoPedidoBruta(p) {
+  var mapa = (typeof getMaterialM2Map === 'function') ? getMaterialM2Map() : {};
+  var r = { total:0, placas:0, comp:0, aco:0, semCat:0 };
+  function catDe(cat, material) {
+    if (cat) return cat;
+    var info = mapa[material];
+    return info ? categoriaParaComissao(info.categoria) : '';
+  }
+  function soma(v, cat) {
+    r.total += v;
+    if (cat === 'placa')     r.placas += v * CAT_PCT.placa;
+    else if (cat === 'grx')  r.comp   += v * CAT_PCT.grx;
+    else if (cat === 'aco')  r.aco    += v * CAT_PCT.aco;
+    else                     r.semCat += v;
+  }
+  if (p.itens && p.itens.length > 0) {
+    p.itens.forEach(function(it) {
+      var v = Math.round(numSafe(it.qtd) * numSafe(it.vUnit) * 100) / 100;
+      soma(v, catDe(it.cat, it.material));
+    });
+  } else {
+    soma(Number(p.vTotal || 0), catDe(p.cat, p.material));
+  }
+  r.cheia = r.placas + r.comp + r.aco;
+  return r;
+}
+
+var _concPendente = null;
+
+function abrirModalConciliar(vendNome, pedidoId) {
+  if (currentUser !== 'JULIANA') return;
+  var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vendNome && x.id === pedidoId; });
+  if (!p || p.status !== 'faturado') return;
+  var mesRef = (p.data || new Date().toISOString()).slice(0,7);
+  var br = calcComissaoPedidoBruta(p);
+  _concPendente = null;
+  var ov = document.getElementById('conciliar-overlay');
+  var body = document.getElementById('conciliar-body');
+  var resumo = document.getElementById('conciliar-resumo');
+  if (resumo) resumo.textContent = (p.empresa || p.cliente || '') + ' · Chamado ' + (p.chamado || '—') + ' · DOC ' + (p.numDoc || '—') + ' · ' + vendNome;
+  if (body) body.innerHTML = '<div style="text-align:center;color:#aaa;font-size:12px;padding:16px;">Calculando comissão…</div>';
+  var btn = document.getElementById('conciliar-btn-ok');
+  if (btn) btn.disabled = true;
+  if (ov) ov.style.display = 'flex';
+
+  dbRef('ligacoes/' + vendNome).once('value').then(function(snap) {
+    var dados = snap.val() || {};
+    var ligs = Object.values(dados)
+      .filter(function(l) { return l && l.data && String(l.data).startsWith(mesRef); })
+      .reduce(function(s, l) { return s + (Number(l.qtd) || 0); }, 0);
+    montarConciliacao(p, br, mesRef, ligs);
+  }).catch(function() {
+    montarConciliacao(p, br, mesRef, null);
+  });
+}
+
+function montarConciliacao(p, br, mesRef, ligs) {
+  var redutor = (ligs !== null) && ligs < META_LIGACOES_COMISSAO;
+  var valor = redutor ? br.total * 0.005 : br.cheia;
+  valor = Math.round(valor * 100) / 100;
+  _concPendente = {
+    vend: p.vendedor, id: p.id,
+    snap: {
+      valor: valor,
+      totalVendido: Math.round(br.total*100)/100,
+      placas: Math.round(br.placas*100)/100,
+      comp: Math.round(br.comp*100)/100,
+      aco: Math.round(br.aco*100)/100,
+      cheia: Math.round(br.cheia*100)/100,
+      semCategoria: Math.round(br.semCat*100)/100,
+      ligacoesMes: ligs,
+      mesRef: mesRef,
+      redutor: redutor
+    }
+  };
+  var mesLbl = new Date(mesRef + '-15T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  function linha(lbl, v, cor) {
+    return '<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;border-bottom:1px dashed #F0EEEA;"><span style="color:#666;">' + lbl + '</span><span style="font-weight:700;color:' + (cor||'#1C1C1C') + ';">' + v + '</span></div>';
+  }
+  var html =
+    linha('Valor da carga', fmtBRLConc(br.total)) +
+    linha('Placas (0,5%)', fmtBRLConc(br.placas)) +
+    linha('Complemento/VAB (0,75%)', fmtBRLConc(br.comp)) +
+    linha('Aço/Piso (1%)', fmtBRLConc(br.aco)) +
+    linha('Comissão cheia', fmtBRLConc(br.cheia)) +
+    linha('Ligações em ' + mesLbl, ligs === null ? 'não consegui ler' : (ligs + ' / ' + META_LIGACOES_COMISSAO), redutor ? '#C41E1E' : '#1B5E20');
+  if (br.semCat > 0) {
+    html += '<div style="margin-top:8px;font-size:11px;color:#E65100;font-weight:600;">⚠️ ' + fmtBRLConc(br.semCat) + ' em itens sem categoria (não entram na comissão cheia). Confira o pedido.</div>';
+  }
+  if (redutor) {
+    html += '<div style="margin-top:8px;font-size:11.5px;color:#C41E1E;font-weight:600;">⚠️ Meta de ligações não atingida no mês — comissão reduzida para 0,5% sobre o valor total.</div>';
+  }
+  if (ligs === null) {
+    html += '<div style="margin-top:8px;font-size:11px;color:#E65100;">Não foi possível ler as ligações — calculado sem redutor.</div>';
+  }
+  html += '<div style="margin-top:14px;background:#E8F5E9;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">' +
+    '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1B5E20;">💰 Comissão de ' + p.vendedor + '</span>' +
+    '<span style="font-size:20px;font-weight:800;color:#1B5E20;">' + fmtBRLConc(valor) + '</span></div>';
+  var body = document.getElementById('conciliar-body');
+  if (body) body.innerHTML = html;
+  var btn = document.getElementById('conciliar-btn-ok');
+  if (btn) btn.disabled = false;
+}
+
+function fecharModalConciliar() {
+  var ov = document.getElementById('conciliar-overlay');
+  if (ov) ov.style.display = 'none';
+  _concPendente = null;
+}
+
+function confirmarConciliacao() {
+  if (!_concPendente || currentUser !== 'JULIANA') return;
+  var pend = _concPendente;
+  dbRef('pedidos/' + pend.vend + '/' + pend.id).update({
+    conciliado: true,
+    conciliadoEm: new Date().toISOString().split('T')[0],
+    conciliadoPor: currentUser,
+    comissaoConc: pend.snap
+  }).catch(function(e) { alert('Erro ao conciliar: ' + (e && e.message ? e.message : e)); });
+  fecharModalConciliar();
+  if (typeof fecharDetalhePedido === 'function') fecharDetalhePedido();
+}
+
+function desfazerConciliacao(vendNome, pedidoId) {
+  if (currentUser !== 'JULIANA') return;
+  if (!confirm('Desfazer a conciliação desta carga? A comissão calculada será apagada.')) return;
+  dbRef('pedidos/' + vendNome + '/' + pedidoId).update({
+    conciliado: null, conciliadoEm: null, conciliadoPor: null, comissaoConc: null
+  }).catch(function(e) { console.error('Erro ao desfazer conciliação:', e); });
+  if (typeof fecharDetalhePedido === 'function') fecharDetalhePedido();
 }
 
 function statusSelectOpts(p, isGestora) {
@@ -8282,6 +8448,7 @@ function cardPedidoHtml(p, isGestora) {
     '<div style="font-size:18px;font-weight:700;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
     (p.status === 'faturado' ? '<div style="font-size:11px;color:#888;margin-top:6px;">📄 Doc: <span style="font-family:monospace;font-weight:700;color:#1C1C1C;">' + (p.numDoc || '—') + '</span></div>' : '') +
     '</div>' +
+    (p.status === 'faturado' ? '<div onclick="event.stopPropagation()" style="margin-top:8px;">' + conciliacaoCellHtml(p) + '</div>' : '') +
     '<input type="text" value="' + obsVal + '" placeholder="+ observação" onclick="event.stopPropagation()" onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()"' + obsAttrs + '>' +
   '</div>';
 }
@@ -8334,6 +8501,15 @@ function abrirDetalhePedido(vend, pedidoId) {
             '<input type="text" value="' + (p.numDoc||'').toString().replace(/"/g,'&quot;') + '" placeholder="Digite o nº do DOC" style="width:140px;font-size:13px;font-family:monospace;font-weight:700;padding:5px 8px;border-radius:6px;border:1px solid #E2E0D8;outline:none;text-align:right;" onblur="salvarNumDoc(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()">'
             :
             '<span style="font-size:13px;font-family:monospace;font-weight:700;color:#1C1C1C;">' + (p.numDoc || '—') + '</span>') +
+        '</div>'
+        : '') +
+      (p.status === 'faturado' ?
+        '<div style="background:' + (p.conciliado ? '#E8F5E9' : '#FFF8E1') + ';border-radius:8px;padding:9px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">' +
+          '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:' + (p.conciliado ? '#1B5E20' : '#E65100') + ';">⚖️ Conciliação' +
+            (p.conciliado && p.conciliadoEm ? ' <span style="font-weight:500;text-transform:none;letter-spacing:0;">· ' + new Date(p.conciliadoEm + 'T12:00:00').toLocaleDateString('pt-BR') + '</span>' : '') + '</span>' +
+          '<span style="display:flex;align-items:center;gap:8px;">' + conciliacaoCellHtml(p) +
+            (p.conciliado && currentUser === 'JULIANA' ? '<button type="button" onclick="desfazerConciliacao(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:none;color:#C41E1E;font-size:11px;cursor:pointer;text-decoration:underline;">desfazer</button>' : '') +
+          '</span>' +
         '</div>'
         : '') +
       '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:16px;">' +
@@ -12310,6 +12486,22 @@ function importarArquivo(event) {
     <div style="display:flex;gap:8px;margin-top:14px;">
       <button onclick="fecharModalDocFaturado()" style="flex:1;padding:9px;border-radius:8px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:13px;cursor:pointer;">Cancelar</button>
       <button onclick="confirmarDocFaturado()" style="flex:1.5;padding:9px;border-radius:8px;border:none;background:#1C1C1C;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">✅ Confirmar Faturamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay de conciliação (último passo após o faturamento) -->
+<div id="conciliar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1002;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this) fecharModalConciliar()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:420px;width:100%;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-size:15px;font-weight:700;color:#1C1C1C;">⚖️ Conciliar Carga</div>
+      <span onclick="fecharModalConciliar()" style="cursor:pointer;font-size:18px;color:#888;line-height:1;">✕</span>
+    </div>
+    <div id="conciliar-resumo" style="font-size:11.5px;color:#aaa;margin-bottom:14px;"></div>
+    <div id="conciliar-body"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button onclick="fecharModalConciliar()" style="flex:1;padding:9px;border-radius:8px;border:1.5px solid #E2E0D8;background:#fff;color:#888;font-size:13px;cursor:pointer;">Cancelar</button>
+      <button id="conciliar-btn-ok" onclick="confirmarConciliacao()" style="flex:1.5;padding:9px;border-radius:8px;border:none;background:#1B5E20;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">✅ Confirmar Conciliação</button>
     </div>
   </div>
 </div>
