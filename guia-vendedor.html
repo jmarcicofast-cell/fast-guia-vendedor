@@ -5165,19 +5165,14 @@ function renderEditItens() {
     var matDiv = document.createElement('div');
     matDiv.style.gridColumn = 'span 2';
     matDiv.innerHTML = '<label style="font-size:10px;color:#aaa;display:block;margin-bottom:2px;">Material</label>';
-    var matIn = document.createElement('select');
-    matIn.style.cssText=inp;
-    matIn.innerHTML = montarOptionsMaterial(it.material||'');
-    (function(i){ matIn.onchange = function(){
-      editItens[i].material = this.value;
-      var opt = this.options[this.selectedIndex];
-      editItens[i].codigo = opt ? (opt.getAttribute('data-codigo') || '') : '';
-      var comissaoAuto = opt ? (opt.getAttribute('data-comissao') || '') : '';
-      if (comissaoAuto) {
-        editItens[i].cat = comissaoAuto;
-        sel.value = comissaoAuto;
+    var matIn = (function(i){ return criarBuscaMaterial(it.material || '', inp, function(m){
+      editItens[i].material = m ? m.nome : '';
+      editItens[i].codigo = m ? (m.codigo || '') : '';
+      if (m && m.comissao) {
+        editItens[i].cat = m.comissao;
+        sel.value = m.comissao;
       }
-    }; })(idx);
+    }); })(idx);
     matDiv.appendChild(matIn);
 
     // Qtd
@@ -7946,6 +7941,179 @@ function montarOptionsMaterial(valorAtual) {
     html += '<option value="' + valorAtual.replace(/"/g,'&quot;') + '" selected>' + valorAtual + ' (personalizado)</option>';
   }
   return html;
+}
+
+
+// ══ BUSCA DIGITÁVEL DE MATERIAL (pedido novo e edição de pedido) ══
+// Substitui o <select> gigante: o vendedor digita parte do nome ou do código
+// (ex: "st 1,80", "montante 70", "dw00057") e escolhe na lista filtrada.
+// Ignora acentos/maiúsculas e aceita as palavras em qualquer ordem.
+function bmNorm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim(); }
+function bmEsc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+var _bmIndex = null;
+function bmIndice() {
+  if (_bmIndex) return _bmIndex;
+  _bmIndex = obterMateriaisUnicos().map(function(m) {
+    return { nome: m.nome, codigo: m.codigo || '', categoria: m.categoria || '', comissao: categoriaParaComissao(m.categoria),
+             nNome: bmNorm(m.nome), nCod: bmNorm(m.codigo) };
+  });
+  return _bmIndex;
+}
+function bmBuscar(q) {
+  var lista = bmIndice();
+  var nq = bmNorm(q);
+  if (!nq) return lista.slice(0, 60);
+  var termos = nq.split(' ');
+  var res = [];
+  lista.forEach(function(m) {
+    var alvo = m.nNome + ' ' + m.nCod;
+    for (var i = 0; i < termos.length; i++) if (alvo.indexOf(termos[i]) === -1) return;
+    var score = 30;
+    if (m.nCod === nq) score = 0;
+    else if (m.nNome.indexOf(nq) === 0) score = 10;
+    else if (m.nNome.indexOf(nq) !== -1) score = 20;
+    else {
+      // termos que começam uma palavra valem mais que termos no meio da palavra
+      termos.forEach(function(t) { if ((' ' + alvo).indexOf(' ' + t) === -1) score += 2; });
+    }
+    res.push({ m: m, s: score });
+  });
+  res.sort(function(a, b) { return a.s - b.s || a.m.nNome.length - b.m.nNome.length || a.m.nome.localeCompare(b.m.nome, 'pt-BR'); });
+  return res.slice(0, 60).map(function(r) { return r.m; });
+}
+function bmDestacar(texto, q) {
+  texto = String(texto || '');
+  var base = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  if (base.length !== texto.length) return bmEsc(texto);
+  var marca = new Array(texto.length).fill(false);
+  bmNorm(q).split(' ').filter(Boolean).forEach(function(t) {
+    var pos = base.indexOf(t);
+    if (pos === -1) return;
+    for (var k = pos; k < pos + t.length; k++) marca[k] = true;
+  });
+  var out = '', aberto = false;
+  for (var k = 0; k < texto.length; k++) {
+    if (marca[k] && !aberto) { out += '<mark style="background:#FFE9A8;color:inherit;padding:0;border-radius:2px;">'; aberto = true; }
+    if (!marca[k] && aberto) { out += '</mark>'; aberto = false; }
+    out += bmEsc(texto[k]);
+  }
+  return out + (aberto ? '</mark>' : '');
+}
+
+// Cria o campo. onSelect recebe { nome, codigo, comissao } (ou null quando o campo é limpo).
+function criarBuscaMaterial(valorAtual, inputStyle, onSelect) {
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;';
+  var inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'bm-input';
+  inp.autocomplete = 'off';
+  inp.setAttribute('autocorrect', 'off');
+  inp.setAttribute('spellcheck', 'false');
+  inp.placeholder = '🔍 Digite o nome ou o código…';
+  inp.style.cssText = inputStyle + 'padding-right:26px;';
+  var atual = valorAtual || '';
+  function rotulo(nome) {
+    if (!nome) return '';
+    var m = null; bmIndice().forEach(function(x) { if (!m && x.nome === nome) m = x; });
+    return m && m.codigo ? (m.nome + ' — ' + m.codigo) : nome + (m ? '' : ' (personalizado)');
+  }
+  inp.value = rotulo(atual);
+  inp.title = inp.value;
+  var limpar = document.createElement('span');
+  limpar.textContent = '×';
+  limpar.title = 'Limpar';
+  limpar.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:#aaa;font-size:15px;line-height:1;display:' + (atual ? 'block' : 'none') + ';';
+  wrap.appendChild(inp); wrap.appendChild(limpar);
+
+  var drop = null, itens = [], ativo = -1;
+  function fechar() {
+    if (drop) { drop.remove(); drop = null; }
+    window.removeEventListener('scroll', posicionar, true);
+    window.removeEventListener('resize', posicionar);
+  }
+  function posicionar() {
+    if (!drop) return;
+    var r = inp.getBoundingClientRect();
+    var espacoAbaixo = window.innerHeight - r.bottom;
+    var alt = Math.min(300, Math.max(espacoAbaixo, r.top) - 12);
+    drop.style.left = r.left + 'px';
+    drop.style.width = Math.max(r.width, 300) + 'px';
+    drop.style.maxHeight = alt + 'px';
+    if (espacoAbaixo < 180 && r.top > espacoAbaixo) { drop.style.top = ''; drop.style.bottom = (window.innerHeight - r.top + 2) + 'px'; }
+    else { drop.style.bottom = ''; drop.style.top = (r.bottom + 2) + 'px'; }
+  }
+  function marcar(i) {
+    ativo = i;
+    if (!drop) return;
+    Array.prototype.forEach.call(drop.children, function(el, k) { el.style.background = (k === i) ? '#FBE9E9' : ''; });
+    var el = drop.children[i]; if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+  }
+  function escolher(m) {
+    atual = m.nome;
+    inp.value = rotulo(m.nome); inp.title = inp.value;
+    limpar.style.display = 'block';
+    fechar();
+    onSelect({ nome: m.nome, codigo: m.codigo, comissao: m.comissao });
+    inp.blur();
+  }
+  function abrir() {
+    var q = inp.value;
+    itens = bmBuscar(q);
+    if (!drop) {
+      drop = document.createElement('div');
+      drop.style.cssText = 'position:fixed;z-index:100000;background:#fff;border:1.5px solid #C41E1E;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);overflow-y:auto;font-size:12.5px;';
+      drop.addEventListener('mousedown', function(e) { e.preventDefault(); });
+      document.body.appendChild(drop);
+      window.addEventListener('scroll', posicionar, true);
+      window.addEventListener('resize', posicionar);
+    }
+    if (!itens.length) {
+      drop.innerHTML = '<div style="padding:10px 12px;color:#999;">Nenhum produto encontrado para “' + bmEsc(q) + '”.</div>';
+      ativo = -1;
+    } else {
+      drop.innerHTML = itens.map(function(m) {
+        return '<div style="padding:7px 12px;cursor:pointer;border-bottom:1px solid #F3F1EC;display:flex;justify-content:space-between;gap:10px;">' +
+          '<span>' + bmDestacar(m.nome, q) + '</span>' +
+          '<span style="color:#888;font-family:ui-monospace,monospace;font-size:11px;white-space:nowrap;">' + bmDestacar(m.codigo, q) + '</span></div>';
+      }).join('');
+      Array.prototype.forEach.call(drop.children, function(el, k) {
+        el.addEventListener('mouseenter', function() { marcar(k); });
+        el.addEventListener('click', function() { escolher(itens[k]); });
+      });
+      marcar(q ? 0 : -1);
+    }
+    posicionar();
+  }
+  inp.addEventListener('focus', function() {
+    // Ao entrar no campo, ele fica vazio pronto pra digitar; o produto atual aparece como dica.
+    inp.placeholder = atual ? rotulo(atual) : '🔍 Digite o nome ou o código…';
+    inp.value = '';
+    abrir();
+  });
+  inp.addEventListener('input', abrir);
+  inp.addEventListener('mousedown', function() {
+    // clicou de novo num campo que já está com foco e mostrando o produto: limpa pra digitar
+    if (document.activeElement === inp && inp.value === rotulo(atual)) { inp.value = ''; abrir(); }
+  });
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (!drop) abrir(); marcar(Math.min(ativo + 1, itens.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); marcar(Math.max(ativo - 1, 0)); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (drop && itens[ativo]) escolher(itens[ativo]); else if (drop && itens.length === 1) escolher(itens[0]); }
+    else if (e.key === 'Escape') { inp.value = rotulo(atual); fechar(); inp.blur(); }
+    else if (e.key === 'Tab' && drop && itens[ativo] && inp.value !== rotulo(atual)) { escolher(itens[ativo]); }
+  });
+  inp.addEventListener('blur', function() {
+    // Se digitou algo e saiu sem escolher, volta para o último produto válido.
+    setTimeout(function() { inp.value = rotulo(atual); inp.title = inp.value; inp.placeholder = '🔍 Digite o nome ou o código…'; fechar(); }, 120);
+  });
+  limpar.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    atual = ''; inp.value = ''; inp.title = ''; limpar.style.display = 'none';
+    onSelect(null);
+    inp.focus();
+  });
+  return wrap;
 }
 
 // Preenche o dropdown de filtro de status da aba Pedidos com todos os status possiveis
@@ -11320,17 +11488,12 @@ function renderItensList() {
     // Material
     var matDiv = document.createElement('div'); matDiv.className = 'ped-field'; matDiv.style.gridColumn = 'span 2';
     matDiv.innerHTML = '<label>Material</label>';
-    var matIn = document.createElement('select');
-    matIn.style.cssText = 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;';
-    matIn.innerHTML = montarOptionsMaterial(it.material || '');
-    (function(i){ matIn.addEventListener('change', function() {
-      updateItem(i, 'material', this.value);
-      var opt = this.options[this.selectedIndex];
-      updateItem(i, 'codigo', opt ? (opt.getAttribute('data-codigo') || '') : '');
-      var comissaoAuto = opt ? (opt.getAttribute('data-comissao') || '') : '';
-      if (comissaoAuto) {
-        updateItem(i, 'cat', comissaoAuto);
-        sel.value = comissaoAuto;
+    var matIn = (function(i){ return criarBuscaMaterial(it.material || '', 'width:100%;padding:6px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;', function(m) {
+      updateItem(i, 'material', m ? m.nome : '');
+      updateItem(i, 'codigo', m ? (m.codigo || '') : '');
+      if (m && m.comissao) {
+        updateItem(i, 'cat', m.comissao);
+        sel.value = m.comissao;
       }
     }); })(idx);
     matDiv.appendChild(matIn);
