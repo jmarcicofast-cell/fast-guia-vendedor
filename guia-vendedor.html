@@ -1090,6 +1090,10 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
     Negociações
   </button>
+  <button class="nav-btn" id="nav-shopping" draggable="true" data-nav-id="shopping" onclick="showTab('shopping',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    Shopping de Preços
+  </button>
   <button class="nav-btn" draggable="true" data-nav-id="treinamentos" onclick="showTab('treinamentos',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 3L2 8l10 5 10-5-10-5z"/><path d="M2 16l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
     Treinamentos
@@ -4497,6 +4501,124 @@
   #tab-minhasmetas .mm-sel-btn.active{ background:#C41E1E; border-color:#C41E1E; color:#fff; font-weight:600; }
   @media (max-width:600px){ #tab-minhasmetas .mm-grid2{ grid-template-columns:1fr; } }
 </style>
+<style>
+/* ══ SHOPPING DE PREÇOS (prefixo sp-) ══ */
+#tab-shopping { --sp-red:#C41E1E; --sp-red-dim:rgba(196,30,30,.09); --sp-green:#2E7D32; --sp-green-dim:rgba(46,125,50,.11);
+  --sp-blue:#2f6690; --sp-blue-dim:rgba(47,102,144,.10); --sp-orange:#B5530F; --sp-orange-dim:rgba(181,83,15,.10);
+  --sp-border:#E0DDD8; --sp-soft:#EEECE8; --sp-panel:#fff; --sp-panel2:#F5F4F2; --sp-muted:#6B6B6B; --sp-muted2:#9C9A96;
+  --sp-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace; }
+.sp-wrap { max-width:1500px; margin:0 auto; padding:20px 18px 50px; color:#1F1F1F; }
+.sp-top { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
+.sp-brand { display:flex; align-items:center; gap:12px; }
+.sp-mark { width:44px; height:44px; border-radius:10px; background:var(--sp-red); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; flex-shrink:0; }
+.sp-eyebrow { font-size:11px; color:var(--sp-muted); text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
+.sp-brand h2 { font-size:20px; font-weight:800; margin-top:2px; }
+.sp-rodada-box { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.sp-rodada-box label { font-size:12px; color:var(--sp-muted); font-weight:600; }
+.sp-rodada-box select { padding:7px 10px; border-radius:8px; border:1px solid var(--sp-border); background:#fff; font-size:13px; font-weight:600; cursor:pointer; }
+.sp-banner { border-radius:10px; padding:11px 14px; font-size:13px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; line-height:1.4; }
+.sp-banner.hoje { background:#FBE9E9; color:#7A0000; border:1px solid #F1C4C4; }
+.sp-banner.warn { background:#FEF3E0; color:#7A4A00; border:1px solid #F5D9A8; }
+.sp-banner.info { background:#E6F1FB; color:#0C447C; border:1px solid #C3DCF2; }
+.sp-banner.lock { background:#F1EFE8; color:#666; border:1px solid var(--sp-border); }
+.sp-btn { padding:7px 13px; border-radius:8px; border:1px solid var(--sp-border); background:#fff; color:#1F1F1F; font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap; transition:all .15s; }
+.sp-btn:hover { border-color:var(--sp-red); color:var(--sp-red); }
+.sp-btn.primary { background:var(--sp-red); color:#fff; border-color:var(--sp-red); }
+.sp-btn.primary:hover { background:#A31818; color:#fff; }
+.sp-btn.ghost { background:transparent; }
+.sp-btn.danger:hover { background:var(--sp-red-dim); }
+.sp-regs { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+.sp-reg { padding:6px 13px; border-radius:20px; border:1px solid var(--sp-border); background:var(--sp-panel2); color:#555; font-size:12.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.sp-reg:hover { border-color:var(--sp-red); color:var(--sp-red); }
+.sp-reg.active { background:var(--sp-red); border-color:var(--sp-red); color:#fff; }
+.sp-reg .sp-fill { font-size:10.5px; font-weight:600; opacity:.75; }
+.sp-reg-div { width:1px; align-self:stretch; background:var(--sp-border); margin:0 4px; }
+.sp-reg-add { width:30px; height:30px; border-radius:50%; border:1px dashed var(--sp-muted2); background:transparent; color:var(--sp-muted); font-size:16px; cursor:pointer; }
+.sp-reg-add:hover { border-color:var(--sp-red); color:var(--sp-red); }
+.sp-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:14px; }
+.sp-stat { background:#fff; border:1px solid var(--sp-border); border-radius:10px; padding:12px 14px; }
+.sp-stat .l { font-size:11.5px; color:var(--sp-muted); margin-bottom:5px; }
+.sp-stat .v { font-family:var(--sp-mono); font-size:19px; font-weight:700; }
+.sp-stat .s { font-size:11px; color:var(--sp-muted2); margin-top:3px; }
+.sp-stat.win .v { color:var(--sp-green); }
+.sp-stat.lose .v { color:var(--sp-red); }
+.sp-stat.alert { border-color:var(--sp-orange); background:var(--sp-orange-dim); }
+.sp-bar { height:5px; background:var(--sp-soft); border-radius:3px; margin-top:7px; overflow:hidden; }
+.sp-bar > div { height:100%; background:var(--sp-green); border-radius:3px; }
+.sp-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.sp-toolbar input[type=text] { padding:8px 12px; border-radius:8px; border:1px solid var(--sp-border); font-size:13px; min-width:220px; outline:none; }
+.sp-toolbar input[type=text]:focus { border-color:var(--sp-red); }
+.sp-actions { display:flex; gap:7px; flex-wrap:wrap; }
+.sp-tablewrap { border:1px solid var(--sp-border); border-radius:10px; overflow:auto; max-height:68vh; background:#fff; }
+.sp-table { border-collapse:separate; border-spacing:0; width:100%; font-size:13px; }
+.sp-table th, .sp-table td { padding:8px 11px; border-bottom:1px solid var(--sp-soft); text-align:left; white-space:nowrap; }
+.sp-table thead th { position:sticky; top:0; z-index:3; background:var(--sp-panel2); font-size:12px; color:var(--sp-muted); font-weight:700; border-bottom:1px solid var(--sp-border); }
+.sp-table thead tr.sp-hc th { top:35px; padding-top:0; padding-bottom:7px; font-weight:500; }
+.sp-table .c-cod { position:sticky; left:0; z-index:2; min-width:80px; background:#fff; }
+.sp-table .c-desc { position:sticky; left:80px; z-index:2; min-width:240px; max-width:310px; white-space:normal; background:#fff; }
+.sp-table .c-fast { position:sticky; left:320px; z-index:2; min-width:100px; background:#fff; border-right:1px solid var(--sp-border); }
+.sp-table thead .c-cod, .sp-table thead .c-desc, .sp-table thead .c-fast { z-index:4; background:var(--sp-panel2); }
+.sp-table tbody tr:hover td { background:#FAF9F7; }
+.sp-table tbody tr:hover td.c-cod, .sp-table tbody tr:hover td.c-desc, .sp-table tbody tr:hover td.c-fast { background:#F3F1EE; }
+.sp-ed { cursor:text; }
+.sp-ed:focus { outline:2px solid var(--sp-red); outline-offset:-2px; background:#FFF8F8 !important; }
+.sp-num { font-family:var(--sp-mono); font-variant-numeric:tabular-nums; }
+td.c-fast { font-weight:700; color:var(--sp-blue); }
+td.sp-vazio { color:var(--sp-muted2); font-family:inherit; }
+.sp-ant { display:block; font-size:10px; color:var(--sp-muted2); font-family:var(--sp-mono); margin-top:1px; }
+.sp-var { font-size:10px; margin-left:4px; color:var(--sp-muted2); }
+td.p-win { background:var(--sp-green-dim); color:var(--sp-green); }
+td.p-lose { background:var(--sp-red-dim); color:var(--sp-red); }
+td.p-tie { color:var(--sp-muted); }
+.sp-comp-h { display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:120px; }
+.sp-mini { opacity:0; width:16px; height:16px; border-radius:50%; text-align:center; line-height:16px; font-size:11px; cursor:pointer; color:var(--sp-muted); flex-shrink:0; }
+.sp-table th:hover .sp-mini { opacity:1; }
+.sp-mini:hover { background:var(--sp-red-dim); color:var(--sp-red); }
+.sp-cond { background:var(--sp-panel2); border:1px solid var(--sp-border); border-radius:20px; color:var(--sp-muted2); font-size:10.5px; font-weight:700; width:100%; padding:2px 6px; outline:none; cursor:pointer; }
+.sp-cond.is-retira { background:var(--sp-blue-dim); border-color:var(--sp-blue); color:var(--sp-blue); }
+.sp-cond.is-entrega { background:var(--sp-orange-dim); border-color:var(--sp-orange); color:var(--sp-orange); }
+.sp-cond.is-custom { color:#333; border-color:var(--sp-muted2); }
+.sp-cond-l { font-size:11px; font-weight:700; color:var(--sp-muted); }
+.sp-rank { display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:700; }
+.sp-rank.best { background:var(--sp-green-dim); color:var(--sp-green); }
+.sp-rank.worst { background:var(--sp-red-dim); color:var(--sp-red); }
+.sp-rank.mid { background:var(--sp-panel2); color:var(--sp-muted); border:1px solid var(--sp-border); }
+.sp-gap { font-family:var(--sp-mono); font-size:11px; color:var(--sp-muted2); margin-left:5px; }
+.sp-anx { display:flex; align-items:center; gap:5px; flex-wrap:wrap; min-width:110px; }
+.sp-chip { position:relative; display:inline-flex; }
+.sp-chip-b { height:24px; min-width:28px; padding:0 5px; border-radius:5px; border:1px solid var(--sp-border); background:var(--sp-panel2); font-size:10.5px; font-weight:700; color:#555; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.sp-chip-b:hover { border-color:var(--sp-blue); color:var(--sp-blue); }
+.sp-chip-x { position:absolute; top:-6px; right:-6px; width:14px; height:14px; border-radius:50%; background:var(--sp-red); color:#fff; font-size:9px; line-height:14px; text-align:center; cursor:pointer; opacity:0; }
+.sp-chip:hover .sp-chip-x { opacity:1; }
+.sp-attach { width:26px; height:24px; border-radius:5px; border:1px dashed var(--sp-muted2); background:transparent; color:var(--sp-muted); font-size:12px; cursor:pointer; padding:0; }
+.sp-attach:hover { border-color:var(--sp-blue); color:var(--sp-blue); }
+.sp-rowdel { width:24px; text-align:center !important; color:var(--sp-muted2); cursor:pointer; }
+.sp-rowdel:hover { color:var(--sp-red); }
+.sp-empty { padding:40px 20px; text-align:center; color:var(--sp-muted); font-size:13px; }
+.sp-ov th { position:static !important; }
+.sp-ov td { padding:11px 12px !important; }
+.sp-ov .rn { font-weight:800; }
+.sp-delta-up { color:var(--sp-red); font-size:11px; font-family:var(--sp-mono); }
+.sp-delta-dn { color:var(--sp-green); font-size:11px; font-family:var(--sp-mono); }
+.sp-foot { margin-top:12px; font-size:11.5px; color:var(--sp-muted2); line-height:1.55; }
+.sp-foot b { color:var(--sp-muted); }
+.sp-start { max-width:620px; margin:30px auto; background:#fff; border:1px solid var(--sp-border); border-radius:12px; padding:24px; text-align:center; }
+.sp-start h3 { font-size:17px; margin-bottom:8px; }
+.sp-start p { font-size:13px; color:var(--sp-muted); margin-bottom:16px; line-height:1.5; }
+.sp-start .sp-actions { justify-content:center; }
+.nav-btn .sp-dot { width:8px; height:8px; border-radius:50%; background:#C41E1E; display:inline-block; margin-left:2px; box-shadow:0 0 0 2px #fff; }
+@media (max-width:700px){
+  .sp-table .c-desc { min-width:170px; }
+  .sp-table .c-fast { left:250px; }
+  .sp-toolbar input[type=text] { min-width:0; width:100%; }
+}
+</style>
+
+<!-- ══ ABA SHOPPING DE PREÇOS ══ -->
+<div id="tab-shopping" class="tab-content">
+  <div class="sp-wrap"><div id="sp-root"><div class="sp-empty">Carregando shopping de preços…</div></div></div>
+</div>
+
 <div id="tab-minhasmetas" class="tab-content active">
 <div class="mm-wrap">
 
@@ -11460,6 +11582,7 @@ function entrarComoUsuario(user) {
   document.getElementById('vendedor-banner').style.display = 'flex';
   document.getElementById('vb-nome-text').textContent = v.nome;
   checkAdminAccess(v.nome);
+  if (typeof spOnLogin === 'function') spOnLogin();
   navAplicarOrdemSalva();
   navSetupDragDrop();
   var mmNavBtn = document.getElementById('nav-minhasmetas');
@@ -12039,6 +12162,7 @@ function showTab(name, btn) {
   if (name === 'parana') prInit();
   if (name === 'checkin') ckInit();
   if (name === 'minhasmetas') mmInit();
+  if (name === 'shopping' && typeof spInit === 'function') spInit();
   btn.classList.add('active');
 }
 
@@ -13854,6 +13978,893 @@ document.querySelectorAll('.mm-preset-btn').forEach(function(btn){
   });
 });
 
+</script>
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// SHOPPING DE PREÇOS — coleta quinzenal (dia 1 e dia 15 de cada mês)
+// Firebase: shoppingPrecos/rodadas/{AAAA-MM-DD}/regioes/{REG}/...
+//           shoppingPrecos/anexos/{rodada}/{REG}/{itemId}/{anexoId} = { data }
+// Cada rodada copia a estrutura (itens, concorrentes, condição, preço FAST)
+// da rodada anterior, com os preços dos concorrentes em branco para nova coleta.
+// ══════════════════════════════════════════════════════════════════════
+var SP = { ROOT:'shoppingPrecos', tree:null, mode:null, rodada:null, regiao:null, busca:'',
+           pendingRender:false, bound:false, attachTarget:null };
+var SP_OLD_KEY = 'shoppingPrecosFAST_v1';
+
+function spIsGestao(){ return currentUser === 'JULIANA' || currentUser === 'ELIZIANE'; }
+function spUid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function spPad(n){ return (n < 10 ? '0' : '') + n; }
+function spEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function spNum(v){ if (v === null || v === undefined || v === '') return null; var n = Number(v); return isNaN(n) ? null : n; }
+function spMoney(v){ v = spNum(v); return v === null ? '' : 'R$ ' + v.toFixed(2).replace('.', ','); }
+function spRawNum(v){ v = spNum(v); return v === null ? '' : v.toFixed(2).replace('.', ','); }
+function spParse(text){
+  if (text === null || text === undefined) return null;
+  var cleaned = String(text).replace(/[^\d,.\-]/g,'').trim();
+  if (cleaned === '') return null;
+  var norm = cleaned.replace(/\.(?=\d{3}(\D|$))/g,'').replace(',', '.');
+  var n = parseFloat(norm);
+  return isNaN(n) ? null : Math.round(n * 100) / 100;
+}
+function spRegKey(name){ return String(name || '').trim().toUpperCase().replace(/[.#$\[\]\/]/g,'-'); }
+
+// ── Datas das rodadas ──
+function spKeyFromDate(d){ return d.getFullYear() + '-' + spPad(d.getMonth()+1) + '-' + (d.getDate() >= 15 ? '15' : '01'); }
+function spHojeKey(){ return spKeyFromDate(new Date()); }
+function spPeriodoAnterior(key){
+  var p = key.split('-'), y = +p[0], m = +p[1], d = +p[2];
+  if (d >= 15) return y + '-' + spPad(m) + '-01';
+  m -= 1; if (m < 1) { m = 12; y -= 1; }
+  return y + '-' + spPad(m) + '-15';
+}
+function spProximaColeta(){
+  var d = new Date(), y = d.getFullYear(), m = d.getMonth()+1, day = d.getDate();
+  if (day < 15) return y + '-' + spPad(m) + '-15';
+  m += 1; if (m > 12) { m = 1; y += 1; }
+  return y + '-' + spPad(m) + '-01';
+}
+function spFmtData(key){ if (!key) return ''; var p = key.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function spFmtCurta(key){ if (!key) return ''; var p = key.split('-'); return p[2] + '/' + p[1]; }
+function spDataToKey(txt){
+  var m = String(txt || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return null;
+  return m[3] + '-' + spPad(+m[2]) + '-' + spPad(+m[1]);
+}
+
+// ── Leitura/escrita (Firebase com fallback local) ──
+function spDeepSet(obj, path, val){
+  var parts = path.split('/').filter(Boolean), o = obj;
+  for (var i = 0; i < parts.length - 1; i++) {
+    if (typeof o[parts[i]] !== 'object' || o[parts[i]] === null) o[parts[i]] = {};
+    o = o[parts[i]];
+  }
+  var last = parts[parts.length - 1];
+  if (val === null || val === undefined) delete o[last]; else o[last] = JSON.parse(JSON.stringify(val));
+}
+function spDeepGet(obj, path){
+  var parts = path.split('/').filter(Boolean), o = obj;
+  for (var i = 0; i < parts.length; i++) { if (!o || typeof o !== 'object') return null; o = o[parts[i]]; }
+  return o === undefined ? null : o;
+}
+function spUpdate(upd){
+  Object.keys(upd).forEach(function(k){ if (upd[k] === undefined) upd[k] = null; });
+  if (firebaseOK && db) {
+    return db.ref(SP.ROOT).update(upd).catch(function(e){
+      alert('Não consegui salvar no servidor: ' + (e && e.message ? e.message : e));
+    });
+  }
+  var t = lsGet(SP.ROOT) || {};
+  Object.keys(upd).forEach(function(k){ spDeepSet(t, k, upd[k]); });
+  try { lsSet(SP.ROOT, t); } catch(e) { alert('Sem espaço no armazenamento local deste aparelho.'); }
+  SP.tree = { rodadas: t.rodadas || {} };
+  spRequestRender();
+  return Promise.resolve();
+}
+function spGetOnce(path){
+  if (firebaseOK && db) return db.ref(SP.ROOT + '/' + path).once('value').then(function(s){ return s.val(); });
+  return Promise.resolve(spDeepGet(lsGet(SP.ROOT) || {}, path));
+}
+function spAttach(){
+  var mode = (firebaseOK && db) ? 'fb' : 'ls';
+  if (SP.mode === mode) return;
+  if (SP.mode === 'fb') { try { db.ref(SP.ROOT + '/rodadas').off(); } catch(e) {} }
+  SP.mode = mode;
+  if (mode === 'fb') {
+    db.ref(SP.ROOT + '/rodadas').on('value', function(snap){
+      SP.tree = { rodadas: snap.val() || {} };
+      spRequestRender();
+      spAtualizarBadge();
+    }, function(err){ console.warn('Shopping de preços — leitura negada:', err && err.message); });
+  } else {
+    var t = lsGet(SP.ROOT) || {};
+    SP.tree = { rodadas: t.rodadas || {} };
+    spRequestRender();
+    spAtualizarBadge();
+  }
+}
+function spOnLogin(){ try { spAttach(); spAtualizarBadge(); } catch(e) { console.warn('spOnLogin', e); } }
+
+// ── Modelo ──
+function spRodadasKeys(){ return Object.keys((SP.tree && SP.tree.rodadas) || {}).sort().reverse(); }
+function spRod(key){ return (SP.tree && SP.tree.rodadas && SP.tree.rodadas[key]) || null; }
+function spRodadaAnterior(key){
+  var ks = spRodadasKeys();
+  for (var i = 0; i < ks.length; i++) if (ks[i] < key) return ks[i];
+  return null;
+}
+function spRegioesKeys(rodKey){
+  var r = spRod(rodKey); if (!r || !r.regioes) return [];
+  return Object.keys(r.regioes).sort(function(a,b){
+    return ((r.regioes[a].ordem || 0) - (r.regioes[b].ordem || 0)) || a.localeCompare(b);
+  });
+}
+function spView(rodKey, regKey){
+  var r = spRod(rodKey), reg = r && r.regioes && r.regioes[regKey];
+  if (!reg) return null;
+  var comps = Object.keys(reg.competidores || {}).map(function(id){
+    var c = reg.competidores[id] || {};
+    return { id:id, nome:c.nome || '(sem nome)', cond:c.cond || '', ordem:c.ordem || 0 };
+  }).sort(function(a,b){ return a.ordem - b.ordem; });
+  var itens = Object.keys(reg.itens || {}).map(function(id){
+    var it = reg.itens[id] || {};
+    return { id:id, cod:it.cod || '', desc:it.desc || '', fast:spNum(it.fast), ordem:it.ordem || 0,
+             precos:it.precos || {}, anexos:it.anexos || {}, upd:it.upd || null };
+  }).sort(function(a,b){ return a.ordem - b.ordem; });
+  return { key:regKey, fastCond:reg.fastCond || '', comps:comps, itens:itens };
+}
+function spAnalise(it, comps){
+  var cp = comps.map(function(c){ return { id:c.id, v:spNum(it.precos[c.id]) }; }).filter(function(x){ return x.v !== null; });
+  if (it.fast === null) return { hasFast:false, cp:cp };
+  var all = [it.fast].concat(cp.map(function(x){ return x.v; }));
+  var min = Math.min.apply(null, all), max = Math.max.apply(null, all);
+  var sorted = all.slice().sort(function(a,b){ return a-b; });
+  var gap = null;
+  if (cp.length) { var mc = Math.min.apply(null, cp.map(function(x){ return x.v; })); gap = (it.fast - mc) / mc * 100; }
+  return { hasFast:true, cp:cp, rank:sorted.indexOf(it.fast)+1, total:all.length,
+           isMin:it.fast === min, isMax:it.fast === max && all.length > 1, gap:gap };
+}
+function spStats(view){
+  var res = { total:0, cheapest:0, expensive:0, gaps:[], worst:null, itens:0, preenchidos:0 };
+  if (!view) return spFinStats(res);
+  res.itens = view.itens.length;
+  view.itens.forEach(function(it){
+    var a = spAnalise(it, view.comps);
+    if (a.cp.length) res.preenchidos++;
+    if (!a.hasFast) return;
+    res.total++;
+    if (a.total > 1 && a.isMin) res.cheapest++;
+    if (a.total > 1 && a.isMax) res.expensive++;
+    if (a.gap !== null) {
+      res.gaps.push(a.gap);
+      if (a.gap > 0 && (!res.worst || a.gap > res.worst.gap)) res.worst = { desc:it.desc, gap:a.gap };
+    }
+  });
+  return spFinStats(res);
+}
+function spFinStats(s){
+  s.avgGap = s.gaps.length ? s.gaps.reduce(function(a,b){ return a+b; }, 0) / s.gaps.length : null;
+  s.cheapestPct = s.total ? Math.round(s.cheapest / s.total * 100) : 0;
+  s.expensivePct = s.total ? Math.round(s.expensive / s.total * 100) : 0;
+  s.fillPct = s.itens ? Math.round(s.preenchidos / s.itens * 100) : 0;
+  return s;
+}
+function spFillRodada(rodKey){
+  var it = 0, pr = 0;
+  spRegioesKeys(rodKey).forEach(function(rk){ var s = spStats(spView(rodKey, rk)); it += s.itens; pr += s.preenchidos; });
+  return { itens:it, preenchidos:pr, pct: it ? Math.round(pr / it * 100) : 0 };
+}
+function spPctTxt(v){ return v === null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + '%'; }
+function spEditavel(){ var ks = spRodadasKeys(); return !!SP.rodada && (spIsGestao() || SP.rodada === ks[0]); }
+
+// ── Badge no menu ──
+function spAtualizarBadge(){
+  var btn = document.getElementById('nav-shopping'); if (!btn) return;
+  var dot = btn.querySelector('.sp-dot');
+  var hoje = new Date().getDate();
+  var cur = spHojeKey(), alerta = false;
+  if (SP.tree) {
+    if (!spRod(cur)) alerta = true;
+    else if ((hoje === 1 || hoje === 15) && spFillRodada(cur).pct < 100) alerta = true;
+  }
+  if (alerta && !dot) { dot = document.createElement('span'); dot.className = 'sp-dot'; dot.title = 'Dia de shopping de preços'; btn.appendChild(dot); }
+  if (!alerta && dot) dot.remove();
+}
+
+// ── Render ──
+function spActiveInTable(){
+  var a = document.activeElement;
+  return !!(a && a.classList && a.classList.contains('sp-ed') && a.closest && a.closest('#sp-root'));
+}
+function spRequestRender(){
+  if (SP.holdRender || spActiveInTable()) { SP.pendingRender = true; return; }
+  spRender();
+}
+function spInit(){
+  spAttach();
+  if (!SP.bound) spBind();
+  spRender();
+}
+
+function spRender(){
+  var root = document.getElementById('sp-root'); if (!root) return;
+  if (!SP.bound) spBind();
+  SP.pendingRender = false;
+  var searchFocused = document.activeElement && document.activeElement.id === 'sp-busca';
+  if (!SP.tree) { root.innerHTML = '<div class="sp-empty">Carregando shopping de preços…</div>'; return; }
+  var ks = spRodadasKeys();
+  if (!ks.length) { root.innerHTML = spHtmlInicio(); return; }
+  var cur = spHojeKey();
+  if (!SP.rodada || !spRod(SP.rodada)) SP.rodada = spRod(cur) ? cur : ks[0];
+  var regs = spRegioesKeys(SP.rodada);
+  if (SP.regiao !== '__overview__' && regs.indexOf(SP.regiao) < 0) SP.regiao = regs[0] || '__overview__';
+
+  var html = spHtmlTopo(ks, cur) + spHtmlBanner(ks, cur) + spHtmlRegioes(regs);
+  if (SP.regiao === '__overview__') html += spHtmlOverview(regs);
+  else {
+    var view = spView(SP.rodada, SP.regiao);
+    html += spHtmlStats(view) + spHtmlToolbar() + '<div class="sp-tablewrap" id="sp-tablewrap">' + spHtmlTabela(view) + '</div>';
+  }
+  html += '<p class="sp-foot"><b>Como funciona:</b> a coleta é feita <b>todo dia 1 e dia 15</b>. Cada rodada nova já vem com os itens, concorrentes e o preço FAST da rodada anterior — é só preencher o preço de cada concorrente (o valor anterior aparece em cinza como referência) e anexar o print/PDF que comprova. ' +
+          'Verde = FAST mais barata que aquele concorrente; vermelho = concorrente mais barato. As setas ▲▼ mostram se o preço subiu ou caiu desde a rodada anterior. Use <b>Visão geral</b> para o relatório consolidado e para copiar o resumo para o WhatsApp.' +
+          (spIsGestao() ? '' : ' Rodadas antigas ficam travadas — só a gestão edita.') + '</p>';
+  root.innerHTML = html;
+  if (searchFocused) { var s = document.getElementById('sp-busca'); if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }
+  spAtualizarBadge();
+}
+
+function spHtmlInicio(){
+  var temAntigo = false;
+  try { temAntigo = !!localStorage.getItem(SP_OLD_KEY); } catch(e) {}
+  var ant = spFmtData(spPeriodoAnterior(spHojeKey()));
+  var acoes = '';
+  if (temAntigo) acoes += '<button class="sp-btn primary" data-act="importar-antigo">Importar do Shopping de Preços antigo</button>';
+  acoes += '<button class="sp-btn' + (temAntigo ? '' : ' primary') + '" data-act="seed-mg">Começar com a base de MG (planilha 17/09)</button>';
+  acoes += '<button class="sp-btn ghost" data-act="abrir" data-key="' + spHojeKey() + '">Começar do zero</button>';
+  return '<div class="sp-start"><div class="sp-mark" style="margin:0 auto 12px;">R$</div>' +
+    '<h3>Shopping de Preços ainda não tem nenhuma rodada</h3>' +
+    '<p>A coleta acontece todo dia 1 e dia 15. Para começar com histórico, importe a ferramenta antiga (se ela foi usada neste navegador) ou a base de MG — elas entram como a rodada de <b>' + ant + '</b>, e a rodada de hoje é aberta em seguida já com os preços anteriores como referência.</p>' +
+    '<div class="sp-actions">' + acoes + '</div></div>';
+}
+
+function spHtmlTopo(ks, cur){
+  var opts = ks.map(function(k){
+    var tag = k === cur ? ' (atual)' : (k === ks[0] ? ' (última)' : '');
+    return '<option value="' + k + '"' + (k === SP.rodada ? ' selected' : '') + '>' + spFmtData(k) + tag + '</option>';
+  }).join('');
+  return '<div class="sp-top"><div class="sp-brand"><div class="sp-mark">R$</div><div>' +
+    '<div class="sp-eyebrow">Inteligência de mercado · coleta dia 1 e 15</div><h2>Shopping de Preços</h2></div></div>' +
+    '<div class="sp-rodada-box"><label for="sp-rodada-sel">Rodada</label><select id="sp-rodada-sel" data-act="rodada">' + opts + '</select>' +
+    (spIsGestao() ? '<button class="sp-btn ghost danger" data-act="del-rodada" title="Excluir esta rodada">🗑</button>' : '') +
+    '</div></div>';
+}
+
+function spHtmlBanner(ks, cur){
+  var hoje = new Date().getDate();
+  if (!spRod(cur)) {
+    return '<div class="sp-banner ' + (hoje === 1 || hoje === 15 ? 'hoje' : 'warn') + '"><span>📅 ' +
+      (hoje === 1 || hoje === 15 ? '<b>Hoje é dia de Shopping de Preços!</b> ' : '') +
+      'A rodada de <b>' + spFmtData(cur) + '</b> ainda não foi aberta.</span>' +
+      '<button class="sp-btn primary" data-act="abrir" data-key="' + cur + '">Abrir rodada de ' + spFmtCurta(cur) + '</button></div>';
+  }
+  var f = spFillRodada(SP.rodada);
+  if (SP.rodada !== cur) {
+    return '<div class="sp-banner ' + (spEditavel() ? 'info' : 'lock') + '"><span>' + (spEditavel() ? '🕘' : '🔒') +
+      ' Você está vendo a rodada de <b>' + spFmtData(SP.rodada) + '</b>' + (spEditavel() ? '' : ' — encerrada, somente leitura') +
+      '. Preenchimento: ' + f.preenchidos + ' de ' + f.itens + ' itens.</span>' +
+      '<button class="sp-btn" data-act="ir-atual">Ir para a rodada atual (' + spFmtCurta(cur) + ')</button></div>';
+  }
+  if (hoje === 1 || hoje === 15) {
+    return '<div class="sp-banner hoje"><span>🛒 <b>Hoje é dia de Shopping de Preços!</b> Preencha o preço dos concorrentes em cada região e anexe o comprovante.</span>' +
+      '<span><b>' + f.pct + '%</b> preenchido (' + f.preenchidos + '/' + f.itens + ' itens)</span></div>';
+  }
+  return '<div class="sp-banner info"><span>Rodada de <b>' + spFmtData(cur) + '</b> em andamento · próxima coleta em <b>' + spFmtData(spProximaColeta()) + '</b>.</span>' +
+    '<span><b>' + f.pct + '%</b> preenchido (' + f.preenchidos + '/' + f.itens + ' itens)</span></div>';
+}
+
+function spHtmlRegioes(regs){
+  var h = '<div class="sp-regs"><div class="sp-reg' + (SP.regiao === '__overview__' ? ' active' : '') + '" data-act="overview">📊 Visão geral</div><div class="sp-reg-div"></div>';
+  regs.forEach(function(rk){
+    var s = spStats(spView(SP.rodada, rk));
+    h += '<div class="sp-reg' + (rk === SP.regiao ? ' active' : '') + '" data-act="reg" data-reg="' + spEsc(rk) + '">' + spEsc(rk) +
+         '<span class="sp-fill">' + s.preenchidos + '/' + s.itens + '</span></div>';
+  });
+  if (spEditavel()) h += '<button class="sp-reg-add" data-act="add-reg" title="Nova região">+</button>';
+  if (spIsGestao() && SP.regiao !== '__overview__' && regs.length) {
+    h += '<button class="sp-btn ghost danger" style="margin-left:auto;font-size:11.5px;" data-act="del-reg">Remover região ' + spEsc(SP.regiao) + '</button>';
+  }
+  return h + '</div>';
+}
+
+function spHtmlStats(view){
+  var s = spStats(view);
+  var worst = s.worst ? spEsc(s.worst.desc) + ' · ' + spPctTxt(s.worst.gap) : (s.gaps.length ? 'FAST não perde em nenhum item ✅' : '—');
+  var prevKey = spRodadaAnterior(SP.rodada), prev = prevKey ? spStats(spView(prevKey, SP.regiao)) : null;
+  var delta = '';
+  if (prev && prev.avgGap !== null && s.avgGap !== null) {
+    var d = s.avgGap - prev.avgGap;
+    delta = ' · <span class="' + (d > 0 ? 'sp-delta-up' : 'sp-delta-dn') + '">' + (d > 0 ? '▲ ' : '▼ ') + Math.abs(d).toFixed(1).replace('.', ',') + ' p.p. vs ' + spFmtCurta(prevKey) + '</span>';
+  }
+  return '<div class="sp-stats">' +
+    '<div class="sp-stat"><div class="l">Preenchimento da rodada</div><div class="v">' + s.preenchidos + '/' + s.itens + '</div><div class="sp-bar"><div style="width:' + s.fillPct + '%"></div></div></div>' +
+    '<div class="sp-stat win"><div class="l">FAST mais barata</div><div class="v">' + s.cheapest + ' <span style="font-size:12px;color:#888">(' + s.cheapestPct + '%)</span></div><div class="s">dos ' + s.total + ' itens com preço FAST</div></div>' +
+    '<div class="sp-stat lose"><div class="l">FAST mais cara</div><div class="v">' + s.expensive + ' <span style="font-size:12px;color:#888">(' + s.expensivePct + '%)</span></div><div class="s">dos ' + s.total + ' itens com preço FAST</div></div>' +
+    '<div class="sp-stat' + (s.avgGap !== null && s.avgGap > 0 ? ' alert' : '') + '"><div class="l">Posição média vs concorrente mais barato</div><div class="v" style="font-size:16px">' + spPctTxt(s.avgGap) + '</div><div class="s">' + (s.avgGap === null ? 'sem dados suficientes' : (s.avgGap > 0 ? 'FAST acima, em média' : 'FAST abaixo, em média')) + delta + '</div></div>' +
+    '<div class="sp-stat"><div class="l">Maior alerta</div><div class="v" style="font-size:13px;font-family:inherit;line-height:1.3">' + worst + '</div><div class="s">item onde a FAST mais perde</div></div>' +
+    '</div>';
+}
+
+function spHtmlToolbar(){
+  var ed = spEditavel(), temAntigo = false;
+  try { temAntigo = spIsGestao() && !!localStorage.getItem(SP_OLD_KEY); } catch(e) {}
+  return '<div class="sp-toolbar"><input type="text" id="sp-busca" placeholder="Buscar por código ou descrição…" value="' + spEsc(SP.busca) + '">' +
+    '<div class="sp-actions">' +
+    (ed ? '<button class="sp-btn" data-act="add-item">+ item</button><button class="sp-btn" data-act="add-comp">+ concorrente</button>' +
+          '<label class="sp-btn" style="display:inline-flex;align-items:center;">Importar CSV<input type="file" id="sp-import-csv" accept=".csv" hidden></label>' : '') +
+    (temAntigo ? '<button class="sp-btn ghost" data-act="importar-antigo" title="Traz os dados da ferramenta antiga salva neste navegador">Importar antigo</button>' : '') +
+    '<button class="sp-btn primary" data-act="export">Exportar CSV</button></div></div>';
+}
+
+function spClassCond(v){
+  v = (v || '').toLowerCase();
+  if (!v) return 'none';
+  if (v.indexOf('retir') >= 0) return 'retira';
+  if (v.indexOf('entreg') >= 0) return 'entrega';
+  return 'custom';
+}
+function spCondSelect(value, cid, ed){
+  var c = spClassCond(value);
+  var cls = c === 'retira' ? 'is-retira' : c === 'entrega' ? 'is-entrega' : c === 'custom' ? 'is-custom' : '';
+  var custom = c === 'custom' ? '<option value="' + spEsc(value) + '" selected>' + spEsc(value) + '</option>' : '';
+  return '<select class="sp-cond ' + cls + '" data-cond="' + cid + '"' + (ed ? '' : ' disabled') + '>' +
+    '<option value=""' + (c === 'none' ? ' selected' : '') + '>Definir…</option>' +
+    '<option value="Retira"' + (c === 'retira' ? ' selected' : '') + '>Retira</option>' +
+    '<option value="Entrega"' + (c === 'entrega' ? ' selected' : '') + '>Entrega</option>' + custom + '</select>';
+}
+
+function spHtmlTabela(view){
+  if (!view) return '<div class="sp-empty">Nenhuma região nesta rodada ainda. ' + (spEditavel() ? 'Clique em “+” para criar uma.' : '') + '</div>';
+  var ed = spEditavel(), gest = spIsGestao();
+  var prevKey = spRodadaAnterior(SP.rodada), prevView = prevKey ? spView(prevKey, SP.regiao) : null;
+  var prevMap = {};
+  if (prevView) prevView.itens.forEach(function(it){ prevMap[it.id] = it; });
+  var ce = ed ? ' contenteditable="true"' : '';
+
+  var hm = '<tr><th class="c-cod">Cód.</th><th class="c-desc">Descrição</th><th class="c-fast">FAST</th>';
+  var hc = '<tr class="sp-hc"><th class="c-cod"></th><th class="c-desc"><span class="sp-cond-l">Condição de entrega</span></th><th class="c-fast">' + spCondSelect(view.fastCond, '__fast__', ed) + '</th>';
+  view.comps.forEach(function(c){
+    hm += '<th><div class="sp-comp-h"><span>' + spEsc(c.nome) + '</span><span style="display:flex;gap:2px;">' +
+          (ed ? '<span class="sp-mini" data-act="ren-comp" data-cid="' + c.id + '" title="Renomear">✎</span>' : '') +
+          (gest && ed ? '<span class="sp-mini" data-act="del-comp" data-cid="' + c.id + '" title="Remover concorrente">×</span>' : '') +
+          '</span></div></th>';
+    hc += '<th>' + spCondSelect(c.cond, c.id, ed) + '</th>';
+  });
+  hm += '<th style="min-width:150px">Posição da FAST</th><th>Anexos</th>' + (gest && ed ? '<th></th>' : '') + '</tr>';
+  hc += '<th></th><th></th>' + (gest && ed ? '<th></th>' : '') + '</tr>';
+
+  var q = (SP.busca || '').trim().toLowerCase();
+  var itens = view.itens.filter(function(it){ return !q || it.cod.toLowerCase().indexOf(q) >= 0 || it.desc.toLowerCase().indexOf(q) >= 0; });
+  var colspan = view.comps.length + 5 + (gest && ed ? 1 : 0);
+  var body = '';
+  if (!itens.length) {
+    body = '<tr><td colspan="' + colspan + '" class="sp-empty">' + (view.itens.length ? 'Nada encontrado para essa busca.' : 'Nenhum item ainda. Clique em “+ item” para começar.') + '</td></tr>';
+  }
+  itens.forEach(function(it){
+    var a = spAnalise(it, view.comps), pv = prevMap[it.id] || null;
+    var updTitle = it.upd ? ' title="Última edição: ' + spEsc((vendedores[it.upd.por] && vendedores[it.upd.por].nome) || it.upd.por) + ' em ' + new Date(it.upd.em).toLocaleString('pt-BR') + '"' : '';
+    var tr = '<tr' + updTitle + '>';
+    tr += '<td class="c-cod sp-ed"' + ce + ' data-f="cod" data-pid="' + it.id + '" data-raw="' + spEsc(it.cod) + '">' + spEsc(it.cod) + '</td>';
+    tr += '<td class="c-desc sp-ed"' + ce + ' data-f="desc" data-pid="' + it.id + '" data-raw="' + spEsc(it.desc) + '">' + spEsc(it.desc) + '</td>';
+    tr += spCelula('c-fast', it.fast, pv ? pv.fast : null, prevKey, ce, 'fast', it.id, '');
+    view.comps.forEach(function(c){
+      var v = spNum(it.precos[c.id]), cls = '';
+      if (v !== null && a.hasFast) cls = v < it.fast ? 'p-lose' : (v > it.fast ? 'p-win' : 'p-tie');
+      tr += spCelula(cls, v, pv ? spNum(pv.precos[c.id]) : null, prevKey, ce, 'preco', it.id, c.id);
+    });
+    var rk;
+    if (!a.hasFast) rk = '<span class="sp-rank mid">sem preço FAST</span>';
+    else if (a.total === 1) rk = '<span class="sp-rank mid">falta concorrente</span>';
+    else if (a.isMin) rk = '<span class="sp-rank best">mais barata</span>';
+    else if (a.isMax) rk = '<span class="sp-rank worst">mais cara</span>';
+    else rk = '<span class="sp-rank mid">' + a.rank + 'ª de ' + a.total + '</span>';
+    if (a.hasFast && a.gap !== null) rk += '<span class="sp-gap">' + spPctTxt(a.gap) + '</span>';
+    tr += '<td>' + rk + '</td>';
+    var chips = Object.keys(it.anexos).map(function(aid){
+      var m = it.anexos[aid] || {}, isImg = String(m.tipo || '').indexOf('image/') === 0;
+      var podeApagar = ed && (gest || m.por === currentUser);
+      return '<span class="sp-chip"><span class="sp-chip-b" data-act="ver-anexo" data-pid="' + it.id + '" data-aid="' + aid + '" title="' + spEsc(m.nome || '') + (m.por ? ' · ' + spEsc(m.por) : '') + '">' + (isImg ? '🖼' : 'PDF') + '</span>' +
+             (podeApagar ? '<span class="sp-chip-x" data-act="del-anexo" data-pid="' + it.id + '" data-aid="' + aid + '">×</span>' : '') + '</span>';
+    }).join('');
+    tr += '<td><div class="sp-anx">' + chips + (ed ? '<button class="sp-attach" data-act="anexar" data-pid="' + it.id + '" title="Anexar print (jpg/png) ou PDF">📎</button>' : '') + '</div></td>';
+    if (gest && ed) tr += '<td class="sp-rowdel" data-act="del-item" data-pid="' + it.id + '" title="Remover item">×</td>';
+    body += tr + '</tr>';
+  });
+  return '<table class="sp-table"><thead>' + hm + hc + '</thead><tbody>' + body + '</tbody></table>';
+}
+
+function spCelula(cls, v, pv, prevKey, ce, f, pid, cid){
+  var attrs = ' data-f="' + f + '" data-pid="' + pid + '"' + (cid ? ' data-cid="' + cid + '"' : '') + ' data-raw="' + spRawNum(v) + '"';
+  if (v === null) {
+    var ant = pv !== null ? '<span class="sp-ant">ant. ' + spMoney(pv) + '</span>' : '';
+    return '<td class="' + cls + ' sp-num sp-ed sp-vazio"' + ce + attrs + (pv !== null ? ' title="Rodada de ' + spFmtCurta(prevKey) + ': ' + spMoney(pv) + '"' : '') + '>—' + ant + '</td>';
+  }
+  var vr = '';
+  if (pv !== null && Math.abs(v - pv) > 0.004) {
+    vr = '<span class="sp-var" title="Rodada de ' + spFmtCurta(prevKey) + ': ' + spMoney(pv) + '">' + (v > pv ? '▲' : '▼') + '</span>';
+  }
+  return '<td class="' + cls + ' sp-num sp-ed"' + ce + attrs + '>' + spMoney(v) + vr + '</td>';
+}
+
+// ── Visão geral / relatório ──
+function spHtmlOverview(regs){
+  if (!regs.length) return '<div class="sp-empty">Nenhuma região nesta rodada.</div>';
+  var prevKey = spRodadaAnterior(SP.rodada);
+  var rows = regs.map(function(rk){
+    var s = spStats(spView(SP.rodada, rk));
+    var p = prevKey ? spStats(spView(prevKey, rk)) : null;
+    var delta = '—';
+    if (p && p.avgGap !== null && s.avgGap !== null) {
+      var d = s.avgGap - p.avgGap;
+      delta = '<span class="' + (d > 0 ? 'sp-delta-up' : 'sp-delta-dn') + '">' + (d > 0 ? '▲ ' : '▼ ') + Math.abs(d).toFixed(1).replace('.', ',') + ' p.p.</span>';
+    }
+    var cor = s.avgGap === null ? '#888' : (s.avgGap > 0 ? 'var(--sp-red)' : 'var(--sp-green)');
+    return '<tr><td class="rn">' + spEsc(rk) + '</td>' +
+      '<td class="sp-num">' + s.preenchidos + '/' + s.itens + ' <span style="color:#999">(' + s.fillPct + '%)</span></td>' +
+      '<td class="sp-num" style="color:var(--sp-green)">' + s.cheapest + ' (' + s.cheapestPct + '%)</td>' +
+      '<td class="sp-num" style="color:var(--sp-red)">' + s.expensive + ' (' + s.expensivePct + '%)</td>' +
+      '<td class="sp-num" style="color:' + cor + '">' + spPctTxt(s.avgGap) + '</td>' +
+      '<td>' + delta + '</td>' +
+      '<td style="white-space:normal;min-width:200px">' + (s.worst ? spEsc(s.worst.desc) + ' (' + spPctTxt(s.worst.gap) + ')' : '—') + '</td></tr>';
+  }).join('');
+  return '<div class="sp-toolbar"><div style="font-size:13px;color:#666;">Relatório da rodada de <b>' + spFmtData(SP.rodada) + '</b>' + (prevKey ? ' comparado com <b>' + spFmtData(prevKey) + '</b>' : '') + '</div>' +
+    '<div class="sp-actions"><button class="sp-btn primary" data-act="copiar-relatorio">📋 Copiar relatório (WhatsApp)</button></div></div>' +
+    '<div class="sp-tablewrap" style="max-height:none"><table class="sp-table sp-ov"><thead><tr>' +
+    '<th>Região</th><th>Preenchimento</th><th>FAST mais barata</th><th>FAST mais cara</th><th>Posição média</th><th>vs rodada anterior</th><th>Maior alerta</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+function spTextoRelatorio(){
+  var regs = spRegioesKeys(SP.rodada), prevKey = spRodadaAnterior(SP.rodada);
+  var L = ['*🛒 Shopping de Preços — rodada ' + spFmtData(SP.rodada) + '*', ''];
+  regs.forEach(function(rk){
+    var view = spView(SP.rodada, rk), s = spStats(view);
+    var p = prevKey ? spStats(spView(prevKey, rk)) : null;
+    var linha = '*' + rk + '* — ' + s.preenchidos + '/' + s.itens + ' itens coletados';
+    L.push(linha);
+    if (s.total) {
+      L.push('• FAST mais barata em ' + s.cheapest + ' (' + s.cheapestPct + '%) · mais cara em ' + s.expensive + ' (' + s.expensivePct + '%)');
+      var pos = '• Posição média: ' + spPctTxt(s.avgGap) + ' vs concorrente mais barato';
+      if (p && p.avgGap !== null && s.avgGap !== null) pos += ' (era ' + spPctTxt(p.avgGap) + ' em ' + spFmtCurta(prevKey) + ')';
+      L.push(pos);
+      var alertas = view.itens.map(function(it){ return { d:it.desc, a:spAnalise(it, view.comps) }; })
+        .filter(function(x){ return x.a.hasFast && x.a.gap !== null && x.a.gap > 0; })
+        .sort(function(a,b){ return b.a.gap - a.a.gap; }).slice(0, 3);
+      if (alertas.length) L.push('• Onde mais perdemos: ' + alertas.map(function(x){ return x.d + ' (' + spPctTxt(x.a.gap) + ')'; }).join('; '));
+    }
+    L.push('');
+  });
+  return L.join('\n').trim();
+}
+function spCopiar(txt){
+  function fallback(){
+    var ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); alert('Relatório copiado! É só colar no WhatsApp.'); } catch(e) { prompt('Copie o relatório:', txt); }
+    document.body.removeChild(ta);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(function(){ alert('Relatório copiado! É só colar no WhatsApp.'); }, fallback);
+  } else fallback();
+}
+
+// ── Ações ──
+function spBase(){ return 'rodadas/' + SP.rodada + '/regioes/' + SP.regiao; }
+function spCarimbo(){ return { por: currentUser || '?', em: Date.now() }; }
+
+function spAbrirRodada(key){
+  if (spRod(key)) { SP.rodada = key; spRender(); return; }
+  var base = spRodadaAnterior(key) || spRodadasKeys()[0] || null;
+  var nova = { criadaEm: Date.now(), criadaPor: currentUser || '?', baseadaEm: base || null, regioes: {} };
+  if (base) {
+    var r = spRod(base);
+    Object.keys((r && r.regioes) || {}).forEach(function(rk){
+      var src = r.regioes[rk] || {}, dst = { fastCond: src.fastCond || '', ordem: src.ordem || 0, competidores: {}, itens: {} };
+      Object.keys(src.competidores || {}).forEach(function(cid){
+        var c = src.competidores[cid] || {};
+        dst.competidores[cid] = { nome: c.nome || '', cond: c.cond || '', ordem: c.ordem || 0 };
+      });
+      Object.keys(src.itens || {}).forEach(function(pid){
+        var it = src.itens[pid] || {}, n = { cod: it.cod || '', desc: it.desc || '', ordem: it.ordem || 0 };
+        if (spNum(it.fast) !== null) n.fast = spNum(it.fast);
+        dst.itens[pid] = n;
+      });
+      nova.regioes[rk] = dst;
+    });
+  }
+  var upd = {}; upd['rodadas/' + key] = nova;
+  SP.rodada = key;
+  spUpdate(upd);
+}
+
+function spSalvarCelula(el){
+  var f = el.dataset.f, pid = el.dataset.pid, cid = el.dataset.cid;
+  var view = spView(SP.rodada, SP.regiao); if (!view) return false;
+  var it = null; view.itens.forEach(function(x){ if (x.id === pid) it = x; });
+  if (!it) return false;
+  var base = spBase() + '/itens/' + pid, upd = {}, txt = el.textContent;
+  if (f === 'cod' || f === 'desc') {
+    var v = txt.replace(/\s+/g, ' ').trim();
+    if (v === it[f]) return false;
+    upd[base + '/' + f] = v;
+    if (f === 'cod' && v && (!it.desc || it.desc === 'Novo item') && typeof allProducts !== 'undefined') {
+      var achou = null;
+      allProducts.forEach(function(p){ if (!achou && String(p.codigo || '').toUpperCase() === v.toUpperCase()) achou = p; });
+      if (achou) upd[base + '/desc'] = achou.nome;
+    }
+  } else if (f === 'fast') {
+    var n = spParse(txt);
+    if (n === it.fast) return false;
+    upd[base + '/fast'] = n;
+  } else if (f === 'preco') {
+    var p = spParse(txt);
+    if (p === spNum(it.precos[cid])) return false;
+    upd[base + '/precos/' + cid] = p;
+  } else return false;
+  upd[base + '/upd'] = spCarimbo();
+  spUpdate(upd);
+  return true;
+}
+
+function spAcao(act, el){
+  var gest = spIsGestao(), upd = {}, view, name;
+  switch (act) {
+    case 'reg': SP.regiao = el.dataset.reg; spRender(); break;
+    case 'overview': SP.regiao = '__overview__'; spRender(); break;
+    case 'ir-atual': SP.rodada = spHojeKey(); spRender(); break;
+    case 'abrir': spAbrirRodada(el.dataset.key); break;
+    case 'add-reg':
+      name = prompt('Nome da nova região (ex: SP, BA, PR):'); if (!name) return;
+      var rk = spRegKey(name); if (!rk) return;
+      if (spRegioesKeys(SP.rodada).indexOf(rk) >= 0) { alert('Essa região já existe.'); return; }
+      upd['rodadas/' + SP.rodada + '/regioes/' + rk] = { fastCond: '', ordem: Date.now() };
+      SP.regiao = rk; spUpdate(upd); break;
+    case 'del-reg':
+      if (!gest) return;
+      if (!confirm('Remover a região ' + SP.regiao + ' da rodada de ' + spFmtData(SP.rodada) + '? Isso apaga os itens e preços dela nesta rodada.')) return;
+      upd[spBase()] = null; upd['anexos/' + SP.rodada + '/' + SP.regiao] = null;
+      SP.regiao = null; spUpdate(upd); break;
+    case 'del-rodada':
+      if (!gest) return;
+      if (!confirm('Excluir a rodada de ' + spFmtData(SP.rodada) + ' inteira (todas as regiões e anexos)?')) return;
+      if (!confirm('Tem certeza? Não dá para desfazer.')) return;
+      upd['rodadas/' + SP.rodada] = null; upd['anexos/' + SP.rodada] = null;
+      SP.rodada = null; spUpdate(upd); break;
+    case 'add-item':
+      var pid = spUid();
+      upd[spBase() + '/itens/' + pid] = { cod: '', desc: 'Novo item', ordem: Date.now(), upd: spCarimbo() };
+      spUpdate(upd).then(function(){
+        setTimeout(function(){ var c = document.querySelector('#sp-root [data-pid="' + pid + '"][data-f="cod"]'); if (c) c.focus(); }, 80);
+      });
+      break;
+    case 'add-comp':
+      name = prompt('Nome do concorrente (pode incluir a data da cotação, ex: "Smart MG (15/10)"):'); if (!name) return;
+      name = name.trim(); if (!name) return;
+      view = spView(SP.rodada, SP.regiao);
+      if (view && view.comps.some(function(c){ return c.nome.toLowerCase() === name.toLowerCase(); })) { alert('Esse concorrente já existe nesta região.'); return; }
+      upd[spBase() + '/competidores/' + spUid()] = { nome: name, cond: '', ordem: Date.now() };
+      spUpdate(upd); break;
+    case 'ren-comp':
+      view = spView(SP.rodada, SP.regiao); var cAtual = null;
+      view.comps.forEach(function(c){ if (c.id === el.dataset.cid) cAtual = c; });
+      if (!cAtual) return;
+      name = prompt('Novo nome do concorrente:', cAtual.nome); if (!name || !name.trim()) return;
+      upd[spBase() + '/competidores/' + cAtual.id + '/nome'] = name.trim(); spUpdate(upd); break;
+    case 'del-comp':
+      if (!gest) return;
+      view = spView(SP.rodada, SP.regiao);
+      var cid = el.dataset.cid, cn = '';
+      view.comps.forEach(function(c){ if (c.id === cid) cn = c.nome; });
+      if (!confirm('Remover o concorrente "' + cn + '" de todos os itens desta região nesta rodada?')) return;
+      upd[spBase() + '/competidores/' + cid] = null;
+      view.itens.forEach(function(it){ upd[spBase() + '/itens/' + it.id + '/precos/' + cid] = null; });
+      spUpdate(upd); break;
+    case 'del-item':
+      if (!gest) return;
+      view = spView(SP.rodada, SP.regiao); var d = '';
+      view.itens.forEach(function(it){ if (it.id === el.dataset.pid) d = it.desc; });
+      if (!confirm('Remover "' + (d || 'item sem nome') + '" desta rodada?')) return;
+      upd[spBase() + '/itens/' + el.dataset.pid] = null;
+      upd['anexos/' + SP.rodada + '/' + SP.regiao + '/' + el.dataset.pid] = null;
+      spUpdate(upd); break;
+    case 'anexar':
+      SP.attachTarget = { rod: SP.rodada, reg: SP.regiao, pid: el.dataset.pid };
+      spFileInput().click(); break;
+    case 'ver-anexo': spAbrirAnexo(el.dataset.pid, el.dataset.aid); break;
+    case 'del-anexo':
+      if (!confirm('Remover este anexo?')) return;
+      upd[spBase() + '/itens/' + el.dataset.pid + '/anexos/' + el.dataset.aid] = null;
+      upd['anexos/' + SP.rodada + '/' + SP.regiao + '/' + el.dataset.pid + '/' + el.dataset.aid] = null;
+      spUpdate(upd); break;
+    case 'export': spExportarCSV(); break;
+    case 'copiar-relatorio': spCopiar(spTextoRelatorio()); break;
+    case 'importar-antigo': spImportarAntigo(); break;
+    case 'seed-mg': spSeedMG(); break;
+  }
+}
+
+function spBind(){
+  var root = document.getElementById('sp-root'); if (!root) return;
+  SP.bound = true;
+  root.addEventListener('click', function(e){
+    var el = e.target.closest('[data-act]');
+    if (!el || el.tagName === 'SELECT') return;
+    spAcao(el.dataset.act, el);
+  });
+  root.addEventListener('change', function(e){
+    var t = e.target;
+    if (t.id === 'sp-rodada-sel') { SP.rodada = t.value; spRender(); return; }
+    if (t.classList.contains('sp-cond')) {
+      if (!spEditavel()) return;
+      var upd = {};
+      if (t.dataset.cond === '__fast__') upd[spBase() + '/fastCond'] = t.value;
+      else upd[spBase() + '/competidores/' + t.dataset.cond + '/cond'] = t.value;
+      spUpdate(upd); return;
+    }
+    if (t.id === 'sp-import-csv') { var f = t.files[0]; t.value = ''; if (f) spImportarCSV(f); }
+  });
+  root.addEventListener('input', function(e){
+    if (e.target.id === 'sp-busca') {
+      SP.busca = e.target.value;
+      var w = document.getElementById('sp-tablewrap');
+      if (w) w.innerHTML = spHtmlTabela(spView(SP.rodada, SP.regiao));
+    }
+  });
+  root.addEventListener('focusin', function(e){
+    var el = e.target;
+    if (!el.classList || !el.classList.contains('sp-ed') || el.getAttribute('contenteditable') !== 'true') return;
+    el.dataset.orig = el.innerHTML;
+    el.textContent = el.dataset.raw || '';
+    try { var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); } catch(err) {}
+  });
+  root.addEventListener('focusout', function(e){
+    var el = e.target;
+    if (!el.classList || !el.classList.contains('sp-ed') || el.getAttribute('contenteditable') !== 'true') return;
+    var rt = e.relatedTarget;
+    SP.holdRender = !!(rt && rt.classList && rt.classList.contains('sp-ed'));
+    var mudou = false;
+    try { mudou = spSalvarCelula(el); } finally { SP.holdRender = false; }
+    if (!mudou && el.dataset.orig !== undefined) el.innerHTML = el.dataset.orig;
+    else if (mudou && (el.dataset.f === 'fast' || el.dataset.f === 'preco')) {
+      var nv = spParse(el.textContent);
+      el.textContent = nv === null ? '—' : spMoney(nv);
+      el.dataset.raw = spRawNum(nv);
+    }
+    if (rt && rt.classList && rt.classList.contains('sp-ed')) SP.pendingRender = true;
+    setTimeout(function(){ if (SP.pendingRender && !spActiveInTable()) spRender(); }, 0);
+  });
+  root.addEventListener('keydown', function(e){
+    var el = e.target;
+    if (!el.classList || !el.classList.contains('sp-ed')) return;
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape') { el.textContent = el.dataset.raw || ''; el.blur(); }
+  });
+}
+
+// ── Anexos ──
+function spFileInput(){
+  var inp = document.getElementById('sp-file-anexo');
+  if (inp) return inp;
+  inp = document.createElement('input');
+  inp.type = 'file'; inp.id = 'sp-file-anexo'; inp.style.display = 'none';
+  inp.accept = 'image/jpeg,image/png,image/webp,application/pdf';
+  document.body.appendChild(inp);
+  inp.addEventListener('change', function(){
+    var file = inp.files[0]; inp.value = '';
+    var alvo = SP.attachTarget; SP.attachTarget = null;
+    if (!file || !alvo) return;
+    var isImg = file.type.indexOf('image/') === 0, isPdf = file.type === 'application/pdf';
+    if (!isImg && !isPdf) { alert('Anexe uma imagem (jpg/png) ou um PDF.'); return; }
+    if (isPdf && file.size > 3 * 1024 * 1024) { alert('PDF muito grande (máx. 3 MB). Tire um print da parte do preço e anexe como imagem.'); return; }
+    var p = isImg ? spComprimirImagem(file) : spLerDataURL(file);
+    p.then(function(dataUrl){
+      var aid = spUid(), upd = {};
+      upd['anexos/' + alvo.rod + '/' + alvo.reg + '/' + alvo.pid + '/' + aid] = { data: dataUrl };
+      upd['rodadas/' + alvo.rod + '/regioes/' + alvo.reg + '/itens/' + alvo.pid + '/anexos/' + aid] =
+        { nome: file.name, tipo: isImg ? 'image/jpeg' : 'application/pdf', por: currentUser || '?', em: Date.now() };
+      spUpdate(upd);
+    }).catch(function(){ alert('Não consegui ler esse arquivo.'); });
+  });
+  return inp;
+}
+function spLerDataURL(file){
+  return new Promise(function(res, rej){ var fr = new FileReader(); fr.onload = function(){ res(fr.result); }; fr.onerror = rej; fr.readAsDataURL(file); });
+}
+function spComprimirImagem(file){
+  return spLerDataURL(file).then(function(src){
+    return new Promise(function(res){
+      var img = new Image();
+      img.onload = function(){
+        var max = 1600, s = Math.min(1, max / Math.max(img.width, img.height));
+        var c = document.createElement('canvas');
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        var ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = function(){ res(src); };
+      img.src = src;
+    });
+  });
+}
+function spDataUrlToBlob(du){
+  var parts = du.split(','), mime = (parts[0].match(/:(.*?);/) || [])[1] || 'application/octet-stream';
+  var bin = atob(parts[1]), arr = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+function spAbrirAnexo(pid, aid){
+  var view = spView(SP.rodada, SP.regiao), meta = null;
+  view.itens.forEach(function(it){ if (it.id === pid) meta = it.anexos[aid]; });
+  if (meta && meta.url) { window.open(meta.url, '_blank'); return; }
+  var w = window.open('', '_blank');
+  if (w) w.document.write('<p style="font-family:sans-serif;padding:20px;color:#666">Carregando anexo…</p>');
+  spGetOnce('anexos/' + SP.rodada + '/' + SP.regiao + '/' + pid + '/' + aid).then(function(v){
+    if (!v || !v.data) { if (w) w.close(); alert('Anexo não encontrado.'); return; }
+    var url = URL.createObjectURL(spDataUrlToBlob(v.data));
+    if (w) w.location.href = url; else window.open(url, '_blank');
+  }).catch(function(){ if (w) w.close(); alert('Não consegui abrir o anexo.'); });
+}
+
+// ── CSV ──
+function spExportarCSV(){
+  var regs = SP.regiao === '__overview__' ? spRegioesKeys(SP.rodada) : [SP.regiao];
+  var lines = [];
+  regs.forEach(function(rk){
+    var v = spView(SP.rodada, rk); if (!v) return;
+    if (regs.length > 1) lines.push('REGIAO ' + rk);
+    lines.push(['COD', 'DESCRICAO', 'FAST'].concat(v.comps.map(function(c){ return '"' + c.nome.replace(/"/g, '""') + '"'; })).join(';'));
+    lines.push(['', 'CONDICAO', v.fastCond].concat(v.comps.map(function(c){ return c.cond; })).join(';'));
+    v.itens.forEach(function(it){
+      lines.push([it.cod, '"' + it.desc.replace(/"/g, '""') + '"', spRawNum(it.fast)]
+        .concat(v.comps.map(function(c){ return spRawNum(it.precos[c.id]); })).join(';'));
+    });
+    if (regs.length > 1) lines.push('');
+  });
+  var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'shopping_precos_' + (SP.regiao === '__overview__' ? 'TODAS' : SP.regiao) + '_' + SP.rodada + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+function spImportarCSV(file){
+  var fr = new FileReader();
+  fr.onload = function(){
+    try {
+      var text = String(fr.result).replace(/^﻿/, '');
+      var rows = text.split(/\r?\n/).filter(function(r){ return r.trim() !== ''; });
+      var delim = rows[0].indexOf(';') >= 0 ? ';' : ',';
+      var clean = function(c){ return c.trim().replace(/^"|"$/g, '').replace(/""/g, '"'); };
+      var header = rows[0].split(delim).map(clean);
+      var iCod = header.findIndex(function(h){ return /cod/i.test(h); });
+      var iDesc = header.findIndex(function(h){ return /desc/i.test(h); });
+      var iFast = header.findIndex(function(h){ return /^fast$/i.test(h); });
+      var view = spView(SP.rodada, SP.regiao) || { comps: [], itens: [] };
+      var base = spBase(), upd = {}, ord = Date.now();
+      var colId = {};
+      header.forEach(function(h, i){
+        if (i === iCod || i === iDesc || i === iFast || !h) return;
+        var ex = null; view.comps.forEach(function(c){ if (c.nome.toLowerCase() === h.toLowerCase()) ex = c; });
+        if (ex) colId[i] = ex.id;
+        else { var id = spUid(); colId[i] = id; upd[base + '/competidores/' + id] = { nome: h, cond: '', ordem: ord++ }; }
+      });
+      var n = 0;
+      for (var r = 1; r < rows.length; r++) {
+        var cells = rows[r].split(delim).map(clean);
+        if (/^condi/i.test(cells[iDesc] || '')) continue;
+        var precos = {};
+        Object.keys(colId).forEach(function(i){ var v = spParse(cells[i]); if (v !== null) precos[colId[i]] = v; });
+        var it = { cod: iCod >= 0 ? (cells[iCod] || '') : '', desc: iDesc >= 0 ? (cells[iDesc] || '') : ('item ' + r), ordem: ord++, precos: precos, upd: spCarimbo() };
+        var fv = iFast >= 0 ? spParse(cells[iFast]) : null; if (fv !== null) it.fast = fv;
+        upd[base + '/itens/' + spUid()] = it; n++;
+      }
+      spUpdate(upd).then(function(){ alert(n + ' itens importados para ' + SP.regiao + '.'); });
+    } catch(e) { alert('Não consegui ler esse CSV. Formato esperado: COD;DESCRICAO;FAST;Concorrente1;...'); }
+  };
+  fr.readAsText(file, 'UTF-8');
+}
+
+// ── Importação da ferramenta antiga / base inicial ──
+function spPerguntarRodadaImport(){
+  var sug = spFmtData(spPeriodoAnterior(spHojeKey()));
+  var txt = prompt('Em qual rodada esses dados devem entrar? (dd/mm/aaaa)\nSugestão: a rodada anterior à de hoje, para servir de referência.', sug);
+  if (!txt) return null;
+  var key = spDataToKey(txt);
+  if (!key) { alert('Data inválida. Use o formato dd/mm/aaaa.'); return null; }
+  if (spRod(key) && !confirm('A rodada de ' + spFmtData(key) + ' já existe. As regiões importadas com o mesmo nome serão substituídas. Continuar?')) return null;
+  return key;
+}
+function spConverterRegiaoAntiga(reg, anx){
+  var ord = 1, compId = {}, dst = { fastCond: reg.fastCond || '', ordem: Date.now(), competidores: {}, itens: {} };
+  (reg.competitors || []).forEach(function(nome){
+    var id = spUid(); compId[nome] = id;
+    dst.competidores[id] = { nome: nome, cond: (reg.condicoes && reg.condicoes[nome]) || '', ordem: ord++ };
+  });
+  (reg.products || []).forEach(function(p){
+    var pid = spUid(), precos = {}, anexos = {};
+    Object.keys(p.prices || {}).forEach(function(nome){
+      var v = spNum(p.prices[nome]); if (v !== null && compId[nome]) precos[compId[nome]] = v;
+    });
+    (p.attachments || []).forEach(function(a){
+      var aid = spUid(), tipo = a.contentType || '';
+      var meta = { nome: a.name || 'anexo', tipo: tipo, por: currentUser || '?', em: Date.now() };
+      if (String(a.url || '').indexOf('data:') === 0) { anx[pid] = anx[pid] || {}; anx[pid][aid] = { data: a.url }; }
+      else if (a.url) meta.url = a.url;
+      anexos[aid] = meta;
+    });
+    var it = { cod: p.cod || '', desc: p.desc || '', ordem: ord++, precos: precos, anexos: anexos };
+    if (spNum(p.fast) !== null) it.fast = spNum(p.fast);
+    dst.itens[pid] = it;
+  });
+  return dst;
+}
+function spImportarAntigo(){
+  var raw = null; try { raw = localStorage.getItem(SP_OLD_KEY); } catch(e) {}
+  if (!raw) { alert('Não encontrei dados da ferramenta antiga neste navegador.'); return; }
+  var st; try { st = JSON.parse(raw); } catch(e) { alert('Os dados antigos estão corrompidos.'); return; }
+  var key = spPerguntarRodadaImport(); if (!key) return;
+  var upd = {}, regs = Object.keys((st && st.regions) || {});
+  if (!spRod(key)) { upd['rodadas/' + key + '/criadaEm'] = Date.now(); upd['rodadas/' + key + '/criadaPor'] = currentUser || '?'; }
+  regs.forEach(function(nome){
+    var rk = spRegKey(nome); if (!rk) return;
+    var anx = {};
+    upd['rodadas/' + key + '/regioes/' + rk] = spConverterRegiaoAntiga(st.regions[nome], anx);
+    upd['anexos/' + key + '/' + rk] = Object.keys(anx).length ? anx : null;
+  });
+  SP.rodada = key; SP.regiao = regs.length ? spRegKey(regs[0]) : null;
+  spUpdate(upd).then(function(){ spPosImport(key, regs.length); });
+}
+function spPosImport(key, nRegs){
+  var cur = spHojeKey();
+  if (key < cur && !spRod(cur) && confirm(nRegs + ' região(ões) importada(s) na rodada de ' + spFmtData(key) + '.\n\nAbrir agora a rodada de ' + spFmtData(cur) + ' (já com essa base como referência)?')) {
+    setTimeout(function(){ spAbrirRodada(cur); }, 300);
+  }
+}
+function spSeedMG(){
+  var key = spPerguntarRodadaImport(); if (!key) return;
+  var comps = ['Smart BA','Jeffer (-4% ICMS NF)','Center Gesso','O Metal Perfil','Smart MG','Smart MG (08/09)','SJB','Smart MG (31/08)','Gesso Azevedo (15/09)'];
+  var cond = { 'Jeffer (-4% ICMS NF)':'entregando', 'Center Gesso':'retirando', 'O Metal Perfil':'retirando', 'Smart MG':'retirando',
+               'SJB':'retira no boleto', 'Smart MG (31/08)':'entregue em 60dd', 'Gesso Azevedo (15/09)':'entregue' };
+  var J = 'Jeffer (-4% ICMS NF)', CG = 'Center Gesso', OM = 'O Metal Perfil', SB = 'Smart BA', SM = 'Smart MG';
+  function p(cod, desc, fast, pr){ return { cod:cod, desc:desc, fast:fast, prices:pr, attachments:[] }; }
+  function m(pairs){ var r = {}; for (var i = 0; i < pairs.length; i += 2) r[pairs[i]] = pairs[i+1]; return r; }
+  var products = [
+    p('DW00032','Perfil Drywall F530 - 3,00 m',7.99,m([J,8.87,CG,11.50,OM,10.60])),
+    p('DW00026','Montante Drywall M48 - 3,00 m',10.99,m([J,10.04,CG,14.50,OM,13.80])),
+    p('DW00012','Guia Drywall G48 - 3,00 m',8.50,m([J,8.56,CG,13.90,OM,10.80])),
+    p('DW00003','Cantoneira Drywall 25x30 - 3,00 m',4.97,m([J,4.32,CG,7.90,OM,6.30])),
+    p('DW00013','Guia Drywall G70 - 3,00 m',10.99,m([J,10.12,CG,15.00,OM,13.80])),
+    p('DW00028','Montante Drywall M70 - 3,00 m',12.77,m([J,11.82,CG,15.90,OM,16.35])),
+    p('DW00030','Montante Drywall M90 - 3,00 m',14.99,m([J,13.34,CG,19.50,OM,18.50])),
+    p('DW00015','Guia Drywall G90 - 3,00 m',12.77,m([J,11.13,OM,16.35])),
+    p('DW00086','Montante Drywall M48 - 3m normatizado',13.12,m([SB,26.56,J,11.59,SM,13.85,'SJB',10.10])),
+    p('DW00087','Montante Drywall M70 - 3m normatizado',15.02,m([SB,16.68,J,12.78,SM,16.30,'SJB',11.50])),
+    p('DW00088','Montante Drywall M90 - 3m normatizado',16.97,m([SB,22.32,J,14.53,SM,18.42])),
+    p('DW00033','Perfil Drywall F530 normatizado - 3,00 m',10.28,m([SB,14.00,J,8.87,SM,10.50,'SJB',7.30])),
+    p('FF00047','Cantoneira Drywall 25x30 - 3m normatizada',5.82,m([SB,8.00,J,5.17,SM,6.50])),
+    p('','Tabica branca',null,m([J,8.63,'Smart MG (08/09)',7.63,'SJB',9.70])),
+    p('','Guia Drywall G48 - 3m normatizado',10.74,m([J,9.67,SM,13.04,'SJB',8.20])),
+    p('','Guia Drywall G70 - 3m normatizado',13.60,m([J,11.09,SM,15.81,'SJB',10.40])),
+    p('','Guia Drywall G90 - 3m normatizado',16.03,m([J,13.03,CG,23.00,SM,18.08])),
+    p('','Placa ST 1,80',null,m(['Smart MG (31/08)',31.72,'Gesso Azevedo (15/09)',34.00])),
+    p('','Glasroc',null,m(['Smart MG (31/08)',252.35])),
+    p('','Placa RU',null,m(['Smart MG (31/08)',19.15,'Gesso Azevedo (15/09)',46.45]))
+  ];
+  var upd = {};
+  if (!spRod(key)) { upd['rodadas/' + key + '/criadaEm'] = Date.now(); upd['rodadas/' + key + '/criadaPor'] = currentUser || '?'; }
+  upd['rodadas/' + key + '/regioes/MG'] = spConverterRegiaoAntiga({ competitors: comps, condicoes: cond, fastCond: 'retirando', products: products }, {});
+  upd['anexos/' + key + '/MG'] = null;
+  SP.rodada = key; SP.regiao = 'MG';
+  spUpdate(upd).then(function(){ spPosImport(key, 1); });
+}
 </script>
 </body>
 </html>
