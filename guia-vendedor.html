@@ -4574,11 +4574,20 @@ td.p-tie { color:var(--sp-muted); }
 .sp-mini { opacity:0; width:16px; height:16px; border-radius:50%; text-align:center; line-height:16px; font-size:11px; cursor:pointer; color:var(--sp-muted); flex-shrink:0; }
 .sp-table th:hover .sp-mini { opacity:1; }
 .sp-mini:hover { background:var(--sp-red-dim); color:var(--sp-red); }
-.sp-cond { background:var(--sp-panel2); border:1px solid var(--sp-border); border-radius:20px; color:var(--sp-muted2); font-size:10.5px; font-weight:700; width:100%; padding:2px 6px; outline:none; cursor:pointer; }
+.sp-cond { height:21px; background:var(--sp-panel2); border:1px solid var(--sp-border); border-radius:20px; color:var(--sp-muted2); font-size:10.5px; font-weight:700; width:100%; padding:2px 6px; outline:none; cursor:pointer; }
 .sp-cond.is-retira { background:var(--sp-blue-dim); border-color:var(--sp-blue); color:var(--sp-blue); }
 .sp-cond.is-entrega { background:var(--sp-orange-dim); border-color:var(--sp-orange); color:var(--sp-orange); }
 .sp-cond.is-custom { color:#333; border-color:var(--sp-muted2); }
 .sp-cond-l { font-size:11px; font-weight:700; color:var(--sp-muted); }
+.sp-hstack { display:flex; flex-direction:column; gap:5px; }
+.sp-hlabels span { display:block; height:21px; line-height:21px; }
+.sp-resp { background:#fff; border:1px solid var(--sp-border); border-radius:6px; font-size:11px; font-weight:600; color:#333; width:100%; padding:2px 4px; height:21px; outline:none; cursor:pointer; }
+.sp-resp.vazio { color:var(--sp-orange); border-color:var(--sp-orange); background:var(--sp-orange-dim); }
+.sp-resp.meu { color:#fff; background:var(--sp-blue); border-color:var(--sp-blue); }
+.sp-telwrap { display:flex; align-items:center; gap:3px; }
+.sp-tel { flex:1; min-width:0; border:1px solid var(--sp-border); border-radius:6px; font-size:11px; padding:2px 5px; height:21px; font-family:var(--sp-mono); outline:none; background:#fff; color:#333; }
+.sp-tel:focus, .sp-resp:focus { border-color:var(--sp-red); }
+.sp-tel-a { font-size:12px; text-decoration:none; line-height:1; flex-shrink:0; }
 .sp-rank { display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:700; }
 .sp-rank.best { background:var(--sp-green-dim); color:var(--sp-green); }
 .sp-rank.worst { background:var(--sp-red-dim); color:var(--sp-red); }
@@ -14103,7 +14112,7 @@ function spView(rodKey, regKey){
   if (!reg) return null;
   var comps = Object.keys(reg.competidores || {}).map(function(id){
     var c = reg.competidores[id] || {};
-    return { id:id, nome:c.nome || '(sem nome)', cond:c.cond || '', ordem:c.ordem || 0 };
+    return { id:id, nome:c.nome || '(sem nome)', cond:c.cond || '', resp:c.resp || '', tel:c.tel || '', ordem:c.ordem || 0 };
   }).sort(function(a,b){ return a.ordem - b.ordem; });
   var itens = Object.keys(reg.itens || {}).map(function(id){
     var it = reg.itens[id] || {};
@@ -14173,7 +14182,7 @@ function spAtualizarBadge(){
 // ── Render ──
 function spActiveInTable(){
   var a = document.activeElement;
-  return !!(a && a.classList && a.classList.contains('sp-ed') && a.closest && a.closest('#sp-root'));
+  return !!(a && a.classList && (a.classList.contains('sp-ed') || a.classList.contains('sp-tel')) && a.closest && a.closest('#sp-root'));
 }
 function spRequestRender(){
   if (SP.holdRender || spActiveInTable()) { SP.pendingRender = true; return; }
@@ -14304,6 +14313,25 @@ function spHtmlToolbar(){
     '<button class="sp-btn primary" data-act="export">Exportar CSV</button></div></div>';
 }
 
+function spNomeVend(k){ return (vendedores[k] && vendedores[k].nome) || k || ''; }
+function spRespSelect(c, ed){
+  var opts = '<option value="">' + (ed ? 'Responsável…' : '—') + '</option>';
+  Object.keys(vendedores).forEach(function(k){
+    opts += '<option value="' + k + '"' + (c.resp === k ? ' selected' : '') + '>' + spEsc(spNomeVend(k)) + '</option>';
+  });
+  if (c.resp && !vendedores[c.resp]) opts += '<option value="' + spEsc(c.resp) + '" selected>' + spEsc(c.resp) + '</option>';
+  var cls = !c.resp ? 'vazio' : (c.resp === currentUser ? 'meu' : '');
+  return '<select class="sp-resp ' + cls + '" data-resp="' + c.id + '" title="Vendedor responsável pela consulta neste concorrente"' + (ed ? '' : ' disabled') + '>' + opts + '</select>';
+}
+function spTelDigits(t){ return String(t || '').replace(/\D/g, ''); }
+function spTelInput(c, ed){
+  var d = spTelDigits(c.tel), links = '';
+  if (d.length >= 8) {
+    var wa = d.length <= 11 ? '55' + d : d;
+    links = '<a class="sp-tel-a" href="tel:' + d + '" title="Ligar">📞</a><a class="sp-tel-a" href="https://wa.me/' + wa + '" target="_blank" rel="noopener" title="Abrir no WhatsApp">💬</a>';
+  }
+  return '<div class="sp-telwrap"><input class="sp-tel" type="tel" data-tel="' + c.id + '" value="' + spEsc(c.tel || '') + '" placeholder="Telefone"' + (ed ? '' : ' disabled') + '>' + links + '</div>';
+}
 function spClassCond(v){
   v = (v || '').toLowerCase();
   if (!v) return 'none';
@@ -14330,13 +14358,13 @@ function spHtmlTabela(view){
   var ce = ed ? ' contenteditable="true"' : '';
 
   var hm = '<tr><th class="c-cod">Cód.</th><th class="c-desc">Descrição</th><th class="c-fast">FAST</th>';
-  var hc = '<tr class="sp-hc"><th class="c-cod"></th><th class="c-desc"><span class="sp-cond-l">Condição de entrega</span></th><th class="c-fast">' + spCondSelect(view.fastCond, '__fast__', ed) + '</th>';
+  var hc = '<tr class="sp-hc"><th class="c-cod"></th><th class="c-desc"><div class="sp-hstack sp-hlabels sp-cond-l"><span>Condição de entrega</span><span>Responsável pela consulta</span><span>Telefone do concorrente</span></div></th><th class="c-fast" style="vertical-align:top">' + spCondSelect(view.fastCond, '__fast__', ed) + '</th>';
   view.comps.forEach(function(c){
     hm += '<th><div class="sp-comp-h"><span>' + spEsc(c.nome) + '</span><span style="display:flex;gap:2px;">' +
           (ed ? '<span class="sp-mini" data-act="ren-comp" data-cid="' + c.id + '" title="Renomear">✎</span>' : '') +
           (gest && ed ? '<span class="sp-mini" data-act="del-comp" data-cid="' + c.id + '" title="Remover concorrente">×</span>' : '') +
           '</span></div></th>';
-    hc += '<th>' + spCondSelect(c.cond, c.id, ed) + '</th>';
+    hc += '<th style="vertical-align:top"><div class="sp-hstack">' + spCondSelect(c.cond, c.id, ed) + spRespSelect(c, ed) + spTelInput(c, ed) + '</div></th>';
   });
   hm += '<th style="min-width:150px">Posição da FAST</th><th>Anexos</th>' + (gest && ed ? '<th></th>' : '') + '</tr>';
   hc += '<th></th><th></th>' + (gest && ed ? '<th></th>' : '') + '</tr>';
@@ -14419,7 +14447,24 @@ function spHtmlOverview(regs){
     '<div class="sp-actions"><button class="sp-btn primary" data-act="copiar-relatorio">📋 Copiar relatório (WhatsApp)</button></div></div>' +
     '<div class="sp-tablewrap" style="max-height:none"><table class="sp-table sp-ov"><thead><tr>' +
     '<th>Região</th><th>Preenchimento</th><th>FAST mais barata</th><th>FAST mais cara</th><th>Posição média</th><th>vs rodada anterior</th><th>Maior alerta</th>' +
-    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>' + spHtmlResponsaveis(regs);
+}
+function spHtmlResponsaveis(regs){
+  var linhas = '';
+  regs.forEach(function(rk){
+    var v = spView(SP.rodada, rk); if (!v) return;
+    v.comps.forEach(function(c){
+      var n = v.itens.filter(function(it){ return spNum(it.precos[c.id]) !== null; }).length;
+      var ok = n > 0;
+      linhas += '<tr><td class="rn">' + spEsc(rk) + '</td><td>' + spEsc(c.nome) + '</td>' +
+        '<td>' + (c.resp ? spEsc(spNomeVend(c.resp)) : '<span style="color:var(--sp-orange);font-weight:700">sem responsável</span>') + '</td>' +
+        '<td class="sp-num">' + (c.tel ? spEsc(c.tel) : '—') + '</td>' +
+        '<td class="sp-num" style="color:' + (ok ? 'var(--sp-green)' : 'var(--sp-orange)') + '">' + (ok ? '✓ ' : '⏳ ') + n + ' itens</td></tr>';
+    });
+  });
+  if (!linhas) return '';
+  return '<div style="font-size:13px;font-weight:700;margin:18px 0 8px;">Quem consulta cada concorrente</div>' +
+    '<div class="sp-tablewrap" style="max-height:none"><table class="sp-table sp-ov"><thead><tr><th>Região</th><th>Concorrente</th><th>Responsável</th><th>Telefone</th><th>Preços coletados</th></tr></thead><tbody>' + linhas + '</tbody></table></div>';
 }
 function spTextoRelatorio(){
   var regs = spRegioesKeys(SP.rodada), prevKey = spRodadaAnterior(SP.rodada);
@@ -14439,6 +14484,8 @@ function spTextoRelatorio(){
         .sort(function(a,b){ return b.a.gap - a.a.gap; }).slice(0, 3);
       if (alertas.length) L.push('• Onde mais perdemos: ' + alertas.map(function(x){ return x.d + ' (' + spPctTxt(x.a.gap) + ')'; }).join('; '));
     }
+    var pend = view.comps.filter(function(c){ return !view.itens.some(function(it){ return spNum(it.precos[c.id]) !== null; }); });
+    if (pend.length) L.push('• ⏳ Pendentes: ' + pend.map(function(c){ return c.nome + ' (' + (c.resp ? spNomeVend(c.resp) : 'sem responsável') + ')'; }).join('; '));
     L.push('');
   });
   return L.join('\n').trim();
@@ -14469,7 +14516,7 @@ function spAbrirRodada(key){
       var src = r.regioes[rk] || {}, dst = { fastCond: src.fastCond || '', ordem: src.ordem || 0, competidores: {}, itens: {} };
       Object.keys(src.competidores || {}).forEach(function(cid){
         var c = src.competidores[cid] || {};
-        dst.competidores[cid] = { nome: c.nome || '', cond: c.cond || '', ordem: c.ordem || 0 };
+        dst.competidores[cid] = { nome: c.nome || '', cond: c.cond || '', resp: c.resp || '', tel: c.tel || '', ordem: c.ordem || 0 };
       });
       Object.keys(src.itens || {}).forEach(function(pid){
         var it = src.itens[pid] || {}, n = { cod: it.cod || '', desc: it.desc || '', ordem: it.ordem || 0 };
@@ -14608,6 +14655,14 @@ function spBind(){
       else upd[spBase() + '/competidores/' + t.dataset.cond + '/cond'] = t.value;
       spUpdate(upd); return;
     }
+    if (t.classList.contains('sp-resp') || t.classList.contains('sp-tel')) {
+      if (!spEditavel()) return;
+      var u2 = {}, isResp = t.classList.contains('sp-resp');
+      var cid2 = isResp ? t.dataset.resp : t.dataset.tel;
+      u2[spBase() + '/competidores/' + cid2 + '/' + (isResp ? 'resp' : 'tel')] = isResp ? t.value : t.value.trim();
+      if (isResp) u2[spBase() + '/competidores/' + cid2 + '/respEm'] = spCarimbo();
+      spUpdate(u2); return;
+    }
     if (t.id === 'sp-import-csv') { var f = t.files[0]; t.value = ''; if (f) spImportarCSV(f); }
   });
   root.addEventListener('input', function(e){
@@ -14626,6 +14681,7 @@ function spBind(){
   });
   root.addEventListener('focusout', function(e){
     var el = e.target;
+    if (el.classList && el.classList.contains('sp-tel')) { setTimeout(function(){ if (SP.pendingRender && !spActiveInTable()) spRender(); }, 0); return; }
     if (!el.classList || !el.classList.contains('sp-ed') || el.getAttribute('contenteditable') !== 'true') return;
     var rt = e.relatedTarget;
     SP.holdRender = !!(rt && rt.classList && rt.classList.contains('sp-ed'));
@@ -14642,6 +14698,7 @@ function spBind(){
   });
   root.addEventListener('keydown', function(e){
     var el = e.target;
+    if (el.classList && el.classList.contains('sp-tel') && e.key === 'Enter') { e.preventDefault(); el.blur(); return; }
     if (!el.classList || !el.classList.contains('sp-ed')) return;
     if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
     if (e.key === 'Escape') { el.textContent = el.dataset.raw || ''; el.blur(); }
@@ -14722,6 +14779,8 @@ function spExportarCSV(){
     if (regs.length > 1) lines.push('REGIAO ' + rk);
     lines.push(['COD', 'DESCRICAO', 'FAST'].concat(v.comps.map(function(c){ return '"' + c.nome.replace(/"/g, '""') + '"'; })).join(';'));
     lines.push(['', 'CONDICAO', v.fastCond].concat(v.comps.map(function(c){ return c.cond; })).join(';'));
+    lines.push(['', 'RESPONSAVEL', ''].concat(v.comps.map(function(c){ return spNomeVend(c.resp); })).join(';'));
+    lines.push(['', 'TELEFONE', ''].concat(v.comps.map(function(c){ return c.tel; })).join(';'));
     v.itens.forEach(function(it){
       lines.push([it.cod, '"' + it.desc.replace(/"/g, '""') + '"', spRawNum(it.fast)]
         .concat(v.comps.map(function(c){ return spRawNum(it.precos[c.id]); })).join(';'));
@@ -14759,7 +14818,7 @@ function spImportarCSV(file){
       var n = 0;
       for (var r = 1; r < rows.length; r++) {
         var cells = rows[r].split(delim).map(clean);
-        if (/^condi/i.test(cells[iDesc] || '')) continue;
+        if (/^(condi|respons|telefone)/i.test(cells[iDesc] || '')) continue;
         var precos = {};
         Object.keys(colId).forEach(function(i){ var v = spParse(cells[i]); if (v !== null) precos[colId[i]] = v; });
         var it = { cod: iCod >= 0 ? (cells[iCod] || '') : '', desc: iDesc >= 0 ? (cells[iDesc] || '') : ('item ' + r), ordem: ord++, precos: precos, upd: spCarimbo() };
