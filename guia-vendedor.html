@@ -13997,7 +13997,7 @@ document.querySelectorAll('.mm-preset-btn').forEach(function(btn){
 // da rodada anterior, com os preços dos concorrentes em branco para nova coleta.
 // ══════════════════════════════════════════════════════════════════════
 var SP = { ROOT:'shoppingPrecos', tree:null, mode:null, rodada:null, regiao:null, busca:'',
-           pendingRender:false, bound:false, attachTarget:null };
+           pendingRender:false, bound:false, attachTarget:null, somenteLeitura:false };
 var SP_OLD_KEY = 'shoppingPrecosFAST_v1';
 
 function spIsGestao(){ return currentUser === 'JULIANA' || currentUser === 'ELIZIANE'; }
@@ -14163,7 +14163,8 @@ function spFillRodada(rodKey){
   return { itens:it, preenchidos:pr, pct: it ? Math.round(pr / it * 100) : 0 };
 }
 function spPctTxt(v){ return v === null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1).replace('.', ',') + '%'; }
-function spEditavel(){ var ks = spRodadasKeys(); return !!SP.rodada && (spIsGestao() || SP.rodada === ks[0]); }
+function spEditavel(){ if (SP.somenteLeitura) return false; var ks = spRodadasKeys(); return !!SP.rodada && (spIsGestao() || SP.rodada === ks[0]); }
+function spLinkVisualizacao(){ return location.href.split('#')[0].split('?')[0].replace(/[^\/]*$/, '') + 'shopping-visualizar.html'; }
 
 // ── Badge no menu ──
 function spAtualizarBadge(){
@@ -14201,7 +14202,7 @@ function spRender(){
   var searchFocused = document.activeElement && document.activeElement.id === 'sp-busca';
   if (!SP.tree) { root.innerHTML = '<div class="sp-empty">Carregando shopping de preços…</div>'; return; }
   var ks = spRodadasKeys();
-  if (!ks.length) { root.innerHTML = spHtmlInicio(); return; }
+  if (!ks.length) { root.innerHTML = SP.somenteLeitura ? '<div class="sp-empty">Nenhuma rodada de shopping de preços registrada ainda.</div>' : spHtmlInicio(); return; }
   var cur = spHojeKey();
   if (!SP.rodada || !spRod(SP.rodada)) SP.rodada = spRod(cur) ? cur : ks[0];
   var regs = spRegioesKeys(SP.rodada);
@@ -14213,7 +14214,8 @@ function spRender(){
     var view = spView(SP.rodada, SP.regiao);
     html += spHtmlStats(view) + spHtmlToolbar() + '<div class="sp-tablewrap" id="sp-tablewrap">' + spHtmlTabela(view) + '</div>';
   }
-  html += '<p class="sp-foot"><b>Como funciona:</b> a coleta é feita <b>todo dia 1 e dia 15</b>. Cada rodada nova já vem com os itens, concorrentes e o preço FAST da rodada anterior — é só preencher o preço de cada concorrente (o valor anterior aparece em cinza como referência) e anexar o print/PDF que comprova. ' +
+  if (SP.somenteLeitura) html += '<p class="sp-foot"><b>Leitura:</b> verde = FAST mais barata que aquele concorrente; vermelho = concorrente mais barato. As setas ▲▼ mostram se o preço subiu ou caiu desde a rodada anterior; em cinza, o preço da rodada anterior quando ainda não houve coleta. A coleta é feita pela equipe todo dia 1 e dia 15. Use <b>Visão geral</b> para o relatório consolidado.</p>';
+  else html += '<p class="sp-foot"><b>Como funciona:</b> a coleta é feita <b>todo dia 1 e dia 15</b>. Cada rodada nova já vem com os itens, concorrentes e o preço FAST da rodada anterior — é só preencher o preço de cada concorrente (o valor anterior aparece em cinza como referência) e anexar o print/PDF que comprova. ' +
           'Verde = FAST mais barata que aquele concorrente; vermelho = concorrente mais barato. As setas ▲▼ mostram se o preço subiu ou caiu desde a rodada anterior. Use <b>Visão geral</b> para o relatório consolidado e para copiar o resumo para o WhatsApp.' +
           (spIsGestao() ? '' : ' Rodadas antigas ficam travadas — só a gestão edita.') + '</p>';
   root.innerHTML = html;
@@ -14243,12 +14245,15 @@ function spHtmlTopo(ks, cur){
   return '<div class="sp-top"><div class="sp-brand"><div class="sp-mark">R$</div><div>' +
     '<div class="sp-eyebrow">Inteligência de mercado · coleta dia 1 e 15</div><h2>Shopping de Preços</h2></div></div>' +
     '<div class="sp-rodada-box"><label for="sp-rodada-sel">Rodada</label><select id="sp-rodada-sel" data-act="rodada">' + opts + '</select>' +
-    (spIsGestao() ? '<button class="sp-btn ghost danger" data-act="del-rodada" title="Excluir esta rodada">🗑</button>' : '') +
+    (spIsGestao() && !SP.somenteLeitura ? '<button class="sp-btn" data-act="link-gestora" title="Copia o link de visualização (sem login)">🔗 Link só visualização</button><button class="sp-btn ghost danger" data-act="del-rodada" title="Excluir esta rodada">🗑</button>' : '') +
     '</div></div>';
 }
 
 function spHtmlBanner(ks, cur){
   var hoje = new Date().getDate();
+  if (!spRod(cur) && SP.somenteLeitura) {
+    return '<div class="sp-banner info"><span>👁 Modo visualização · a rodada de <b>' + spFmtData(cur) + '</b> ainda não foi aberta pela equipe. Mostrando a rodada de <b>' + spFmtData(SP.rodada) + '</b>.</span></div>';
+  }
   if (!spRod(cur)) {
     return '<div class="sp-banner ' + (hoje === 1 || hoje === 15 ? 'hoje' : 'warn') + '"><span>📅 ' +
       (hoje === 1 || hoje === 15 ? '<b>Hoje é dia de Shopping de Preços!</b> ' : '') +
@@ -14256,6 +14261,9 @@ function spHtmlBanner(ks, cur){
       '<button class="sp-btn primary" data-act="abrir" data-key="' + cur + '">Abrir rodada de ' + spFmtCurta(cur) + '</button></div>';
   }
   var f = spFillRodada(SP.rodada);
+  if (SP.somenteLeitura) {
+    return '<div class="sp-banner info"><span>👁 <b>Modo visualização</b> · rodada de <b>' + spFmtData(SP.rodada) + '</b> · próxima coleta em <b>' + spFmtData(spProximaColeta()) + '</b>.</span><span><b>' + f.pct + '%</b> preenchido (' + f.preenchidos + '/' + f.itens + ' itens)</span></div>';
+  }
   if (SP.rodada !== cur) {
     return '<div class="sp-banner ' + (spEditavel() ? 'info' : 'lock') + '"><span>' + (spEditavel() ? '🕘' : '🔒') +
       ' Você está vendo a rodada de <b>' + spFmtData(SP.rodada) + '</b>' + (spEditavel() ? '' : ' — encerrada, somente leitura') +
@@ -14330,7 +14338,7 @@ function spTelInput(c, ed){
     var wa = d.length <= 11 ? '55' + d : d;
     links = '<a class="sp-tel-a" href="tel:' + d + '" title="Ligar">📞</a><a class="sp-tel-a" href="https://wa.me/' + wa + '" target="_blank" rel="noopener" title="Abrir no WhatsApp">💬</a>';
   }
-  return '<div class="sp-telwrap"><input class="sp-tel" type="tel" data-tel="' + c.id + '" value="' + spEsc(c.tel || '') + '" placeholder="Telefone"' + (ed ? '' : ' disabled') + '>' + links + '</div>';
+  return '<div class="sp-telwrap"><input class="sp-tel" type="tel" data-tel="' + c.id + '" value="' + spEsc(c.tel || '') + '" placeholder="' + (ed ? 'Telefone' : '—') + '"' + (ed ? '' : ' disabled') + '>' + links + '</div>';
 }
 function spClassCond(v){
   v = (v || '').toLowerCase();
@@ -14631,6 +14639,12 @@ function spAcao(act, el){
       upd['anexos/' + SP.rodada + '/' + SP.regiao + '/' + el.dataset.pid + '/' + el.dataset.aid] = null;
       spUpdate(upd); break;
     case 'export': spExportarCSV(); break;
+    case 'link-gestora':
+      var link = spLinkVisualizacao();
+      var txt = link;
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(function(){ alert('Link copiado:\n' + link + '\n\nQuem abrir esse link vê o Shopping de Preços sem login e sem poder editar.'); }, function(){ prompt('Copie o link:', link); });
+      else prompt('Copie o link:', link);
+      break;
     case 'copiar-relatorio': spCopiar(spTextoRelatorio()); break;
     case 'importar-antigo': spImportarAntigo(); break;
     case 'seed-mg': spSeedMG(); break;
