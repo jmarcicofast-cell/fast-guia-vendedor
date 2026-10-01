@@ -8143,6 +8143,28 @@ function togglePedForm() {
   try {
     const f = document.getElementById('ped-form');
     if (!f) return;
+    const overlay = document.getElementById('ped-popup-overlay');
+    const inner = document.getElementById('ped-popup-inner');
+    // Novo Pedido abre em pop-up (mesmo pop-up usado na conversão de negociação)
+    if (overlay && inner) {
+      if (overlay.style.display === 'flex') { fecharPedidoPopup(); return; }
+      inner.appendChild(f);
+      f.style.display = 'block';
+      f.classList.add('ped-form-popup-mode');
+      overlay.style.display = 'flex';
+      overlay.scrollTop = 0;
+      var tit = document.getElementById('ped-popup-titulo');
+      if (tit) tit.textContent = '➕ Novo Pedido';
+      var head = document.getElementById('ped-popup-head');
+      if (head) head.style.background = '#C41E1E';
+      var btnC = f.querySelector('button[onclick="togglePedForm()"]');
+      if (btnC) btnC.setAttribute('onclick', 'fecharPedidoPopup()');
+      var dataEl0 = document.getElementById('pf-data');
+      if (dataEl0 && !dataEl0.value) dataEl0.value = new Date().toISOString().split('T')[0];
+      if (!pedItens.length) { pedItens = []; renderItensList(); }
+      setTimeout(function(){ var e = document.getElementById('pf-empresa'); if (e) e.focus(); }, 50);
+      return;
+    }
     const visible = f.style.display !== 'none';
     f.style.display = visible ? 'none' : 'block';
     if (!visible) {
@@ -8295,7 +8317,9 @@ function salvarPedido() {
             setTimeout(function() {
               toast.style.display = 'none';
               const form = document.getElementById('ped-form');
-              if (form && firebaseOK) form.style.display = 'none';
+              var ovl = document.getElementById('ped-popup-overlay');
+              if (ovl && ovl.style.display === 'flex') fecharPedidoPopup();
+              else if (form && firebaseOK) form.style.display = 'none';
             }, firebaseOK ? 1500 : 5000);
           }
           ['pf-empresa','pf-cliente','pf-pn','pf-material','pf-qtd','pf-valor-item','pf-valor-total'].forEach(function(id) {
@@ -9874,6 +9898,8 @@ function abrirPedidoPopupConversao(vend, id) {
     form.classList.add('ped-form-popup-mode');
     overlay.style.display = 'flex';
     if (titulo) titulo.textContent = '➜ Converter Negociação em Pedido — ' + (n.empresa || '');
+    var headConv = document.getElementById('ped-popup-head');
+    if (headConv) headConv.style.background = '#1B5E20';
 
     // Reseta itens e pré-preenche o que já se sabe da negociação
     pedItens = [];
@@ -11755,6 +11781,7 @@ function entrarComoUsuario(user) {
   document.getElementById('vb-nome-text').textContent = v.nome;
   checkAdminAccess(v.nome);
   if (typeof spOnLogin === 'function') spOnLogin();
+  if (typeof pedColRecarregarUsuario === 'function') pedColRecarregarUsuario();
   navAplicarOrdemSalva();
   navSetupDragDrop();
   var mmNavBtn = document.getElementById('nav-minhasmetas');
@@ -12736,7 +12763,7 @@ function importarArquivo(event) {
 <!-- Overlay do popup "Converter Negociação em Pedido" — o #ped-form real é movido pra dentro dele quando ativo -->
 <div id="ped-popup-overlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,.6);z-index:9998;align-items:flex-start;justify-content:center;overflow-y:auto;padding:30px 16px;">
   <div id="ped-popup-inner" style="max-width:720px;width:100%;">
-    <div style="background:#1B5E20;color:#fff;border-radius:12px 12px 0 0;padding:12px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;">
+    <div id="ped-popup-head" style="background:#1B5E20;color:#fff;border-radius:12px 12px 0 0;padding:12px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;">
       <span id="ped-popup-titulo">➜ Converter Negociação em Pedido</span>
       <span onclick="fecharPedidoPopup()" style="cursor:pointer;font-size:16px;line-height:1;">✕</span>
     </div>
@@ -15101,6 +15128,104 @@ function spSeedMG(){
   SP.rodada = key; SP.regiao = 'MG';
   spUpdate(upd).then(function(){ spPosImport(key, 1); });
 }
+</script>
+<style>
+  .col-fechado > *:not(.col-head) { display:none !important; }
+  .col-fechado > .col-head { margin-bottom:0 !important; }
+</style>
+<script>
+// ══ PAINÉIS RECOLHÍVEIS NA ABA PEDIDOS ══
+// Cada painel ganha um botão ▾/▸ no título. O estado (aberto/fechado) fica
+// salvo neste aparelho, por usuário, e volta igual na próxima vez.
+var PED_PAINEIS = [];
+function pedColKey(k) { return 'fgv_painel_' + (typeof currentUser !== 'undefined' && currentUser ? currentUser : 'anon') + '_' + k; }
+function pedColAplicar(p, fechado, salvar) {
+  p.fechado = fechado;
+  p.sec.classList.toggle('col-fechado', fechado);
+  p.btn.textContent = fechado ? '▸ Mostrar' : '▾ Esconder';
+  if (salvar) { try { localStorage.setItem(pedColKey(p.key), fechado ? '1' : '0'); } catch(e) {} }
+  pedColAtualizarGeral();
+}
+function pedColRegistrar(key, sec, head) {
+  if (!sec || !head || head.dataset.colReady) return;
+  head.dataset.colReady = '1';
+  head.classList.add('col-head');
+  var p = { key: key, sec: sec, head: head, fechado: false };
+  if (getComputedStyle(head).display !== 'flex') {
+    var wrapTxt = document.createElement('span');
+    while (head.firstChild) wrapTxt.appendChild(head.firstChild);
+    head.appendChild(wrapTxt);
+    head.style.display = 'flex'; head.style.alignItems = 'center'; head.style.justifyContent = 'space-between'; head.style.gap = '8px';
+  }
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.style.cssText = 'margin-left:auto;padding:3px 10px;border-radius:12px;border:1px solid rgba(128,128,128,.35);background:transparent;color:inherit;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:none;cursor:pointer;white-space:nowrap;opacity:.8;';
+  btn.addEventListener('click', function(e) { e.stopPropagation(); pedColAplicar(p, !p.fechado, true); });
+  head.appendChild(btn);
+  p.btn = btn;
+  PED_PAINEIS.push(p);
+  var salvo = null; try { salvo = localStorage.getItem(pedColKey(key)); } catch(e) {}
+  pedColAplicar(p, salvo === '1', false);
+}
+function pedColAtualizarGeral() {
+  var b = document.getElementById('btn-paineis-toggle'); if (!b) return;
+  var todosFechados = PED_PAINEIS.length && PED_PAINEIS.every(function(p) { return p.fechado; });
+  b.textContent = todosFechados ? '👁 Mostrar painéis' : '🙈 Esconder painéis';
+}
+function pedColToggleTodos() {
+  var todosFechados = PED_PAINEIS.every(function(p) { return p.fechado; });
+  PED_PAINEIS.forEach(function(p) { pedColAplicar(p, !todosFechados, true); });
+}
+function pedColInit() {
+  var $ = function(id) { return document.getElementById(id); };
+  // Pódio do dia
+  var podioH = $('podio-dia-data') && $('podio-dia-data').parentElement;
+  if (podioH) pedColRegistrar('podio', podioH.parentElement, podioH);
+  // Hoje
+  var hojeH = $('ped-hoje-data') && $('ped-hoje-data').parentElement;
+  if (hojeH) pedColRegistrar('hoje', hojeH.parentElement, hojeH);
+  // Resumo de produtos de hoje
+  var rp = $('resumo-produtos-hoje');
+  if (rp && rp.previousElementSibling) pedColRegistrar('resumo-hoje', rp.parentElement, rp.previousElementSibling);
+  // Filtro de período
+  var fd = $('filtro-data-de');
+  if (fd) { var sec = fd.closest('#ped-dashboard > div'); if (sec) pedColRegistrar('filtro-periodo', sec, sec.firstElementChild); }
+  // Comissão do vendedor (ganha um título)
+  var cv = $('ped-com-vendedor');
+  if (cv && !$('ped-com-vendedor-titulo')) {
+    var t = document.createElement('div');
+    t.id = 'ped-com-vendedor-titulo';
+    t.style.cssText = 'font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1B5E20;margin-bottom:8px;';
+    t.textContent = '💵 Minha Comissão';
+    cv.insertBefore(t, cv.firstChild);
+    pedColRegistrar('comissao-vendedor', cv, t);
+  }
+  // Comissão da gestora
+  var gm = $('gest-meta');
+  if (gm) { var gs = $('ped-com-gestora') && $('ped-com-gestora').firstElementChild; if (gs) pedColRegistrar('comissao-gestora', gs, gs.firstElementChild); }
+  // Clientes na carteira
+  var rc = $('ped-resumo-clientes');
+  if (rc) pedColRegistrar('clientes-carteira', rc, rc.firstElementChild);
+  // Botão geral no topo
+  var novo = $('btn-novo-pedido');
+  if (novo && !$('btn-paineis-toggle')) {
+    var b = document.createElement('button');
+    b.id = 'btn-paineis-toggle';
+    b.type = 'button';
+    b.onclick = pedColToggleTodos;
+    b.style.cssText = 'padding:8px 14px;border-radius:7px;border:1.5px solid #888;background:#fff;color:#555;font-size:13px;font-weight:600;cursor:pointer;';
+    novo.parentNode.insertBefore(b, novo.nextSibling);
+  }
+  pedColAtualizarGeral();
+}
+// Reaplica o estado salvo quando o usuário muda (cada pessoa tem suas preferências).
+function pedColRecarregarUsuario() {
+  PED_PAINEIS.forEach(function(p) {
+    var salvo = null; try { salvo = localStorage.getItem(pedColKey(p.key)); } catch(e) {}
+    pedColAplicar(p, salvo === '1', false);
+  });
+}
+document.addEventListener('DOMContentLoaded', pedColInit);
 </script>
 </body>
 </html>
