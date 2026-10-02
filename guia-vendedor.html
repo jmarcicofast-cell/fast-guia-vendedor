@@ -15571,6 +15571,24 @@ function abSelResp(r, campo, lista, ed, item){
     '<option value="">A definir</option>' + ops.map(function(n){ return '<option' + (n === atual ? ' selected' : '') + '>' + abEsc(n) + '</option>'; }).join('') + '</select>';
 }
 
+/* responsável na linha do chamado: vale para todos os itens */
+function abSelRespChamado(r, its, campo, lista, ed){
+  var vals = {}; its.forEach(function(i){ vals[abNomeLista(i[campo], lista)] = 1; });
+  var ks = Object.keys(vals), atual = ks.length === 1 ? ks[0] : null, ops = lista.slice();
+  if (atual && ops.indexOf(atual) === -1) ops.push(atual);
+  if (!ed) return atual ? abEsc(atual) : (ks.length > 1 ? '<span style="color:#888;font-style:italic;">vários</span>' : '<span style="color:#B36B00;">a definir</span>');
+  return '<select title="Vale para todos os itens do chamado" onchange="abSalvarTodosItens(\'' + r.id + '\',\'' + campo + '\',this.value)" style="font-weight:600;' + (atual ? '' : 'color:#B36B00;') + '">' +
+    (atual === null ? '<option value="__" selected>Vários — escolher p/ todos</option>' : '') +
+    '<option value=""' + (atual === '' ? ' selected' : '') + '>A definir</option>' +
+    ops.map(function(n){ return '<option' + (n === atual ? ' selected' : '') + '>' + abEsc(n) + '</option>'; }).join('') + '</select>';
+}
+function abSalvarTodosItens(id, campo, valor){
+  if (!abPodeEditar() || valor === '__'){ abRender(); return; }
+  var r = AB.itens[id] || {}, upd = {};
+  upd[campo] = valor;
+  Object.keys(r.itens || {}).forEach(function(k){ if (r.itens[k] && r.itens[k][campo] !== undefined) upd['itens/' + k + '/' + campo] = null; });
+  abAtualizar(id, upd);
+}
 function abView(){ try { return localStorage.getItem('fgv_ab_view') || 'tabela'; } catch(e){ return 'tabela'; } }
 function abSetView(v){ try { localStorage.setItem('fgv_ab_view', v); } catch(e){} abRender(); }
 
@@ -15957,8 +15975,8 @@ function abRender(){
       '<td>' + abResumo(its, 'dc') + '</td>' +
       '<td>' + (minPrazo ? abFmtData(minPrazo) : '<span style="color:#ccc;">—</span>') + '</td>' +
       '<td>' + (maxPrev ? abFmtData(maxPrev) : '<span style="color:#ccc;">—</span>') + '</td>' +
-      '<td>' + abResumo(its, 'respTratamento', function(v){ return abNomeLista(v, AB_RESP_TRAT); }) + '</td>' +
-      '<td>' + abResumo(its, 'responsavel', function(v){ return abNomeLista(v, AB_RESP_ABAST); }) + '</td>' +
+      '<td>' + abSelRespChamado(r, its, 'respTratamento', AB_RESP_TRAT, ed) + '</td>' +
+      '<td>' + abSelRespChamado(r, its, 'responsavel', AB_RESP_ABAST, ed) + '</td>' +
       '<td>' + abResumo(its, 'numCh') + '</td>' +
       '<td>' + tagSit(s) + '</td>' +
       '<td><input type="text" value="' + abEsc(r.obs || '') + '" placeholder="+ obs do chamado" onchange="abSalvarCampo(\'' + r.id + '\',\'obs\',this.value)"' + (ed ? '' : ' disabled') + '></td>' +
