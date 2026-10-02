@@ -4730,6 +4730,19 @@ td.p-tie { color:var(--sp-muted); }
   #tab-abastecimento .ab-chk{ display:inline-flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; white-space:nowrap; }
   #tab-abastecimento .ab-chk input{ width:16px; height:16px; cursor:pointer; }
   #tab-abastecimento .ab-sit{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; white-space:nowrap; display:inline-block; }
+  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(4,minmax(240px,1fr)); gap:12px; min-width:1000px; }
+  #tab-abastecimento .ab-kb-col{ background:#F5F4F2; border-radius:10px; padding:10px; min-height:220px; transition:background .15s, outline .15s; }
+  #tab-abastecimento .ab-kb-col.over{ background:#FBE9E9; outline:2px dashed #C41E1E; }
+  #tab-abastecimento .ab-kb-head{ display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:800; margin-bottom:10px; }
+  #tab-abastecimento .ab-kb-head .cnt{ color:#fff; border-radius:10px; padding:1px 8px; font-size:11px; }
+  #tab-abastecimento .ab-kb-card{ background:#fff; border:1.5px solid #E8E6E1; border-radius:9px; padding:10px; margin-bottom:8px; cursor:grab; font-size:12px; }
+  #tab-abastecimento .ab-kb-card.dragging{ opacity:.4; }
+  #tab-abastecimento .ab-kb-card.atrasado{ border-color:#C41E1E; }
+  #tab-abastecimento .ab-kb-card.risco{ border-color:#E68A00; }
+  #tab-abastecimento .ab-kb-card .ln{ color:#666; font-size:11px; margin-top:3px; }
+  #tab-abastecimento .ab-kb-nav{ display:flex; gap:4px; margin-top:8px; }
+  #tab-abastecimento .ab-kb-nav button{ flex:1; border:1px solid #E2E0D8; background:#fff; border-radius:5px; padding:4px; font-size:11px; cursor:pointer; color:#555; }
+  #tab-abastecimento .ab-kb-nav button:hover{ border-color:#C41E1E; color:#C41E1E; }
   #ab-modal-overlay .ab-item-op{ display:flex; align-items:center; gap:8px; padding:7px 10px; border:1.5px solid #E2E0D8; border-radius:7px; font-size:12.5px; cursor:pointer; margin-bottom:6px; }
   #ab-modal-overlay .ab-item-op.sel{ border-color:#1B5E20; background:#F0F7EE; }
   #ab-modal-overlay .ab-res{ padding:8px 10px; border-bottom:1px solid #F0EEEA; cursor:pointer; font-size:12.5px; }
@@ -4747,13 +4760,18 @@ td.p-tie { color:var(--sp-muted); }
         <input type="text" id="ab-busca" placeholder="🔎 Chamado, cliente, material..." oninput="abRender()" style="padding:8px 12px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;min-width:210px;">
         <select id="ab-filtro-dc" onchange="abRender()" style="padding:8px 10px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;"><option value="">Todas as DCs</option></select>
         <select id="ab-filtro-resp" onchange="abRender()" style="padding:8px 10px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;"><option value="">Todos os responsáveis</option></select>
+        <div style="display:flex;background:#F1EFE8;border-radius:8px;padding:3px;gap:2px;">
+          <button id="ab-view-tabela" onclick="abSetView('tabela')" style="padding:6px 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;">📋 Tabela</button>
+          <button id="ab-view-kanban" onclick="abSetView('kanban')" style="padding:6px 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;">🗂️ Kanban</button>
+        </div>
         <button onclick="abAbrirModal()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Item encomendado</button>
       </div>
     </div>
 
     <div class="ab-cards" id="ab-cards"></div>
 
-    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid #E8E6E1;border-radius:10px;max-height:70vh;">
+    <div id="ab-kanban-wrap" style="display:none;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;"><div class="ab-kb" id="ab-kanban"></div></div>
+    <div id="ab-tabela-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid #E8E6E1;border-radius:10px;max-height:70vh;">
       <table class="ab-t">
         <thead><tr>
           <th>Chamado</th><th>Cliente</th><th style="min-width:200px;">Material a tratar</th><th>Qtd</th>
@@ -4764,7 +4782,8 @@ td.p-tie { color:var(--sp-muted); }
         <tbody id="ab-tbody"></tbody>
       </table>
     </div>
-    <p style="font-size:10.5px;color:#aaa;margin-top:6px;">As alterações salvam sozinhas. 🔴 prazo na DC vencido sem o material chegar · 🟠 previsão de chegada depois do prazo · 🟢 já chegou.</p>
+    <p id="ab-dica-kanban" style="display:none;font-size:10.5px;color:#aaa;margin-top:6px;">Arraste o card entre as colunas (ou use ◀ ▶) para mudar a etapa. Clique em ✏️ para editar os detalhes na tabela. A coluna "Chegou" mostra os últimos 30 dias.</p>
+    <p id="ab-dica-tabela" style="font-size:10.5px;color:#aaa;margin-top:6px;">As alterações salvam sozinhas. 🔴 prazo na DC vencido sem o material chegar · 🟠 previsão de chegada depois do prazo · 🟢 já chegou.</p>
     <datalist id="ab-dl-dc"></datalist>
     <datalist id="ab-dl-resp"></datalist>
   </div>
@@ -15515,6 +15534,18 @@ function abRender(){
   }).join('');
 
   // filtros
+  var modoKanban = abView() === 'kanban';
+  ['tabela','kanban'].forEach(function(m){
+    var b = document.getElementById('ab-view-' + m); if (!b) return;
+    var on = (m === 'kanban') === modoKanban;
+    b.style.background = on ? '#1C1C1C' : 'transparent'; b.style.color = on ? '#fff' : '#888';
+  });
+  document.getElementById('ab-kanban-wrap').style.display = modoKanban ? 'block' : 'none';
+  document.getElementById('ab-tabela-wrap').style.display = modoKanban ? 'none' : 'block';
+  document.getElementById('ab-dica-kanban').style.display = modoKanban ? 'block' : 'none';
+  document.getElementById('ab-dica-tabela').style.display = modoKanban ? 'none' : 'block';
+  if (modoKanban){ abRenderKanban(todos); return; }
+
   var q = (document.getElementById('ab-busca').value || '').toLowerCase().trim();
   var fDc = document.getElementById('ab-filtro-dc').value;
   var fResp = document.getElementById('ab-filtro-resp').value;
@@ -15569,6 +15600,125 @@ function abRender(){
       '<td>' + (podeApagar(r) ? '<button onclick="abExcluir(\'' + r.id + '\')" title="Excluir" style="border:none;background:none;color:#C41E1E;cursor:pointer;font-size:14px;">🗑️</button>' : '') + '</td>' +
     '</tr>';
   }).join('');
+}
+
+var AB_ETAPAS = [
+  { k:'abrir',     t:'⏳ Abrir chamado',      cor:'#7A4A00' },
+  { k:'conferir',  t:'🔎 Conferir chamado',   cor:'#0C447C' },
+  { k:'aguardando',t:'🚚 Aguardando chegada', cor:'#4A148C' },
+  { k:'chegou',    t:'✅ Chegou na DC',       cor:'#1B5E20' }
+];
+function abView(){ try { return localStorage.getItem('fgv_ab_view') || 'tabela'; } catch(e){ return 'tabela'; } }
+function abSetView(v){ try { localStorage.setItem('fgv_ab_view', v); } catch(e){} abRender(); }
+function abEtapa(r){ return r.chegou ? 'chegou' : (!r.chamadoAberto ? 'abrir' : (!r.conferido ? 'conferir' : 'aguardando')); }
+
+function abRenderKanban(todos){
+  var box = document.getElementById('ab-kanban'); if (!box) return;
+  var q = (document.getElementById('ab-busca').value || '').toLowerCase().trim();
+  var fDc = document.getElementById('ab-filtro-dc').value;
+  var fResp = document.getElementById('ab-filtro-resp').value;
+  var corte = new Date(); corte.setDate(corte.getDate() - 30); corte = corte.toISOString().split('T')[0];
+  var lista = todos.filter(function(r){
+    if (fDc && r.dc !== fDc) return false;
+    if (fResp && r.responsavel !== fResp) return false;
+    if (r.chegou && r.chegouEm && r.chegouEm < corte) return false;
+    if (q && [r.chamado, r.cliente, r.material, r.dc, r.responsavel, r.numChamadoAbast, abNomeVend(r.vendedor)].join(' ').toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  }).sort(function(a, b){ return (a.prazo || '9999').localeCompare(b.prazo || '9999'); });
+
+  box.innerHTML = AB_ETAPAS.map(function(et, ei){
+    var itens = lista.filter(function(r){ return abEtapa(r) === et.k; });
+    var cards = itens.map(function(r){
+      var s = abSituacao(r);
+      var cls = s.k === 'atrasado' ? 'atrasado' : s.k === 'risco' ? 'risco' : '';
+      var alerta = (s.k === 'atrasado' || s.k === 'risco') ? '<div style="margin-top:6px;"><span class="ab-sit" style="color:' + s.cor + ';background:' + s.bg + ';">' + s.txt + '</span></div>' : '';
+      return '<div class="ab-kb-card ' + cls + '" draggable="true" data-id="' + r.id + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">' +
+          '<span style="background:#1C1C1C;color:#fff;font-family:monospace;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:5px;">' + abEsc(r.chamado || '—') + '</span>' +
+          '<span onclick="abEditarNaTabela(\'' + abEsc(r.chamado || '') + '\')" title="Editar na tabela" style="cursor:pointer;font-size:12px;">✏️</span>' +
+        '</div>' +
+        '<div style="font-weight:700;margin-top:6px;">' + abEsc(r.material || '—') + (r.qtd ? ' <span style="color:#888;font-weight:500;">· ' + abEsc(r.qtd) + '</span>' : '') + '</div>' +
+        '<div class="ln">' + abEsc(r.cliente || '') + (abVeTudo() ? ' · <span style="color:#C41E1E;">' + abEsc(abNomeVend(r.vendedor)) + '</span>' : '') + '</div>' +
+        '<div class="ln">🏭 ' + abEsc(r.dc || 'DC não definida') + (r.responsavel ? ' · 👤 ' + abEsc(r.responsavel) : '') + '</div>' +
+        '<div class="ln">⏰ Prazo ' + (r.prazo ? abFmtData(r.prazo) : '—') + ' · 📅 Previsão ' + (r.previsao ? abFmtData(r.previsao) : '—') + '</div>' +
+        (r.numChamadoAbast ? '<div class="ln">🎫 Chamado abast. ' + abEsc(r.numChamadoAbast) + '</div>' : '') +
+        alerta +
+        '<div class="ab-kb-nav">' +
+          (ei > 0 ? '<button onclick="abMoverEtapa(\'' + r.id + '\',\'' + AB_ETAPAS[ei-1].k + '\')">◀ ' + AB_ETAPAS[ei-1].t.split(' ').slice(1).join(' ') + '</button>' : '') +
+          (ei < AB_ETAPAS.length - 1 ? '<button onclick="abMoverEtapa(\'' + r.id + '\',\'' + AB_ETAPAS[ei+1].k + '\')">' + AB_ETAPAS[ei+1].t.split(' ').slice(1).join(' ') + ' ▶</button>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+    return '<div class="ab-kb-col" data-etapa="' + et.k + '">' +
+      '<div class="ab-kb-head" style="color:' + et.cor + ';">' + et.t + '<span class="cnt" style="background:' + et.cor + ';">' + itens.length + '</span></div>' +
+      (cards || '<div style="font-size:11px;color:#bbb;text-align:center;padding:16px 0;">Nenhum item</div>') +
+    '</div>';
+  }).join('');
+  abBindKanbanDrag();
+}
+
+function abBindKanbanDrag(){
+  var box = document.getElementById('ab-kanban');
+  if (!box || box.dataset.dragReady) return;
+  box.dataset.dragReady = '1';
+  box.addEventListener('dragstart', function(e){
+    var c = e.target.closest && e.target.closest('.ab-kb-card'); if (!c) return;
+    AB.dragId = c.dataset.id; c.classList.add('dragging');
+    try { e.dataTransfer.setData('text/plain', c.dataset.id); e.dataTransfer.effectAllowed = 'move'; } catch(err){}
+  });
+  box.addEventListener('dragend', function(){
+    box.querySelectorAll('.dragging').forEach(function(el){ el.classList.remove('dragging'); });
+    box.querySelectorAll('.ab-kb-col.over').forEach(function(el){ el.classList.remove('over'); });
+  });
+  box.addEventListener('dragover', function(e){
+    var col = e.target.closest && e.target.closest('.ab-kb-col'); if (!col || !AB.dragId) return;
+    e.preventDefault();
+    box.querySelectorAll('.ab-kb-col.over').forEach(function(el){ if (el !== col) el.classList.remove('over'); });
+    col.classList.add('over');
+  });
+  box.addEventListener('drop', function(e){
+    var col = e.target.closest && e.target.closest('.ab-kb-col'); if (!col || !AB.dragId) return;
+    e.preventDefault();
+    col.classList.remove('over');
+    var id = AB.dragId; AB.dragId = null;
+    abMoverEtapa(id, col.dataset.etapa);
+  });
+}
+
+function abMoverEtapa(id, etapa){
+  var r = AB.itens[id]; if (!r || abEtapa(r) === etapa) return;
+  var alvo = {
+    abrir:      { chamadoAberto:false, conferido:false, chegou:false },
+    conferir:   { chamadoAberto:true,  conferido:false, chegou:false },
+    aguardando: { chamadoAberto:true,  conferido:true,  chegou:false },
+    chegou:     { chamadoAberto:true,  conferido:true,  chegou:true }
+  }[etapa];
+  if (!alvo) return;
+  var upd = {}, hoje = abHoje();
+  Object.keys(alvo).forEach(function(c){
+    if (!!r[c] === alvo[c]) return;
+    upd[c] = alvo[c];
+    upd[c + 'Por'] = alvo[c] ? currentUser : null;
+    upd[c + 'Em'] = alvo[c] ? hoje : null;
+  });
+  abAtualizar(id, upd);
+}
+
+function abEditarNaTabela(chamado){
+  document.getElementById('ab-busca').value = chamado || '';
+  AB.filtro = 'todos';
+  abSetView('tabela');
+}
+
+function abAtualizar(id, upd){
+  upd.atualizadoPor = currentUser; upd.atualizadoEm = Date.now();
+  if (firebaseOK && db){
+    db.ref('abastecimento/' + id).update(upd).catch(function(e){ alert('Erro ao salvar: ' + (e && e.message ? e.message : e)); });
+  } else {
+    var r = Object.assign({}, AB.itens[id] || {}, upd);
+    Object.keys(r).forEach(function(k){ if (r[k] === null) delete r[k]; });
+    AB.itens[id] = r; lsSet('abastecimento', AB.itens); abRender();
+  }
 }
 
 function abSalvarCampo(id, campo, valor){
