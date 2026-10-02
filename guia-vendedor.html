@@ -4781,6 +4781,7 @@ td.p-tie { color:var(--sp-muted); }
 
     <div class="ped-field" style="margin-bottom:10px;">
       <label>Chamado do pedido</label>
+      <input type="text" id="ab-m-filtro" placeholder="🔎 Procurar por nº do chamado ou nome do cliente..." oninput="abFiltrarChamados(this.value)" autocomplete="off" style="width:100%;margin-bottom:6px;">
       <select id="ab-m-chamado" onchange="abEscolherPedido(this.value)" style="width:100%;"></select>
     </div>
     <div id="ab-m-pedido" style="display:none;background:#F8F7F3;border-radius:8px;padding:10px 12px;margin-bottom:12px;"></div>
@@ -15605,7 +15606,7 @@ function abExcluir(id){
 // ── Modal: novo item ──
 function abAbrirModal(){
   AB.modalPedido = null; AB.modalSel = {};
-  ['ab-m-dc','ab-m-prazo','ab-m-previsao','ab-m-resp','ab-m-numch','ab-m-obs'].forEach(function(id){ document.getElementById(id).value = ''; });
+  ['ab-m-filtro','ab-m-dc','ab-m-prazo','ab-m-previsao','ab-m-resp','ab-m-numch','ab-m-obs'].forEach(function(id){ document.getElementById(id).value = ''; });
   abPreencherChamados();
   document.getElementById('ab-m-aberto').checked = false;
   document.getElementById('ab-m-conferido').checked = false;
@@ -15613,12 +15614,24 @@ function abAbrirModal(){
   document.getElementById('ab-m-itens-box').style.display = 'none';
   document.getElementById('ab-m-erro').style.display = 'none';
   document.getElementById('ab-modal-overlay').style.display = 'flex';
-  setTimeout(function(){ document.getElementById('ab-m-chamado').focus(); }, 50);
+  setTimeout(function(){ document.getElementById('ab-m-filtro').focus(); }, 50);
 }
 function abFecharModal(){ document.getElementById('ab-modal-overlay').style.display = 'none'; }
 
-function abPreencherChamados(){
+function abFiltrarChamados(txt){
   var sel = document.getElementById('ab-m-chamado');
+  var atual = sel.value;
+  abPreencherChamados(txt);
+  // mantém o chamado escolhido se ele ainda estiver na lista filtrada
+  if (atual && sel.querySelector('option[value="' + atual + '"]')) { sel.value = atual; return; }
+  var opcoes = sel.querySelectorAll('option[value]:not([value=""])');
+  if (opcoes.length === 1) { sel.value = opcoes[0].value; abEscolherPedido(sel.value); }
+  else if (atual) { abEscolherPedido(''); }
+}
+
+function abPreencherChamados(filtro){
+  var sel = document.getElementById('ab-m-chamado');
+  var q = String(filtro || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
   var peds = (_pedTodosGeral || []).filter(function(p){ return p.status !== 'cancelado' && p.chamado; })
     .sort(function(a, b){ return (b.data || '').localeCompare(a.data || '') || ((b.criadoEm || 0) - (a.criadoEm || 0)); });
   AB.resultados = peds;
@@ -15628,8 +15641,17 @@ function abPreencherChamados(){
     return '<option value="' + i + '">' + abEsc(txt) + '</option>';
   };
   var andamento = '', concluidos = '';
-  peds.forEach(function(p, i){ if (fin[p.status]) concluidos += linha(p, i); else andamento += linha(p, i); });
-  sel.innerHTML = '<option value="">' + (peds.length ? 'Selecione o chamado...' : 'Nenhum pedido com chamado na aba Pedidos') + '</option>' +
+  var achados = 0;
+  peds.forEach(function(p, i){
+    if (q){
+      var alvo = [p.chamado, p.empresa, p.cliente, abNomeVend(p.vendedor)].join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (alvo.indexOf(q) === -1) return;
+    }
+    achados++;
+    if (fin[p.status]) concluidos += linha(p, i); else andamento += linha(p, i);
+  });
+  var vazio = !peds.length ? 'Nenhum pedido com chamado na aba Pedidos' : (!achados ? 'Nenhum chamado encontrado para "' + filtro + '"' : (q ? achados + ' chamado(s) encontrado(s) — selecione' : 'Selecione o chamado...'));
+  sel.innerHTML = '<option value="">' + abEsc(vazio) + '</option>' +
     (andamento ? '<optgroup label="Em andamento">' + andamento + '</optgroup>' : '') +
     (concluidos ? '<optgroup label="Entregues / faturados">' + concluidos + '</optgroup>' : '');
 }
