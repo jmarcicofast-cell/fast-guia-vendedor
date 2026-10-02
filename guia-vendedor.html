@@ -4770,6 +4770,7 @@ td.p-tie { color:var(--sp-muted); }
       <table class="ab-t">
         <thead><tr>
           <th>Chamado</th><th>Cliente</th><th style="min-width:190px;">Material</th><th>Qtd</th>
+          <th style="min-width:110px;">Tipo</th>
           <th style="min-width:180px;">Etapa</th>
           <th style="min-width:120px;">DC</th><th>Prazo na DC</th><th>Previsão de chegada</th>
           <th style="min-width:120px;">Responsável</th><th style="min-width:110px;">Nº chamado abast.</th>
@@ -4807,6 +4808,20 @@ td.p-tie { color:var(--sp-muted); }
         <span id="ab-m-todos" onclick="abSelecionarTodos()" style="font-size:11px;color:#185FA5;font-weight:600;cursor:pointer;">Marcar todos</span>
       </div>
       <div id="ab-m-itens"></div>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#555;margin-bottom:6px;">O que o administrativo precisa fazer? <span style="color:#C41E1E;">*</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div id="ab-m-tipo-abastecer" onclick="abEscolherTipo('abastecer')" style="border:2px solid #E2E0D8;border-radius:9px;padding:10px;cursor:pointer;text-align:center;">
+          <div style="font-size:20px;">🔄</div><div style="font-size:13px;font-weight:800;color:#1C1C1C;">ABASTECER</div>
+          <div style="font-size:10.5px;color:#888;">O material precisa vir para a DC</div>
+        </div>
+        <div id="ab-m-tipo-reservar" onclick="abEscolherTipo('reservar')" style="border:2px solid #E2E0D8;border-radius:9px;padding:10px;cursor:pointer;text-align:center;">
+          <div style="font-size:20px;">📌</div><div style="font-size:13px;font-weight:800;color:#1C1C1C;">RESERVAR</div>
+          <div style="font-size:10.5px;color:#888;">O material já tem na DC, só reservar</div>
+        </div>
+      </div>
     </div>
 
     <div class="ped-form-grid" style="margin-bottom:12px;">
@@ -11949,7 +11964,7 @@ function entrarComoUsuario(user) {
   // "+ Novo Pedido" liberado para todo mundo — vendedor(a) e gestora podem
   // criar pedidos direto, sem precisar passar por uma negociação primeiro.
   var btnNovoPed = document.getElementById('btn-novo-pedido');
-  if (btnNovoPed) btnNovoPed.style.display = 'inline-block';
+  if (btnNovoPed) btnNovoPed.style.display = (v.tipo === 'administrativo') ? 'none' : 'inline-block';
     if (v.nome !== 'Juliana') {
       fbListenVendedor(user);
       listenLigacoesVendedor(user);
@@ -11976,7 +11991,7 @@ function entrarComoUsuario(user) {
     if (feedForm) feedForm.style.display = (v.nome === 'Juliana') ? 'block' : 'none';
   });
   // Start listening to pedidos
-  listenPedidos(user, v.tipo === 'gestora');
+  listenPedidos(user, v.tipo === 'gestora' || v.tipo === 'administrativo');
   listenNegociacoes(user, v.tipo === 'gestora');
   listenAtendimentos(user, v.tipo === 'gestora');
   checarPedidosLocaisPendentes();
@@ -15468,13 +15483,26 @@ var AB_ETAPAS = [
 ];
 function abIdx(k){ for (var i = 0; i < AB_ETAPAS.length; i++) if (AB_ETAPAS[i].k === k) return i; return 0; }
 
+/* ABASTECER passa por todas as etapas; RESERVAR pula "solicitado" e "chegada na DC" */
+var AB_TIPOS = {
+  abastecer: { t:'Abastecer', ic:'🔄', cor:'#0C447C', bg:'#E6F1FB', fluxo:['tratar','conferido','solicitado','reservado','dc','cliente'], marco:'dc' },
+  reservar:  { t:'Reservar',  ic:'📌', cor:'#6A1B9A', bg:'#F3E5F5', fluxo:['tratar','conferido','reservado','cliente'], marco:'reservado' }
+};
+function abTipo(r){ return (r && AB_TIPOS[r.tipo]) ? r.tipo : 'abastecer'; }
+function abFluxo(r){ return AB_TIPOS[abTipo(r)].fluxo; }
+function abTipoTag(r){
+  if (!r.tipo) return '<span class="ab-sit" style="color:#B36B00;background:#FFF3E0;">⚠️ Sem tipo</span>';
+  var t = AB_TIPOS[r.tipo];
+  return '<span class="ab-sit" style="color:' + t.cor + ';background:' + t.bg + ';">' + t.ic + ' ' + t.t.toUpperCase() + '</span>';
+}
+
 function abEhAdm(){ return !!(vendedores[currentUser] && vendedores[currentUser].tipo === 'administrativo'); }
 /* quem edita depois de incluído: Juliana + administrativo. Vendedores só incluem. */
 function abPodeEditar(){ return currentUser === 'JULIANA' || abEhAdm(); }
 function abVeTudo(){ return currentUser === 'JULIANA' || currentUser === 'ELIZIANE' || abEhAdm(); }
 
 /* administrativo entra direto no Abastecimento e só vê as abas de consulta */
-var AB_NAV_ADM = ['abastecimento', 'materiais', 'tabela', 'empresa'];
+var AB_NAV_ADM = ['abastecimento', 'pedidos', 'materiais', 'tabela', 'empresa'];
 function abAplicarPerfilNav(v){
   document.querySelectorAll('#main-nav .nav-btn[data-ab-oculto]').forEach(function(b){ b.style.display = ''; b.removeAttribute('data-ab-oculto'); });
   if (!v || v.tipo !== 'administrativo') return;
@@ -15538,9 +15566,12 @@ function abRequestRender(){
 
 function abSituacao(r){
   var e = abEtapa(r), i = abIdx(e), hoje = abHoje();
+  var tp = AB_TIPOS[abTipo(r)], fl = tp.fluxo;
   if (e === 'cliente') return { k:'fim', txt:'✅ Entregue ao cliente', cor:'#1B5E20', bg:'#E8F5E9' };
-  if (e === 'dc') return { k:'dc', txt:'🏭 Na DC — falta entregar', cor:'#185FA5', bg:'#E6F1FB' };
-  if (r.prazo && hoje > r.prazo) return { k:'atrasado', txt:'🔴 Prazo na DC vencido', cor:'#B71C1C', bg:'#FFEBEE' };
+  if (fl.indexOf(e) >= fl.indexOf(tp.marco)) return abTipo(r) === 'reservar'
+    ? { k:'dc', txt:'📌 Reservado — falta entregar', cor:'#6A1B9A', bg:'#F3E5F5' }
+    : { k:'dc', txt:'🏭 Na DC — falta entregar', cor:'#185FA5', bg:'#E6F1FB' };
+  if (r.prazo && hoje > r.prazo) return { k:'atrasado', txt:'🔴 Prazo vencido', cor:'#B71C1C', bg:'#FFEBEE' };
   if (r.prazo && r.previsao && r.previsao > r.prazo) return { k:'risco', txt:'🟠 Chega depois do prazo', cor:'#B36B00', bg:'#FFF3E0' };
   var et = AB_ETAPAS[i];
   return { k:'ok', txt:et.ic + ' ' + et.t, cor:et.cor, bg:'#F1EFE8' };
@@ -15562,7 +15593,8 @@ function abFiltroBase(r){
   var fResp = document.getElementById('ab-filtro-resp').value;
   if (fDc && r.dc !== fDc) return false;
   if (fResp && r.responsavel !== fResp) return false;
-  if (q && [r.chamado, r.cliente, r.material, r.dc, r.responsavel, r.numChamadoAbast, abNomeVend(r.vendedor)].join(' ').toLowerCase().indexOf(q) === -1) return false;
+  if (q && [r.chamado, r.cliente, r.material, r.dc, r.responsavel, r.numChamadoAbast, abNomeVend(r.vendedor), r.tipo ? AB_TIPOS[r.tipo].t : ''].join(' ').toLowerCase().indexOf(q) === -1) return false;
+  if (AB.filtroTipo && abTipo(r) !== AB.filtroTipo) return false;
   return true;
 }
 
@@ -15588,6 +15620,28 @@ function abRender(){
 
   // cards de resumo
   var cont = { abertos:0, atrasado:0, risco:0, todos:todos.length };
+  AB_ETAPAS.forEach(function(et){ cont['e:' + et.k] = 0; });
+  todos.forEach(function(r){
+    var e = abEtapa(r), s = abSituacao(r);
+    cont['e:' + e]++;
+    if (e !== 'cliente') cont.abertos++;
+    if (s.k === 'atrasado') cont.atrasado++;
+    if (s.k === 'risco') cont.risco++;
+  });
+  var contTipo = { abastecer:0, reservar:0 };
+  todos.forEach(function(r){ if (abEtapa(r) !== 'cliente') contTipo[abTipo(r)]++; });
+  var tipoBar = document.getElementById('ab-tipo-bar');
+  if (!tipoBar){
+    tipoBar = document.createElement('div'); tipoBar.id = 'ab-tipo-bar';
+    tipoBar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;';
+    var cardsEl = document.getElementById('ab-cards'); cardsEl.parentNode.insertBefore(tipoBar, cardsEl);
+  }
+  tipoBar.innerHTML = [['', 'Todos os tipos', '#1C1C1C'], ['abastecer', '🔄 Abastecer (' + contTipo.abastecer + ' em aberto)', AB_TIPOS.abastecer.cor], ['reservar', '📌 Reservar (' + contTipo.reservar + ' em aberto)', AB_TIPOS.reservar.cor]].map(function(t){
+    var on = (AB.filtroTipo || '') === t[0];
+    return '<button onclick="AB.filtroTipo=\'' + t[0] + '\';abRender()" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ' + t[2] + ';background:' + (on ? t[2] : '#fff') + ';color:' + (on ? '#fff' : t[2]) + ';">' + t[1] + '</button>';
+  }).join('');
+  todos = todos.filter(function(r){ return !AB.filtroTipo || abTipo(r) === AB.filtroTipo; });
+  cont = { abastecer:0, abertos:0, atrasado:0, risco:0, todos:todos.length };
   AB_ETAPAS.forEach(function(et){ cont['e:' + et.k] = 0; });
   todos.forEach(function(r){
     var e = abEtapa(r), s = abSituacao(r);
@@ -15628,7 +15682,7 @@ function abRender(){
   });
 
   if (!lista.length){
-    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:#aaa;padding:2rem;">' + (todos.length ? 'Nenhum item nesse filtro.' : 'Nenhum item encomendado ainda. Clique em "+ Item encomendado".') + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:#aaa;padding:2rem;">' + (todos.length ? 'Nenhum item nesse filtro.' : 'Nenhum item encomendado ainda. Clique em "+ Item encomendado".') + '</td></tr>';
     return;
   }
 
@@ -15643,7 +15697,7 @@ function abRender(){
     var inp = function(campo, tipo, extra){ return '<input type="' + tipo + '" value="' + abEsc(r[campo] || '') + '" onchange="abSalvarCampo(\'' + r.id + '\',\'' + campo + '\',this.value)"' + (extra || '') + (ed ? '' : ' disabled') + '>'; };
     var et = AB_ETAPAS[abIdx(e)];
     var etapaSel = '<select onchange="abMoverEtapa(\'' + r.id + '\',this.value)" style="font-weight:700;color:' + et.cor + ';"' + (ed ? '' : ' disabled') + '>' +
-      AB_ETAPAS.map(function(o, i){ return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + '>' + (i + 1) + '. ' + o.t + '</option>'; }).join('') + '</select>' +
+      abFluxo(r).map(function(k, i){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + '>' + (i + 1) + '. ' + o.t + '</option>'; }).join('') + '</select>' +
       (r.etapaPor ? '<div style="font-size:9.5px;color:#999;margin-top:2px;">' + abEsc(abNomeVend(r.etapaPor)) + (r.etapaEm ? ' · ' + abFmtData(r.etapaEm) : '') + '</div>' : '');
     var podeApagar = ed;
     return '<tr class="' + cls + '">' +
@@ -15651,6 +15705,10 @@ function abRender(){
       '<td style="max-width:170px;font-weight:600;">' + abEsc(r.cliente || '—') + '</td>' +
       '<td>' + inp('material', 'text') + '</td>' +
       '<td style="width:70px;">' + inp('qtd', 'text', ' style="width:60px;"') + '</td>' +
+      '<td>' + (ed
+        ? '<select onchange="abMudarTipo(\'' + r.id + '\',this.value)" style="font-weight:700;color:' + (r.tipo ? AB_TIPOS[r.tipo].cor : '#B36B00') + ';">' + (r.tipo ? '' : '<option value="">⚠️ Definir</option>') +
+          Object.keys(AB_TIPOS).map(function(k){ return '<option value="' + k + '"' + (r.tipo === k ? ' selected' : '') + '>' + AB_TIPOS[k].ic + ' ' + AB_TIPOS[k].t + '</option>'; }).join('') + '</select>'
+        : abTipoTag(r)) + '</td>' +
       '<td>' + etapaSel + '</td>' +
       '<td>' + inp('dc', 'text', ' list="ab-dl-dc" placeholder="DC"') + '</td>' +
       '<td>' + inp('prazo', 'date') + '</td>' +
@@ -15678,13 +15736,15 @@ function abRenderKanban(todos){
       var s = abSituacao(r);
       var cls = s.k === 'atrasado' ? 'atrasado' : s.k === 'risco' ? 'risco' : '';
       var alerta = (s.k === 'atrasado' || s.k === 'risco') ? '<div style="margin-top:6px;"><span class="ab-sit" style="color:' + s.cor + ';background:' + s.bg + ';">' + s.txt + '</span></div>' : '';
-      var ant = AB_ETAPAS[ei - 1], prox = AB_ETAPAS[ei + 1];
+      var fl = abFluxo(r), fi = fl.indexOf(et.k);
+      var ant = fi > 0 ? AB_ETAPAS[abIdx(fl[fi - 1])] : null, prox = (fi >= 0 && fi < fl.length - 1) ? AB_ETAPAS[abIdx(fl[fi + 1])] : null;
       var ed = abPodeEditar();
       return '<div class="ab-kb-card ' + cls + '" draggable="' + (ed ? 'true' : 'false') + '" data-id="' + r.id + '"' + (ed ? '' : ' style="cursor:default;"') + '>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">' +
           '<span style="background:#1C1C1C;color:#fff;font-family:monospace;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:5px;">' + abEsc(r.chamado || '—') + '</span>' +
           (ed ? '<span onclick="abEditarNaTabela(\'' + r.id + '\')" title="Editar na tabela" style="cursor:pointer;font-size:12px;">✏️</span>' : '') +
         '</div>' +
+        '<div style="margin-top:6px;">' + abTipoTag(r) + '</div>' +
         '<div style="font-weight:700;margin-top:6px;">' + abEsc(r.material || '—') + (r.qtd ? ' <span style="color:#888;font-weight:500;">· ' + abEsc(r.qtd) + '</span>' : '') + '</div>' +
         '<div class="ln">' + abEsc(r.cliente || '') + (abVeTudo() ? ' · <span style="color:#C41E1E;">' + abEsc(abNomeVend(r.vendedor)) + '</span>' : '') + '</div>' +
         '<div class="ln">🏭 ' + abEsc(r.dc || 'DC não definida') + (r.responsavel ? ' · 👤 ' + abEsc(r.responsavel) : '') + '</div>' +
@@ -15737,9 +15797,26 @@ function abBindKanbanDrag(){
 function abMoverEtapa(id, etapa){
   if (!abPodeEditar()){ alert('Somente o administrativo pode alterar o abastecimento depois de incluído.'); abRender(); return; }
   var r = AB.itens[id]; if (!r || abEtapa(r) === etapa) return;
+  if (abFluxo(r).indexOf(etapa) === -1){
+    alert('Esse item é do tipo ' + AB_TIPOS[abTipo(r)].t.toUpperCase() + ' e não passa pela etapa "' + AB_ETAPAS[abIdx(etapa)].t + '".');
+    abRender(); return;
+  }
   var hoje = abHoje();
   var upd = { etapa: etapa, etapaEm: hoje, etapaPor: currentUser };
   upd['etapaHist/' + etapa] = { por: currentUser, em: hoje };
+  abAtualizar(id, upd);
+}
+
+function abMudarTipo(id, tipo){
+  if (!abPodeEditar() || !AB_TIPOS[tipo]) { abRender(); return; }
+  var r = AB.itens[id] || {}, upd = { tipo: tipo };
+  // se a etapa atual não existe no novo fluxo, volta para a etapa anterior mais próxima
+  var fl = AB_TIPOS[tipo].fluxo, e = abEtapa(r);
+  if (fl.indexOf(e) === -1){
+    var alvo = 'tratar';
+    fl.forEach(function(k){ if (abIdx(k) < abIdx(e)) alvo = k; });
+    upd.etapa = alvo; upd.etapaEm = abHoje(); upd.etapaPor = currentUser;
+  }
   abAtualizar(id, upd);
 }
 
@@ -15784,7 +15861,7 @@ function abExcluir(id){
 function abAbrirModal(){
   AB.modalPedido = null; AB.modalSel = {}; AB.modalItens = null;
   ['ab-m-filtro','ab-m-dc','ab-m-prazo','ab-m-previsao','ab-m-resp','ab-m-numch','ab-m-obs'].forEach(function(id){ document.getElementById(id).value = ''; });
-  document.getElementById('ab-m-etapa').innerHTML = AB_ETAPAS.map(function(o, i){ return '<option value="' + o.k + '">' + (i + 1) + '. ' + o.t + '</option>'; }).join('');
+  AB.modalTipo = null; abEscolherTipo(null);
   document.getElementById('ab-m-etapa').disabled = !abPodeEditar();
   document.getElementById('ab-m-numch').parentElement.style.display = abPodeEditar() ? '' : 'none';
   document.getElementById('ab-m-aviso-vend').style.display = abPodeEditar() ? 'none' : 'block';
@@ -15794,6 +15871,19 @@ function abAbrirModal(){
   document.getElementById('ab-m-erro').style.display = 'none';
   document.getElementById('ab-modal-overlay').style.display = 'flex';
   setTimeout(function(){ document.getElementById('ab-m-filtro').focus(); }, 50);
+}
+function abEscolherTipo(tipo){
+  AB.modalTipo = tipo;
+  Object.keys(AB_TIPOS).forEach(function(k){
+    var el = document.getElementById('ab-m-tipo-' + k); if (!el) return;
+    var on = k === tipo, t = AB_TIPOS[k];
+    el.style.borderColor = on ? t.cor : '#E2E0D8';
+    el.style.background = on ? t.bg : '#fff';
+  });
+  var fl = tipo ? AB_TIPOS[tipo].fluxo : AB_TIPOS.abastecer.fluxo;
+  document.getElementById('ab-m-etapa').innerHTML = fl.map(function(k, i){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '">' + (i + 1) + '. ' + o.t + '</option>'; }).join('');
+  var lblNum = document.getElementById('ab-m-numch');
+  if (lblNum) lblNum.placeholder = tipo === 'reservar' ? 'Nº do chamado de reserva' : 'Quando solicitado';
 }
 function abFecharModal(){ document.getElementById('ab-modal-overlay').style.display = 'none'; }
 
@@ -15887,6 +15977,7 @@ function abSalvarNovo(){
   var erro = document.getElementById('ab-m-erro');
   var p = AB.modalPedido;
   if (!p){ erro.textContent = 'Selecione o chamado do pedido.'; erro.style.display = 'block'; return; }
+  if (!AB.modalTipo){ erro.textContent = 'Escolha se é para ABASTECER ou RESERVAR.'; erro.style.display = 'block'; return; }
   var materiais = [];
   if (AB.modalItens && AB.modalItens.length){
     AB.modalItens.forEach(function(it, idx){ if (AB.modalSel[idx]) materiais.push({ material: it.material || '', qtd: it.qtd || '' }); });
@@ -15902,7 +15993,7 @@ function abSalvarNovo(){
     var hist = {}; hist[etapa] = { por: currentUser, em: hoje };
     upd['ab_' + agora + '_' + i] = {
       vendedor: p.vendedor, pedidoId: p.id, chamado: p.chamado || '', cliente: p.empresa || p.cliente || '', uf: p.estado || '',
-      material: m.material, qtd: String(m.qtd), etapa: etapa, etapaEm: hoje, etapaPor: currentUser, etapaHist: hist,
+      material: m.material, qtd: String(m.qtd), tipo: AB.modalTipo, etapa: etapa, etapaEm: hoje, etapaPor: currentUser, etapaHist: hist,
       dc: g('ab-m-dc'), prazo: g('ab-m-prazo'), previsao: g('ab-m-previsao'), responsavel: g('ab-m-resp'),
       numChamadoAbast: g('ab-m-numch'), obs: g('ab-m-obs'), criadoPor: currentUser, criadoEm: agora
     };
