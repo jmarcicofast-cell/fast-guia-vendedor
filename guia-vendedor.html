@@ -4783,8 +4783,8 @@ td.p-tie { color:var(--sp-muted); }
         <tbody id="ab-tbody"></tbody>
       </table>
     </div>
-    <p id="ab-dica-kanban" style="display:none;font-size:10.5px;color:#aaa;margin-top:6px;">Cada card é um chamado e fica na coluna do produto mais atrasado. Cada produto tem a própria etapa — escolha na lista dele. Arrastar o card (ou ◀ ▶) leva todos os produtos juntos. "Ver detalhes" mostra DCS, prazo, previsão e responsáveis de cada produto.</p>
-    <p id="ab-dica-tabela" style="font-size:10.5px;color:#aaa;margin-top:6px;">A linha cinza é o chamado (resumo); embaixo vem cada produto com tipo, etapa, DCS, prazo, previsão, responsáveis e nº próprios. A etapa na linha do chamado leva todos os produtos juntos. Use "Esconder detalhes" para ver só os chamados. As alterações salvam sozinhas. 🔴 prazo vencido · 🟠 previsão depois do prazo · 🟢 entregue.</p>
+    <p id="ab-dica-kanban" style="display:none;font-size:10.5px;color:#aaa;margin-top:6px;">Cada card é um chamado e fica na coluna do produto mais atrasado. Cada produto tem a própria etapa — escolha na lista dele. Arrastar o card (ou ◀ ▶) leva todos os produtos juntos. "Ver detalhes" mostra DCS, prazo, previsão e nº de cada produto.</p>
+    <p id="ab-dica-tabela" style="font-size:10.5px;color:#aaa;margin-top:6px;">A linha cinza é o chamado (resumo); embaixo vem cada produto com tipo, etapa, DCS, prazo, previsão, e nº próprios; os responsáveis ficam só na linha do chamado. A etapa na linha do chamado leva todos os produtos juntos. Use "Esconder detalhes" para ver só os chamados. As alterações salvam sozinhas. 🔴 prazo vencido · 🟠 previsão depois do prazo · 🟢 entregue.</p>
     <datalist id="ab-dl-dc"></datalist>
     <datalist id="ab-dl-resp"></datalist>
   </div>
@@ -15571,24 +15571,6 @@ function abSelResp(r, campo, lista, ed, item){
     '<option value="">A definir</option>' + ops.map(function(n){ return '<option' + (n === atual ? ' selected' : '') + '>' + abEsc(n) + '</option>'; }).join('') + '</select>';
 }
 
-/* responsável na linha do chamado: vale para todos os itens */
-function abSelRespChamado(r, its, campo, lista, ed){
-  var vals = {}; its.forEach(function(i){ vals[abNomeLista(i[campo], lista)] = 1; });
-  var ks = Object.keys(vals), atual = ks.length === 1 ? ks[0] : null, ops = lista.slice();
-  if (atual && ops.indexOf(atual) === -1) ops.push(atual);
-  if (!ed) return atual ? abEsc(atual) : (ks.length > 1 ? '<span style="color:#888;font-style:italic;">vários</span>' : '<span style="color:#B36B00;">a definir</span>');
-  return '<select title="Vale para todos os itens do chamado" onchange="abSalvarTodosItens(\'' + r.id + '\',\'' + campo + '\',this.value)" style="font-weight:600;' + (atual ? '' : 'color:#B36B00;') + '">' +
-    (atual === null ? '<option value="__" selected>Vários — escolher p/ todos</option>' : '') +
-    '<option value=""' + (atual === '' ? ' selected' : '') + '>A definir</option>' +
-    ops.map(function(n){ return '<option' + (n === atual ? ' selected' : '') + '>' + abEsc(n) + '</option>'; }).join('') + '</select>';
-}
-function abSalvarTodosItens(id, campo, valor){
-  if (!abPodeEditar() || valor === '__'){ abRender(); return; }
-  var r = AB.itens[id] || {}, upd = {};
-  upd[campo] = valor;
-  Object.keys(r.itens || {}).forEach(function(k){ if (r.itens[k] && r.itens[k][campo] !== undefined) upd['itens/' + k + '/' + campo] = null; });
-  abAtualizar(id, upd);
-}
 function abView(){ try { return localStorage.getItem('fgv_ab_view') || 'tabela'; } catch(e){ return 'tabela'; } }
 function abSetView(v){ try { localStorage.setItem('fgv_ab_view', v); } catch(e){} abRender(); }
 
@@ -15655,7 +15637,7 @@ function abItensDe(r){
     var tipo = abTipoIt(r, it);
     return { id:k, material: it.material || '', codigo: abCodigo(r, it), qtd: it.qtd || '', ordem: it.ordem || 0,
              tipo: tipo, fluxo: AB_TIPOS[tipo].fluxo, ok: (r.porItem ? it.ok : null) || {}, etapa: abEtapaItem(r, it),
-             dc: c('dc'), prazo: c('prazo'), previsao: c('previsao'), respTratamento: c('respTratamento'), responsavel: c('responsavel'),
+             dc: c('dc'), prazo: c('prazo'), previsao: c('previsao'), respTratamento: r.respTratamento || '', responsavel: r.responsavel || '',
              numCh: it.numCh || r.numChamadoAbast || '', obs: it.obs || '', fornecedor: it.fornecedor || '' };
   }).sort(function(a, b){ return a.ordem - b.ordem; });
 }
@@ -15829,8 +15811,6 @@ function abItensHtml(r, ed){
     var alerta = (s.k === 'atrasado' || s.k === 'risco') ? ' <span title="' + abEsc(s.txt) + '">' + s.txt.split(' ')[0] + '</span>' : '';
     var det = !aberto ? '' : '<div style="font-size:10.5px;color:#777;margin-top:3px;line-height:1.5;">' +
       ['🏭 ' + abEsc(i.dc || 'DCS —'), '⏰ ' + (i.prazo ? abFmtData(i.prazo) : '—'), '📅 ' + (i.previsao ? abFmtData(i.previsao) : '—'),
-       '🧾 ' + (i.respTratamento ? abEsc(abNomeLista(i.respTratamento, AB_RESP_TRAT)) : '<span style="color:#B36B00;">a definir</span>'),
-       '🚚 ' + (i.responsavel ? abEsc(abNomeLista(i.responsavel, AB_RESP_ABAST)) : '<span style="color:#B36B00;">a definir</span>'),
        i.numCh ? '🎫 ' + abEsc(i.numCh) : '', i.obs ? '📝 ' + abEsc(i.obs) : ''].filter(Boolean).join(' · ') + '</div>';
     return '<div style="padding:6px 0;border-bottom:1px dashed #ECEAE4;">' +
       '<div style="display:flex;align-items:center;gap:6px;">' + abCodHtml(i.codigo) +
@@ -15975,8 +15955,8 @@ function abRender(){
       '<td>' + abResumo(its, 'dc') + '</td>' +
       '<td>' + (minPrazo ? abFmtData(minPrazo) : '<span style="color:#ccc;">—</span>') + '</td>' +
       '<td>' + (maxPrev ? abFmtData(maxPrev) : '<span style="color:#ccc;">—</span>') + '</td>' +
-      '<td>' + abSelRespChamado(r, its, 'respTratamento', AB_RESP_TRAT, ed) + '</td>' +
-      '<td>' + abSelRespChamado(r, its, 'responsavel', AB_RESP_ABAST, ed) + '</td>' +
+      '<td>' + abSelResp(r, 'respTratamento', AB_RESP_TRAT, ed) + '</td>' +
+      '<td>' + abSelResp(r, 'responsavel', AB_RESP_ABAST, ed) + '</td>' +
       '<td>' + abResumo(its, 'numCh') + '</td>' +
       '<td>' + tagSit(s) + '</td>' +
       '<td><input type="text" value="' + abEsc(r.obs || '') + '" placeholder="+ obs do chamado" onchange="abSalvarCampo(\'' + r.id + '\',\'obs\',this.value)"' + (ed ? '' : ' disabled') + '></td>' +
@@ -15994,8 +15974,7 @@ function abRender(){
         '<td>' + inp('dc', 'text', ' list="ab-dl-dc" placeholder="DCS"') + '</td>' +
         '<td>' + inp('prazo', 'date') + '</td>' +
         '<td>' + inp('previsao', 'date') + '</td>' +
-        '<td>' + abSelResp(r, 'respTratamento', AB_RESP_TRAT, ed, i) + '</td>' +
-        '<td>' + abSelResp(r, 'responsavel', AB_RESP_ABAST, ed, i) + '</td>' +
+        '<td></td><td></td>' +
         '<td>' + inp('numCh', 'text', ' placeholder="Nº"') + '</td>' +
         '<td>' + tagSit(si) + '</td>' +
         '<td>' + inp('obs', 'text', ' placeholder="+ obs"') + '</td>' +
@@ -16036,6 +16015,8 @@ function abRenderKanban(todos){
           '</div>' +
           abItensHtml(r, ed) +
         '</div>' +
+        '<div class="ln" style="margin-top:6px;">🧾 Tratamento: ' + (r.respTratamento ? '<b>' + abEsc(abNomeLista(r.respTratamento, AB_RESP_TRAT)) + '</b>' : '<span style="color:#B36B00;">a definir</span>') + '</div>' +
+        '<div class="ln">🚚 Abastecimento: ' + (r.responsavel ? '<b>' + abEsc(abNomeLista(r.responsavel, AB_RESP_ABAST)) + '</b>' : '<span style="color:#B36B00;">a definir</span>') + '</div>' +
         (r.obs ? '<div class="ln">📝 ' + abEsc(r.obs) + '</div>' : '') +
         (abEtapaEm(r) ? '<div class="ln" style="color:#aaa;">nesta etapa desde ' + abFmtData(abEtapaEm(r)) + '</div>' : '') +
         alerta +
