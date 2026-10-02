@@ -2263,6 +2263,7 @@
             <th>Cliente</th>
             <th>Vl. Total</th>
             <th>Status</th>
+            <th>Abastecimento</th>
             <th>Nº Doc</th>
             <th>Conciliação</th>
             <th>Observação</th>
@@ -8778,6 +8779,7 @@ function linhaPedidoHtml(p, isGestora) {
     vendLabel +
     '<td style="font-weight:700;font-size:14px;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
     '<td onclick="event.stopPropagation()"><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)"' + selectAttrs + '>' + statusSelectOpts(p, isGestora) + '</select></td>' +
+    '<td onclick="event.stopPropagation()">' + abCelulaPedidoHtml(p) + '</td>' +
     '<td onclick="event.stopPropagation()">' + numDocCellHtml(p) + '</td>' +
     '<td onclick="event.stopPropagation()">' + conciliacaoCellHtml(p) + '</td>' +
     '<td onclick="event.stopPropagation()"><input type="text" value="' + obsVal + '" placeholder="+ observação" onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()"' + obsAttrs + '></td>' +
@@ -8987,6 +8989,7 @@ function cardPedidoHtml(p, isGestora) {
     '<div style="font-size:18px;font-weight:700;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
     (p.status === 'faturado' ? '<div style="font-size:11px;color:#888;margin-top:6px;">📄 Doc: <span style="font-family:monospace;font-weight:700;color:#1C1C1C;">' + (p.numDoc || '—') + '</span></div>' : '') +
     '</div>' +
+    '<div onclick="event.stopPropagation()" style="margin-top:10px;">' + abCelulaPedidoHtml(p) + '</div>' +
     (p.status === 'faturado' ? '<div onclick="event.stopPropagation()" style="margin-top:8px;">' + conciliacaoCellHtml(p) + '</div>' : '') +
     '<input type="text" value="' + obsVal + '" placeholder="+ observação" onclick="event.stopPropagation()" onblur="salvarObsPedido(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()"' + obsAttrs + '>' +
   '</div>';
@@ -15709,17 +15712,79 @@ function abProgresso(r){
   return { feitos:n, total:its.length, prox: prox };
 }
 
+function abGarantirListener(){
+  // liga (ou religa, se o Firebase conectou depois) o listener do abastecimento
+  if (AB.ligado && (AB.ligadoFb || !firebaseOK)) return;
+  AB.ligado = true; AB.ligadoFb = !!firebaseOK;
+  dbRef('abastecimento').on('value', function(snap){
+    AB.itens = snap.val() || {};
+    abMigrarLegado();
+    abRequestRender();
+    abAtualizarCelulasPedidos();
+  });
+}
+
 function abInit(){
   abPedidos();
-  if (!AB.ligado){
-    AB.ligado = true;
-    dbRef('abastecimento').on('value', function(snap){
-      AB.itens = snap.val() || {};
-      abMigrarLegado();
-      abRequestRender();
-    });
-  }
+  abGarantirListener();
   abRender();
+}
+
+/* ── Botões Abastecer / Reservar direto na lista de Pedidos ── */
+function abRegistrosDoPedido(p){
+  return Object.keys(AB.itens || {}).map(function(id){ var r = AB.itens[id]; if (r) r.id = id; return r; })
+    .filter(function(r){ return r && r.itens && r.pedidoId === p.id && r.vendedor === p.vendedor; });
+}
+function abCelulaPedidoHtml(p){
+  if (typeof AB === 'undefined') return '';
+  abGarantirListener();
+  var attrs = ' class="ab-ped-cell" data-vend="' + abEsc(p.vendedor) + '" data-pid="' + abEsc(p.id) + '"';
+  return '<div' + attrs + '>' + abCelulaPedidoInner(p) + '</div>';
+}
+function abCelulaPedidoInner(p){
+  if (p.status === 'cancelado') return '<span style="color:#ccc;font-size:12px;">—</span>';
+  var regs = abRegistrosDoPedido(p);
+  return '<div style="display:flex;gap:5px;flex-wrap:wrap;">' + ['abastecer','reservar'].map(function(tipo){
+    var t = AB_TIPOS[tipo];
+    var rec = regs.filter(function(r){ return abTipo(r) === tipo; })[0];
+    if (rec){
+      var et = AB_ETAPAS[abIdx(abEtapa(rec))], s = abSituacao(rec);
+      var alerta = (s.k === 'atrasado' || s.k === 'risco') ? ' ' + s.txt.split(' ')[0] : '';
+      return '<button type="button" onclick="event.stopPropagation();abAbrirItens(\'' + rec.id + '\')" title="' + t.t + ' — ' + et.t + ' (clique para ver os itens)" style="border:1.5px solid ' + t.cor + ';background:' + t.bg + ';color:' + t.cor + ';border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">' + t.ic + ' ' + et.ic + ' ' + et.c + alerta + '</button>';
+    }
+    return '<button type="button" onclick="event.stopPropagation();abRapido(\'' + p.vendedor + '\',\'' + p.id + '\',\'' + tipo + '\')" title="Mandar este pedido para o abastecimento como ' + t.t.toUpperCase() + '" style="border:1.5px dashed ' + t.cor + ';background:#fff;color:' + t.cor + ';border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">' + t.ic + ' ' + t.t + '</button>';
+  }).join('') + '</div>';
+}
+function abAtualizarCelulasPedidos(){
+  var todos = _pedTodosGeral || [];
+  document.querySelectorAll('.ab-ped-cell').forEach(function(el){
+    var p = todos.filter(function(x){ return x.id === el.dataset.pid && x.vendedor === el.dataset.vend; })[0];
+    if (p) el.innerHTML = abCelulaPedidoInner(p);
+  });
+}
+/* abre o "Novo item encomendado" já com o pedido, o tipo e os materiais marcados */
+function abRapido(vend, pid, tipo){
+  abGarantirListener();
+  var p = (_pedTodosGeral || []).filter(function(x){ return x.id === pid && x.vendedor === vend; })[0];
+  if (!p) return;
+  if (!p.chamado){ alert('Esse pedido ainda não tem número de chamado. Preencha o chamado antes de mandar para o abastecimento.'); return; }
+  abAbrirModal();
+  document.getElementById('ab-m-filtro').value = p.chamado;
+  abPreencherChamados(p.chamado);
+  var sel = document.getElementById('ab-m-chamado');
+  var idx = -1;
+  (AB.resultados || []).forEach(function(x, i){ if (idx < 0 && x.id === p.id && x.vendedor === p.vendedor) idx = i; });
+  if (idx < 0){
+    AB.resultados = AB.resultados || [];
+    AB.resultados.push(p); idx = AB.resultados.length - 1;
+    sel.insertAdjacentHTML('beforeend', '<option value="' + idx + '">' + abEsc(p.chamado + ' — ' + (p.empresa || p.cliente || '')) + '</option>');
+  }
+  sel.value = String(idx);
+  abEscolherPedido(String(idx));
+  abEscolherTipo(tipo);
+  // marca os materiais que ainda não estão no abastecimento
+  var ja = abMateriaisJaLancados(p.id);
+  (AB.modalItens || []).forEach(function(it, i){ if (ja.indexOf(it.material) === -1) abToggleItem(i); });
 }
 
 /* versões anteriores: (1) 1 registro por material → junta num registro por chamado+tipo;
