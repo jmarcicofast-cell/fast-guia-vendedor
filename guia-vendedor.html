@@ -1114,6 +1114,10 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
     Outros
   </button>
+  <button class="nav-btn" id="nav-sugestoes" draggable="true" data-nav-id="sugestoes" onclick="showTab('sugestoes',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/></svg>
+    Sugestões
+  </button>
   <button class="nav-btn" id="nav-admin" draggable="true" data-nav-id="admin" style="display:none;" onclick="showTab('admin',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M20 21a8 8 0 1 0-16 0"/><path d="M16 11l1.5 3h3l-2.5 2 1 3-3-2-3 2 1-3-2.5-2h3z"/></svg>
     Gestão
@@ -4740,6 +4744,14 @@ td.p-tie { color:var(--sp-muted); }
   #tab-abastecimento .ab-kb-card.atrasado{ border-color:#C41E1E; }
   #tab-abastecimento .ab-kb-card.risco{ border-color:#E68A00; }
   #tab-abastecimento .ab-kb-card .ln{ color:#666; font-size:11px; margin-top:3px; }
+  #ab-it-overlay input[type=text], #ab-it-overlay input[type=date], #ab-it-overlay select{ width:100%; padding:6px 8px; border:1px solid #E2E0D8; border-radius:6px; font-size:12.5px; background:#fff; outline:none; box-sizing:border-box; }
+  #ab-it-overlay input:focus, #ab-it-overlay select:focus{ border-color:#C41E1E; }
+  #ab-it-overlay .abp-lbl{ font-size:10px; color:#999; text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px; font-weight:700; }
+  #ab-it-overlay .abp-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; }
+  #ab-it-overlay .abp-item{ border:1.5px solid #ECEAE4; border-radius:9px; padding:10px 12px; margin-bottom:10px; background:#fff; }
+  #ab-it-overlay .abp-item.atrasado{ border-color:#E8A0A0; background:#FFF8F7; }
+  #ab-it-overlay .abp-item.risco{ border-color:#F0C780; background:#FFFBF2; }
+  #ab-it-overlay .abp-item.fim{ background:#F4FAF4; }
   #tab-abastecimento .ab-kb-nav{ display:flex; gap:4px; margin-top:8px; }
   #tab-abastecimento .ab-kb-nav button{ flex:1; border:1px solid #E2E0D8; background:#fff; border-radius:5px; padding:4px; font-size:10.5px; cursor:pointer; color:#555; }
   #tab-abastecimento .ab-kb-nav button:hover{ border-color:#C41E1E; color:#C41E1E; }
@@ -4783,7 +4795,7 @@ td.p-tie { color:var(--sp-muted); }
         <tbody id="ab-tbody"></tbody>
       </table>
     </div>
-    <p id="ab-dica-kanban" style="display:none;font-size:10.5px;color:#aaa;margin-top:6px;">Cada card é um chamado e fica na coluna do produto mais atrasado. Cada produto tem a própria etapa — escolha na lista dele. Arrastar o card (ou ◀ ▶) leva todos os produtos juntos. "Ver detalhes" mostra DCS, prazo, previsão e nº de cada produto.</p>
+    <p id="ab-dica-kanban" style="display:none;font-size:10.5px;color:#aaa;margin-top:6px;">Cada card é um chamado e fica na coluna do produto mais atrasado. Clique em "📦 itens" (ou ✏️) para abrir o pop-up e ver/editar cada produto. Arrastar o card (ou ◀ ▶) leva todos os produtos juntos. A coluna "Chegada no cliente" mostra os últimos 30 dias.</p>
     <p id="ab-dica-tabela" style="font-size:10.5px;color:#aaa;margin-top:6px;">A linha cinza é o chamado (resumo); embaixo vem cada produto com tipo, etapa, DCS, prazo, previsão, e nº próprios; os responsáveis ficam só na linha do chamado. A etapa na linha do chamado leva todos os produtos juntos. Use "Esconder detalhes" para ver só os chamados. As alterações salvam sozinhas. 🔴 prazo vencido · 🟠 previsão depois do prazo · 🟢 entregue.</p>
     <datalist id="ab-dl-dc"></datalist>
     <datalist id="ab-dl-resp"></datalist>
@@ -4848,6 +4860,53 @@ td.p-tie { color:var(--sp-muted); }
   </div>
 </div>
 <!-- ══ FIM ABASTECIMENTO ══ -->
+
+<!-- ══ SUGESTÕES — ideias, mudanças e bugs ══ -->
+<style>
+  #tab-sugestoes .sg-form{ background:#fff; border:1.5px solid #ECEAE4; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  #tab-sugestoes .sg-tipos{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  #tab-sugestoes .sg-tipo{ flex:1; min-width:130px; border:1.5px solid #E2E0D8; border-radius:9px; padding:9px 10px; cursor:pointer; background:#fff; text-align:left; }
+  #tab-sugestoes .sg-tipo b{ display:block; font-size:13px; }
+  #tab-sugestoes .sg-tipo span{ font-size:10.5px; color:#888; }
+  #tab-sugestoes input[type=text], #tab-sugestoes textarea, #tab-sugestoes select{ width:100%; padding:8px 10px; border:1.5px solid #E2E0D8; border-radius:7px; font-size:13px; outline:none; box-sizing:border-box; font-family:inherit; background:#fff; }
+  #tab-sugestoes input:focus, #tab-sugestoes textarea:focus, #tab-sugestoes select:focus{ border-color:#C41E1E; }
+  #tab-sugestoes .sg-filtros{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+  #tab-sugestoes .sg-chip{ padding:6px 13px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; border:1.5px solid #D9D6CC; background:#fff; color:#555; }
+  #tab-sugestoes .sg-chip.on{ background:#1C1C1C; border-color:#1C1C1C; color:#fff; }
+  #tab-sugestoes .sg-card{ background:#fff; border:1.5px solid #ECEAE4; border-radius:11px; padding:12px 14px; margin-bottom:10px; }
+  #tab-sugestoes .sg-tag{ font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:10px; white-space:nowrap; display:inline-block; }
+  #tab-sugestoes .sg-voto{ border:1.5px solid #E2E0D8; background:#fff; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer; color:#555; }
+  #tab-sugestoes .sg-voto.on{ border-color:#C41E1E; color:#C41E1E; background:#FFF4F4; }
+</style>
+<div id="tab-sugestoes" class="tab-content">
+  <div class="page-section" style="max-width:900px;">
+    <div style="margin-bottom:1rem;">
+      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:2px;">💬 Sugestões</h2>
+      <p style="font-size:12px;color:#aaa;">Ideias, mudanças e bugs do guia — qualquer pessoa pode mandar. Dê 👍 nas que você também quer.</p>
+    </div>
+
+    <div class="sg-form">
+      <div class="sg-tipos" id="sg-tipos"></div>
+      <div style="display:grid;grid-template-columns:1fr 200px;gap:8px;margin-bottom:8px;">
+        <input type="text" id="sg-titulo" maxlength="120" placeholder="Resumo em uma frase (ex: filtro por cidade na Base de Clientes)">
+        <select id="sg-aba"></select>
+      </div>
+      <textarea id="sg-desc" rows="3" placeholder="Explique: o que acontece hoje, o que você gostaria que acontecesse. Se for bug, conte o passo a passo."></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
+        <label style="font-size:12px;color:#666;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="sg-anonimo"> Enviar sem meu nome</label>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span id="sg-msg" style="font-size:12px;font-weight:600;"></span>
+          <button onclick="sgEnviar()" style="padding:9px 20px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Enviar sugestão</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sg-filtros" id="sg-filtros"></div>
+    <div id="sg-lista"></div>
+  </div>
+</div>
+<!-- ══ FIM SUGESTÕES ══ -->
+
 
 <script>
 
@@ -12529,6 +12588,7 @@ function showTab(name, btn) {
   if (name === 'minhasmetas') mmInit();
   if (name === 'shopping' && typeof spInit === 'function') spInit();
   if (name === 'abastecimento' && typeof abInit === 'function') abInit();
+  if (name === 'sugestoes' && typeof sgInit === 'function') sgInit();
   btn.classList.add('active');
 }
 
@@ -15524,7 +15584,7 @@ function abPodeEditar(){ return currentUser === 'JULIANA' || abEhAdm(); }
 function abVeTudo(){ return currentUser === 'JULIANA' || currentUser === 'ELIZIANE' || abEhAdm(); }
 
 /* administrativo entra direto no Abastecimento e só vê as abas de consulta */
-var AB_NAV_ADM = ['abastecimento', 'pedidos', 'materiais', 'tabela', 'empresa'];
+var AB_NAV_ADM = ['abastecimento', 'pedidos', 'materiais', 'tabela', 'empresa', 'sugestoes'];
 function abAplicarPerfilNav(v){
   document.querySelectorAll('#main-nav .nav-btn[data-ab-oculto]').forEach(function(b){ b.style.display = ''; b.removeAttribute('data-ab-oculto'); });
   if (!v || v.tipo !== 'administrativo') return;
@@ -15721,7 +15781,7 @@ function abMigrarLegado(){
 
 function abRequestRender(){
   var a = document.activeElement;
-  if (a && a.closest && a.closest('#ab-tbody') && a.type !== 'checkbox') { AB.pendente = true; return; }
+  if (a && a.closest && (a.closest('#ab-tbody') || a.closest('#ab-it-overlay')) && a.type !== 'checkbox' && a.tagName !== 'SELECT') { AB.pendente = true; return; }
   abRender();
 }
 
@@ -15905,6 +15965,7 @@ function abRender(){
   document.getElementById('ab-tabela-wrap').style.display = modoKanban ? 'none' : 'block';
   document.getElementById('ab-dica-kanban').style.display = modoKanban ? 'block' : 'none';
   document.getElementById('ab-dica-tabela').style.display = modoKanban ? 'none' : 'block';
+  abRenderPopup();
   if (modoKanban){ abRenderKanban(todos); return; }
 
   var lista = todos.filter(function(r){
@@ -16009,11 +16070,8 @@ function abRenderKanban(todos){
         '</div>' +
         '<div style="font-weight:700;margin-top:6px;">' + abEsc(r.cliente || '') + '</div>' +
         (abVeTudo() ? '<div class="ln" style="color:#C41E1E;margin-top:1px;">' + abEsc(abNomeVend(r.vendedor)) + '</div>' : '') +
-        '<div style="background:#FAFAF8;border:1px solid #F0EEEA;border-radius:7px;padding:6px 8px;margin-top:7px;">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;gap:6px;">' +
-            '<span onclick="abToggleDetalhes(\'' + r.id + '\')" style="font-size:9.5px;color:#888;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;font-weight:700;">' + (aberto ? '▾ esconder detalhes' : '▸ ver detalhes') + '</span>' + abProgressoHtml(r) +
-          '</div>' +
-          abItensHtml(r, ed) +
+        '<div onclick="abAbrirItens(\'' + r.id + '\')" title="Ver e editar os itens" style="background:#FAFAF8;border:1px solid #F0EEEA;border-radius:7px;padding:7px 9px;margin-top:7px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px;">' +
+          '<span style="font-size:11.5px;font-weight:700;color:#333;">📦 ' + abItensDe(r).length + ' ite' + (abItensDe(r).length === 1 ? 'm' : 'ns') + ' <span style="color:#C41E1E;font-size:10.5px;">ver ›</span></span>' + abProgressoHtml(r) +
         '</div>' +
         '<div class="ln" style="margin-top:6px;">🧾 Tratamento: ' + (r.respTratamento ? '<b>' + abEsc(abNomeLista(r.respTratamento, AB_RESP_TRAT)) + '</b>' : '<span style="color:#B36B00;">a definir</span>') + '</div>' +
         '<div class="ln">🚚 Abastecimento: ' + (r.responsavel ? '<b>' + abEsc(abNomeLista(r.responsavel, AB_RESP_ABAST)) + '</b>' : '<span style="color:#B36B00;">a definir</span>') + '</div>' +
@@ -16022,7 +16080,7 @@ function abRenderKanban(todos){
         alerta +
         (!ed ? '' : '<div class="ab-kb-nav">' +
           (ant ? '<button onclick="abMoverEtapa(\'' + r.id + '\',\'' + ant.k + '\')" title="Voltar todos os itens para ' + ant.t + '">◀</button>' : '') +
-          '<button onclick="abEditarNaTabela(\'' + r.id + '\')" title="Editar na tabela">✏️</button>' +
+          '<button onclick="abAbrirItens(\'' + r.id + '\')" title="Ver e editar os itens">✏️</button>' +
           (prox ? '<button style="flex:4;" title="Leva todos os itens" onclick="abMoverEtapa(\'' + r.id + '\',\'' + prox.k + '\')">' + prox.t + ' ▶</button>' : '') +
         '</div>') +
       '</div>';
@@ -16033,6 +16091,81 @@ function abRenderKanban(todos){
     '</div>';
   }).join('');
   abBindKanbanDrag();
+}
+
+/* ── Pop-up de itens do chamado (usado no Kanban) ── */
+function abAbrirItens(id){
+  AB.popup = id;
+  var ov = document.getElementById('ab-it-overlay');
+  if (!ov){
+    ov = document.createElement('div'); ov.id = 'ab-it-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow-y:auto;';
+    ov.addEventListener('click', function(e){ if (e.target === ov) abFecharItens(); });
+    document.body.appendChild(ov);
+  }
+  ov.style.display = 'flex';
+  abRenderPopup();
+}
+function abFecharItens(){
+  AB.popup = null;
+  var ov = document.getElementById('ab-it-overlay'); if (ov) ov.style.display = 'none';
+  if (AB.pendente) abRender();
+}
+function abRenderPopup(){
+  var ov = document.getElementById('ab-it-overlay');
+  if (!AB.popup || !ov || ov.style.display === 'none') return;
+  var r = AB.itens[AB.popup];
+  if (!r){ abFecharItens(); return; }
+  r.id = AB.popup;
+  if (!r.itens && r.material) r.itens = { leg: { material: r.material, qtd: r.qtd, ordem: 0 } };
+  var ed = abPodeEditar(), its = abItensDe(r), s = abSituacao(r), e = abEtapa(r), et = AB_ETAPAS[abIdx(e)];
+  var lbl = function(t, html){ return '<div><div class="abp-lbl">' + t + '</div>' + html + '</div>'; };
+  var etapaCham = ed
+    ? '<select onchange="abMoverEtapa(\'' + r.id + '\',this.value)" style="font-weight:700;color:' + et.cor + ';">' +
+        abFluxo(r).map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + '>' + (n + 1) + '. ' + o.t + '</option>'; }).join('') + '</select>'
+    : abChipEtapa(e);
+  var cab = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;">' +
+      '<div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+        '<span style="background:#1C1C1C;color:#fff;font-family:monospace;font-size:14px;font-weight:700;padding:3px 9px;border-radius:6px;">' + abEsc(r.chamado || '—') + '</span>' +
+        abTipoTag(r) + '<span class="ab-sit" style="color:' + s.cor + ';background:' + s.bg + ';">' + s.txt + '</span></div>' +
+        '<div style="font-size:16px;font-weight:800;margin-top:6px;">' + abEsc(r.cliente || '') + '</div>' +
+        '<div style="font-size:11.5px;color:#C41E1E;font-weight:600;">' + abEsc(abNomeVend(r.vendedor)) + ' · ' + abProgressoHtml(r) + '</div></div>' +
+      '<button onclick="abFecharItens()" style="border:none;background:#F1EFE8;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;flex-shrink:0;">✕</button>' +
+    '</div>' +
+    '<div style="background:#F4F2EC;border-radius:9px;padding:10px 12px;margin-bottom:14px;">' +
+      '<div style="font-size:11px;font-weight:800;color:#555;margin-bottom:8px;">CHAMADO <span style="font-weight:400;color:#999;">— tipo e etapa aqui valem para todos os itens</span></div>' +
+      '<div class="abp-grid">' +
+        lbl('Tipo', abSelTipo(r, null, ed)) +
+        lbl('Etapa (item mais atrasado)', etapaCham) +
+        lbl('Resp. tratamento', abSelResp(r, 'respTratamento', AB_RESP_TRAT, ed)) +
+        lbl('Resp. abastecimento', abSelResp(r, 'responsavel', AB_RESP_ABAST, ed)) +
+      '</div>' +
+      '<div style="margin-top:8px;">' + lbl('Obs. do chamado', '<input type="text" value="' + abEsc(r.obs || '') + '" placeholder="+ obs do chamado" onchange="abSalvarCampo(\'' + r.id + '\',\'obs\',this.value)"' + (ed ? '' : ' disabled') + '>') + '</div>' +
+    '</div>' +
+    '<div style="font-size:11px;font-weight:800;color:#555;margin-bottom:8px;">ITENS (' + its.length + ')</div>';
+  var lista = its.map(function(i){
+    var si = abSituacaoItem(i);
+    var cls = si.k === 'atrasado' ? 'atrasado' : si.k === 'risco' ? 'risco' : si.k === 'fim' ? 'fim' : '';
+    var inp = function(campo, tipo, ph){ return '<input type="' + tipo + '" value="' + abEsc(i[campo] || '') + '"' + (ph ? ' placeholder="' + ph + '"' : '') + (campo === 'dc' ? ' list="ab-dl-dc"' : '') + ' onchange="abSalvarItemCampo(\'' + r.id + '\',\'' + i.id + '\',\'' + campo + '\',this.value)"' + (ed ? '' : ' disabled') + '>'; };
+    return '<div class="abp-item ' + cls + '">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' + abCodHtml(i.codigo) +
+        '<span style="flex:1;font-weight:700;font-size:13px;">' + abEsc(i.material) + (i.qtd ? ' <span style="color:#888;font-weight:400;font-size:12px;">· ' + abEsc(i.qtd) + '</span>' : '') + '</span>' +
+        '<span class="ab-sit" style="color:' + si.cor + ';background:' + si.bg + ';">' + si.txt + '</span>' +
+        (ed ? '<button onclick="abRemoverItem(\'' + r.id + '\',\'' + i.id + '\')" title="Remover item" style="border:none;background:none;color:#bbb;cursor:pointer;font-size:17px;">×</button>' : '') +
+      '</div>' +
+      '<div class="abp-grid">' +
+        lbl('Tipo', abSelTipo(r, i, ed)) +
+        lbl('Etapa', ed ? abSelEtapaItem(r, i, false) : abChipEtapa(i.etapa)) +
+        lbl('DCS', inp('dc', 'text', 'DCS')) +
+        lbl('Prazo na DCS', inp('prazo', 'date')) +
+        lbl('Previsão de chegada', inp('previsao', 'date')) +
+        lbl('Nº chamado abast.', inp('numCh', 'text', 'Nº')) +
+      '</div>' +
+      '<div style="margin-top:8px;">' + inp('obs', 'text', '+ obs do item') + '</div>' +
+    '</div>';
+  }).join('');
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;width:100%;max-width:820px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);">' + cab + (lista || '<div style="color:#aaa;font-size:12px;">Sem itens</div>') +
+    (ed ? '' : '<div style="font-size:11px;color:#999;margin-top:4px;">🔒 Somente o administrativo edita o abastecimento.</div>') + '</div>';
 }
 
 function abBindKanbanDrag(){
@@ -16347,6 +16480,183 @@ function abSalvarNovo(){
   var id = 'abg_' + agora;
   if (firebaseOK && db) db.ref('abastecimento/' + id).set(novo).then(done, falha);
   else { AB.itens[id] = novo; lsSet('abastecimento', AB.itens); done(); }
+}
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   SUGESTÕES — qualquer pessoa manda ideia, mudança ou bug.
+   Firebase: sugestoes/{id} = { tipo, titulo, desc, aba, autor ('' se anônimo),
+     anonimo, criadoEm, status, resposta, respostaPor, respostaEm, votos:{USER:true} }
+   Juliana muda o status e responde. Autor apaga a própria enquanto "Nova".
+   ══════════════════════════════════════════════════════════════ */
+var SG = { itens: {}, ligado: false, tipo: null, fTipo: '', fStatus: 'abertas', ordem: 'votos' };
+var SG_TIPOS = {
+  ideia:   { t:'Ideia',   ic:'💡', cor:'#B36B00', bg:'#FFF6E0', d:'Algo novo que ajudaria' },
+  mudanca: { t:'Mudança', ic:'🔧', cor:'#0C447C', bg:'#E6F1FB', d:'Melhorar algo que já existe' },
+  bug:     { t:'Bug',     ic:'🐞', cor:'#B71C1C', bg:'#FFEBEE', d:'Algo errado ou que não funciona' }
+};
+var SG_STATUS = {
+  nova:      { t:'Nova',           cor:'#555',    bg:'#F1EFE8' },
+  analise:   { t:'Em análise',     cor:'#0C447C', bg:'#E6F1FB' },
+  andamento: { t:'Em andamento',   cor:'#6A1B9A', bg:'#F3E5F5' },
+  feita:     { t:'✅ Feita',        cor:'#1B5E20', bg:'#E8F5E9' },
+  recusada:  { t:'Não será feita', cor:'#888',    bg:'#F5F5F5' }
+};
+function sgGestora(){ return currentUser === 'JULIANA'; }
+function sgEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+function sgNome(k){ return (vendedores[k] && vendedores[k].nome) || k || ''; }
+function sgData(ts){ if (!ts) return ''; var d = new Date(ts); return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear(); }
+
+function sgInit(){
+  if (!SG.ligado){
+    SG.ligado = true;
+    dbRef('sugestoes').on('value', function(snap){ SG.itens = snap.val() || {}; sgRender(); });
+  }
+  sgMontarForm();
+  sgRender();
+}
+
+function sgMontarForm(){
+  document.getElementById('sg-tipos').innerHTML = Object.keys(SG_TIPOS).map(function(k){
+    var t = SG_TIPOS[k], on = SG.tipo === k;
+    return '<button class="sg-tipo" onclick="sgEscolherTipo(\'' + k + '\')" style="' + (on ? 'border-color:' + t.cor + ';background:' + t.bg + ';' : '') + '"><b style="color:' + t.cor + ';">' + t.ic + ' ' + t.t + '</b><span>' + t.d + '</span></button>';
+  }).join('');
+  var sel = document.getElementById('sg-aba'), atual = sel.value;
+  var abas = [];
+  document.querySelectorAll('#main-nav .nav-btn[data-nav-id]').forEach(function(b){
+    if (b.style.display === 'none' && !b.hasAttribute('data-ab-oculto')) return;
+    var nome = (b.textContent || '').trim(); if (nome && b.dataset.navId !== 'sugestoes') abas.push(nome);
+  });
+  sel.innerHTML = '<option value="">Qual aba? (opcional)</option>' + abas.map(function(n){ return '<option' + (n === atual ? ' selected' : '') + '>' + sgEsc(n) + '</option>'; }).join('') + '<option' + (atual === 'Geral / várias abas' ? ' selected' : '') + '>Geral / várias abas</option>';
+}
+function sgEscolherTipo(k){ SG.tipo = k; sgMontarForm(); }
+
+function sgMsg(txt, ok){ var m = document.getElementById('sg-msg'); m.textContent = txt; m.style.color = ok ? '#1B5E20' : '#C41E1E'; if (ok) setTimeout(function(){ if (m.textContent === txt) m.textContent = ''; }, 4000); }
+
+function sgEnviar(){
+  var titulo = document.getElementById('sg-titulo').value.trim();
+  var desc = document.getElementById('sg-desc').value.trim();
+  if (!SG.tipo) return sgMsg('Escolha: Ideia, Mudança ou Bug.');
+  if (!titulo) return sgMsg('Escreva o resumo da sugestão.');
+  var anon = document.getElementById('sg-anonimo').checked;
+  var novo = { tipo: SG.tipo, titulo: titulo, desc: desc, aba: document.getElementById('sg-aba').value,
+    autor: anon ? '' : currentUser, anonimo: anon, criadoEm: Date.now(), status: 'nova' };
+  var id = 'sg_' + novo.criadoEm + '_' + Math.random().toString(36).slice(2, 6);
+  var ok = function(){
+    document.getElementById('sg-titulo').value = ''; document.getElementById('sg-desc').value = ''; document.getElementById('sg-anonimo').checked = false;
+    SG.tipo = null; sgMontarForm(); sgMsg('✓ Sugestão enviada. Obrigada!', true);
+  };
+  if (firebaseOK && db) db.ref('sugestoes/' + id).set(novo).then(ok, function(e){ sgMsg('Erro ao enviar: ' + (e && e.message ? e.message : e)); });
+  else { SG.itens[id] = novo; lsSet('sugestoes', SG.itens); ok(); sgRender(); }
+}
+
+function sgAtualizar(id, upd){
+  if (firebaseOK && db) db.ref('sugestoes/' + id).update(upd).catch(function(e){ alert('Erro ao salvar: ' + (e && e.message ? e.message : e)); });
+  else {
+    var r = SG.itens[id] || {};
+    Object.keys(upd).forEach(function(k){
+      var p = k.split('/');
+      if (p.length === 2){ r[p[0]] = r[p[0]] || {}; if (upd[k] === null) delete r[p[0]][p[1]]; else r[p[0]][p[1]] = upd[k]; }
+      else if (upd[k] === null) delete r[k]; else r[k] = upd[k];
+    });
+    SG.itens[id] = r; lsSet('sugestoes', SG.itens); sgRender();
+  }
+}
+function sgVotar(id){
+  var r = SG.itens[id]; if (!r || !currentUser) return;
+  var upd = {}; upd['votos/' + currentUser] = (r.votos && r.votos[currentUser]) ? null : true;
+  sgAtualizar(id, upd);
+}
+function sgStatus(id, st){
+  if (!sgGestora() || !SG_STATUS[st]) return;
+  sgAtualizar(id, { status: st, statusEm: Date.now() });
+}
+function sgResponder(id, txt){
+  if (!sgGestora()) return;
+  sgAtualizar(id, { resposta: String(txt || '').trim(), respostaPor: currentUser, respostaEm: Date.now() });
+}
+function sgExcluir(id){
+  var r = SG.itens[id]; if (!r) return;
+  if (!(sgGestora() || (r.autor === currentUser && (r.status || 'nova') === 'nova'))) return;
+  if (!confirm('Apagar a sugestão "' + (r.titulo || '') + '"?')) return;
+  if (firebaseOK && db) db.ref('sugestoes/' + id).remove();
+  else { delete SG.itens[id]; lsSet('sugestoes', SG.itens); sgRender(); }
+}
+function sgFiltro(campo, v){ SG[campo] = v; sgRender(); }
+
+function sgRender(){
+  var box = document.getElementById('sg-lista'); if (!box) return;
+  var a = document.activeElement;
+  if (a && a.closest && a.closest('#sg-lista') && a.tagName === 'TEXTAREA'){ SG.pendente = true; return; }
+  SG.pendente = false;
+  var todos = Object.keys(SG.itens).map(function(id){ var r = SG.itens[id] || {}; r.id = id; return r; });
+  var nVotos = function(r){ return Object.keys(r.votos || {}).length; };
+  var aberta = function(r){ var st = r.status || 'nova'; return st !== 'feita' && st !== 'recusada'; };
+  var cont = { abertas:0, nova:0, feitas:0, minhas:0 };
+  todos.forEach(function(r){ if (aberta(r)) cont.abertas++; if ((r.status || 'nova') === 'nova') cont.nova++; if (!aberta(r)) cont.feitas++; if (r.autor === currentUser) cont.minhas++; });
+
+  var chip = function(campo, v, txt){ return '<button class="sg-chip' + (SG[campo] === v ? ' on' : '') + '" onclick="sgFiltro(\'' + campo + '\',\'' + v + '\')">' + txt + '</button>'; };
+  document.getElementById('sg-filtros').innerHTML =
+    chip('fStatus', 'abertas', 'Em aberto (' + cont.abertas + ')') +
+    (sgGestora() ? chip('fStatus', 'nova', '🆕 Novas (' + cont.nova + ')') : '') +
+    chip('fStatus', 'fechadas', 'Feitas / encerradas (' + cont.feitas + ')') +
+    chip('fStatus', 'minhas', 'Minhas (' + cont.minhas + ')') +
+    chip('fStatus', 'todas', 'Todas') +
+    '<span style="width:1px;height:20px;background:#ddd;margin:0 4px;"></span>' +
+    chip('fTipo', '', 'Todos os tipos') +
+    Object.keys(SG_TIPOS).map(function(k){ return chip('fTipo', k, SG_TIPOS[k].ic + ' ' + SG_TIPOS[k].t); }).join('') +
+    '<select onchange="sgFiltro(\'ordem\',this.value)" style="width:auto;margin-left:auto;padding:6px 10px;font-size:12px;">' +
+      '<option value="votos"' + (SG.ordem === 'votos' ? ' selected' : '') + '>Mais votadas</option>' +
+      '<option value="recentes"' + (SG.ordem === 'recentes' ? ' selected' : '') + '>Mais recentes</option></select>';
+
+  var lista = todos.filter(function(r){
+    var st = r.status || 'nova';
+    if (SG.fTipo && r.tipo !== SG.fTipo) return false;
+    if (SG.fStatus === 'abertas' && !aberta(r)) return false;
+    if (SG.fStatus === 'nova' && st !== 'nova') return false;
+    if (SG.fStatus === 'fechadas' && aberta(r)) return false;
+    if (SG.fStatus === 'minhas' && r.autor !== currentUser) return false;
+    return true;
+  }).sort(function(x, y){
+    if (SG.ordem === 'votos' && nVotos(y) !== nVotos(x)) return nVotos(y) - nVotos(x);
+    return (y.criadoEm || 0) - (x.criadoEm || 0);
+  });
+
+  if (!lista.length){
+    box.innerHTML = '<div style="text-align:center;color:#aaa;font-size:13px;padding:2rem;background:#fff;border-radius:11px;border:1.5px dashed #E2E0D8;">' + (todos.length ? 'Nenhuma sugestão nesse filtro.' : 'Nenhuma sugestão ainda — seja a primeira pessoa a mandar!') + '</div>';
+    return;
+  }
+  var g = sgGestora();
+  box.innerHTML = lista.map(function(r){
+    var t = SG_TIPOS[r.tipo] || SG_TIPOS.ideia, st = SG_STATUS[r.status || 'nova'] || SG_STATUS.nova;
+    var votei = !!(r.votos && r.votos[currentUser]), nv = nVotos(r);
+    var quem = r.anonimo ? 'Anônimo' : sgNome(r.autor);
+    var podeApagar = g || (r.autor === currentUser && (r.status || 'nova') === 'nova');
+    var statusHtml = g
+      ? '<select onchange="sgStatus(\'' + r.id + '\',this.value)" style="width:auto;padding:4px 8px;font-size:11.5px;font-weight:700;color:' + st.cor + ';">' +
+          Object.keys(SG_STATUS).map(function(k){ return '<option value="' + k + '"' + ((r.status || 'nova') === k ? ' selected' : '') + '>' + SG_STATUS[k].t + '</option>'; }).join('') + '</select>'
+      : '<span class="sg-tag" style="color:' + st.cor + ';background:' + st.bg + ';">' + st.t + '</span>';
+    var resposta = g
+      ? '<textarea rows="1" placeholder="Responder (todos veem)..." onchange="sgResponder(\'' + r.id + '\',this.value)" onblur="if(SG.pendente)setTimeout(sgRender,50)" style="margin-top:8px;font-size:12px;">' + sgEsc(r.resposta || '') + '</textarea>'
+      : (r.resposta ? '<div style="margin-top:8px;background:#F4F2EC;border-radius:8px;padding:8px 10px;font-size:12px;color:#444;"><b>💬 ' + sgEsc(sgNome(r.respostaPor) || 'Gestão') + ':</b> ' + sgEsc(r.resposta) + '</div>' : '');
+    return '<div class="sg-card">' +
+      '<div style="display:flex;gap:12px;align-items:flex-start;">' +
+        '<button class="sg-voto' + (votei ? ' on' : '') + '" onclick="sgVotar(\'' + r.id + '\')" title="' + (votei ? 'Tirar meu voto' : 'Também quero') + '">👍 ' + nv + '</button>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
+            '<span class="sg-tag" style="color:' + t.cor + ';background:' + t.bg + ';">' + t.ic + ' ' + t.t.toUpperCase() + '</span>' +
+            (r.aba ? '<span class="sg-tag" style="color:#555;background:#F1EFE8;">' + sgEsc(r.aba) + '</span>' : '') +
+            statusHtml +
+          '</div>' +
+          '<div style="font-size:14px;font-weight:700;margin-top:6px;color:#1C1C1C;">' + sgEsc(r.titulo) + '</div>' +
+          (r.desc ? '<div style="font-size:12.5px;color:#555;margin-top:3px;white-space:pre-wrap;">' + sgEsc(r.desc) + '</div>' : '') +
+          '<div style="font-size:11px;color:#aaa;margin-top:6px;">' + sgEsc(quem) + ' · ' + sgData(r.criadoEm) + (nv && g ? ' · 👍 ' + Object.keys(r.votos).map(sgNome).join(', ') : '') + '</div>' +
+          resposta +
+        '</div>' +
+        (podeApagar ? '<button onclick="sgExcluir(\'' + r.id + '\')" title="Apagar" style="border:none;background:none;color:#ccc;cursor:pointer;font-size:15px;">🗑️</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 </script>
 </body>
