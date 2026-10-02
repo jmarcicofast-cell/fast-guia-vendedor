@@ -4779,15 +4779,17 @@ td.p-tie { color:var(--sp-muted); }
     </div>
     <div style="font-size:11px;color:#aaa;margin-bottom:14px;">Escolha o chamado da aba Pedidos e marque os materiais que precisam de abastecimento.</div>
 
-    <div class="ped-field" style="margin-bottom:6px;">
+    <div class="ped-field" style="margin-bottom:10px;">
       <label>Chamado do pedido</label>
-      <input type="text" id="ab-m-busca" placeholder="Digite o nº do chamado ou o cliente..." oninput="abBuscarPedido(this.value)" autocomplete="off" style="width:100%;">
+      <select id="ab-m-chamado" onchange="abEscolherPedido(this.value)" style="width:100%;"></select>
     </div>
-    <div id="ab-m-resultados" style="max-height:200px;overflow-y:auto;border:1px solid #F0EEEA;border-radius:7px;display:none;margin-bottom:10px;"></div>
     <div id="ab-m-pedido" style="display:none;background:#F8F7F3;border-radius:8px;padding:10px 12px;margin-bottom:12px;"></div>
 
     <div id="ab-m-itens-box" style="display:none;margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#555;margin-bottom:6px;">Materiais que precisam ser tratados</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#555;">Quais materiais precisam ser encomendados?</div>
+        <span id="ab-m-todos" onclick="abSelecionarTodos()" style="font-size:11px;color:#185FA5;font-weight:600;cursor:pointer;">Marcar todos</span>
+      </div>
       <div id="ab-m-itens"></div>
     </div>
 
@@ -15603,40 +15605,55 @@ function abExcluir(id){
 // ── Modal: novo item ──
 function abAbrirModal(){
   AB.modalPedido = null; AB.modalSel = {};
-  ['ab-m-busca','ab-m-dc','ab-m-prazo','ab-m-previsao','ab-m-resp','ab-m-numch','ab-m-obs'].forEach(function(id){ document.getElementById(id).value = ''; });
+  ['ab-m-dc','ab-m-prazo','ab-m-previsao','ab-m-resp','ab-m-numch','ab-m-obs'].forEach(function(id){ document.getElementById(id).value = ''; });
+  abPreencherChamados();
   document.getElementById('ab-m-aberto').checked = false;
   document.getElementById('ab-m-conferido').checked = false;
-  document.getElementById('ab-m-resultados').style.display = 'none';
   document.getElementById('ab-m-pedido').style.display = 'none';
   document.getElementById('ab-m-itens-box').style.display = 'none';
   document.getElementById('ab-m-erro').style.display = 'none';
   document.getElementById('ab-modal-overlay').style.display = 'flex';
-  setTimeout(function(){ document.getElementById('ab-m-busca').focus(); }, 50);
+  setTimeout(function(){ document.getElementById('ab-m-chamado').focus(); }, 50);
 }
 function abFecharModal(){ document.getElementById('ab-modal-overlay').style.display = 'none'; }
 
-function abBuscarPedido(txt){
-  var box = document.getElementById('ab-m-resultados');
-  var q = (txt || '').toLowerCase().trim();
-  if (!q){ box.style.display = 'none'; return; }
-  var res = (_pedTodosGeral || []).filter(function(p){
-    if (p.status === 'cancelado') return false;
-    return [p.chamado, p.empresa, p.cliente].join(' ').toLowerCase().indexOf(q) !== -1;
-  }).sort(function(a, b){ return (b.criadoEm || 0) - (a.criadoEm || 0); }).slice(0, 30);
-  AB.resultados = res;
-  box.style.display = 'block';
-  if (!res.length){ box.innerHTML = '<div style="padding:10px;font-size:12px;color:#aaa;">Nenhum pedido encontrado.</div>'; return; }
-  box.innerHTML = res.map(function(p, i){
-    return '<div class="ab-res" onclick="abEscolherPedido(' + i + ')"><b style="font-family:monospace;">' + abEsc(p.chamado || '(sem chamado)') + '</b> — ' + abEsc(p.empresa || p.cliente || '') +
-      '<span style="color:#aaa;font-size:11px;"> · ' + abEsc(abNomeVend(p.vendedor)) + (p.data ? ' · ' + abFmtData(p.data) : '') + '</span></div>';
-  }).join('');
+function abPreencherChamados(){
+  var sel = document.getElementById('ab-m-chamado');
+  var peds = (_pedTodosGeral || []).filter(function(p){ return p.status !== 'cancelado' && p.chamado; })
+    .sort(function(a, b){ return (b.data || '').localeCompare(a.data || '') || ((b.criadoEm || 0) - (a.criadoEm || 0)); });
+  AB.resultados = peds;
+  var fin = { entregue: 1, faturado: 1 };
+  var linha = function(p, i){
+    var txt = p.chamado + ' — ' + (p.empresa || p.cliente || '') + (abVeTudo() ? ' — ' + abNomeVend(p.vendedor) : '') + (p.data ? ' — ' + abFmtData(p.data) : '');
+    return '<option value="' + i + '">' + abEsc(txt) + '</option>';
+  };
+  var andamento = '', concluidos = '';
+  peds.forEach(function(p, i){ if (fin[p.status]) concluidos += linha(p, i); else andamento += linha(p, i); });
+  sel.innerHTML = '<option value="">' + (peds.length ? 'Selecione o chamado...' : 'Nenhum pedido com chamado na aba Pedidos') + '</option>' +
+    (andamento ? '<optgroup label="Em andamento">' + andamento + '</optgroup>' : '') +
+    (concluidos ? '<optgroup label="Entregues / faturados">' + concluidos + '</optgroup>' : '');
+}
+
+function abSelecionarTodos(){
+  if (!AB.modalItens) return;
+  var todosMarcados = AB.modalItens.every(function(it, idx){ return AB.modalSel[idx]; });
+  AB.modalItens.forEach(function(it, idx){
+    AB.modalSel[idx] = !todosMarcados;
+    document.getElementById('ab-op-' + idx).classList.toggle('sel', !todosMarcados);
+    document.getElementById('ab-opc-' + idx).checked = !todosMarcados;
+  });
+  document.getElementById('ab-m-todos').textContent = todosMarcados ? 'Marcar todos' : 'Desmarcar todos';
 }
 
 function abEscolherPedido(i){
-  var p = AB.resultados[i]; if (!p) return;
+  var p = (i === '' || i == null) ? null : AB.resultados[+i];
   AB.modalPedido = p; AB.modalSel = {};
-  document.getElementById('ab-m-resultados').style.display = 'none';
-  document.getElementById('ab-m-busca').value = p.chamado || '';
+  if (!p){
+    document.getElementById('ab-m-pedido').style.display = 'none';
+    document.getElementById('ab-m-itens-box').style.display = 'none';
+    return;
+  }
+  document.getElementById('ab-m-todos').textContent = 'Marcar todos';
   var box = document.getElementById('ab-m-pedido');
   box.style.display = 'block';
   box.innerHTML = '<div style="font-size:13px;font-weight:700;">' + abEsc(p.empresa || p.cliente || '') + '</div>' +
@@ -15646,6 +15663,7 @@ function abEscolherPedido(i){
   var lista = document.getElementById('ab-m-itens');
   document.getElementById('ab-m-itens-box').style.display = 'block';
   AB.modalItens = itens;
+  document.getElementById('ab-m-todos').style.display = itens.length ? '' : 'none';
   if (!itens.length){
     lista.innerHTML = '<div style="font-size:12px;color:#aaa;margin-bottom:6px;">Esse pedido não tem itens cadastrados. Digite o material abaixo.</div>' +
       '<input type="text" id="ab-m-material-livre" placeholder="Material a tratar" style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;">';
@@ -15670,7 +15688,7 @@ function abToggleItem(idx){
 function abSalvarNovo(){
   var erro = document.getElementById('ab-m-erro');
   var p = AB.modalPedido;
-  if (!p){ erro.textContent = 'Escolha um chamado da lista.'; erro.style.display = 'block'; return; }
+  if (!p){ erro.textContent = 'Selecione o chamado do pedido.'; erro.style.display = 'block'; return; }
   var materiais = [];
   if (AB.modalItens && AB.modalItens.length){
     AB.modalItens.forEach(function(it, idx){ if (AB.modalSel[idx]) materiais.push({ material: it.material || '', qtd: it.qtd || '' }); });
@@ -15678,7 +15696,7 @@ function abSalvarNovo(){
     var livre = (document.getElementById('ab-m-material-livre') || {}).value || '';
     if (livre.trim()) materiais.push({ material: livre.trim(), qtd: '' });
   }
-  if (!materiais.length){ erro.textContent = 'Marque pelo menos um material que precisa ser tratado.'; erro.style.display = 'block'; return; }
+  if (!materiais.length){ erro.textContent = 'Marque pelo menos um material que precisa ser encomendado.'; erro.style.display = 'block'; return; }
   var g = function(id){ return document.getElementById(id).value.trim(); };
   var numch = g('ab-m-numch');
   var aberto = document.getElementById('ab-m-aberto').checked || !!numch;
