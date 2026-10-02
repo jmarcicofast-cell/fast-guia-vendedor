@@ -4466,6 +4466,10 @@
   #tab-minhasmetas .mm-item-icon{ font-size:15px; }
   #tab-minhasmetas .mm-item-val{ font-size:15px; font-weight:800; color:#1C1C1C; }
   #tab-minhasmetas .mm-item-val small{ font-weight:500; color:#aaa; font-size:12px; }
+  #tab-minhasmetas .mm-item-pct{ display:inline-block; margin-left:6px; font-size:11.5px; font-weight:800; padding:2px 8px; border-radius:20px; vertical-align:1px; min-width:42px; text-align:center; }
+  #tab-minhasmetas .mm-item-pct.good{ background:#E5F2E6; color:#2E7D32; }
+  #tab-minhasmetas .mm-item-pct.mid{ background:#FCEEDA; color:#B36B00; }
+  #tab-minhasmetas .mm-item-pct.bad{ background:#FBE3E0; color:#C41E1E; }
   #tab-minhasmetas .mm-frase{ font-size:11.5px; margin-top:5px; font-weight:600; }
   #tab-minhasmetas .mm-frase.good{ color:#2E7D32; }
   #tab-minhasmetas .mm-frase.mid{ color:#B36B00; }
@@ -13703,7 +13707,7 @@ function mmItemHTML(label, valor, meta, pct, isMoney, icon){
   return '<div class="mm-item">' +
     '<div class="mm-item-top">' +
       '<span class="mm-item-label">'+(icon?('<span class="mm-item-icon">'+icon+'</span>'):'')+label+'</span>' +
-      '<span class="mm-item-val">'+valTxt+' <small>/ '+metaTxt+'</small></span>' +
+      '<span class="mm-item-val">'+valTxt+' <small>/ '+metaTxt+'</small>'+(cls ? ' <span class="mm-item-pct '+cls+'">'+Math.round(pct).toLocaleString('pt-BR')+'%</span>' : '')+'</span>' +
     '</div>' +
     '<div class="mm-bar-bg"><div class="mm-bar-fill '+(cls||'')+'" style="width:'+pctW+'%"></div></div>' +
     frase +
