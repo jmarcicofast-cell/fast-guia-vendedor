@@ -1090,6 +1090,10 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
     Negociações
   </button>
+  <button class="nav-btn" id="nav-abastecimento" draggable="true" data-nav-id="abastecimento" onclick="showTab('abastecimento',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="1" y="7" width="14" height="10" rx="1"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg>
+    Abastecimento
+  </button>
   <button class="nav-btn" id="nav-shopping" draggable="true" data-nav-id="shopping" onclick="showTab('shopping',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
     Shopping de Preços
@@ -4706,6 +4710,106 @@ td.p-tie { color:var(--sp-muted); }
 </div>
 </div>
 <!-- ══ FIM MINHAS METAS ══ -->
+
+<!-- ══ ABASTECIMENTO — itens encomendados ══ -->
+<style>
+  #tab-abastecimento .ab-cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px; }
+  #tab-abastecimento .ab-card{ background:#fff; border:1px solid #E8E6E1; border-radius:10px; padding:10px 12px; cursor:pointer; }
+  #tab-abastecimento .ab-card.on{ outline:2px solid #1C1C1C; }
+  #tab-abastecimento .ab-card .n{ font-size:22px; font-weight:800; line-height:1.1; }
+  #tab-abastecimento .ab-card .l{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#888; }
+  #tab-abastecimento table.ab-t{ width:100%; border-collapse:collapse; font-size:12.5px; min-width:1180px; }
+  #tab-abastecimento .ab-t th{ background:#1C1C1C; color:#fff; padding:8px; text-align:left; font-weight:600; white-space:nowrap; position:sticky; top:0; z-index:1; }
+  #tab-abastecimento .ab-t td{ padding:6px 8px; border-bottom:1px solid #F0EEEA; vertical-align:middle; }
+  #tab-abastecimento .ab-t tr.atrasado td{ background:#FFF1F0; }
+  #tab-abastecimento .ab-t tr.risco td{ background:#FFF8E8; }
+  #tab-abastecimento .ab-t tr.chegou td{ background:#F2FAF2; color:#666; }
+  #tab-abastecimento .ab-t input[type=text], #tab-abastecimento .ab-t input[type=date]{ width:100%; padding:5px 7px; border:1px solid #E2E0D8; border-radius:5px; font-size:12px; background:#fff; outline:none; }
+  #tab-abastecimento .ab-t input:focus{ border-color:#C41E1E; }
+  #tab-abastecimento .ab-t input:disabled{ background:#F5F4F2; color:#999; }
+  #tab-abastecimento .ab-chk{ display:inline-flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; white-space:nowrap; }
+  #tab-abastecimento .ab-chk input{ width:16px; height:16px; cursor:pointer; }
+  #tab-abastecimento .ab-sit{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; white-space:nowrap; display:inline-block; }
+  #ab-modal-overlay .ab-item-op{ display:flex; align-items:center; gap:8px; padding:7px 10px; border:1.5px solid #E2E0D8; border-radius:7px; font-size:12.5px; cursor:pointer; margin-bottom:6px; }
+  #ab-modal-overlay .ab-item-op.sel{ border-color:#1B5E20; background:#F0F7EE; }
+  #ab-modal-overlay .ab-res{ padding:8px 10px; border-bottom:1px solid #F0EEEA; cursor:pointer; font-size:12.5px; }
+  #ab-modal-overlay .ab-res:hover{ background:#FBE9E9; }
+</style>
+
+<div id="tab-abastecimento" class="tab-content">
+  <div class="page-section" style="max-width:100%;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1.1rem;">
+      <div>
+        <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:2px;">🚚 Abastecimento — Itens Encomendados</h2>
+        <p style="font-size:12px;color:#aaa;">Materiais de pedidos que precisam ser abastecidos na DC antes da entrega</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="ab-busca" placeholder="🔎 Chamado, cliente, material..." oninput="abRender()" style="padding:8px 12px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;min-width:210px;">
+        <select id="ab-filtro-dc" onchange="abRender()" style="padding:8px 10px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;"><option value="">Todas as DCs</option></select>
+        <select id="ab-filtro-resp" onchange="abRender()" style="padding:8px 10px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;"><option value="">Todos os responsáveis</option></select>
+        <button onclick="abAbrirModal()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Item encomendado</button>
+      </div>
+    </div>
+
+    <div class="ab-cards" id="ab-cards"></div>
+
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid #E8E6E1;border-radius:10px;max-height:70vh;">
+      <table class="ab-t">
+        <thead><tr>
+          <th>Chamado</th><th>Cliente</th><th style="min-width:200px;">Material a tratar</th><th>Qtd</th>
+          <th style="min-width:130px;">DC de destino</th><th>Prazo na DC</th><th>Previsão de chegada</th>
+          <th style="min-width:130px;">Responsável</th><th style="min-width:170px;">Chamado de abastecimento</th>
+          <th>Conferido</th><th>Chegou na DC</th><th>Situação</th><th style="min-width:150px;">Obs.</th><th></th>
+        </tr></thead>
+        <tbody id="ab-tbody"></tbody>
+      </table>
+    </div>
+    <p style="font-size:10.5px;color:#aaa;margin-top:6px;">As alterações salvam sozinhas. 🔴 prazo na DC vencido sem o material chegar · 🟠 previsão de chegada depois do prazo · 🟢 já chegou.</p>
+    <datalist id="ab-dl-dc"></datalist>
+    <datalist id="ab-dl-resp"></datalist>
+  </div>
+</div>
+
+<!-- Modal: novo item encomendado -->
+<div id="ab-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto;" onclick="if(event.target===this) abFecharModal()">
+  <div style="background:#fff;border-radius:12px;padding:1.4rem;max-width:560px;width:100%;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div style="font-size:15px;font-weight:700;color:#1C1C1C;">🚚 Novo item encomendado</div>
+      <span onclick="abFecharModal()" style="cursor:pointer;font-size:18px;color:#888;line-height:1;">✕</span>
+    </div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:14px;">Escolha o chamado da aba Pedidos e marque os materiais que precisam de abastecimento.</div>
+
+    <div class="ped-field" style="margin-bottom:6px;">
+      <label>Chamado do pedido</label>
+      <input type="text" id="ab-m-busca" placeholder="Digite o nº do chamado ou o cliente..." oninput="abBuscarPedido(this.value)" autocomplete="off" style="width:100%;">
+    </div>
+    <div id="ab-m-resultados" style="max-height:200px;overflow-y:auto;border:1px solid #F0EEEA;border-radius:7px;display:none;margin-bottom:10px;"></div>
+    <div id="ab-m-pedido" style="display:none;background:#F8F7F3;border-radius:8px;padding:10px 12px;margin-bottom:12px;"></div>
+
+    <div id="ab-m-itens-box" style="display:none;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#555;margin-bottom:6px;">Materiais que precisam ser tratados</div>
+      <div id="ab-m-itens"></div>
+    </div>
+
+    <div class="ped-form-grid" style="margin-bottom:12px;">
+      <div class="ped-field"><label>DC de destino</label><input type="text" id="ab-m-dc" list="ab-dl-dc" placeholder="Ex: Mogi das Cruzes"></div>
+      <div class="ped-field"><label>Prazo para chegar na DC</label><input type="date" id="ab-m-prazo"></div>
+      <div class="ped-field"><label>Previsão de chegada</label><input type="date" id="ab-m-previsao"></div>
+      <div class="ped-field"><label>Responsável</label><input type="text" id="ab-m-resp" list="ab-dl-resp" placeholder="Quem cuida"></div>
+      <div class="ped-field"><label>Nº chamado de abastecimento</label><input type="text" id="ab-m-numch" placeholder="Se já foi aberto"></div>
+    </div>
+    <label class="ab-chk" style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin-bottom:6px;"><input type="checkbox" id="ab-m-aberto"> Chamado de abastecimento já aberto</label>
+    <label class="ab-chk" style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin-bottom:12px;"><input type="checkbox" id="ab-m-conferido"> Chamado conferido</label>
+    <div class="ped-field" style="margin-bottom:12px;"><label>Observação</label><input type="text" id="ab-m-obs" placeholder="Opcional"></div>
+
+    <div id="ab-m-erro" style="display:none;font-size:12px;color:#C41E1E;font-weight:600;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="abFecharModal()" style="padding:8px 16px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;font-size:13px;cursor:pointer;color:#888;">Cancelar</button>
+      <button onclick="abSalvarNovo()" style="padding:8px 18px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+<!-- ══ FIM ABASTECIMENTO ══ -->
 
 <script>
 
@@ -12377,6 +12481,7 @@ function showTab(name, btn) {
   if (name === 'checkin') ckInit();
   if (name === 'minhasmetas') mmInit();
   if (name === 'shopping' && typeof spInit === 'function') spInit();
+  if (name === 'abastecimento' && typeof abInit === 'function') abInit();
   btn.classList.add('active');
 }
 
@@ -15316,6 +15421,288 @@ function pedColRecarregarUsuario() {
   });
 }
 document.addEventListener('DOMContentLoaded', pedColInit);
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   ABASTECIMENTO — controle de itens encomendados por chamado.
+   Firebase: abastecimento/{id} = { vendedor, pedidoId, chamado, cliente,
+   material, qtd, dc, prazo, previsao, responsavel, chamadoAberto,
+   numChamadoAbast, conferido, chegou, obs, criadoPor, criadoEm, ... }
+   ══════════════════════════════════════════════════════════════ */
+var AB = { itens: {}, ligado: false, filtro: 'abertos', modalPedido: null, modalSel: {} };
+
+function abVeTudo(){ return currentUser === 'JULIANA' || currentUser === 'ELIZIANE'; }
+function abHoje(){ return new Date().toISOString().split('T')[0]; }
+function abEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+function abFmtData(iso){ if (!iso) return ''; var p = iso.split('-'); return p[2] + '/' + p[1]; }
+function abNomeVend(k){ return (vendedores[k] && vendedores[k].nome) || k || ''; }
+
+function abInit(){
+  if (!AB.ligado){
+    AB.ligado = true;
+    dbRef('abastecimento').on('value', function(snap){
+      AB.itens = snap.val() || {};
+      abRequestRender();
+    });
+  }
+  abRender();
+}
+
+function abRequestRender(){
+  var a = document.activeElement;
+  if (a && a.closest && a.closest('#ab-tbody')) { AB.pendente = true; return; }
+  abRender();
+}
+
+function abSituacao(r){
+  var hoje = abHoje();
+  if (r.chegou) return { k:'chegou', txt:'✅ Chegou', cor:'#1B5E20', bg:'#E8F5E9' };
+  if (r.prazo && hoje > r.prazo) return { k:'atrasado', txt:'🔴 Prazo vencido', cor:'#B71C1C', bg:'#FFEBEE' };
+  if (r.prazo && r.previsao && r.previsao > r.prazo) return { k:'risco', txt:'🟠 Vai chegar depois do prazo', cor:'#B36B00', bg:'#FFF3E0' };
+  if (!r.chamadoAberto) return { k:'semchamado', txt:'⏳ Abrir chamado', cor:'#7A4A00', bg:'#FEF3E0' };
+  if (!r.conferido) return { k:'semconf', txt:'🔎 Conferir chamado', cor:'#0C447C', bg:'#E6F1FB' };
+  return { k:'ok', txt:'🚚 Aguardando chegada', cor:'#555', bg:'#F1EFE8' };
+}
+
+function abListaVisivel(){
+  return Object.keys(AB.itens).map(function(id){ var r = AB.itens[id] || {}; r.id = id; return r; })
+    .filter(function(r){ return abVeTudo() || r.vendedor === currentUser || r.responsavel === abNomeVend(currentUser) || r.criadoPor === currentUser; });
+}
+
+function abSetFiltro(f){ AB.filtro = f; abRender(); }
+
+function abRender(){
+  var tbody = document.getElementById('ab-tbody');
+  if (!tbody) return;
+  AB.pendente = false;
+  var todos = abListaVisivel();
+
+  // datalists e filtros de DC / responsável
+  var dcs = {}, resps = {};
+  todos.forEach(function(r){ if (r.dc) dcs[r.dc] = 1; if (r.responsavel) resps[r.responsavel] = 1; });
+  Object.keys(vendedores).forEach(function(k){ resps[abNomeVend(k)] = resps[abNomeVend(k)] || 0; });
+  var dlDc = document.getElementById('ab-dl-dc'), dlResp = document.getElementById('ab-dl-resp');
+  if (dlDc) dlDc.innerHTML = Object.keys(dcs).sort().map(function(d){ return '<option value="' + abEsc(d) + '">'; }).join('');
+  if (dlResp) dlResp.innerHTML = Object.keys(resps).sort().map(function(d){ return '<option value="' + abEsc(d) + '">'; }).join('');
+  function preencherSel(id, mapa, rotuloTodos){
+    var sel = document.getElementById(id); if (!sel) return;
+    var atual = sel.value;
+    var opts = Object.keys(mapa).filter(function(k){ return id !== 'ab-filtro-resp' || mapa[k]; }).sort();
+    sel.innerHTML = '<option value="">' + rotuloTodos + '</option>' + opts.map(function(o){ return '<option' + (o === atual ? ' selected' : '') + '>' + abEsc(o) + '</option>'; }).join('');
+  }
+  preencherSel('ab-filtro-dc', dcs, 'Todas as DCs');
+  preencherSel('ab-filtro-resp', resps, 'Todos os responsáveis');
+
+  // contadores
+  var cont = { abertos:0, atrasado:0, risco:0, semchamado:0, semconf:0, chegou:0, todos:todos.length };
+  todos.forEach(function(r){
+    var s = abSituacao(r);
+    if (s.k === 'chegou') cont.chegou++; else cont.abertos++;
+    if (s.k === 'atrasado') cont.atrasado++;
+    if (s.k === 'risco') cont.risco++;
+    if (!r.chegou && !r.chamadoAberto) cont.semchamado++;
+    if (!r.chegou && r.chamadoAberto && !r.conferido) cont.semconf++;
+  });
+  var cards = [
+    ['abertos','Em aberto','#1C1C1C'], ['atrasado','🔴 Prazo vencido','#B71C1C'], ['risco','🟠 Chega após o prazo','#B36B00'],
+    ['semchamado','⏳ Sem chamado aberto','#7A4A00'], ['semconf','🔎 Falta conferir','#0C447C'], ['chegou','✅ Chegaram','#1B5E20'], ['todos','Todos','#555']
+  ];
+  document.getElementById('ab-cards').innerHTML = cards.map(function(c){
+    return '<div class="ab-card' + (AB.filtro === c[0] ? ' on' : '') + '" onclick="abSetFiltro(\'' + c[0] + '\')"><div class="l">' + c[1] + '</div><div class="n" style="color:' + c[2] + ';">' + cont[c[0]] + '</div></div>';
+  }).join('');
+
+  // filtros
+  var q = (document.getElementById('ab-busca').value || '').toLowerCase().trim();
+  var fDc = document.getElementById('ab-filtro-dc').value;
+  var fResp = document.getElementById('ab-filtro-resp').value;
+  var lista = todos.filter(function(r){
+    var s = abSituacao(r);
+    if (AB.filtro === 'abertos' && r.chegou) return false;
+    if (AB.filtro === 'atrasado' && s.k !== 'atrasado') return false;
+    if (AB.filtro === 'risco' && s.k !== 'risco') return false;
+    if (AB.filtro === 'semchamado' && (r.chegou || r.chamadoAberto)) return false;
+    if (AB.filtro === 'semconf' && (r.chegou || !r.chamadoAberto || r.conferido)) return false;
+    if (AB.filtro === 'chegou' && !r.chegou) return false;
+    if (fDc && r.dc !== fDc) return false;
+    if (fResp && r.responsavel !== fResp) return false;
+    if (q && [r.chamado, r.cliente, r.material, r.dc, r.responsavel, r.numChamadoAbast, abNomeVend(r.vendedor)].join(' ').toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  }).sort(function(a, b){
+    if (!!a.chegou !== !!b.chegou) return a.chegou ? 1 : -1;
+    return (a.prazo || '9999').localeCompare(b.prazo || '9999');
+  });
+
+  if (!lista.length){
+    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:#aaa;padding:2rem;">' + (todos.length ? 'Nenhum item nesse filtro.' : 'Nenhum item encomendado ainda. Clique em "+ Item encomendado".') + '</td></tr>';
+    return;
+  }
+
+  var podeApagar = function(r){ return abVeTudo() || r.criadoPor === currentUser; };
+  tbody.innerHTML = lista.map(function(r){
+    var s = abSituacao(r);
+    var cls = s.k === 'atrasado' ? 'atrasado' : s.k === 'risco' ? 'risco' : s.k === 'chegou' ? 'chegou' : '';
+    var pedidoExiste = (_pedTodosGeral || []).some(function(p){ return p.id === r.pedidoId && p.vendedor === r.vendedor; });
+    var chamadoHtml = '<span style="display:inline-block;background:#1C1C1C;color:#fff;font-family:monospace;font-size:12.5px;font-weight:700;padding:3px 8px;border-radius:5px;' + (pedidoExiste ? 'cursor:pointer;' : '') + '"' +
+      (pedidoExiste ? ' onclick="abrirDetalhePedido(\'' + r.vendedor + '\',\'' + r.pedidoId + '\')" title="Ver pedido"' : '') + '>' + abEsc(r.chamado || '—') + '</span>' +
+      (abVeTudo() ? '<div style="font-size:10px;color:#C41E1E;font-weight:600;margin-top:2px;">' + abEsc(abNomeVend(r.vendedor)) + '</div>' : '');
+    var inp = function(campo, tipo, extra){ return '<input type="' + tipo + '" value="' + abEsc(r[campo] || '') + '" onchange="abSalvarCampo(\'' + r.id + '\',\'' + campo + '\',this.value)"' + (extra || '') + '>'; };
+    var chk = function(campo, rot){ return '<label class="ab-chk"><input type="checkbox"' + (r[campo] ? ' checked' : '') + ' onchange="abSalvarCampo(\'' + r.id + '\',\'' + campo + '\',this.checked)">' + rot + '</label>'; };
+    var auditoria = function(campo){ var por = r[campo + 'Por'], em = r[campo + 'Em']; return (r[campo] && por) ? '<div style="font-size:9.5px;color:#999;">' + abEsc(abNomeVend(por)) + (em ? ' · ' + abFmtData(em) : '') + '</div>' : ''; };
+    return '<tr class="' + cls + '">' +
+      '<td>' + chamadoHtml + '</td>' +
+      '<td style="max-width:170px;font-weight:600;">' + abEsc(r.cliente || '—') + '</td>' +
+      '<td>' + inp('material', 'text') + '</td>' +
+      '<td style="width:70px;">' + inp('qtd', 'text', ' style="width:60px;"') + '</td>' +
+      '<td>' + inp('dc', 'text', ' list="ab-dl-dc" placeholder="DC"') + '</td>' +
+      '<td>' + inp('prazo', 'date') + '</td>' +
+      '<td>' + inp('previsao', 'date') + '</td>' +
+      '<td>' + inp('responsavel', 'text', ' list="ab-dl-resp" placeholder="Quem cuida"') + '</td>' +
+      '<td><div style="display:flex;align-items:center;gap:6px;">' + chk('chamadoAberto', 'Aberto') +
+        '<input type="text" value="' + abEsc(r.numChamadoAbast || '') + '" placeholder="Nº" style="width:80px;" onchange="abSalvarCampo(\'' + r.id + '\',\'numChamadoAbast\',this.value)"></div>' + auditoria('chamadoAberto') + '</td>' +
+      '<td>' + chk('conferido', 'Sim') + auditoria('conferido') + '</td>' +
+      '<td>' + chk('chegou', 'Sim') + auditoria('chegou') + '</td>' +
+      '<td><span class="ab-sit" style="color:' + s.cor + ';background:' + s.bg + ';">' + s.txt + '</span></td>' +
+      '<td>' + inp('obs', 'text', ' placeholder="+ obs"') + '</td>' +
+      '<td>' + (podeApagar(r) ? '<button onclick="abExcluir(\'' + r.id + '\')" title="Excluir" style="border:none;background:none;color:#C41E1E;cursor:pointer;font-size:14px;">🗑️</button>' : '') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function abSalvarCampo(id, campo, valor){
+  var upd = {};
+  if (typeof valor === 'string') valor = valor.trim();
+  upd[campo] = valor;
+  if (campo === 'chamadoAberto' || campo === 'conferido' || campo === 'chegou'){
+    upd[campo + 'Por'] = valor ? currentUser : null;
+    upd[campo + 'Em'] = valor ? abHoje() : null;
+  }
+  // digitou o nº do chamado de abastecimento → marca como aberto automaticamente
+  if (campo === 'numChamadoAbast' && valor && !(AB.itens[id] && AB.itens[id].chamadoAberto)){
+    upd.chamadoAberto = true; upd.chamadoAbertoPor = currentUser; upd.chamadoAbertoEm = abHoje();
+  }
+  upd.atualizadoPor = currentUser; upd.atualizadoEm = Date.now();
+  if (firebaseOK && db){
+    db.ref('abastecimento/' + id).update(upd).catch(function(e){ alert('Erro ao salvar: ' + (e && e.message ? e.message : e)); });
+  } else {
+    var r = Object.assign({}, AB.itens[id] || {}, upd);
+    Object.keys(r).forEach(function(k){ if (r[k] === null) delete r[k]; });
+    AB.itens[id] = r;
+    lsSet('abastecimento', AB.itens);
+    abRender();
+  }
+  setTimeout(function(){ if (AB.pendente) abRequestRender(); }, 50);
+}
+
+function abExcluir(id){
+  var r = AB.itens[id] || {};
+  if (!confirm('Excluir o item "' + (r.material || '') + '" do chamado ' + (r.chamado || '') + '?')) return;
+  if (firebaseOK && db) db.ref('abastecimento/' + id).remove();
+  else { delete AB.itens[id]; lsSet('abastecimento', AB.itens); abRender(); }
+}
+
+// ── Modal: novo item ──
+function abAbrirModal(){
+  AB.modalPedido = null; AB.modalSel = {};
+  ['ab-m-busca','ab-m-dc','ab-m-prazo','ab-m-previsao','ab-m-resp','ab-m-numch','ab-m-obs'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('ab-m-aberto').checked = false;
+  document.getElementById('ab-m-conferido').checked = false;
+  document.getElementById('ab-m-resultados').style.display = 'none';
+  document.getElementById('ab-m-pedido').style.display = 'none';
+  document.getElementById('ab-m-itens-box').style.display = 'none';
+  document.getElementById('ab-m-erro').style.display = 'none';
+  document.getElementById('ab-modal-overlay').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('ab-m-busca').focus(); }, 50);
+}
+function abFecharModal(){ document.getElementById('ab-modal-overlay').style.display = 'none'; }
+
+function abBuscarPedido(txt){
+  var box = document.getElementById('ab-m-resultados');
+  var q = (txt || '').toLowerCase().trim();
+  if (!q){ box.style.display = 'none'; return; }
+  var res = (_pedTodosGeral || []).filter(function(p){
+    if (p.status === 'cancelado') return false;
+    return [p.chamado, p.empresa, p.cliente].join(' ').toLowerCase().indexOf(q) !== -1;
+  }).sort(function(a, b){ return (b.criadoEm || 0) - (a.criadoEm || 0); }).slice(0, 30);
+  AB.resultados = res;
+  box.style.display = 'block';
+  if (!res.length){ box.innerHTML = '<div style="padding:10px;font-size:12px;color:#aaa;">Nenhum pedido encontrado.</div>'; return; }
+  box.innerHTML = res.map(function(p, i){
+    return '<div class="ab-res" onclick="abEscolherPedido(' + i + ')"><b style="font-family:monospace;">' + abEsc(p.chamado || '(sem chamado)') + '</b> — ' + abEsc(p.empresa || p.cliente || '') +
+      '<span style="color:#aaa;font-size:11px;"> · ' + abEsc(abNomeVend(p.vendedor)) + (p.data ? ' · ' + abFmtData(p.data) : '') + '</span></div>';
+  }).join('');
+}
+
+function abEscolherPedido(i){
+  var p = AB.resultados[i]; if (!p) return;
+  AB.modalPedido = p; AB.modalSel = {};
+  document.getElementById('ab-m-resultados').style.display = 'none';
+  document.getElementById('ab-m-busca').value = p.chamado || '';
+  var box = document.getElementById('ab-m-pedido');
+  box.style.display = 'block';
+  box.innerHTML = '<div style="font-size:13px;font-weight:700;">' + abEsc(p.empresa || p.cliente || '') + '</div>' +
+    '<div style="font-size:11.5px;color:#888;">Chamado ' + abEsc(p.chamado || '—') + ' · ' + abEsc(abNomeVend(p.vendedor)) + (p.estado ? ' · ' + abEsc(p.estado) : '') + (p.data ? ' · ' + abFmtData(p.data) : '') + '</div>';
+  var itens = (p.itens && p.itens.length) ? p.itens : (p.material ? [{ material: p.material, qtd: p.qtd }] : []);
+  var jaLancados = abListaVisivel().filter(function(r){ return r.pedidoId === p.id; }).map(function(r){ return r.material; });
+  var lista = document.getElementById('ab-m-itens');
+  document.getElementById('ab-m-itens-box').style.display = 'block';
+  AB.modalItens = itens;
+  if (!itens.length){
+    lista.innerHTML = '<div style="font-size:12px;color:#aaa;margin-bottom:6px;">Esse pedido não tem itens cadastrados. Digite o material abaixo.</div>' +
+      '<input type="text" id="ab-m-material-livre" placeholder="Material a tratar" style="width:100%;padding:8px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;">';
+    return;
+  }
+  lista.innerHTML = itens.map(function(it, idx){
+    var ja = jaLancados.indexOf(it.material) !== -1;
+    return '<div class="ab-item-op" id="ab-op-' + idx + '" onclick="abToggleItem(' + idx + ')">' +
+      '<input type="checkbox" id="ab-opc-' + idx + '" style="pointer-events:none;">' +
+      '<span style="flex:1;">' + abEsc(it.material || '') + '</span>' +
+      '<span style="color:#888;font-size:11.5px;">qtd ' + abEsc(it.qtd || '') + '</span>' +
+      (ja ? '<span style="font-size:10px;color:#1B5E20;font-weight:700;">já lançado</span>' : '') + '</div>';
+  }).join('');
+}
+
+function abToggleItem(idx){
+  AB.modalSel[idx] = !AB.modalSel[idx];
+  document.getElementById('ab-op-' + idx).classList.toggle('sel', !!AB.modalSel[idx]);
+  document.getElementById('ab-opc-' + idx).checked = !!AB.modalSel[idx];
+}
+
+function abSalvarNovo(){
+  var erro = document.getElementById('ab-m-erro');
+  var p = AB.modalPedido;
+  if (!p){ erro.textContent = 'Escolha um chamado da lista.'; erro.style.display = 'block'; return; }
+  var materiais = [];
+  if (AB.modalItens && AB.modalItens.length){
+    AB.modalItens.forEach(function(it, idx){ if (AB.modalSel[idx]) materiais.push({ material: it.material || '', qtd: it.qtd || '' }); });
+  } else {
+    var livre = (document.getElementById('ab-m-material-livre') || {}).value || '';
+    if (livre.trim()) materiais.push({ material: livre.trim(), qtd: '' });
+  }
+  if (!materiais.length){ erro.textContent = 'Marque pelo menos um material que precisa ser tratado.'; erro.style.display = 'block'; return; }
+  var g = function(id){ return document.getElementById(id).value.trim(); };
+  var numch = g('ab-m-numch');
+  var aberto = document.getElementById('ab-m-aberto').checked || !!numch;
+  var conferido = document.getElementById('ab-m-conferido').checked;
+  var hoje = abHoje(), agora = Date.now(), upd = {};
+  materiais.forEach(function(m, i){
+    var id = 'ab_' + agora + '_' + i;
+    upd[id] = {
+      vendedor: p.vendedor, pedidoId: p.id, chamado: p.chamado || '', cliente: p.empresa || p.cliente || '', uf: p.estado || '',
+      material: m.material, qtd: String(m.qtd), dc: g('ab-m-dc'), prazo: g('ab-m-prazo'), previsao: g('ab-m-previsao'),
+      responsavel: g('ab-m-resp'), numChamadoAbast: numch, obs: g('ab-m-obs'),
+      chamadoAberto: aberto, chamadoAbertoPor: aberto ? currentUser : null, chamadoAbertoEm: aberto ? hoje : null,
+      conferido: conferido, conferidoPor: conferido ? currentUser : null, conferidoEm: conferido ? hoje : null,
+      chegou: false, criadoPor: currentUser, criadoEm: agora
+    };
+    Object.keys(upd[id]).forEach(function(k){ if (upd[id][k] === null) delete upd[id][k]; });
+  });
+  var done = function(){ abFecharModal(); AB.filtro = 'abertos'; abRender(); };
+  if (firebaseOK && db){
+    db.ref('abastecimento').update(upd).then(done).catch(function(e){ erro.textContent = 'Erro ao salvar: ' + (e && e.message ? e.message : e); erro.style.display = 'block'; });
+  } else {
+    Object.assign(AB.itens, upd); lsSet('abastecimento', AB.itens); done();
+  }
+}
 </script>
 </body>
 </html>
