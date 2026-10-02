@@ -1975,6 +1975,10 @@
             <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#2E7D32;margin-bottom:10px;">📐 Resumo de Produtos no Período</div>
             <div id="resumo-produtos-periodo"></div>
           </div>
+          <div style="background:#fff;border:2px solid #555;border-radius:12px;padding:1rem 1.2rem;grid-column:1/-1;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#444;margin-bottom:6px;">⚙️ Aço Vendido no Período</div>
+            <div id="filtro-aco"></div>
+          </div>
           <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1rem 1.2rem;">
             <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#7A4A00;margin-bottom:10px;">📄 Detalhamento por Status no Período</div>
             <div style="display:grid;gap:6px;">
@@ -8115,6 +8119,116 @@ function renderResumoProdutos(containerId, pedidosList) {
   }).join('');
 }
 
+// ── AÇO vendido (perfis, guias, montantes, cantoneiras, tabicas, F530 etc.) ──
+// Conta como aço: item cuja categoria na Tabela de Produtos é AÇO / AÇO PLACO,
+// ou, se o material não estiver na tabela, item marcado como "Aço" no pedido.
+function itemEhAco(it) {
+  var info = getMaterialM2Map()[it.material];
+  var cat = info ? info.categoria : '';
+  if (cat) return cat === 'AÇO' || cat === 'ACO' || cat === 'AÇO PLACO' || cat === 'ACO PLACO';
+  return it.cat === 'aco';
+}
+function calcAcoPedidos(pedidosList) {
+  var r = { total: 0, pecas: 0, pedidos: 0, porVend: {}, porItem: {} };
+  var codPorNome = {};
+  (typeof allProducts !== 'undefined' ? allProducts : []).forEach(function(pr) { if (pr.codigo && !codPorNome[pr.nome]) codPorNome[pr.nome] = pr.codigo; });
+  (pedidosList || []).forEach(function(p) {
+    if (p.status === 'cancelado') return;
+    var itens = (p.itens && p.itens.length) ? p.itens : (p.material ? [{ material: p.material, cat: p.cat, qtd: p.qtd, vUnit: p.vUnit }] : []);
+    var vPed = 0, qPed = 0;
+    itens.forEach(function(it) {
+      if (!itemEhAco(it)) return;
+      var vIt = Math.round(numSafe(it.qtd) * numSafe(it.vUnit) * 100) / 100;
+      vPed += vIt;
+      qPed += numSafe(it.qtd);
+      var nomeIt = (it.material || '(sem nome)').trim();
+      var cod = it.codigo || codPorNome[nomeIt] || '';
+      var chave = (cod || '') + '|' + nomeIt;
+      if (!r.porItem[chave]) r.porItem[chave] = { codigo: cod, nome: nomeIt, qtd: 0, total: 0, pedidos: 0 };
+      r.porItem[chave].qtd += numSafe(it.qtd);
+      r.porItem[chave].total += vIt;
+      r.porItem[chave].pedidos++;
+    });
+    if (!vPed && !qPed) return;
+    r.total += vPed; r.pecas += qPed; r.pedidos++;
+    var vn = p.vendedor || '?';
+    if (!r.porVend[vn]) r.porVend[vn] = { total: 0, pecas: 0 };
+    r.porVend[vn].total += vPed; r.porVend[vn].pecas += qPed;
+  });
+  return r;
+}
+function renderAcoPeriodo(containerId, pedidosList) {
+  var box = document.getElementById(containerId);
+  if (!box) return;
+  var r = calcAcoPedidos(pedidosList);
+  var fmt = function(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var vends = Object.keys(r.porVend).sort(function(a, b) { return r.porVend[b].total - r.porVend[a].total; });
+  box.innerHTML =
+    '<div style="font-size:24px;font-weight:700;color:#1C1C1C;">' + fmt(r.total) + '</div>' +
+    '<div style="font-size:11px;color:#888;margin:2px 0 10px;">' + fmtNum2(r.pecas).replace(',00', '') + ' peça(s) em ' + r.pedidos + ' pedido(s)</div>' +
+    (vends.length > 1 || (vends.length === 1 && _pedIsGestora) ? vends.map(function(vn) {
+      var nome = (vendedores[vn] && vendedores[vn].nome) || vn;
+      return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid #F0EEEA;font-size:12px;">' +
+        '<span style="color:#555;">' + negEsc(nome) + '</span>' +
+        '<span style="font-weight:700;">' + fmt(r.porVend[vn].total) + '</span></div>';
+    }).join('') : '') + renderAcoItensHtml(r);
+}
+var _acoUltimo = null;
+function renderAcoItensHtml(r) {
+  _acoUltimo = r;
+  var itens = Object.keys(r.porItem).map(function(k) { return r.porItem[k]; })
+    .sort(function(a, b) { return b.qtd - a.qtd; });
+  if (!itens.length) return '<div style="font-size:12px;color:#aaa;margin-top:8px;">Nenhum item de aço vendido nesse período.</div>';
+  var fmt = function(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var q = function(n) { return Number(n || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); };
+  return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:14px 0 6px;flex-wrap:wrap;">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#444;">Quantidade por item (' + itens.length + ')</div>' +
+      '<div style="display:flex;gap:6px;">' +
+        '<input type="text" placeholder="🔎 Código ou nome..." oninput="filtrarAcoItens(this.value)" style="padding:6px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12px;outline:none;min-width:180px;">' +
+        '<button type="button" onclick="exportarAcoItens()" style="padding:6px 12px;border-radius:6px;border:1.5px solid #2E7D32;background:#fff;color:#2E7D32;font-size:12px;font-weight:600;cursor:pointer;">📥 Excel</button>' +
+      '</div></div>' +
+    '<div style="max-height:360px;overflow:auto;border:1px solid #F0EEEA;border-radius:8px;">' +
+    '<table style="width:100%;border-collapse:collapse;font-size:12.5px;">' +
+      '<thead><tr style="position:sticky;top:0;background:#F8F7F3;">' +
+        '<th style="text-align:left;padding:7px 8px;">Código</th>' +
+        '<th style="text-align:left;padding:7px 8px;">Produto</th>' +
+        '<th style="text-align:right;padding:7px 8px;">Qtd (peças)</th>' +
+        '<th style="text-align:right;padding:7px 8px;">Valor</th>' +
+        '<th style="text-align:right;padding:7px 8px;">Pedidos</th>' +
+      '</tr></thead><tbody id="aco-itens-tbody">' +
+      itens.map(function(it) {
+        var busca = (it.codigo + ' ' + it.nome).toLowerCase();
+        return '<tr data-busca="' + negEsc(busca) + '" style="border-top:1px solid #F0EEEA;">' +
+          '<td style="padding:6px 8px;font-family:ui-monospace,monospace;font-size:11.5px;color:#555;white-space:nowrap;">' + (negEsc(it.codigo) || '<span style="color:#ccc;">—</span>') + '</td>' +
+          '<td style="padding:6px 8px;">' + negEsc(it.nome) + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-weight:700;">' + q(it.qtd) + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;">' + fmt(it.total) + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;color:#888;">' + it.pedidos + '</td></tr>';
+      }).join('') +
+    '</tbody></table></div>';
+}
+function filtrarAcoItens(t) {
+  t = String(t || '').toLowerCase().trim();
+  document.querySelectorAll('#aco-itens-tbody tr').forEach(function(tr) {
+    tr.style.display = (!t || tr.dataset.busca.indexOf(t) !== -1) ? '' : 'none';
+  });
+}
+function exportarAcoItens() {
+  if (!_acoUltimo) return;
+  var itens = Object.keys(_acoUltimo.porItem).map(function(k) { return _acoUltimo.porItem[k]; }).sort(function(a, b) { return b.qtd - a.qtd; });
+  var de = (document.getElementById('filtro-data-de') || {}).value || '';
+  var ate = (document.getElementById('filtro-data-ate') || {}).value || '';
+  var linhas = ['Codigo;Produto;Qtd (pecas);Valor (R$);Pedidos'];
+  itens.forEach(function(it) {
+    linhas.push([it.codigo, '"' + it.nome.replace(/"/g, '""') + '"', String(it.qtd).replace('.', ','), it.total.toFixed(2).replace('.', ','), it.pedidos].join(';'));
+  });
+  var blob = new Blob(['\uFEFF' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aco_vendido_' + de + '_a_' + ate + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
 function obterMateriaisUnicos() {
   var vistos = {};
   var lista = [];
@@ -11506,6 +11620,7 @@ function aplicarFiltroPeriodo() {
   set('filtro-entregas-total', fmt2(entregasTotal));
   set('filtro-entregas-qt', pedsEntregues.length + ' pedido(s)');
   renderResumoProdutos('resumo-produtos-periodo', pedsVendidos);
+  renderAcoPeriodo('filtro-aco', pedsVendidos);
 
   var resBox = document.getElementById('filtro-periodo-resultado');
   if (resBox) resBox.style.display = 'block';
