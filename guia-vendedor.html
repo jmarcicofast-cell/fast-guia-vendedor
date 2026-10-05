@@ -1118,6 +1118,10 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/></svg>
     Sugestões
   </button>
+  <button class="nav-btn" id="nav-quiz" draggable="true" data-nav-id="quiz" style="display:none;" onclick="showTab('quiz',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l2 2 4-4"/><rect x="4" y="3" width="16" height="18" rx="2"/></svg>
+    Quiz
+  </button>
   <button class="nav-btn" id="nav-admin" draggable="true" data-nav-id="admin" style="display:none;" onclick="showTab('admin',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M20 21a8 8 0 1 0-16 0"/><path d="M16 11l1.5 3h3l-2.5 2 1 3-3-2-3 2 1-3-2.5-2h3z"/></svg>
     Gestão
@@ -4912,6 +4916,183 @@ td.p-tie { color:var(--sp-muted); }
   </div>
 </div>
 <!-- ══ FIM SUGESTÕES ══ -->
+
+<!-- ══ QUIZ — testes de conhecimento por vendedora ══ -->
+<style>
+  #tab-quiz .qz-card{ background:#fff; border:1.5px solid #ECEAE4; border-radius:12px; padding:16px 18px; margin-bottom:14px; }
+  #tab-quiz .qz-tag{ font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:10px; white-space:nowrap; display:inline-block; letter-spacing:.03em; }
+  #tab-quiz .qz-btn{ padding:9px 20px; border-radius:7px; border:none; background:#C41E1E; color:#fff; font-size:13px; font-weight:700; cursor:pointer; }
+  #tab-quiz .qz-btn.sec{ background:#fff; color:#1C1C1C; border:1.5px solid #E2E0D8; }
+  #tab-quiz .qz-btn:focus-visible, #tab-quiz .qz-opt:focus-visible{ outline:3px solid #C41E1E; outline-offset:2px; }
+  #tab-quiz .qz-bar{ height:6px; background:#ECEAE4; border-radius:3px; overflow:hidden; margin:8px 0 14px; }
+  #tab-quiz .qz-bar i{ display:block; height:100%; background:#C41E1E; transition:width .3s; }
+  #tab-quiz .qz-opts{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  #tab-quiz .qz-opt{ text-align:left; background:#FAFAF7; color:#1C1C1C; border:1.5px solid #E2E0D8; border-radius:9px; padding:11px 13px; font-size:13.5px; cursor:pointer; display:flex; gap:10px; align-items:flex-start; font-family:inherit; }
+  #tab-quiz .qz-opt b{ color:#999; min-width:16px; }
+  #tab-quiz .qz-opt:hover:not(:disabled){ border-color:#C41E1E; }
+  #tab-quiz .qz-opt:disabled{ cursor:default; }
+  #tab-quiz .qz-opt.ok{ border-color:#2E7D32; background:#E8F5E9; }
+  #tab-quiz .qz-opt.no{ border-color:#C41E1E; background:#FFEBEE; }
+  #tab-quiz .qz-fb{ border-radius:9px; padding:11px 13px; margin-top:12px; font-size:13px; }
+  #tab-quiz .qz-fb.ok{ background:#E8F5E9; } #tab-quiz .qz-fb.ok strong{ color:#1B5E20; }
+  #tab-quiz .qz-fb.no{ background:#FFEBEE; } #tab-quiz .qz-fb.no strong{ color:#B71C1C; }
+  #tab-quiz .qz-score{ font-size:52px; font-weight:800; line-height:1; color:#1C1C1C; font-variant-numeric:tabular-nums; }
+  #tab-quiz .qz-score small{ font-size:22px; color:#999; font-weight:600; }
+  #tab-quiz table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  #tab-quiz th{ text-align:left; font-size:11px; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:6px 8px; border-bottom:1.5px solid #ECEAE4; }
+  #tab-quiz td{ padding:8px; border-bottom:1px solid #F1EFEA; vertical-align:top; font-variant-numeric:tabular-nums; }
+  #tab-quiz .qz-rev li{ border-top:1px solid #F1EFEA; padding:9px 0; font-size:12.5px; list-style:none; }
+</style>
+<div id="tab-quiz" class="tab-content">
+  <div class="page-section" style="max-width:900px;">
+    <div style="margin-bottom:1rem;">
+      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:2px;">📝 Quiz</h2>
+      <p style="font-size:12px;color:#aaa;" id="qz-sub">Testes rápidos sobre os materiais e o dia a dia da FAST.</p>
+    </div>
+    <div id="qz-area"></div>
+  </div>
+</div>
+<!-- ══ FIM QUIZ ══ -->
+
+<script>
+/* ══ QUIZ ══
+   Para liberar um quiz para outra vendedora, adicione o login dela em "para".
+   Respostas ficam em quiz/respostas/{quizId}/{LOGIN}/{timestamp}. */
+var QZ_QUIZZES = [
+  { id: 'drywall-parede-forro', titulo: 'Drywall: parede e forro',
+    desc: 'O que se usa para montar uma parede e um forro de drywall.',
+    para: ['BREDER'],
+    perguntas: [
+      {s:'Parede',p:'Na montagem de uma parede de drywall, qual perfil é fixado no piso e no teto, servindo de "trilho" para a estrutura?',o:['Montante','Guia','F530','Cantoneira'],c:1,h:'Ele "guia" onde a parede vai ficar.',e:'A guia é o perfil em U fixado no piso e no teto. Ela define a posição da parede e recebe os montantes.'},
+      {s:'Parede',p:'Qual perfil fica na vertical, encaixado dentro das guias, e recebe o parafusamento das chapas?',o:['Tabica','Guia','Montante','Tirante'],c:2,e:'O montante é o perfil vertical da parede. Normalmente é instalado a cada 40 ou 60 cm, e é nele que as chapas são parafusadas.'},
+      {s:'Chapas',p:'O cliente vai fazer uma parede de banheiro. Qual chapa você indica para a área molhada?',o:['Chapa ST (branca)','Chapa RF (rosa)','Chapa RU (verde)','Qualquer uma, tanto faz'],c:2,h:'RU = Resistente à Umidade.',e:'A chapa RU (verde) é resistente à umidade, indicada para banheiros, cozinhas e áreas de serviço. A ST é a padrão para áreas secas e a RF (rosa) é para resistência ao fogo.'},
+      {s:'Chapas',p:'Para que serve a chapa RF (rosa)?',o:['Áreas com exigência de resistência ao fogo','Áreas externas','Somente isolamento acústico','Forros decorativos'],c:0,e:'RF significa Resistente ao Fogo. É usada em saídas de emergência, escadas, shafts e locais com exigência do Corpo de Bombeiros.'},
+      {s:'Fixação',p:'Qual parafuso é usado para fixar a chapa de gesso no perfil metálico?',o:['Parafuso cabeça lentilha (metal-metal)','Parafuso cabeça trombeta (chapa-metal)','Prego de aço','Parafuso sextavado de madeira'],c:1,h:'A cabeça precisa afundar um pouco no papel da chapa.',e:'O parafuso cabeça trombeta afunda levemente na chapa sem rasgar o papel, deixando a superfície pronta para a massa. O cabeça lentilha une perfil com perfil.'},
+      {s:'Acabamento',p:'O que é usado no tratamento das juntas entre as chapas, para a parede ficar lisa e sem trincas?',o:['Silicone e argamassa','Fita de papel microperfurada e massa para juntas','Fita crepe e tinta','Gesso em pó e água apenas'],c:1,e:'A fita de papel microperfurada vai sobre a massa para juntas, seguida de novas demãos de massa. Isso evita trincas na emenda das chapas.'},
+      {s:'Parede',p:'Uma parede "73/48" tem montante de 48 mm e uma chapa de 12,5 mm de cada lado. O que significa o 73?',o:['A altura máxima da parede em cm','A espessura total da parede em mm','O espaçamento dos montantes','O peso por m²'],c:1,h:'Some 48 + 12,5 + 12,5.',e:'73 é a espessura final da parede em milímetros: 48 mm do perfil mais 12,5 mm de chapa de cada lado.'},
+      {s:'Acústica',p:'O cliente quer melhor isolamento acústico entre dois quartos. O que você oferece para colocar dentro da parede?',o:['Isopor','Lã de vidro ou lã de rocha','Espuma expansiva','Nada, a chapa já isola'],c:1,e:'A lã mineral (de vidro ou de rocha) preenche o espaço entre as chapas e melhora muito o desempenho acústico. É uma ótima venda adicional.'},
+      {s:'Forro',p:'No forro de drywall estruturado, qual é o perfil principal onde as chapas são parafusadas?',o:['Montante 48','Guia 70','Perfil F530','Cantoneira 25x30'],c:2,e:'O F530 (canaleta) é o perfil estrutural do forro. Ele fica pendurado na laje e recebe o parafusamento das chapas.'},
+      {s:'Forro',p:'Quais itens são usados para pendurar o F530 na laje e ajustar a altura do forro?',o:['Tirante (arame ou barra rosqueada) e regulador','Guia e montante','Fita e massa','Bucha e cantoneira'],c:0,h:'Um segura, o outro nivela.',e:'O tirante é preso na laje e o regulador liga o tirante ao F530, permitindo nivelar o forro. No perímetro, usa-se cantoneira ou tabica junto à parede.'}
+    ] }
+];
+var QZ_OK = ['Isso aí!','Mandou bem!','Perfeito!','Certinho!','É esse mesmo!'];
+var QZ_NO = ['Quase lá.','Não foi dessa vez.','Atenção nessa!','Não exatamente.'];
+var QZ = { ligado:false, dados:{}, quiz:null, i:0, ans:[], dicas:0 };
+
+function qzEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function qzGestora(){ return currentUser === 'JULIANA'; }
+function qzMeus(){ return QZ_QUIZZES.filter(function(q){ return qzGestora() || q.para.indexOf(currentUser) >= 0; }); }
+function qzTemAcesso(user){ return user === 'JULIANA' || QZ_QUIZZES.some(function(q){ return q.para.indexOf(user) >= 0; }); }
+function qzNome(login){ return (vendedores[login] && vendedores[login].nome) || login; }
+function qzData(ts){ var d = new Date(+ts); return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+function qzTentativas(quizId, login){
+  var t = ((QZ.dados[quizId] || {})[login]) || {};
+  return Object.keys(t).sort().map(function(k){ var r = t[k]; r._ts = k; return r; });
+}
+
+function qzInit(){
+  if (QZ.user !== currentUser){ QZ.user = currentUser; QZ.quiz = null; }
+  if (!QZ.ligado){
+    QZ.ligado = true;
+    dbRef('quiz/respostas').on('value', function(snap){ QZ.dados = snap.val() || {}; if (!QZ.quiz) qzRenderLista(); });
+  }
+  if (!QZ.quiz) qzRenderLista();
+  Promise.resolve(dbRef('quiz/respostas').once('value')).then(function(snap){ QZ.dados = (snap && snap.val()) || {}; if (!QZ.quiz) qzRenderLista(); }).catch(function(){});
+}
+
+function qzRenderLista(){
+  var area = document.getElementById('qz-area'); if (!area) return;
+  var lista = qzMeus();
+  document.getElementById('qz-sub').textContent = qzGestora()
+    ? 'Você vê a pontuação de cada vendedora. Pode abrir o quiz para conferir as perguntas (seu teste não é gravado).'
+    : 'Responda com calma. Sua pontuação fica gravada e a Juliana acompanha.';
+  if (!lista.length){ area.innerHTML = '<div class="qz-card" style="color:#888;font-size:13px;">Nenhum quiz liberado para você ainda.</div>'; return; }
+  area.innerHTML = lista.map(function(q){
+    var corpo = '';
+    if (qzGestora()){
+      corpo = '<table><thead><tr><th>Vendedora</th><th>Status</th><th>Última nota</th><th>Melhor nota</th><th>Tentativas</th></tr></thead><tbody>' +
+        q.para.map(function(login){
+          var t = qzTentativas(q.id, login), ult = t[t.length-1];
+          var melhor = t.reduce(function(m,r){ return Math.max(m, r.acertos||0); }, 0);
+          var tag = ult ? '<span class="qz-tag" style="background:#E8F5E9;color:#1B5E20;">Feito</span>' : '<span class="qz-tag" style="background:#FFF3E0;color:#7A4A00;">Pendente</span>';
+          return '<tr><td><b>' + qzEsc(qzNome(login)) + '</b></td><td>' + tag + '</td><td>' + (ult ? ult.acertos + '/' + ult.total + '<br><span style="color:#999;font-size:11px;">' + qzData(ult._ts) + '</span>' : '—') + '</td><td>' + (ult ? melhor + '/' + ult.total : '—') + '</td><td>' + t.length + '</td></tr>' +
+            (ult ? '<tr><td colspan="5" style="padding-top:0;"><details><summary style="cursor:pointer;font-size:12px;color:#C41E1E;font-weight:600;">Ver respostas da última tentativa</summary>' + qzRevisao(q, ult.respostas || [], true) + '</details></td></tr>' : '');
+        }).join('') + '</tbody></table>';
+    } else {
+      var t = qzTentativas(q.id, currentUser), ult = t[t.length-1];
+      corpo = ult
+        ? '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span class="qz-score" style="font-size:34px;">' + ult.acertos + '<small> / ' + ult.total + '</small></span><span style="font-size:12px;color:#888;">Última tentativa em ' + qzData(ult._ts) + (t.length > 1 ? ' · ' + t.length + ' tentativas' : '') + '</span></div>'
+        : '<span class="qz-tag" style="background:#FFF3E0;color:#7A4A00;">Ainda não respondido</span>';
+    }
+    return '<div class="qz-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px;">' +
+      '<div><div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + qzEsc(q.titulo) + '</div><div style="font-size:12px;color:#888;">' + qzEsc(q.desc) + ' · ' + q.perguntas.length + ' perguntas</div></div>' +
+      '<button class="qz-btn" onclick="qzComecar(\'' + q.id + '\')">' + (qzGestora() ? 'Ver perguntas' : (qzTentativas(q.id, currentUser).length ? 'Refazer quiz' : 'Começar quiz')) + '</button></div>' + corpo + '</div>';
+  }).join('');
+}
+
+function qzComecar(id){
+  QZ.quiz = QZ_QUIZZES.filter(function(q){ return q.id === id; })[0];
+  QZ.i = 0; QZ.ans = []; QZ.dicas = 0;
+  qzPergunta();
+}
+
+function qzPergunta(){
+  var q = QZ.quiz, p = q.perguntas[QZ.i], n = q.perguntas.length;
+  document.getElementById('qz-area').innerHTML = '<div class="qz-card">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#888;"><span class="qz-tag" style="background:#F3F1EC;color:#555;">' + qzEsc(p.s) + '</span><span>Pergunta ' + (QZ.i+1) + ' de ' + n + '</span></div>' +
+    '<div class="qz-bar"><i style="width:' + (QZ.i/n*100) + '%"></i></div>' +
+    '<div style="font-size:16px;font-weight:700;color:#1C1C1C;line-height:1.35;">' + qzEsc(p.p) + '</div>' +
+    '<div class="qz-opts">' + p.o.map(function(t,k){ return '<button class="qz-opt" onclick="qzEscolher(' + k + ')"><b>' + 'ABCD'[k] + '</b><span>' + qzEsc(t) + '</span></button>'; }).join('') + '</div>' +
+    (p.h ? '<button id="qz-hb" onclick="qzDica()" style="background:none;border:none;color:#C41E1E;font-weight:600;font-size:12.5px;cursor:pointer;padding:0;margin-top:10px;text-decoration:underline;">Ver dica</button><div id="qz-ht" style="display:none;font-size:12.5px;color:#888;font-style:italic;margin-top:8px;">' + qzEsc(p.h) + '</div>' : '') +
+    '<div id="qz-fb"></div>' +
+    '<div style="margin-top:14px;"><button class="qz-btn sec" onclick="qzSair()">Sair do quiz</button></div></div>';
+}
+
+function qzDica(){ document.getElementById('qz-ht').style.display = 'block'; document.getElementById('qz-hb').style.display = 'none'; QZ.dicas++; }
+
+function qzEscolher(k){
+  var p = QZ.quiz.perguntas[QZ.i], certo = k === p.c, ultima = QZ.i === QZ.quiz.perguntas.length - 1;
+  QZ.ans[QZ.i] = k;
+  document.querySelectorAll('#qz-area .qz-opt').forEach(function(b,j){ b.disabled = true; if (j === p.c) b.classList.add('ok'); else if (j === k) b.classList.add('no'); });
+  var hb = document.getElementById('qz-hb'); if (hb) hb.style.display = 'none';
+  document.getElementById('qz-fb').innerHTML = '<div class="qz-fb ' + (certo ? 'ok' : 'no') + '"><strong>' + (certo ? QZ_OK[QZ.i % QZ_OK.length] : QZ_NO[QZ.i % QZ_NO.length]) + '</strong> ' + qzEsc(p.e) + '</div>' +
+    '<button class="qz-btn" id="qz-nx" style="margin-top:12px;" onclick="' + (ultima ? 'qzFinalizar()' : 'qzProxima()') + '">' + (ultima ? 'Ver meu resultado' : 'Próxima pergunta') + '</button>';
+  document.getElementById('qz-nx').focus();
+}
+function qzProxima(){ QZ.i++; qzPergunta(); }
+function qzSair(){ QZ.quiz = null; qzRenderLista(); }
+
+function qzFinalizar(){
+  var q = QZ.quiz, total = q.perguntas.length;
+  var acertos = QZ.ans.filter(function(a,k){ return a === q.perguntas[k].c; }).length;
+  var msg = acertos >= 9 ? 'Excelente! Você já domina esse conteúdo.' : acertos >= 7 ? 'Muito bom! Revise os pontos abaixo.' : acertos >= 5 ? 'Bom começo. Vale revisar o material de treinamento.' : 'Vamos reforçar esse conteúdo juntas.';
+  var gravando = !qzGestora();
+  document.getElementById('qz-area').innerHTML = '<div class="qz-card">' +
+    '<div style="font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.06em;">' + qzEsc(q.titulo) + ' · Resultado</div>' +
+    '<div class="qz-score" style="margin:8px 0;">' + acertos + '<small> / ' + total + '</small></div>' +
+    '<div style="font-size:14px;color:#1C1C1C;">' + msg + '</div>' +
+    '<div id="qz-save" style="font-size:12px;font-weight:600;margin-top:8px;color:#888;">' + (gravando ? 'Salvando sua pontuação…' : 'Modo gestora: este teste não foi gravado.') + '</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"><button class="qz-btn" onclick="qzSair()">Voltar para a lista</button><button class="qz-btn sec" onclick="qzComecar(\'' + q.id + '\')">Refazer quiz</button></div></div>' +
+    (acertos < total ? '<div class="qz-card"><div style="font-size:14px;font-weight:700;margin-bottom:4px;">Para revisar</div>' + qzRevisao(q, QZ.ans, false) + '</div>' : '');
+  if (gravando){
+    var reg = { acertos: acertos, total: total, respostas: QZ.ans.slice(), dicas: QZ.dicas, nome: qzNome(currentUser) };
+    var s = document.getElementById('qz-save');
+    Promise.resolve(dbRef('quiz/respostas/' + q.id + '/' + currentUser + '/' + Date.now()).set(reg))
+      .then(function(){ s.textContent = '✓ Pontuação salva. A Juliana já consegue ver.'; s.style.color = '#1B5E20'; })
+      .catch(function(){ s.textContent = 'Não consegui salvar agora. Verifique a internet e refaça o quiz, ou mande um print para a Juliana.'; s.style.color = '#C41E1E'; });
+  }
+}
+
+function qzRevisao(q, ans, todas){
+  var itens = q.perguntas.map(function(p,k){ return {p:p,k:k}; }).filter(function(x){ return todas || ans[x.k] !== x.p.c; });
+  return '<ul class="qz-rev" style="padding:0;margin:6px 0 0;">' + itens.map(function(x){
+    var a = ans[x.k], certo = a === x.p.c;
+    return '<li><div style="font-weight:600;color:#1C1C1C;">' + (certo ? '✅ ' : '❌ ') + (x.k+1) + '. ' + qzEsc(x.p.p) + '</div>' +
+      (certo ? '<div style="color:#1B5E20;">' + qzEsc(x.p.o[a]) + '</div>'
+             : '<div style="color:#B71C1C;">Resposta: ' + qzEsc(a == null ? '—' : x.p.o[a]) + '</div><div style="color:#1B5E20;">Correta: ' + qzEsc(x.p.o[x.p.c]) + '</div>' + (todas ? '' : '<div style="color:#888;">' + qzEsc(x.p.e) + '</div>')) + '</li>';
+  }).join('') + '</ul>';
+}
+</script>
 
 
 <script>
@@ -12487,6 +12668,9 @@ function checkAdminAccess(nome) {
   // Minhas Metas aparece pra todo mundo. Check-in Diário só pra Juliana.
   var mmNav = document.getElementById('nav-minhasmetas');
   if (mmNav) mmNav.style.display = 'flex';
+  // Quiz: Juliana e quem tiver quiz liberado (QZ_QUIZZES[].para)
+  var qzNav = document.getElementById('nav-quiz');
+  if (qzNav) qzNav.style.display = (typeof qzTemAcesso === 'function' && qzTemAcesso(currentUser)) ? 'flex' : 'none';
   if (nome === 'Juliana') {
     adminNav.style.display = 'flex';
     if (rampaNav) rampaNav.style.display = 'flex';
@@ -12743,6 +12927,7 @@ function showTab(name, btn) {
   if (name === 'shopping' && typeof spInit === 'function') spInit();
   if (name === 'abastecimento' && typeof abInit === 'function') abInit();
   if (name === 'sugestoes' && typeof sgInit === 'function') sgInit();
+  if (name === 'quiz' && typeof qzInit === 'function') qzInit();
   btn.classList.add('active');
 }
 
