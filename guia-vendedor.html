@@ -8934,6 +8934,18 @@ function mesComissaoPedido(p) {
   if (String(p.dataStatus || p.data).slice(0,7) !== mes) return null;
   return mes;
 }
+function motivoForaComissao(p) {
+  if (!p || p.status === 'cancelado') return 'cancelada';
+  if (p.status !== 'faturado') return 'ainda não faturada';
+  if (!p.conciliado) return 'faturada, aguardando conciliação';
+  var mes = String(p.data || '').slice(0,7);
+  function nomeMes(m) { return m ? new Date(m + '-15T12:00:00').toLocaleDateString('pt-BR',{month:'short',year:'numeric'}) : '?'; }
+  var fat = String(p.dataStatus || p.data || '').slice(0,7);
+  if (fat !== mes) return 'vendida em ' + nomeMes(mes) + ', faturada em ' + nomeMes(fat);
+  var conc = String(p.conciliadoEm || '').slice(0,7);
+  if (conc !== mes) return 'vendida em ' + nomeMes(mes) + ', conciliada em ' + nomeMes(conc);
+  return '';
+}
 function dataPagamentoComissao(mes) { // 'AAAA-MM' -> último dia do mês seguinte (dd/mm/aaaa)
   var a = parseInt(mes.slice(0,4),10), m = parseInt(mes.slice(5,7),10);
   return new Date(a, m + 1, 0).toLocaleDateString('pt-BR');
@@ -9052,18 +9064,49 @@ function montarConciliacao(p, br, mesRef, ligs) {
   if (ligs === null) {
     html += '<div style="margin-top:8px;font-size:11px;color:#E65100;">Não foi possível ler as ligações — calculado sem redutor.</div>';
   }
-  var hojeMes = new Date().toISOString().slice(0,7);
-  var fatMes = String(p.dataStatus || p.data || '').slice(0,7);
-  if (hojeMes !== mesRef || fatMes !== mesRef) {
-    html += '<div style="margin-top:8px;font-size:11.5px;color:#C41E1E;font-weight:700;">🚫 Fora da janela: esta carga é de ' + mesLbl + (fatMes !== mesRef ? ' e foi faturada em outro mês' : '') + '. Conciliando agora, ela NÃO gera comissão para o vendedor.</div>';
-  }
+  html += '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+      '<label style="font-size:12px;font-weight:700;color:#1C1C1C;">📅 Data da conciliação (pagamento)</label>' +
+      '<input type="date" id="conc-data" value="' + new Date().toISOString().split('T')[0] + '" onchange="atualizarAvisoJanelaConc()" style="padding:5px 8px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:12.5px;">' +
+    '</div>' +
+    '<div style="font-size:10.5px;color:#888;margin-top:3px;">Use a data em que a carga foi paga/conciliada de fato — é ela que define a janela da comissão.</div>' +
+    '<div id="conc-janela-aviso"></div>';
   html += '<div style="margin-top:14px;background:#E8F5E9;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">' +
     '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1B5E20;">💰 Comissão de ' + p.vendedor + '</span>' +
     '<span style="font-size:20px;font-weight:800;color:#1B5E20;">' + fmtBRLConc(valor) + '</span></div>';
   var body = document.getElementById('conciliar-body');
   if (body) body.innerHTML = html;
+  _concPendente.pedido = p;
+  atualizarAvisoJanelaConc();
   var btn = document.getElementById('conciliar-btn-ok');
   if (btn) btn.disabled = false;
+}
+
+function atualizarAvisoJanelaConc() {
+  var box = document.getElementById('conc-janela-aviso');
+  if (!box || !_concPendente || !_concPendente.pedido) return;
+  var el = document.getElementById('conc-data');
+  var dt = (el && el.value) || new Date().toISOString().split('T')[0];
+  var teste = Object.assign({}, _concPendente.pedido, { conciliado: true, conciliadoEm: dt });
+  if (mesComissaoPedido(teste)) {
+    box.innerHTML = '<div style="margin-top:8px;font-size:11.5px;color:#1B5E20;font-weight:700;">✅ Dentro da janela — gera comissão (pagamento em ' + dataPagamentoComissao(dt.slice(0,7)) + ').</div>';
+  } else {
+    box.innerHTML = '<div style="margin-top:8px;font-size:11.5px;color:#C41E1E;font-weight:700;">🚫 Fora da janela: ' + motivoForaComissao(teste) + '. Com esta data, a carga NÃO gera comissão.</div>';
+  }
+}
+
+function alterarDataConciliacao(vendNome, pedidoId) {
+  if (currentUser !== 'JULIANA') return;
+  var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vendNome && x.id === pedidoId; });
+  if (!p || !p.conciliado) return;
+  var atual = p.conciliadoEm ? p.conciliadoEm.split('-').reverse().join('/') : '';
+  var r = prompt('Data da conciliação (pagamento) desta carga — dd/mm/aaaa:', atual);
+  if (r === null) return;
+  var m = String(r).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) { alert('Data inválida. Use dd/mm/aaaa.'); return; }
+  var iso = m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+  dbRef('pedidos/' + vendNome + '/' + pedidoId).update({ conciliadoEm: iso })
+    .catch(function(e) { alert('Erro ao alterar data: ' + (e && e.message ? e.message : e)); });
+  if (typeof fecharDetalhePedido === 'function') fecharDetalhePedido();
 }
 
 function fecharModalConciliar() {
@@ -9075,9 +9118,11 @@ function fecharModalConciliar() {
 function confirmarConciliacao() {
   if (!_concPendente || currentUser !== 'JULIANA') return;
   var pend = _concPendente;
+  var dtEl = document.getElementById('conc-data');
+  var dtConc = (dtEl && /^\d{4}-\d{2}-\d{2}$/.test(dtEl.value)) ? dtEl.value : new Date().toISOString().split('T')[0];
   dbRef('pedidos/' + pend.vend + '/' + pend.id).update({
     conciliado: true,
-    conciliadoEm: new Date().toISOString().split('T')[0],
+    conciliadoEm: dtConc,
     conciliadoPor: currentUser,
     comissaoConc: pend.snap
   }).catch(function(e) { alert('Erro ao conciliar: ' + (e && e.message ? e.message : e)); });
@@ -9187,6 +9232,7 @@ function abrirDetalhePedido(vend, pedidoId) {
           '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:' + (p.conciliado ? '#1B5E20' : '#E65100') + ';">⚖️ Conciliação' +
             (p.conciliado && p.conciliadoEm ? ' <span style="font-weight:500;text-transform:none;letter-spacing:0;">· ' + new Date(p.conciliadoEm + 'T12:00:00').toLocaleDateString('pt-BR') + '</span>' : '') + '</span>' +
           '<span style="display:flex;align-items:center;gap:8px;">' + conciliacaoCellHtml(p) +
+            (p.conciliado && currentUser === 'JULIANA' ? '<button type="button" onclick="alterarDataConciliacao(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:none;color:#1B5E20;font-size:11px;cursor:pointer;text-decoration:underline;">alterar data</button>' : '') +
             (p.conciliado && currentUser === 'JULIANA' ? '<button type="button" onclick="desfazerConciliacao(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:none;color:#C41E1E;font-size:11px;cursor:pointer;text-decoration:underline;">desfazer</button>' : '') +
           '</span>' +
         '</div>'
@@ -9541,14 +9587,27 @@ function renderPedidos(pedidosList, isGestora) {
   }
 }
 
+var _comMesSel = null; // 'AAAA-MM' escolhido na caixa de comissão (null = mês atual)
+function comissaoMudarMes(delta) {
+  var base = _comMesSel || new Date().toISOString().slice(0,7);
+  var d = new Date(parseInt(base.slice(0,4),10), parseInt(base.slice(5,7),10) - 1 + delta, 15);
+  var novo = d.getFullYear() + '-' + ('0' + (d.getMonth()+1)).slice(-2);
+  _comMesSel = (novo === new Date().toISOString().slice(0,7)) ? null : novo;
+  atualizarComissao(_pedTodosDoMes, _pedIsGestora);
+}
 function atualizarComissao(pedidos, isGestora) {
-  // Só conta carga conciliada dentro da janela do mês (ver mesComissaoPedido).
-  var mesAtual = new Date().toISOString().slice(0,7);
+  // Só conta carga vendida, faturada e conciliada dentro do mesmo mês (ver mesComissaoPedido).
+  var mesHoje = new Date().toISOString().slice(0,7);
+  var mesSel = _comMesSel || mesHoje;
   function fmt(n) { return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function set(id, val) { var el = document.getElementById(id); if(el) el.textContent = val; }
 
-  var lista = (pedidos || []).filter(function(p) { return p.status !== 'cancelado' && !p.excluido; });
-  var r = somarComissaoElegivel(lista, function(p, mes) { return mes === mesAtual; });
+  // Base: todos os pedidos ativos (não só os do mês atual), pra poder olhar meses anteriores.
+  var lista = (_pedTodosGeral && _pedTodosGeral.length ? _pedTodosGeral : (pedidos || []))
+    .filter(function(p) { return !p.excluido && p.status !== 'cancelado'; });
+  if (!isGestora && currentUser) lista = lista.filter(function(p) { return !p.vendedor || p.vendedor === currentUser; });
+
+  var r = somarComissaoElegivel(lista, function(p, mes) { return mes === mesSel; });
 
   set('ped-total-vendido', fmt(r.total));
   set('ped-com-placas',    fmt(r.placas));
@@ -9563,15 +9622,42 @@ function atualizarComissao(pedidos, isGestora) {
     rw.textContent = '⚠️ Redutor aplicado em ' + r.redutor + ' carga(s): meta de ligações não atingida — comissão dessas cargas em 0,5%.';
   }
 
-  // Cargas do mês que ainda não entraram (faltando faturar ou conciliar)
-  var pend = lista.filter(function(p) { return p.data && p.data.startsWith(mesAtual) && !mesComissaoPedido(p); });
-  var aguardConc = pend.filter(function(p) { return p.status === 'faturado' && !p.conciliado; }).length;
-  var mesNome = new Date(mesAtual + '-15T12:00:00').toLocaleDateString('pt-BR',{month:'long'});
+  var doMes = lista.filter(function(p) { return p.data && p.data.startsWith(mesSel); })
+    .sort(function(a,b) { return (a.data||'').localeCompare(b.data||''); });
+  var entram = doMes.filter(function(p) { return mesComissaoPedido(p); });
+  var fora = doMes.filter(function(p) { return !mesComissaoPedido(p); });
+  var mesNome = new Date(mesSel + '-15T12:00:00').toLocaleDateString('pt-BR',{month:'long', year:'numeric'});
+  function dBR(d) { return d ? String(d).split('-').reverse().join('/') : '—'; }
+  function linhaCarga(p, ok) {
+    var c = p.comissaoConc || {};
+    return '<tr style="border-bottom:1px solid #F0EEEA;">' +
+      '<td style="padding:4px 6px;">' + dBR(p.data) + '</td>' +
+      '<td style="padding:4px 6px;">' + (p.empresa || p.cliente || '') + (isGestora && p.vendedor ? ' <span style="color:#aaa;">· ' + p.vendedor + '</span>' : '') + '</td>' +
+      '<td style="padding:4px 6px;">' + (p.chamado || '—') + '</td>' +
+      '<td style="padding:4px 6px;">' + (p.status === 'faturado' ? dBR(p.dataStatus || p.data) : '—') + '</td>' +
+      '<td style="padding:4px 6px;">' + (p.conciliado ? dBR(p.conciliadoEm) : '—') + '</td>' +
+      '<td style="padding:4px 6px;font-weight:700;color:' + (ok ? '#1B5E20' : '#C41E1E') + ';">' + (ok ? fmt(numSafe(c.valor)) : motivoForaComissao(p)) + '</td>' +
+    '</tr>';
+  }
+  var tabela = doMes.length
+    ? '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px;">' +
+        '<tr style="text-align:left;color:#888;font-size:10.5px;text-transform:uppercase;"><th style="padding:4px 6px;">Venda</th><th style="padding:4px 6px;">Cliente</th><th style="padding:4px 6px;">Chamado</th><th style="padding:4px 6px;">Faturado</th><th style="padding:4px 6px;">Conciliado</th><th style="padding:4px 6px;">Comissão / motivo</th></tr>' +
+        entram.map(function(p) { return linhaCarga(p, true); }).join('') +
+        fora.map(function(p) { return linhaCarga(p, false); }).join('') +
+      '</table></div>'
+    : '<div style="color:#aaa;margin-top:6px;">Nenhuma carga vendida neste mês.</div>';
+
   var info = document.getElementById('ped-com-info');
   if (info) {
-    info.innerHTML = '💳 Pagamento em <b>' + dataPagamentoComissao(mesAtual) + '</b> · ' + r.cargas + ' carga(s) conciliada(s) em ' + mesNome +
-      '. Só entram cargas vendidas, faturadas e conciliadas dentro de ' + mesNome + '.' +
-      (pend.length ? '<br>⏳ ' + pend.length + ' carga(s) do mês ainda fora da comissão' + (aguardConc ? ' (' + aguardConc + ' faturada(s) aguardando conciliação)' : '') + '.' : '');
+    var btnSt = 'border:1.5px solid #E2E0D8;background:#fff;border-radius:6px;padding:2px 9px;cursor:pointer;font-size:12px;font-weight:700;';
+    info.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">' +
+        '<button type="button" onclick="comissaoMudarMes(-1)" style="' + btnSt + '">◀</button>' +
+        '<b style="text-transform:capitalize;color:#1C1C1C;min-width:120px;text-align:center;">' + mesNome + '</b>' +
+        '<button type="button" onclick="comissaoMudarMes(1)" style="' + btnSt + '"' + (mesSel >= mesHoje ? ' disabled' : '') + '>▶</button>' +
+        '<span>💳 Pagamento em <b>' + dataPagamentoComissao(mesSel) + '</b> · ' + entram.length + ' de ' + doMes.length + ' carga(s) gerando comissão.</span>' +
+      '</div>' +
+      '<details><summary style="cursor:pointer;color:#1C1C1C;font-weight:600;">Ver cargas do mês e por que entraram ou não</summary>' + tabela + '</details>';
   }
 }
 var _comReqId = 0;
