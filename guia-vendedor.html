@@ -2000,7 +2000,7 @@
     <div id="ped-com-vendedor" style="display:none;">
       <div class="comissao-box" id="ped-comissao-box">
         <div>
-          <div class="com-item-label">Total Vendido</div>
+          <div class="com-item-label">Vendido (conciliado)</div>
           <div class="com-item-value" id="ped-total-vendido">R$ 0,00</div>
         </div>
         <div>
@@ -2019,7 +2019,7 @@
           <div style="font-size:10px;color:#666;">1%</div>
         </div>
         <div>
-          <div class="com-item-label">Previsão Total</div>
+          <div class="com-item-label">Comissão do Mês</div>
           <div class="com-item-value green" id="ped-com-total">R$ 0,00</div>
         </div>
         <div id="ped-redutor-box" style="display:none;">
@@ -2031,6 +2031,7 @@
       <div id="ped-redutor-warning" style="display:none;" class="redutor-warning">
         ⚠️ Atenção: meta de ligações não atingida — comissão reduzida para 0,5% em todos os produtos.
       </div>
+      <div id="ped-com-info" style="font-size:11.5px;color:#666;margin:-4px 0 1rem;line-height:1.5;"></div>
     </div>
 
     <!-- COMISSÃO GESTORA -->
@@ -7537,57 +7538,36 @@ function renderEvComissao() {
     box.innerHTML = '<div style="font-size:12px;color:#aaa;text-align:center;padding:1rem;">Calculando...</div>';
   }
 
-  var pedidos = _pedTodosGeral || [];
-  var pedsPeriodo = pedidos.filter(function(p) { return p.data && p.data >= deStr && p.data <= ateStr && p.status !== 'cancelado'; });
+  var pedidos = (_pedTodosGeral || []).filter(function(p) { return !p.vendedor || p.vendedor === currentUser; });
+  // Só cargas conciliadas dentro da janela do próprio mês; o período filtra pela data da conciliação.
+  var r = somarComissaoElegivel(pedidos, function(p) { return p.conciliadoEm >= deStr && p.conciliadoEm <= ateStr; });
+  var fmtRS = function(n) { return 'R$ ' + Number(n||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+  var mesAtualEv = hoje.toISOString().slice(0,7);
+  var pendMes = st.modo === 'mes' ? pedidos.filter(function(p) { return p.status !== 'cancelado' && p.data && p.data.startsWith(mesAtualEv) && !mesComissaoPedido(p); }).length : 0;
 
-  var vTotalVend = 0, vPlacas = 0, vComp = 0, vAco = 0;
-  pedsPeriodo.forEach(function(p) {
-    if (p.itens && p.itens.length) {
-      p.itens.forEach(function(it) {
-        var val = Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100;
-        vTotalVend += val;
-        if (it.cat === 'placa') vPlacas += val*CAT_PCT.placa;
-        else if (it.cat === 'grx') vComp += val*CAT_PCT.grx;
-        else if (it.cat === 'aco') vAco += val*CAT_PCT.aco;
-      });
-    } else {
-      var val2 = Number(p.vTotal||0);
-      vTotalVend += val2;
-      if (p.cat === 'placa') vPlacas += val2*CAT_PCT.placa;
-      else if (p.cat === 'grx') vComp += val2*CAT_PCT.grx;
-      else if (p.cat === 'aco') vAco += val2*CAT_PCT.aco;
-    }
-  });
+  var html =
+    (labelPeriodo ? '<div style="font-size:11px;color:#aaa;margin-bottom:10px;text-transform:capitalize;">' + labelPeriodo + '</div>' : '') +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:10px;">' +
+      '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.04em;">Vendido (conciliado)</div><div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + fmtRS(r.total) + '</div></div>' +
+      '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.04em;">Cargas</div><div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + r.cargas + '</div></div>' +
+      '<div style="background:#E8F5E9;border-radius:8px;padding:10px;text-align:center;border:1.5px solid #2E7D32;"><div style="font-size:10px;color:#1B5E20;text-transform:uppercase;letter-spacing:.04em;">Comissão</div><div style="font-size:16px;font-weight:700;color:#1B5E20;">' + fmtRS(r.valor) + '</div></div>' +
+    '</div>' +
+    (r.redutor ? '<div style="background:#FFF3E0;border-radius:8px;padding:8px 10px;font-size:11px;color:#E65100;margin-bottom:10px;">⚠️ Redutor aplicado em ' + r.redutor + ' carga(s) — meta de ligações não atingida, comissão dessas cargas em 0,5%.</div>' : '') +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">' +
+      '<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">Placa (0,5%)</div><div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + fmtRS(r.placas) + '</div></div>' +
+      '<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">GRX/Comp (0,75%)</div><div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + fmtRS(r.comp) + '</div></div>' +
+      '<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">Aço (1%)</div><div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + fmtRS(r.aco) + '</div></div>' +
+    '</div>' +
+    '<div style="margin-top:10px;font-size:11px;color:#888;line-height:1.5;">Só entram cargas vendidas, faturadas e conciliadas dentro do mesmo mês.' +
+      (st.modo === 'mes' ? ' 💳 Pagamento em <b>' + dataPagamentoComissao(mesAtualEv) + '</b>.' + (pendMes ? '<br>⏳ ' + pendMes + ' carga(s) do mês ainda aguardando faturamento/conciliação.' : '') : '') +
+    '</div>';
 
-  dbRef('ligacoes/' + currentUser).once('value').then(function(snap) {
-    var dados = snap.val() || {};
-    var totalLigs = Object.values(dados).filter(function(l) { return l && l.data && l.data >= deStr && l.data <= ateStr; }).reduce(function(s,l) { return s + (l.qtd||0); }, 0);
-    // O redutor (meta de 600 lig/mes) so faz sentido avaliado dentro de um unico mes
-    var redutor = st.modo === 'mes' && totalLigs < 600;
-    var comFinal = redutor ? (vTotalVend * 0.005) : (vPlacas + vComp + vAco);
-    var fmtRS = function(n) { return 'R$ ' + Number(n||0).toLocaleString('pt-BR', {minimumFractionDigits:2}); };
-
-    var html =
-      (labelPeriodo ? '<div style="font-size:11px;color:#aaa;margin-bottom:10px;text-transform:capitalize;">' + labelPeriodo + '</div>' : '') +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:10px;">' +
-        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.04em;">Vendido</div><div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + fmtRS(vTotalVend) + '</div></div>' +
-        '<div style="background:#F8F7F3;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.04em;">Pedidos</div><div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + pedsPeriodo.length + '</div></div>' +
-        '<div style="background:#E8F5E9;border-radius:8px;padding:10px;text-align:center;border:1.5px solid #2E7D32;"><div style="font-size:10px;color:#1B5E20;text-transform:uppercase;letter-spacing:.04em;">Comissão</div><div style="font-size:16px;font-weight:700;color:#1B5E20;">' + fmtRS(comFinal) + '</div></div>' +
-      '</div>' +
-      (redutor ? '<div style="background:#FFF3E0;border-radius:8px;padding:8px 10px;font-size:11px;color:#E65100;margin-bottom:10px;">⚠️ Meta de ligações não atingida nesse mês (' + totalLigs + '/600) — comissão reduzida para 0,5% em todos os produtos.</div>' : '') +
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">' +
-        '<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">Placa (0,5%)</div><div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + fmtRS(vPlacas) + '</div></div>' +
-        '<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">GRX/Comp (0,75%)</div><div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + fmtRS(vComp) + '</div></div>' +
-        '<div style="text-align:center;"><div style="font-size:10px;color:#aaa;">Aço (1%)</div><div style="font-size:12.5px;font-weight:700;color:#1C1C1C;">' + fmtRS(vAco) + '</div></div>' +
-      '</div>';
-
-    if (st.modo === 'periodo') {
-      var resEl = document.getElementById('ev-comissao-resultado');
-      if (resEl) resEl.innerHTML = html;
-    } else {
-      box.innerHTML = html;
-    }
-  });
+  if (st.modo === 'periodo') {
+    var resEl = document.getElementById('ev-comissao-resultado');
+    if (resEl) resEl.innerHTML = html;
+  } else {
+    box.innerHTML = html;
+  }
 }
 
 // ── CONQUISTAS / PREMIAÇÕES ──
@@ -8929,13 +8909,51 @@ function conciliacaoCellHtml(p) {
     var red = p.comissaoConc && p.comissaoConc.redutor ? ' <span title="Redutor aplicado: abaixo de ' + META_LIGACOES_COMISSAO + ' ligações no mês" style="font-size:10px;color:#E65100;font-weight:700;">⚠️0,5%</span>' : '';
     return '<div style="display:flex;flex-direction:column;gap:2px;min-width:120px;">' +
       '<span style="display:inline-block;background:#E8F5E9;color:#1B5E20;font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;width:fit-content;">✅ Conciliado</span>' +
-      '<span style="font-size:12.5px;font-weight:700;color:#1B5E20;" title="Comissão do vendedor nesta carga">💰 ' + val + red + '</span>' +
+      (mesComissaoPedido(p)
+        ? '<span style="font-size:12.5px;font-weight:700;color:#1B5E20;" title="Comissão do vendedor nesta carga">💰 ' + val + red + '</span>'
+        : '<span style="font-size:11px;font-weight:700;color:#C41E1E;" title="Vendida, faturada e conciliada fora do mesmo mês — não gera comissão">🚫 Fora da janela · sem comissão</span>') +
     '</div>';
   }
   if (currentUser === 'JULIANA') {
     return '<button type="button" onclick="abrirModalConciliar(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:1.5px solid #1B5E20;background:#fff;color:#1B5E20;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;font-weight:700;white-space:nowrap;">⚖️ Conciliar</button>';
   }
   return '<span style="font-size:11px;color:#E65100;font-weight:600;">⏳ Pendente</span>';
+}
+
+// ── JANELA DE COMISSÃO ──
+// Regra definida pela gestora: a janela é o mês inteiro (dia 1 ao último dia).
+// A carga só gera comissão se foi VENDIDA (data do pedido), FATURADA (dataStatus)
+// e CONCILIADA (conciliadoEm) dentro do MESMO mês. Conciliada depois do fim do
+// mês = não paga. A comissão da janela é paga no último dia do mês seguinte.
+// O valor usado é o congelado na conciliação (comissaoConc.valor).
+function mesComissaoPedido(p) {
+  if (!p || p.excluido || p.status !== 'faturado' || !p.conciliado) return null;
+  if (!p.data || !p.conciliadoEm) return null;
+  var mes = String(p.data).slice(0,7);
+  if (String(p.conciliadoEm).slice(0,7) !== mes) return null;
+  if (String(p.dataStatus || p.data).slice(0,7) !== mes) return null;
+  return mes;
+}
+function dataPagamentoComissao(mes) { // 'AAAA-MM' -> último dia do mês seguinte (dd/mm/aaaa)
+  var a = parseInt(mes.slice(0,4),10), m = parseInt(mes.slice(5,7),10);
+  return new Date(a, m + 1, 0).toLocaleDateString('pt-BR');
+}
+// Soma a comissão das cargas elegíveis. filtroFn(p) decide quais entram.
+function somarComissaoElegivel(pedidos, filtroFn) {
+  var r = { total:0, placas:0, comp:0, aco:0, valor:0, cargas:0, redutor:0 };
+  (pedidos || []).forEach(function(p) {
+    var mes = mesComissaoPedido(p);
+    if (!mes || (filtroFn && !filtroFn(p, mes))) return;
+    var c = p.comissaoConc || {};
+    r.total  += numSafe(c.totalVendido);
+    r.placas += numSafe(c.placas);
+    r.comp   += numSafe(c.comp);
+    r.aco    += numSafe(c.aco);
+    r.valor  += numSafe(c.valor);
+    r.cargas++;
+    if (c.redutor) r.redutor++;
+  });
+  return r;
 }
 
 // Calcula a comissão cheia (por categoria) de um pedido.
@@ -9033,6 +9051,11 @@ function montarConciliacao(p, br, mesRef, ligs) {
   }
   if (ligs === null) {
     html += '<div style="margin-top:8px;font-size:11px;color:#E65100;">Não foi possível ler as ligações — calculado sem redutor.</div>';
+  }
+  var hojeMes = new Date().toISOString().slice(0,7);
+  var fatMes = String(p.dataStatus || p.data || '').slice(0,7);
+  if (hojeMes !== mesRef || fatMes !== mesRef) {
+    html += '<div style="margin-top:8px;font-size:11.5px;color:#C41E1E;font-weight:700;">🚫 Fora da janela: esta carga é de ' + mesLbl + (fatMes !== mesRef ? ' e foi faturada em outro mês' : '') + '. Conciliando agora, ela NÃO gera comissão para o vendedor.</div>';
   }
   html += '<div style="margin-top:14px;background:#E8F5E9;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">' +
     '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1B5E20;">💰 Comissão de ' + p.vendedor + '</span>' +
@@ -9519,115 +9542,37 @@ function renderPedidos(pedidosList, isGestora) {
 }
 
 function atualizarComissao(pedidos, isGestora) {
+  // Só conta carga conciliada dentro da janela do mês (ver mesComissaoPedido).
   var mesAtual = new Date().toISOString().slice(0,7);
-
-  // Agrupa os pedidos por vendedor. Na visão da gestora, "pedidos" já vem
-  // com os pedidos de toda a equipe misturados — cada vendedor precisa ter
-  // sua PRÓPRIA meta de ligações avaliada, não uma só pra todo mundo.
-  var porVendedor = {};
-  pedidos.filter(function(p) { return p.status !== 'cancelado'; }).forEach(function(p) {
-    var vn = p.vendedor || currentUser;
-    if (!vn) return;
-    (porVendedor[vn] = porVendedor[vn] || []).push(p);
-  });
-
-  var nomes = Object.keys(porVendedor);
-  var reqId = ++_comReqId; // evita condição de corrida se o filtro mudar no meio da busca
-
   function fmt(n) { return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function set(id, val) { var el = document.getElementById(id); if(el) el.textContent = val; }
 
-  if (!nomes.length) {
-    set('ped-total-vendido', fmt(0));
-    set('ped-com-placas', fmt(0));
-    set('ped-com-comp', fmt(0));
-    set('ped-com-aco', fmt(0));
-    set('ped-com-total', fmt(0));
-    set('ped-com-redutor', fmt(0));
-    var rb = document.getElementById('ped-redutor-box'); if (rb) rb.style.display = 'none';
-    var rw = document.getElementById('ped-redutor-warning'); if (rw) rw.style.display = 'none';
-    return;
+  var lista = (pedidos || []).filter(function(p) { return p.status !== 'cancelado' && !p.excluido; });
+  var r = somarComissaoElegivel(lista, function(p, mes) { return mes === mesAtual; });
+
+  set('ped-total-vendido', fmt(r.total));
+  set('ped-com-placas',    fmt(r.placas));
+  set('ped-com-comp',      fmt(r.comp));
+  set('ped-com-aco',       fmt(r.aco));
+  set('ped-com-total',     fmt(r.valor));
+  set('ped-com-redutor',   fmt(r.valor));
+  var rb = document.getElementById('ped-redutor-box'); if (rb) rb.style.display = 'none';
+  var rw = document.getElementById('ped-redutor-warning');
+  if (rw) {
+    rw.style.display = r.redutor ? 'block' : 'none';
+    rw.textContent = '⚠️ Redutor aplicado em ' + r.redutor + ' carga(s): meta de ligações não atingida — comissão dessas cargas em 0,5%.';
   }
 
-  var totalVendido = 0, comPlacas = 0, comComp = 0, comAco = 0, comFinal = 0;
-  var algumRedutor = false;
-  var pendentes = nomes.length;
-
-  nomes.forEach(function(vn) {
-    var vTotalVend = 0, vPlacas = 0, vComp = 0, vAco = 0;
-    porVendedor[vn].forEach(function(p) {
-      if (p.itens && p.itens.length > 0) {
-        p.itens.forEach(function(it) {
-          var v = Math.round(numSafe(it.qtd) * numSafe(it.vUnit) * 100) / 100;
-          vTotalVend += v;
-          if (it.cat === 'placa')      vPlacas += v * CAT_PCT.placa;
-          else if (it.cat === 'grx')   vComp   += v * CAT_PCT.grx;
-          else if (it.cat === 'aco')   vAco    += v * CAT_PCT.aco;
-        });
-      } else {
-        var v2 = Number(p.vTotal || 0);
-        vTotalVend += v2;
-        if (p.cat === 'placa')      vPlacas += v2 * CAT_PCT.placa;
-        else if (p.cat === 'grx')   vComp   += v2 * CAT_PCT.grx;
-        else if (p.cat === 'aco')   vAco    += v2 * CAT_PCT.aco;
-      }
-    });
-
-    // Busca o total REAL de ligações do mês pra esse vendedor (dado ao vivo
-    // registrado em ligacoes/{vendedor}), em vez do campo manual desatualizado
-    // vendedores[vn].ligacoes — que só muda quando a gestora salva o admin.
-    dbRef('ligacoes/' + vn).once('value').then(function(snap) {
-      if (reqId !== _comReqId) return; // filtro mudou, descarta este resultado
-      var dados = snap.val() || {};
-      var totalLigs = Object.values(dados)
-        .filter(function(l) { return l && l.data && l.data.startsWith(mesAtual); })
-        .reduce(function(s, l) { return s + (l.qtd || 0); }, 0);
-      var redutorVend = totalLigs < 600;
-      if (redutorVend) algumRedutor = true;
-
-      totalVendido += vTotalVend;
-      comPlacas    += vPlacas;
-      comComp      += vComp;
-      comAco       += vAco;
-      comFinal     += redutorVend ? (vTotalVend * 0.005) : (vPlacas + vComp + vAco);
-
-      pendentes--;
-      if (pendentes === 0) {
-        var comTotalCheio = comPlacas + comComp + comAco;
-        set('ped-total-vendido', fmt(totalVendido));
-        set('ped-com-placas',    fmt(comPlacas));
-        set('ped-com-comp',      fmt(comComp));
-        set('ped-com-aco',       fmt(comAco));
-        set('ped-com-total',     fmt(comTotalCheio));
-        set('ped-com-redutor',   fmt(comFinal));
-
-        var redBox  = document.getElementById('ped-redutor-box');
-        var redWarn = document.getElementById('ped-redutor-warning');
-        if (redBox)  redBox.style.display  = algumRedutor ? 'block' : 'none';
-        if (redWarn) {
-          redWarn.style.display = algumRedutor ? 'block' : 'none';
-          redWarn.textContent = (isGestora && nomes.length > 1)
-            ? '⚠️ Atenção: um ou mais vendedores não atingiram a meta de ligações — comissão desses vendedores reduzida para 0,5%.'
-            : '⚠️ Atenção: meta de ligações não atingida — comissão reduzida para 0,5% em todos os produtos.';
-        }
-      }
-    }).catch(function() {
-      if (reqId !== _comReqId) return;
-      pendentes--;
-      // Se falhar a busca das ligações desse vendedor, assume sem redução pra não travar o cálculo
-      totalVendido += vTotalVend;
-      comPlacas += vPlacas; comComp += vComp; comAco += vAco;
-      comFinal  += (vPlacas + vComp + vAco);
-      if (pendentes === 0) {
-        set('ped-total-vendido', fmt(totalVendido));
-        set('ped-com-placas',    fmt(comPlacas));
-        set('ped-com-comp',      fmt(comComp));
-        set('ped-com-aco',       fmt(comAco));
-        set('ped-com-total',     fmt(comPlacas+comComp+comAco));
-        set('ped-com-redutor',   fmt(comFinal));
-      }
-    });
-  });
+  // Cargas do mês que ainda não entraram (faltando faturar ou conciliar)
+  var pend = lista.filter(function(p) { return p.data && p.data.startsWith(mesAtual) && !mesComissaoPedido(p); });
+  var aguardConc = pend.filter(function(p) { return p.status === 'faturado' && !p.conciliado; }).length;
+  var mesNome = new Date(mesAtual + '-15T12:00:00').toLocaleDateString('pt-BR',{month:'long'});
+  var info = document.getElementById('ped-com-info');
+  if (info) {
+    info.innerHTML = '💳 Pagamento em <b>' + dataPagamentoComissao(mesAtual) + '</b> · ' + r.cargas + ' carga(s) conciliada(s) em ' + mesNome +
+      '. Só entram cargas vendidas, faturadas e conciliadas dentro de ' + mesNome + '.' +
+      (pend.length ? '<br>⏳ ' + pend.length + ' carga(s) do mês ainda fora da comissão' + (aguardConc ? ' (' + aguardConc + ' faturada(s) aguardando conciliação)' : '') + '.' : '');
+  }
 }
 var _comReqId = 0;
 
