@@ -4990,6 +4990,19 @@ var QZ_QUIZZES = [
       {s:'9. Chapas',p:'Qual chapa e qual parafuso entram num forro de sala comum?',o:['Chapa RU com prego','Chapa ST 12,5 mm com parafuso trombeta ponta agulha','Chapa RF com parafuso sextavado','Chapa cimentícia com bucha'],c:1,e:'Em área seca vai a chapa ST de 12,5 mm, fixada no F530 com parafuso cabeça trombeta ponta agulha (25 mm). Em banheiro e cozinha, troca-se pela RU.'},
       {s:'10. Acabamento',p:'Depois das chapas instaladas, o que falta para o forro ficar pronto para pintura?',o:['Nada, já pode pintar','Fita de papel e massa para juntas nas emendas e massa nas cabeças dos parafusos','Só lixar as chapas','Aplicar silicone nas emendas'],c:1,h:'É o mesmo tratamento da parede.',e:'As juntas recebem fita de papel microperfurada e massa para juntas, e as cabeças dos parafusos levam massa. Depois de lixar, o forro está pronto para pintar.'}
     ] }
+  ,
+  { id: 'chapas-isolamentos', titulo: 'Chapas e lãs: para que serve cada uma',
+    desc: 'ST, RU, RF, Performa, lã de vidro, lã de PET e lã de rocha.',
+    para: ['BREDER'],
+    perguntas: [
+      {s:'Chapa ST',p:'Para que serve a chapa ST (standard)?',o:['Paredes e forros de áreas secas, como salas, quartos e escritórios','Banheiros e cozinhas','Saídas de emergência e escadas','Áreas externas'],c:0,h:'ST vem de "standard", padrão.',e:'A ST é a chapa padrão, a mais vendida. Vai em paredes, forros e revestimentos de ambientes internos secos.'},
+      {s:'Chapa RU',p:'O cliente vai fechar a parede de um banheiro e da lavanderia. Qual chapa ele precisa?',o:['ST','RU (verde)','RF (rosa)','Qualquer uma'],c:1,h:'RU = Resistente à Umidade.',e:'A RU (verde) recebe aditivos que reduzem a absorção de água. É para áreas úmidas internas, como banheiro, cozinha e lavanderia. Não é para área externa nem contato direto com água, que pede impermeabilização ou outra solução.'},
+      {s:'Chapa RF',p:'Para que serve a chapa RF (rosa)?',o:['Isolar o barulho entre quartos','Resistir ao fogo por mais tempo, em rotas de fuga, escadas e shafts','Áreas molhadas','Forros decorativos'],c:1,e:'RF é Resistente ao Fogo. Tem fibra de vidro no miolo e segura o fogo por mais tempo. Vai onde o projeto ou o Corpo de Bombeiros exige, como escadas, saídas de emergência e shafts.'},
+      {s:'Placo Performa',p:'Quando você indica a chapa Performa?',o:['Quando o cliente quer a chapa mais barata','Em áreas de muita circulação ou que vão receber cargas, porque ela resiste mais a impactos e segura melhor objetos pesados','Só em forros','Só em áreas externas'],c:1,e:'A Performa é uma chapa de alto desempenho, mais densa e mais dura. Resiste melhor a batidas e permite fixar cargas maiores, como TV e armários. Vai bem em corredores, escolas, hospitais, hotéis e lojas.'},
+      {s:'Lã de vidro',p:'Para que serve a lã de vidro dentro da parede ou sobre o forro?',o:['Dar acabamento à parede','Isolamento acústico e térmico, sendo a opção mais comum e econômica','Deixar a parede à prova d\'água','Substituir o montante'],c:1,e:'A lã de vidro preenche o espaço entre as chapas e melhora o isolamento acústico e térmico. É leve, fácil de instalar e a opção mais comum. Durante a instalação pede luva e máscara, porque pode irritar a pele.'},
+      {s:'Lã de PET',p:'O cliente quer isolamento acústico, mas reclama que a lã "pinica" na instalação e prefere algo sustentável. O que você oferece?',o:['Lã de PET','Lã de rocha','Isopor','Espuma expansiva'],c:0,h:'É feita de material reciclado.',e:'A lã de PET é feita de garrafas PET recicladas. Isola som e calor, não pinica nem solta fibras que irritam a pele, e tem o apelo sustentável.'},
+      {s:'Lã de rocha',p:'Qual é o grande diferencial da lã de rocha em relação às outras lãs?',o:['É a mais leve de todas','Alta resistência ao fogo (não pega fogo), além de isolar som e calor','É feita de garrafa PET','Serve como acabamento'],c:1,e:'A lã de rocha é mais densa e incombustível, então aguenta temperaturas altas. Isola som e calor e é a mais indicada junto com a chapa RF em sistemas que precisam resistir ao fogo.'}
+    ] }
 ];
 var QZ_OK = ['Isso aí!','Mandou bem!','Perfeito!','Certinho!','É esse mesmo!'];
 var QZ_NO = ['Quase lá.','Não foi dessa vez.','Atenção nessa!','Não exatamente.'];
@@ -5081,7 +5094,8 @@ function qzSair(){ QZ.quiz = null; qzRenderLista(); }
 function qzFinalizar(){
   var q = QZ.quiz, total = q.perguntas.length;
   var acertos = QZ.ans.filter(function(a,k){ return a === q.perguntas[k].c; }).length;
-  var msg = acertos >= 9 ? 'Excelente! Você já domina esse conteúdo.' : acertos >= 7 ? 'Muito bom! Revise os pontos abaixo.' : acertos >= 5 ? 'Bom começo. Vale revisar o material de treinamento.' : 'Vamos reforçar esse conteúdo juntas.';
+  var pct = acertos / total;
+  var msg = pct >= .9 ? 'Excelente! Você já domina esse conteúdo.' : pct >= .7 ? 'Muito bom! Revise os pontos abaixo.' : pct >= .5 ? 'Bom começo. Vale revisar o material de treinamento.' : 'Vamos reforçar esse conteúdo juntas.';
   var gravando = !qzGestora();
   document.getElementById('qz-area').innerHTML = '<div class="qz-card">' +
     '<div style="font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.06em;">' + qzEsc(q.titulo) + ' · Resultado</div>' +
