@@ -12177,11 +12177,15 @@ function entrarComoUsuario(user) {
   listenNegociacoes(user, v.tipo === 'gestora');
   listenAtendimentos(user, v.tipo === 'gestora');
   checarPedidosLocaisPendentes();
-  // Comissão removida do sistema — as duas caixas ficam sempre ocultas
+  // Comissão: vendedores voltam a visualizar a própria comissão (aba Pedidos
+  // e Evolução > Perfil). Gestora e administrativo continuam sem a caixa.
+  var _ehVendedor = (v.tipo !== 'gestora' && v.tipo !== 'administrativo');
   var comVend = document.getElementById('ped-com-vendedor');
   var comGest = document.getElementById('ped-com-gestora');
-  if (comVend) comVend.style.display = 'none';
+  var evComSec = document.getElementById('ev-comissao-secao');
+  if (comVend) comVend.style.display = _ehVendedor ? 'block' : 'none';
   if (comGest) comGest.style.display = 'none';
+  if (evComSec) evComSec.style.display = _ehVendedor ? 'block' : 'none';
   if (v.tipo === 'gestora') {
     listenEvolucaoGestora();
     listenPaineisGestora();
