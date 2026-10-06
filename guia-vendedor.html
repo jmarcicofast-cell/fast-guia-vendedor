@@ -8404,19 +8404,83 @@ function renderAcoPeriodo(containerId, pedidosList) {
     box.innerHTML = '<div style="font-size:12px;color:#C41E1E;">Não foi possível somar o aço desse período (' + negEsc(e && e.message) + ').</div>';
   }
 }
+var META_ACO = 500000; // meta de aço da equipe (R$)
+function acoDiasUteis(de, ate) { // seg a sex, datas ISO inclusivas
+  var n = 0, d = new Date(de + 'T12:00:00'), fim = new Date(ate + 'T12:00:00');
+  while (d <= fim) { var w = d.getDay(); if (w !== 0 && w !== 6) n++; d.setDate(d.getDate() + 1); }
+  return n;
+}
+function htmlDashAco(r, vends) {
+  var fmt = function(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var fmtK = function(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 }); };
+  var pctF = function(n) { return n.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%'; };
+  var pct = META_ACO ? (r.total / META_ACO) * 100 : 0;
+  var cor = pct >= 100 ? '#2E7D32' : (pct >= 70 ? '#B26A00' : '#C41E1E');
+  var falta = Math.max(0, META_ACO - r.total);
+
+  // Ritmo: só faz sentido quando o período inclui hoje
+  var de = (document.getElementById('filtro-data-de') || {}).value || '';
+  var ate = (document.getElementById('filtro-data-ate') || {}).value || '';
+  var hojeD = new Date(); var hoje = hojeD.getFullYear() + '-' + ('0' + (hojeD.getMonth() + 1)).slice(-2) + '-' + ('0' + hojeD.getDate()).slice(-2);
+  var ritmo = '';
+  if (de && ate && de <= hoje && hoje <= ate) {
+    var totDias = acoDiasUteis(de, ate), feitos = acoDiasUteis(de, hoje);
+    var restam = Math.max(0, totDias - feitos);
+    var media = feitos ? r.total / feitos : 0;
+    var proj = media * totDias;
+    var porDia = restam ? falta / restam : falta;
+    var pctProj = META_ACO ? proj / META_ACO * 100 : 0;
+    ritmo = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px;">' +
+      acoTile('Média por dia útil', fmtK(media), feitos + ' de ' + totDias + ' dias úteis', '#444') +
+      acoTile('Projeção no ritmo atual', fmtK(proj), pctF(pctProj) + ' da meta', pctProj >= 100 ? '#2E7D32' : '#C41E1E') +
+      acoTile('Precisa vender por dia', falta > 0 ? fmtK(porDia) : '—', falta > 0 ? (restam + ' dia(s) útil(eis) restante(s)') : 'meta batida', '#4A148C') +
+    '</div>';
+  }
+
+  var maxV = vends.length ? r.porVend[vends[0]].total : 0;
+  var linhasVend = vends.map(function(vn) {
+    var nome = (typeof vendedores !== 'undefined' && vendedores[vn] && vendedores[vn].nome) || vn;
+    var v = r.porVend[vn].total;
+    var part = r.total ? v / r.total * 100 : 0;
+    var w = maxV ? v / maxV * 100 : 0;
+    return '<div style="display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;padding:5px 0;font-size:12px;">' +
+      '<span style="color:#333;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + negEsc(nome) + '</span>' +
+      '<div style="height:8px;background:#F0EEEA;border-radius:4px;overflow:hidden;"><div style="height:100%;width:' + w.toFixed(1) + '%;background:#555;border-radius:4px;"></div></div>' +
+      '<span style="white-space:nowrap;"><strong>' + fmt(v) + '</strong> <span style="color:#999;">· ' + pctF(part) + '</span></span>' +
+    '</div>';
+  }).join('');
+
+  return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;">' +
+      acoTile('Vendido', fmt(r.total), fmtNum2(r.pecas).replace(',00', '') + ' peças · ' + r.pedidos + ' pedido(s)', '#1C1C1C') +
+      acoTile('Meta de aço', fmtK(META_ACO), 'meta da equipe', '#444') +
+      acoTile('Atingido', pctF(pct), falta > 0 ? 'da meta' : '✅ meta batida', cor) +
+      acoTile('Falta', falta > 0 ? fmt(falta) : 'R$ 0,00', falta > 0 ? 'para bater a meta' : 'parabéns, equipe!', falta > 0 ? '#C41E1E' : '#2E7D32') +
+    '</div>' +
+    '<div style="margin:12px 0 2px;height:12px;background:#F0EEEA;border-radius:6px;overflow:hidden;position:relative;">' +
+      '<div style="height:100%;width:' + Math.min(100, pct).toFixed(1) + '%;background:' + cor + ';border-radius:6px;"></div>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:10.5px;color:#999;"><span>R$ 0</span><span>' + fmtK(META_ACO) + '</span></div>' +
+    ritmo +
+    (linhasVend ? '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#444;margin:16px 0 4px;">Aço por vendedor</div>' + linhasVend : '');
+}
+function acoTile(rotulo, valor, sub, cor) {
+  return '<div style="background:#F8F7F3;border-radius:10px;padding:10px 12px;">' +
+    '<div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;">' + rotulo + '</div>' +
+    '<div style="font-size:20px;font-weight:700;color:' + cor + ';margin-top:2px;white-space:nowrap;">' + valor + '</div>' +
+    '<div style="font-size:11px;color:#999;margin-top:2px;">' + sub + '</div></div>';
+}
 function renderAcoPeriodoInner(box, pedidosList) {
   var r = calcAcoPedidos(pedidosList);
   var fmt = function(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
   var vends = Object.keys(r.porVend).sort(function(a, b) { return r.porVend[b].total - r.porVend[a].total; });
+  if (_pedIsGestora) {
+    box.innerHTML = htmlDashAco(r, vends) + renderAcoItensHtml(r);
+    return;
+  }
   box.innerHTML =
     '<div style="font-size:24px;font-weight:700;color:#1C1C1C;">' + fmt(r.total) + '</div>' +
     '<div style="font-size:11px;color:#888;margin:2px 0 10px;">' + fmtNum2(r.pecas).replace(',00', '') + ' peça(s) em ' + r.pedidos + ' pedido(s)</div>' +
-    (vends.length > 1 || (vends.length === 1 && _pedIsGestora) ? vends.map(function(vn) {
-      var nome = (typeof vendedores !== 'undefined' && vendedores[vn] && vendedores[vn].nome) || vn;
-      return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid #F0EEEA;font-size:12px;">' +
-        '<span style="color:#555;">' + negEsc(nome) + '</span>' +
-        '<span style="font-weight:700;">' + fmt(r.porVend[vn].total) + '</span></div>';
-    }).join('') : '') + renderAcoItensHtml(r);
+    renderAcoItensHtml(r);
 }
 var _acoUltimo = null;
 function renderAcoItensHtml(r) {
