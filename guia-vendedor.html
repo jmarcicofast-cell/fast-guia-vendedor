@@ -14180,6 +14180,7 @@ document.getElementById('ck-rank-ate').addEventListener('change', function(){ ck
    então atualiza sozinho assim que um pedido é salvo — sem digitação extra.
    ══════════════════════════════════════════════════════════════ */
 var mmPedidosEquipe = {};
+var mmLigacoesEquipe = {}; // { VENDEDOR: { 'AAAA-MM-DD': qtd } }
 var mmListenersAttached = false;
 var mmSelectedUser = null;
 
@@ -14207,6 +14208,17 @@ function mmInit(){
       var v = snap.val();
       mmPedidosEquipe[vn] = v ? Object.values(v).filter(function(p){ return !p.excluido; }) : [];
       mmRenderTudo();
+    });
+    // ligações lançadas pelo(a) vendedor(a) no dia a dia — usadas no Detalhamento
+    // quando o check-in daquele dia não tem o número de ligações
+    dbRef('ligacoes/' + vn).on('value', function(snap){
+      var dados = snap.val() || {};
+      var mapa = {};
+      Object.values(dados).forEach(function(l){
+        if (l && l.data) mapa[l.data] = (mapa[l.data] || 0) + ckNum(l.qtd);
+      });
+      mmLigacoesEquipe[vn] = mapa;
+      mmRenderPeriodo();
     });
   });
 }
@@ -14405,26 +14417,30 @@ function mmInicioSemana(d){
 /* soma ligações/propostas/vendasN vindos do check-in diário, por pessoa
    (ou 'EQUIPE' pra somar todo mundo), num intervalo de datas [de, ate] */
 function mmSomarCheckinPeriodo(pessoaOuEquipe, deStr, ateStr){
-  var tot = { ligacoes: 0, propostas: 0, vendasN: 0 };
-  Object.keys(ckData.dias).forEach(function(d){
-    if (d < deStr || d > ateStr) return;
-    var rows = (ckData.dias[d] && ckData.dias[d].rows) || [];
-    if (pessoaOuEquipe === 'EQUIPE'){
-      rows.forEach(function(r){
-        tot.ligacoes += ckNum(r.ligacoes);
-        tot.propostas += ckNum(r.propostas);
-        tot.vendasN += ckNum(r.vendasN);
-      });
-    } else {
-      var nome = vendedores[pessoaOuEquipe] ? vendedores[pessoaOuEquipe].nome : pessoaOuEquipe;
+  var tot = { ligacoes: 0, propostas: 0, vendasN: 0, diasCheckin: 0 };
+  var pessoas = (pessoaOuEquipe === 'EQUIPE') ? CK_EQUIPE : [pessoaOuEquipe];
+  var diasComCheckin = {};
+  pessoas.forEach(function(p){
+    var nome = vendedores[p] ? vendedores[p].nome : p;
+    var ligsPessoa = mmLigacoesEquipe[p] || {};
+    // junta as datas do check-in e do lançamento de ligações dentro do período
+    var datas = {};
+    Object.keys(ckData.dias || {}).forEach(function(d){ if (d >= deStr && d <= ateStr) datas[d] = 1; });
+    Object.keys(ligsPessoa).forEach(function(d){ if (d >= deStr && d <= ateStr) datas[d] = 1; });
+    Object.keys(datas).forEach(function(d){
+      var rows = (ckData.dias[d] && ckData.dias[d].rows) || [];
       var row = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(nome); });
+      var ligCk = row ? ckNum(row.ligacoes) : 0;
+      // check-in tem prioridade; se não tiver ligações nele, usa o lançamento diário
+      tot.ligacoes += ligCk > 0 ? ligCk : ckNum(ligsPessoa[d]);
       if (row){
-        tot.ligacoes += ckNum(row.ligacoes);
         tot.propostas += ckNum(row.propostas);
         tot.vendasN += ckNum(row.vendasN);
+        if (ckNum(row.ligacoes) || ckNum(row.propostas) || ckNum(row.vendasN)) diasComCheckin[d] = 1;
       }
-    }
+    });
   });
+  tot.diasCheckin = Object.keys(diasComCheckin).length;
   return tot;
 }
 
@@ -14554,7 +14570,10 @@ function mmRenderPeriodo(){
     mmItemHTML('Ligações', ckTot.ligacoes, 0, null, false, '📞') +
     mmItemHTML('Propostas', ckTot.propostas, 0, null, false, '📝') +
     mmItemHTML('Vendido', vendido, 0, null, true, '💰') +
-    '<div class="mm-ritmo">📊 Conversão no período: <b>'+conv.toFixed(0)+'%</b> ('+ckTot.vendasN+' venda(s) / '+ckTot.propostas+' proposta(s))</div>';
+    '<div class="mm-ritmo">📊 Conversão no período: <b>'+conv.toFixed(0)+'%</b> ('+ckTot.vendasN+' venda(s) / '+ckTot.propostas+' proposta(s))' +
+    '<br>🗓️ Dias com check-in preenchido no período: <b>'+ckTot.diasCheckin+'</b>' +
+    (ckTot.diasCheckin === 0 ? ' — propostas e conversão vêm do Check-in diário; sem check-in nessas datas, ficam zeradas.' : '') +
+    '</div>';
 }
 
 function mmRenderClientes(){
