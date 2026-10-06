@@ -8288,6 +8288,7 @@ function calcResumoProdutosDia(pedidosList) {
   (pedidosList || []).forEach(function(p) {
     if (!p.itens || !p.itens.length) return;
     p.itens.forEach(function(it) {
+      if (!it) return;
       var info = mapa[it.material];
       var categoria = info ? info.categoria : '';
       var familia = classificarFamiliaMaterial(it.material, categoria);
@@ -8348,26 +8349,37 @@ function renderResumoProdutos(containerId, pedidosList) {
 // Conta como aço: item cuja categoria na Tabela de Produtos é AÇO / AÇO PLACO,
 // ou, se o material não estiver na tabela, item marcado como "Aço" no pedido.
 function itemEhAco(it) {
-  var info = getMaterialM2Map()[it.material];
-  var cat = info ? info.categoria : '';
-  if (cat) return cat === 'AÇO' || cat === 'ACO' || cat === 'AÇO PLACO' || cat === 'ACO PLACO';
-  return it.cat === 'aco';
+  if (!it || typeof it !== 'object') return false;
+  var nome = String(it.material == null ? '' : it.material).trim();
+  var info = getMaterialM2Map()[nome];
+  var cat = info ? String(info.categoria || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim() : '';
+  if (cat) return cat === 'ACO' || cat === 'ACO PLACO';
+  return String(it.cat || '').toLowerCase() === 'aco';
+}
+// Firebase às vezes devolve a lista de itens como objeto ({0:..., 2:...}) ou com
+// buracos (null) quando um item foi apagado — normaliza pra um array limpo.
+function itensDoPedidoAco(p) {
+  var itens = p && p.itens;
+  if (itens && !Array.isArray(itens) && typeof itens === 'object') itens = Object.keys(itens).map(function(k) { return itens[k]; });
+  itens = (itens || []).filter(function(it) { return it && typeof it === 'object'; });
+  if (!itens.length && p && p.material) itens = [{ material: p.material, cat: p.cat, qtd: p.qtd, vUnit: p.vUnit }];
+  return itens;
 }
 function calcAcoPedidos(pedidosList) {
   var r = { total: 0, pecas: 0, pedidos: 0, porVend: {}, porItem: {} };
   var codPorNome = {};
   (typeof allProducts !== 'undefined' ? allProducts : []).forEach(function(pr) { if (pr.codigo && !codPorNome[pr.nome]) codPorNome[pr.nome] = pr.codigo; });
   (pedidosList || []).forEach(function(p) {
-    if (p.status === 'cancelado') return;
-    var itens = (p.itens && p.itens.length) ? p.itens : (p.material ? [{ material: p.material, cat: p.cat, qtd: p.qtd, vUnit: p.vUnit }] : []);
+    if (!p || p.status === 'cancelado' || p.excluido) return;
+    var itens = itensDoPedidoAco(p);
     var vPed = 0, qPed = 0;
     itens.forEach(function(it) {
       if (!itemEhAco(it)) return;
       var vIt = Math.round(numSafe(it.qtd) * numSafe(it.vUnit) * 100) / 100;
       vPed += vIt;
       qPed += numSafe(it.qtd);
-      var nomeIt = (it.material || '(sem nome)').trim();
-      var cod = it.codigo || codPorNome[nomeIt] || '';
+      var nomeIt = String(it.material || '(sem nome)').trim();
+      var cod = String(it.codigo || codPorNome[nomeIt] || '');
       var chave = (cod || '') + '|' + nomeIt;
       if (!r.porItem[chave]) r.porItem[chave] = { codigo: cod, nome: nomeIt, qtd: 0, total: 0, pedidos: 0 };
       r.porItem[chave].qtd += numSafe(it.qtd);
@@ -8376,7 +8388,7 @@ function calcAcoPedidos(pedidosList) {
     });
     if (!vPed && !qPed) return;
     r.total += vPed; r.pecas += qPed; r.pedidos++;
-    var vn = p.vendedor || '?';
+    var vn = String(p.vendedor || '?');
     if (!r.porVend[vn]) r.porVend[vn] = { total: 0, pecas: 0 };
     r.porVend[vn].total += vPed; r.porVend[vn].pecas += qPed;
   });
@@ -8385,6 +8397,14 @@ function calcAcoPedidos(pedidosList) {
 function renderAcoPeriodo(containerId, pedidosList) {
   var box = document.getElementById(containerId);
   if (!box) return;
+  try {
+    renderAcoPeriodoInner(box, pedidosList);
+  } catch (e) {
+    console.error('Erro no card de aço:', e);
+    box.innerHTML = '<div style="font-size:12px;color:#C41E1E;">Não foi possível somar o aço desse período (' + negEsc(e && e.message) + ').</div>';
+  }
+}
+function renderAcoPeriodoInner(box, pedidosList) {
   var r = calcAcoPedidos(pedidosList);
   var fmt = function(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
   var vends = Object.keys(r.porVend).sort(function(a, b) { return r.porVend[b].total - r.porVend[a].total; });
@@ -8392,7 +8412,7 @@ function renderAcoPeriodo(containerId, pedidosList) {
     '<div style="font-size:24px;font-weight:700;color:#1C1C1C;">' + fmt(r.total) + '</div>' +
     '<div style="font-size:11px;color:#888;margin:2px 0 10px;">' + fmtNum2(r.pecas).replace(',00', '') + ' peça(s) em ' + r.pedidos + ' pedido(s)</div>' +
     (vends.length > 1 || (vends.length === 1 && _pedIsGestora) ? vends.map(function(vn) {
-      var nome = (vendedores[vn] && vendedores[vn].nome) || vn;
+      var nome = (typeof vendedores !== 'undefined' && vendedores[vn] && vendedores[vn].nome) || vn;
       return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid #F0EEEA;font-size:12px;">' +
         '<span style="color:#555;">' + negEsc(nome) + '</span>' +
         '<span style="font-weight:700;">' + fmt(r.porVend[vn].total) + '</span></div>';
@@ -11895,8 +11915,8 @@ function aplicarFiltroPeriodo() {
   set('filtro-vendas-qt', pedsVendidos.length + ' pedido(s)');
   set('filtro-entregas-total', fmt2(entregasTotal));
   set('filtro-entregas-qt', pedsEntregues.length + ' pedido(s)');
-  renderResumoProdutos('resumo-produtos-periodo', pedsVendidos);
-  renderAcoPeriodo('filtro-aco', pedsVendidos);
+  try { renderResumoProdutos('resumo-produtos-periodo', pedsVendidos); } catch (e) { console.error('Erro no resumo de produtos:', e); }
+  try { renderAcoPeriodo('filtro-aco', pedsVendidos); } catch (e) { console.error('Erro no card de aço:', e); }
 
   var resBox = document.getElementById('filtro-periodo-resultado');
   if (resBox) resBox.style.display = 'block';
