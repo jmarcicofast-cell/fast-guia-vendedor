@@ -4581,6 +4581,41 @@
 #tab-rota .rt-tab td { padding:5px 4px; border-bottom:1px solid #E8E6E1; vertical-align:middle; }
 #tab-rota .rt-tab tr { cursor:pointer; }
 #tab-rota .rt-tab tbody tr:hover { background:#FFF6D6; }
+#tab-rota .rt-abas { display:flex; gap:6px; padding:12px 18px 0; flex-wrap:wrap; }
+#tab-rota .rt-abas button { font-family:'Press Start 2P', monospace; font-size:10px; padding:10px 14px; border:3px solid #0B1828; background:#E8E6E1; color:#1C1C1C; cursor:pointer; box-shadow:4px 4px 0 #0B1828; }
+#tab-rota .rt-abas button.on { background:#C41E1E; color:#fff; }
+#tab-rota .rc-corpo { padding:16px 18px 22px; display:flex; flex-direction:column; gap:14px; }
+#tab-rota .rc-placar { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; }
+#tab-rota .rc-placar div { background:#1C1C1C; border:3px solid #FFD23F; padding:10px 12px; display:flex; flex-direction:column; gap:4px; }
+#tab-rota .rc-placar span { color:#E8E6E1; font-size:13px; }
+#tab-rota .rc-placar b { color:#FFD23F; font-family:'Press Start 2P', monospace; font-size:15px; }
+#tab-rota .rc-titulo { display:flex; flex-direction:column; gap:4px; color:#fff; }
+#tab-rota .rc-titulo .rt-sub { color:#C9D6E6; }
+#tab-rota .rc-mao { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:14px; }
+#tab-rota .rc-carta { position:relative; border:5px solid; box-shadow:6px 6px 0 #0B1828; padding:10px 12px 12px; display:flex; flex-direction:column; gap:8px; font-size:14px; min-height:330px; }
+#tab-rota .rc-carta.jogada { opacity:.9; }
+#tab-rota .rc-carta-topo { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+#tab-rota .rc-rar { font-family:'Press Start 2P', monospace; font-size:8px; color:#fff; padding:4px 6px; align-self:flex-start; }
+#tab-rota .rc-semdono { font-family:'Press Start 2P', monospace; font-size:8px; color:#1C1C1C; background:#F7E7B4; border:2px solid #1C1C1C; padding:2px 5px; }
+#tab-rota .rc-uf { margin-left:auto; font-weight:700; background:#1C1C1C; color:#fff; padding:2px 6px; font-size:12px; }
+#tab-rota .rc-loja { display:flex; justify-content:center; padding:4px 0; }
+#tab-rota .rc-nome { font-weight:700; font-size:16px; line-height:1.2; text-align:center; }
+#tab-rota .rc-dados { display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; background:#fff; border:2px solid #1C1C1C; padding:7px 9px; }
+#tab-rota .rc-dados div { display:flex; flex-direction:column; gap:1px; min-width:0; }
+#tab-rota .rc-dados div.cheio { grid-column:1 / -1; }
+#tab-rota .rc-dados span { color:#666; font-size:11.5px; }
+#tab-rota .rc-dados b { font-size:13.5px; line-height:1.2; }
+#tab-rota .rc-acoes { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:auto; }
+#tab-rota .rc-acoes button { font-family:'Pixelify Sans', sans-serif; font-size:14px; font-weight:600; padding:8px 4px; border:3px solid #1C1C1C; background:#fff; cursor:pointer; min-height:44px; }
+#tab-rota .rc-acoes button:hover { background:#FFD23F; }
+#tab-rota .rc-carimbo { margin-top:auto; align-self:center; transform:rotate(-6deg); border:4px solid; padding:6px 12px; font-family:'Press Start 2P', monospace; font-size:11px; background:rgba(255,255,255,.85); text-align:center; display:flex; flex-direction:column; gap:4px; }
+#tab-rota .rc-carimbo small { font-family:'Pixelify Sans', sans-serif; font-size:13px; }
+#tab-rota .rc-mais { display:flex; align-items:center; justify-content:center; gap:14px; color:#fff; font-size:16px; }
+#tab-rota .rc-mais button { font-family:'Press Start 2P', monospace; font-size:10px; padding:12px 16px; border:3px solid #0B1828; background:#FFD23F; cursor:pointer; box-shadow:4px 4px 0 #0B1828; }
+#tab-rota .rc-album { display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:12px; }
+@media (max-width: 900px) { #tab-rota .rc-album { grid-template-columns:repeat(3, minmax(0, 1fr)); } }
+#tab-rota .rc-fig { border:4px solid; padding:8px; display:flex; flex-direction:column; align-items:center; gap:6px; min-height:170px; box-shadow:4px 4px 0 #0B1828; }
+#tab-rota .rc-fig.vazio { border:4px dashed #5B6672; background:#24507A; justify-content:center; box-shadow:none; }
 #tab-rota .rt-vazio { padding:40px; text-align:center; color:#888; }
 #tab-rota .rt-selos { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
 #tab-rota .rt-selo { font-size:13px; padding:2px 7px; border:2px solid #D8D6CF; color:#999; background:#fff; }
@@ -13226,12 +13261,25 @@ function rtRender() {
     html += '<div class="rt-sel"><span>Ver:</span><button type="button" class="' + (RT.ver === 'EQUIPE' ? 'on' : '') + '" onclick="rtVer(\'EQUIPE\')">👥 Equipe</button>' +
       CK_EQUIPE.map(function(vn) { return '<button type="button" class="' + (RT.ver === vn ? 'on' : '') + '" onclick="rtVer(\'' + vn + '\')">' + rtEsc(rtNome(vn)) + '</button>'; }).join('') + '</div>';
   }
-  html += '<div class="rt-corpo"><div class="rt-mapa-box">' + rtMapa(calcs, foco) + '</div><div class="rt-painel">';
-  html += foco ? rtPainelVendedor(foco) : rtPainelEquipe(calcs);
-  html += '</div></div></div>';
+  var aba = RT.aba || 'mapa';
+  html += '<div class="rt-abas">' + [['mapa', '🗺️ Mapa'], ['caca', '🎯 Caçada'], ['album', '📒 Álbum']].map(function(a) {
+    return '<button type="button" class="' + (aba === a[0] ? 'on' : '') + '" onclick="rtAba(\'' + a[0] + '\')">' + a[1] + '</button>';
+  }).join('') + '</div>';
+  if (aba === 'mapa') {
+    html += '<div class="rt-corpo"><div class="rt-mapa-box">' + rtMapa(calcs, foco) + '</div><div class="rt-painel">';
+    html += foco ? rtPainelVendedor(foco) : rtPainelEquipe(calcs);
+    html += '</div></div>';
+  } else {
+    html += '<div class="rc-corpo">';
+    if (aba === 'caca') html += foco ? rcTelaVendedor(foco.vn) : rcTelaGestao();
+    else html += foco ? rcTelaAlbum(foco.vn) : '<div class="rt-card"><div class="rt-sub">Escolha um vendedor em "Ver" para abrir o álbum dele.</div></div>';
+    html += '</div>';
+  }
+  html += '</div>';
   root.innerHTML = html;
 }
 function rtVer(v) { RT.ver = v; rtRender(); }
+function rtAba(a) { RT.aba = a; if (a !== 'mapa') rcInit(); rtRender(); }
 function rtPainelVendedor(c) {
   var eu = c.vn === currentUser, h = '';
   var av = RT.avatares[c.vn];
@@ -13350,6 +13398,318 @@ function rtPostarChegada(c) {
     dbRef('feedPremiacoes/posts/' + id).set({ foto: cv.toDataURL('image/png'), legenda: '🏆 ' + rtNome(c.vn) + ' completou a Rota da Meta de ' + rtMesNome() + ': bateu todas as metas do mês! Parabéns!', data: new Date().toISOString(), autor: 'ROTA' });
   } catch (e) { console.warn('rota chegada', e); }
 }
+// ══════════════════════════════════════════════════════════════
+// CAÇADA — clientes à solta (dentro da Rota da Meta)
+// Todo dia o vendedor recebe 5 cartas: clientes da base dele (inativos ou sem
+// atendimento) e da Carteira Geral (cada cliente sem dono cai sempre para o
+// mesmo caçador). Ele joga a carta registrando o resultado; cada jogada marca o
+// cliente como atendido na Base de Clientes. A captura é confirmada sozinha
+// quando aparece um pedido dessa empresa depois da primeira jogada.
+// Firebase: caca/{VEND}/dias/{AAAA-MM-DD} = { cartas: [{chave, vendOrig}], jog: {chave: res} }
+//           caca/{VEND}/jogadas/{chave}   = { res, nome, vendOrig, uf, desde, ultima, retorno }
+// ══════════════════════════════════════════════════════════════
+var RC = { dados: {}, ok: false, geralOk: false, atendGeralOk: false, gerando: {} };
+var RC_RES = {
+  fugiu:   { rot: '💨 Fugiu',    desc: 'Não atendeu',               cor: '#888888', pts: 2 },
+  escapou: { rot: '🛡️ Escapou',  desc: 'Sem interesse agora',       cor: '#7A4A00', pts: 2 },
+  mira:    { rot: '🎯 Na mira',  desc: 'Pediu cotação',             cor: '#4A148C', pts: 5 },
+  pedido:  { rot: '✅ Fechou!',  desc: 'Fez pedido',                cor: '#1B5E20', pts: 5 }
+};
+var RC_RAR = {
+  lendario: { rot: 'LENDÁRIO', cor: '#E8A93B', fundo: '#FFF3D1', pts: 50 },
+  raro:     { rot: 'RARO',     cor: '#3B82C4', fundo: '#E6F0FA', pts: 25 },
+  comum:    { rot: 'COMUM',    cor: '#8A8F98', fundo: '#F4F4F2', pts: 10 }
+};
+
+function rcInit() {
+  if (RC.ligado) return;
+  RC.ligado = true;
+  dbRef('caca').on('value', function(snap) { RC.dados = (snap && snap.val()) || {}; RC.ok = true; rtRender(); });
+  if (!cliGeralState || !Object.keys(cliGeralState).length) {
+    dbRef('clientesGeral').on('value', function(snap) { cliGeralState = (snap && snap.val()) || {}; RC.geralOk = true; rtRender(); });
+  } else RC.geralOk = true;
+  if (!cliAtendState.porVendedor.GERAL) {
+    dbRef('atendimentos/GERAL').on('value', function(snap) { cliAtendState.porVendedor.GERAL = (snap && snap.val()) || {}; RC.atendGeralOk = true; rtRender(); });
+  } else RC.atendGeralOk = true;
+}
+function rcHash(s) { var h = 2166136261; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rcRand(seed) { var x = rcHash(seed); return (x % 100000) / 100000; }
+
+// Base de clientes de um caçador: carteira dele + a fatia dele da Carteira Geral
+function rcBase(vn) {
+  var guard = _pedTodosGeral;
+  try {
+    _pedTodosGeral = (RT.ped[vn] || []).map(function(p) { if (!p.vendedor) p.vendedor = vn; return p; });
+    var base = cliConstruirBase();
+  } finally { _pedTodosGeral = guard; }
+  var cacadores = CK_EQUIPE.filter(function(x) { return vendedores[x] && vendedores[x].tipo !== 'administrativo'; });
+  var idx = cacadores.indexOf(vn);
+  return base.filter(function(c) {
+    if (c.vendedor === vn) return true;
+    if (c.vendedor === 'GERAL') return idx >= 0 && rcHash(c.chave) % cacadores.length === idx;
+    return false;
+  });
+}
+function rcRaridade(c) {
+  var tm = c.qtdPedidos ? c.totalComprado / c.qtdPedidos : 0;
+  if ((c.estimativaMensal || 0) >= 69000 || tm >= 60000 || c.totalComprado >= 250000) return 'lendario';
+  if (c.totalComprado >= 60000 || c.qtdPedidos >= 3 || (c.estimativaMensal || 0) >= 29000) return 'raro';
+  return 'comum';
+}
+// Histórico do cliente com a FAST inteira (todos os vendedores): o que mais comprava
+function rcHistorico(chave) {
+  var mats = {}, total = 0, n = 0;
+  CK_EQUIPE.forEach(function(vn) {
+    (RT.ped[vn] || []).forEach(function(p) {
+      if (!p.empresa || p.status === 'cancelado' || cliChave(p.empresa) !== chave) return;
+      n++;
+      (p.itens || []).forEach(function(it) {
+        var v = numSafe(it.qtd) * numSafe(it.vUnit); total += v;
+        var nome = String(it.material || '').split(' ').slice(0, 3).join(' ');
+        if (nome) mats[nome] = (mats[nome] || 0) + v;
+      });
+    });
+  });
+  var top = Object.keys(mats).sort(function(a, b) { return mats[b] - mats[a]; }).slice(0, 2);
+  return { top: top, total: total, n: n };
+}
+function rcPronto(vn) {
+  return RC.ok && RC.geralOk && RC.atendGeralOk && CK_EQUIPE.every(function(x) { return RT.pedOk[x]; }) &&
+    !!cliAtendState.porVendedor[vn];
+}
+function rcSortear(vn, qtd, jaTem) {
+  var hoje = ckToday(), jog = ((RC.dados[vn] || {}).jogadas) || {};
+  var ja = {}; (jaTem || []).forEach(function(x) { ja[x.chave] = 1; });
+  var cand = rcBase(vn).filter(function(c) {
+    if (ja[c.chave]) return false;
+    var j = jog[c.chave];
+    if (j) {
+      if (j.ultima === hoje) return false;
+      if (j.res === 'escapou' && j.retorno && j.retorno > hoje) return false;
+      if (j.res === 'fugiu' && cliDiasEntre(j.ultima, hoje) < 2) return false;
+      if ((j.res === 'mira' || j.res === 'pedido') && cliDiasEntre(j.ultima, hoje) < 7) return false;
+    }
+    if (c.vendedor === 'GERAL') return true;
+    if (c.status === 'inativo') return true;
+    return c.diasSemAtendimento === null || c.diasSemAtendimento >= 14;
+  });
+  cand.forEach(function(c) {
+    var tm = c.qtdPedidos ? c.totalComprado / c.qtdPedidos : 0;
+    var pot = Math.max(c.estimativaMensal || 0, tm) + 5000;
+    var parado = Math.min(c.diasSemComprar == null ? 120 : c.diasSemComprar, 365);
+    c._peso = pot * (1 + parado / 90) * (0.35 + rcRand(vn + hoje + c.chave + (jaTem ? jaTem.length : 0)));
+    c._rar = rcRaridade(c);
+  });
+  cand.sort(function(a, b) { return b._peso - a._peso; });
+  var mao = cand.slice(0, qtd);
+  if (!jaTem && mao.length === qtd && !mao.some(function(c) { return c._rar === 'lendario'; })) {
+    var lend = cand.slice(qtd).find(function(c) { return c._rar === 'lendario'; });
+    if (lend) mao[qtd - 1] = lend;
+  }
+  // sempre que houver, 1 carta é um cliente sem dono da Carteira Geral
+  if (mao.length && !mao.some(function(c) { return c.vendedor === 'GERAL'; })) {
+    var ger = cand.find(function(c) { return c.vendedor === 'GERAL' && mao.indexOf(c) === -1; });
+    if (ger) {
+      if (mao.length < qtd) mao.push(ger);
+      else { var iTroca = -1; for (var q = mao.length - 1; q >= 0; q--) if (mao[q]._rar !== 'lendario') { iTroca = q; break; } if (iTroca >= 0) mao[iTroca] = ger; }
+    }
+  }
+  return mao.map(function(c) { return { chave: c.chave, vendOrig: c.vendedor }; });
+}
+function rcMaoDeHoje(vn) {
+  var d = (((RC.dados[vn] || {}).dias) || {})[ckToday()];
+  if (d && d.cartas) return d;
+  if (vn !== currentUser || !rcPronto(vn) || RC.gerando[vn]) return null;
+  RC.gerando[vn] = true;
+  var cartas = rcSortear(vn, 5);
+  var nova = { cartas: cartas, criadoEm: Date.now() };
+  RC.dados[vn] = RC.dados[vn] || {}; RC.dados[vn].dias = RC.dados[vn].dias || {}; RC.dados[vn].dias[ckToday()] = nova;
+  dbRef('caca/' + vn + '/dias/' + ckToday()).set(nova).then(function() { RC.gerando[vn] = false; });
+  return nova;
+}
+function rcMaisCartas() {
+  var vn = currentUser, d = rcMaoDeHoje(vn); if (!d) return;
+  var extra = rcSortear(vn, 3, d.cartas);
+  if (!extra.length) { alert('Não há mais clientes à solta hoje. Volte amanhã!'); return; }
+  d.cartas = d.cartas.concat(extra);
+  dbRef('caca/' + vn + '/dias/' + ckToday() + '/cartas').set(d.cartas);
+  rtRender();
+}
+// Cliente da carta (dados atualizados da base, mesmo que a carta seja antiga)
+function rcCliente(vn, carta) {
+  var base = RC._baseCache && RC._baseCache.vn === vn ? RC._baseCache.lista : null;
+  if (!base) { base = rcBase(vn); RC._baseCache = { vn: vn, lista: base }; }
+  return base.find(function(c) { return c.chave === carta.chave; }) ||
+    { chave: carta.chave, nome: carta.chave, vendedor: carta.vendOrig, uf: '', totalComprado: 0, qtdPedidos: 0, diasSemComprar: null, diasSemAtendimento: null, estimativaMensal: null };
+}
+// Captura: pedido dessa empresa lançado pelo caçador a partir da primeira jogada
+function rcCaptura(vn, chave) {
+  var j = (((RC.dados[vn] || {}).jogadas) || {})[chave];
+  if (!j || !j.desde) return null;
+  var peds = (RT.ped[vn] || []).filter(function(p) { return p.empresa && p.status !== 'cancelado' && cliChave(p.empresa) === chave && p.data && p.data >= j.desde; });
+  if (!peds.length) return null;
+  return { valor: peds.reduce(function(s, p) { return s + mmValorPedido(p); }, 0), faturado: peds.some(function(p) { return p.status === 'faturado'; }), data: peds.map(function(p) { return p.data; }).sort()[0] };
+}
+function rcResumo(vn) {
+  var D = RC.dados[vn] || {}, mes = ckMesAtualStr(), r = { partidas: 0, toques: 0, mira: 0, capt: 0, fat: 0, valor: 0, pts: 0, capturas: [] };
+  Object.keys(D.dias || {}).forEach(function(dt) {
+    if (dt.slice(0, 7) !== mes) return;
+    var jg = (D.dias[dt] && D.dias[dt].jog) || {}, ks = Object.keys(jg);
+    if (ks.length) r.partidas++;
+    ks.forEach(function(k) { r.toques++; r.pts += (RC_RES[jg[k]] || {}).pts || 0; if (jg[k] === 'mira') r.mira++; });
+  });
+  Object.keys(D.jogadas || {}).forEach(function(k) {
+    var cap = rcCaptura(vn, k);
+    if (!cap || cap.data.slice(0, 7) !== mes) return;
+    var j = D.jogadas[k], rar = j.rar || 'comum';
+    r.capt++; r.valor += cap.valor; r.pts += RC_RAR[rar].pts + (cap.faturado ? 10 : 0); if (cap.faturado) r.fat++;
+    r.capturas.push({ chave: k, nome: j.nome || k, uf: j.uf || '', rar: rar, valor: cap.valor, faturado: cap.faturado, data: cap.data });
+  });
+  return r;
+}
+
+// ── Jogar a carta ──
+function rcJogar(chave, res) {
+  var vn = currentUser, hoje = ckToday(), d = rcMaoDeHoje(vn); if (!d) return;
+  var carta = d.cartas.find(function(c) { return c.chave === chave; }); if (!carta) return;
+  var c = rcCliente(vn, carta);
+  var retorno = null;
+  if (res === 'escapou') {
+    var dt = new Date(); dt.setDate(dt.getDate() + 30);
+    var r = prompt('Quando vale tentar de novo? (dd/mm/aaaa)', dt.toLocaleDateString('pt-BR'));
+    if (r === null) return;
+    var m = String(r).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    retorno = m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : ckDateToStr(dt);
+  }
+  var antes = (((RC.dados[vn] || {}).jogadas) || {})[chave] || {};
+  var jog = { res: res, nome: c.nome, vendOrig: carta.vendOrig, uf: c.uf || '', rar: rcRaridade(c), desde: antes.desde || hoje, ultima: hoje };
+  if (retorno) jog.retorno = retorno;
+  var upd = {};
+  upd['jogadas/' + chave] = jog;
+  upd['dias/' + hoje + '/jog/' + chave] = res;
+  dbRef('caca/' + vn).update ? dbRef('caca/' + vn).update(upd) : Object.keys(upd).forEach(function(k) { dbRef('caca/' + vn + '/' + k).set(upd[k]); });
+  RC.dados[vn] = RC.dados[vn] || {}; RC.dados[vn].jogadas = RC.dados[vn].jogadas || {}; RC.dados[vn].jogadas[chave] = jog;
+  d.jog = d.jog || {}; d.jog[chave] = res;
+  // conta como atendimento na Base de Clientes
+  var ref = 'atendimentos/' + (carta.vendOrig || vn) + '/' + chave;
+  dbRef(ref).once('value').then(function(snap) {
+    var a = (snap && snap.val()) || { nome: c.nome, historico: [] };
+    a.nome = a.nome || c.nome; a.ultimoAtendimento = hoje; a.historico = a.historico || [];
+    a.historico.push({ data: new Date().toISOString(), texto: 'Caçada (' + rtNome(vn) + '): ' + RC_RES[res].desc + (retorno ? ' — tentar de novo em ' + negFmtData(retorno) : '') + '.' });
+    dbRef(ref).set(a);
+  });
+  if (res === 'mira') {
+    var id = 'neg_' + Date.now();
+    dbRef('negociacoes/' + vn + '/' + id).set({ id: id, empresa: c.nome, contato: '', telefone: '', estado: c.uf || '', valorEstimado: 0, etapa: 'orcamento', proximaAcao: 'Enviar cotação (vindo da Caçada)', proximaData: hoje, vendedor: vn, dataCriacao: new Date().toISOString(), historico: [{ data: new Date().toISOString(), texto: 'Negociação criada pela Caçada: cliente pediu cotação.' }] });
+    rtComemorar('🎯 NA MIRA!', c.nome + ' virou negociação. Manda a cotação!');
+  } else if (res === 'pedido') {
+    rtComemorar('✅ CAPTURANDO…', 'Lança o pedido de ' + c.nome + ' para confirmar a captura.');
+    setTimeout(function() {
+      try {
+        showTab('pedidos', document.querySelector('[data-nav-id=pedidos]'));
+        togglePedForm();
+        var e = document.getElementById('pf-empresa'); if (e) e.value = c.nome;
+        var u = document.getElementById('pf-estado'); if (u && c.uf) u.value = c.uf;
+        var t = document.getElementById('pf-tipo-cliente'); if (t && c.status === 'inativo') t.value = 'inativo';
+      } catch (err) { console.warn(err); }
+    }, 900);
+  }
+  rtRender();
+}
+
+// ── Desenho ──
+var RC_LOJA = ['kkkkkkkkkk', 'kaAaAaAaAk', 'kaAaAaAaAk', 'kwwwwwwwwk', 'kwggwwddwk', 'kwggwwddwk', 'kwwwwwddwk', 'kkkkkkkkkk'];
+function rcLojaSvg(rar, px) {
+  var pal = { k: '#1C1C1C', a: RC_RAR[rar].cor, A: '#FFFFFF', w: '#F4E9C9', g: '#9FD3E8', d: '#8B5A2B' }, s = '';
+  RC_LOJA.forEach(function(r, ri) { for (var ci = 0; ci < r.length; ci++) s += '<rect x="' + ci * px + '" y="' + ri * px + '" width="' + px + '" height="' + px + '" fill="' + pal[r.charAt(ci)] + '"/>'; });
+  return '<svg width="' + (10 * px) + '" height="' + (8 * px) + '" viewBox="0 0 ' + (10 * px) + ' ' + (8 * px) + '" shape-rendering="crispEdges" aria-hidden="true">' + s + '</svg>';
+}
+function rcBRL(v) { return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 }); }
+function rcCartaHtml(vn, carta, jogou, podeJogar) {
+  var c = rcCliente(vn, carta), rar = rcRaridade(c), R = RC_RAR[rar], h = rcHistorico(carta.chave);
+  var cap = rcCaptura(vn, carta.chave);
+  var tm = c.qtdPedidos ? c.totalComprado / c.qtdPedidos : 0;
+  var linhas = [];
+  if (c.estimativaMensal) linhas.push(['Potencial', rcBRL(c.estimativaMensal) + '/mês']);
+  else if (tm) linhas.push(['Pedido médio', rcBRL(tm)]);
+  else if (h.n) linhas.push(['Já comprou', rcBRL(h.total) + ' com a FAST']);
+  linhas.push(['Última compra', c.diasSemComprar == null ? (h.n ? 'com outro vendedor' : 'nunca comprou') : 'há ' + c.diasSemComprar + ' dias']);
+  linhas.push(['Sem atendimento', c.diasSemAtendimento == null ? 'nunca atendido' : c.diasSemAtendimento + ' dias']);
+  if (h.top.length) linhas.push(['Comprava', h.top.join(', ')]);
+  var s = '<div class="rc-carta' + (jogou ? ' jogada' : '') + '" style="border-color:' + R.cor + ';background:' + R.fundo + '">' +
+    '<div class="rc-carta-topo"><span class="rc-rar" style="background:' + R.cor + '">' + R.rot + '</span>' + (carta.vendOrig === 'GERAL' ? '<span class="rc-semdono">SEM DONO</span>' : '') + (c.uf ? '<span class="rc-uf">' + rtEsc(c.uf) + '</span>' : '') + '</div>' +
+    '<div class="rc-loja">' + rcLojaSvg(rar, 7) + '</div>' +
+    '<div class="rc-nome">' + rtEsc(c.nome) + '</div>' +
+    '<div class="rc-dados">' + linhas.map(function(l) { return '<div' + (l[0] === 'Comprava' ? ' class="cheio"' : '') + '><span>' + l[0] + '</span><b>' + rtEsc(l[1]) + '</b></div>'; }).join('') + '</div>';
+  if (cap) {
+    s += '<div class="rc-carimbo" style="color:#1B5E20;border-color:#1B5E20">CAPTURADO' + (cap.faturado ? ' ✓' : '') + '<small>' + rcBRL(cap.valor) + '</small></div>';
+  } else if (jogou) {
+    var Rs = RC_RES[jogou];
+    s += '<div class="rc-carimbo" style="color:' + Rs.cor + ';border-color:' + Rs.cor + '">' + Rs.rot + '</div>';
+  } else if (podeJogar) {
+    s += '<div class="rc-acoes">' + ['fugiu', 'escapou', 'mira', 'pedido'].map(function(k) {
+      return '<button type="button" onclick="rcJogar(\'' + carta.chave + '\',\'' + k + '\')" title="' + RC_RES[k].desc + '">' + RC_RES[k].rot + '</button>';
+    }).join('') + '</div>';
+  }
+  return s + '</div>';
+}
+function rcTelaVendedor(vn) {
+  rcInit();
+  var eu = vn === currentUser;
+  if (!rcPronto(vn) && !(((RC.dados[vn] || {}).dias || {})[ckToday()])) return '<div class="rt-card"><div class="rt-sub">Preparando a caçada…</div></div>';
+  RC._baseCache = null;
+  var d = eu ? rcMaoDeHoje(vn) : (((RC.dados[vn] || {}).dias || {})[ckToday()]);
+  var r = rcResumo(vn), jog = (d && d.jog) || {};
+  var h = '<div class="rc-placar">' +
+    '<div><span>Pontos no mês</span><b>' + r.pts + '</b></div>' +
+    '<div><span>Clientes tocados</span><b>' + r.toques + '</b></div>' +
+    '<div><span>Na mira</span><b>' + r.mira + '</b></div>' +
+    '<div><span>Capturados</span><b>' + r.capt + '</b></div>' +
+    '<div><span>Recuperado</span><b>' + rcBRL(r.valor) + '</b></div></div>';
+  h += '<div class="rc-titulo"><span class="rt-pix">CAÇADA DE HOJE · ' + new Date().toLocaleDateString('pt-BR').slice(0, 5) + '</span>' +
+    (eu ? '<span class="rt-sub">Ligue para o cliente e registre o que aconteceu. Cada jogada já conta como atendimento na Base de Clientes.</span>' : '<span class="rt-sub">Cartas de ' + rtEsc(rtNome(vn)) + ' hoje.</span>') + '</div>';
+  if (!d || !d.cartas || !d.cartas.length) {
+    h += '<div class="rt-card"><div class="rt-sub">' + (eu ? 'Nenhum cliente à solta na sua base agora. Volte amanhã!' : 'Ainda não abriu a caçada de hoje.') + '</div></div>';
+  } else {
+    h += '<div class="rc-mao">' + d.cartas.map(function(ct) { return rcCartaHtml(vn, ct, jog[ct.chave], eu); }).join('') + '</div>';
+    var jogadas = d.cartas.filter(function(ct) { return jog[ct.chave]; }).length;
+    if (eu && jogadas >= d.cartas.length) h += '<div class="rc-mais"><span>Mão completa! 🔥</span><button type="button" onclick="rcMaisCartas()">+ Caçar mais 3</button></div>';
+  }
+  return h;
+}
+function rcTelaAlbum(vn) {
+  rcInit();
+  var r = rcResumo(vn), jg = ((RC.dados[vn] || {}).jogadas) || {};
+  var mira = Object.keys(jg).filter(function(k) { return jg[k].res === 'mira' && !rcCaptura(vn, k); });
+  var h = '<div class="rc-titulo"><span class="rt-pix">ÁLBUM DE ' + rtMesNome().toUpperCase() + '</span><span class="rt-sub">' + r.capt + ' cliente(s) capturado(s) · ' + rcBRL(r.valor) + ' em pedidos</span></div>';
+  var slots = Math.max(12, Math.ceil((r.capturas.length + 1) / 6) * 6);
+  h += '<div class="rc-album">';
+  for (var i = 0; i < slots; i++) {
+    var c = r.capturas[i];
+    if (c) {
+      var R = RC_RAR[c.rar];
+      h += '<div class="rc-fig" style="border-color:' + R.cor + ';background:' + R.fundo + '"><span class="rc-rar" style="background:' + R.cor + '">' + R.rot + '</span>' + rcLojaSvg(c.rar, 5) +
+        '<div class="rc-nome" style="font-size:13px">' + rtEsc(c.nome) + '</div><div class="rt-sub">' + rcBRL(c.valor) + (c.faturado ? ' · faturado ✓' : '') + '</div></div>';
+    } else {
+      h += '<div class="rc-fig vazio"><div class="rt-pix" style="font-size:22px;color:#C9C6BE">?</div></div>';
+    }
+  }
+  h += '</div>';
+  if (mira.length) h += '<div class="rt-card" style="margin-top:14px"><div class="rt-pix">NA MIRA</div>' + mira.map(function(k) { return '<div>🎯 ' + rtEsc(jg[k].nome || k) + ' <span class="rt-cinza">desde ' + negFmtData(jg[k].ultima) + '</span></div>'; }).join('') + '<div class="rt-sub">Viram captura quando o pedido for lançado.</div></div>';
+  return h;
+}
+function rcTelaGestao() {
+  rcInit();
+  var linhas = CK_EQUIPE.map(function(vn) { var r = rcResumo(vn); r.vn = vn; r.hoje = Object.keys((((RC.dados[vn] || {}).dias || {})[ckToday()] || {}).jog || {}).length; return r; })
+    .sort(function(a, b) { return b.pts - a.pts; });
+  var tot = linhas.reduce(function(s, r) { s.t += r.toques; s.c += r.capt; s.v += r.valor; return s; }, { t: 0, c: 0, v: 0 });
+  return '<div class="rc-placar"><div><span>Clientes tocados no mês</span><b>' + tot.t + '</b></div><div><span>Capturados</span><b>' + tot.c + '</b></div><div><span>Recuperado</span><b>' + rcBRL(tot.v) + '</b></div></div>' +
+    '<div class="rt-card"><div class="rt-pix">RANKING DE CAÇADORES</div><table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Hoje</th><th>Partidas</th><th>Tocados</th><th>Na mira</th><th>Capturas</th><th>Recuperado</th><th>Pontos</th></tr></thead><tbody>' +
+    linhas.map(function(r, i) {
+      return '<tr onclick="rtVer(\'' + r.vn + '\')"><td>' + rtSpriteSvg(RT.avatares[r.vn] || 'misterio', 3) + '</td><td class="rt-forte">' + (i < 3 && r.pts ? ['🥇', '🥈', '🥉'][i] + ' ' : '') + rtEsc(rtNome(r.vn)) + '</td><td>' + r.hoje + '</td><td>' + r.partidas + '</td><td>' + r.toques + '</td><td>' + r.mira + '</td><td>' + r.capt + '</td><td style="white-space:nowrap">' + rcBRL(r.valor) + '</td><td class="rt-forte">' + r.pts + '</td></tr>';
+    }).join('') + '</tbody></table><div class="rt-sub">Pontos: 2 por cliente tocado, 5 na mira, captura vale 10 (comum), 25 (raro) ou 50 (lendário), e +10 quando o pedido fatura. Clique num vendedor para ver as cartas dele.</div></div>';
+}
+
 function rtEscolherAvatar(k) {
   if (!rtJoga(currentUser) || !RT_SPR[k]) return;
   RT.avatares[currentUser] = k; rtRender();
