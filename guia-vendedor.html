@@ -4393,8 +4393,8 @@
         <th>Vendedor(a)</th>
         <th class="num">Ligações</th>
         <th class="num">Propostas</th>
-        <th class="num">Vendas (nº)</th>
-        <th class="num">Vendido (R$)</th>
+        <th class="num" title="Automático: pedidos lançados no dia">Vendas (nº) ⚙️</th>
+        <th class="num" title="Automático: soma dos pedidos lançados no dia">Vendido (R$) ⚙️</th>
         <th class="num">Conversão</th>
         <th>Status</th>
         <th></th>
@@ -14970,6 +14970,69 @@ function ckAplicarPermissoes(){
   if (saveBar) saveBar.style.display = admin ? 'flex' : 'none';
 }
 
+/* ── Vendas e Vendido do check-in saem AUTOMATICAMENTE da aba Pedidos ──
+   Para cada vendedor e cada dia: nº de pedidos lançados (não cancelados) e a
+   soma em R$ desses pedidos, pela data do pedido. Ligações e propostas
+   continuam sendo lançadas no check-in. */
+var CKP = { ped: {}, ligado: false };
+function ckLigarPedidos(){
+  if (CKP.ligado) return;
+  CKP.ligado = true;
+  CK_EQUIPE.forEach(function(vn){
+    dbRef('pedidos/' + vn).on('value', function(snap){
+      var v = (snap && snap.val()) || {};
+      CKP.ped[vn] = Object.keys(v).map(function(k){ return v[k]; }).filter(function(p){ return p && !p.excluido && p.status !== 'cancelado' && p.data; });
+      ckPedidosAtualizados();
+    });
+  });
+}
+function ckVendasDoDia(vn, dStr){
+  var r = { n: 0, v: 0 };
+  (CKP.ped[vn] || []).forEach(function(p){ if (p.data === dStr){ r.n++; r.v += mmValorPedido(p); } });
+  r.v = Math.round(r.v * 100) / 100;
+  return r;
+}
+function ckAplicarPedidosNasLinhas(data){
+  if (!data || !data.dias) return data;
+  var nomeParaVn = {};
+  CK_EQUIPE.forEach(function(vn){ if (vendedores[vn]) nomeParaVn[ckNormNome(vendedores[vn].nome)] = vn; });
+  // dias com pedido no mês passado e neste mês entram mesmo sem check-in preenchido
+  var desde = ckMesAnteriorStr() + '-01', ate = ckToday();
+  CK_EQUIPE.forEach(function(vn){
+    (CKP.ped[vn] || []).forEach(function(p){
+      if (p.data < desde || p.data > ate || !vendedores[vn]) return;
+      var dia = data.dias[p.data] || (data.dias[p.data] = { rows: CK_EQUIPE.filter(function(k){ return vendedores[k]; }).map(function(k){ return { nome: vendedores[k].nome, ligacoes: 0, propostas: 0, vendasN: 0, vendidoR: 0 }; }) });
+      dia.rows = dia.rows || [];
+      var tem = dia.rows.some(function(r){ return nomeParaVn[ckNormNome(r.nome)] === vn; });
+      if (!tem) dia.rows.push({ nome: vendedores[vn].nome, ligacoes: 0, propostas: 0, vendasN: 0, vendidoR: 0 });
+    });
+  });
+  Object.keys(data.dias).forEach(function(d){
+    ((data.dias[d] && data.dias[d].rows) || []).forEach(function(r){
+      var vn = nomeParaVn[ckNormNome(r.nome)];
+      if (!vn || !CKP.ped[vn]) return;
+      var s = ckVendasDoDia(vn, d);
+      r.vendasN = s.n; r.vendidoR = s.v;
+    });
+  });
+  return data;
+}
+function ckPedidosAtualizados(){
+  if (!ckData || !ckData.dias) return;
+  ckAplicarPedidosNasLinhas(ckData);
+  try {
+    var tab = document.getElementById('tab-checkin');
+    if (tab && tab.classList.contains('active')){
+      var dt = document.getElementById('ck-date');
+      if (dt && dt.value) ckLoadDay(dt.value);
+      ckRenderHistory();
+      if (typeof ckRenderRanking === 'function') ckRenderRanking();
+    }
+    var mm = document.getElementById('tab-minhasmetas');
+    if (mm && mm.classList.contains('active') && typeof mmRenderTudo === 'function') mmRenderTudo();
+  } catch(e){ console.warn('ck pedidos', e); }
+}
+
 function ckGarantirDefaults(v){
   var data = v || { settings: { metaMensal: 0, diasUteis: 22 }, dias: {} };
   if (!data.settings) data.settings = { metaMensal: 0, diasUteis: 22 };
@@ -14989,6 +15052,8 @@ function ckGarantirDefaults(v){
     }
   });
   if (!data.dias) data.dias = {};
+  ckLigarPedidos();
+  ckAplicarPedidosNasLinhas(data);
   return data;
 }
 
@@ -15237,8 +15302,8 @@ function ckRenderTable(){
         '<td><input class="ck-nome" data-i="'+i+'" data-f="nome" value="'+row.nome+'"></td>' +
         '<td><input type="number" min="0" data-i="'+i+'" data-f="ligacoes" value="'+row.ligacoes+'"></td>' +
         '<td><input type="number" min="0" data-i="'+i+'" data-f="propostas" value="'+row.propostas+'"></td>' +
-        '<td><input type="number" min="0" data-i="'+i+'" data-f="vendasN" value="'+row.vendasN+'"></td>' +
-        '<td><input type="number" min="0" data-i="'+i+'" data-f="vendidoR" value="'+row.vendidoR+'"></td>' +
+        '<td class="num" title="Calculado automaticamente pelos pedidos lançados nesse dia">'+ckNum(row.vendasN)+' <span style="font-size:10px;color:#2E7D32;">auto</span></td>' +
+        '<td class="num" title="Calculado automaticamente pelos pedidos lançados nesse dia">'+ckFmtBRL(row.vendidoR)+' <span style="font-size:10px;color:#2E7D32;">auto</span></td>' +
         '<td class="ck-conv">'+conv.toFixed(0)+'%</td>' +
         '<td>'+ckTermometroHTML(av)+'</td>' +
         '<td><button class="ck-rm" data-i="'+i+'" title="remover">✕</button></td>';
