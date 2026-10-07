@@ -15728,10 +15728,10 @@ function spFileInput(){
     var file = inp.files[0]; inp.value = '';
     var alvo = SP.attachTarget; SP.attachTarget = null;
     if (!file || !alvo) return;
-    var isImg = file.type.indexOf('image/') === 0, isPdf = file.type === 'application/pdf';
+    var isImg = file.type.indexOf('image/') === 0, isPdf = /pdf/i.test(file.type) || /\.pdf$/i.test(file.name || '');
     if (!isImg && !isPdf) { alert('Anexe uma imagem (jpg/png) ou um PDF.'); return; }
     if (isPdf && file.size > 3 * 1024 * 1024) { alert('PDF muito grande (máx. 3 MB). Tire um print da parte do preço e anexe como imagem.'); return; }
-    var p = isImg ? spComprimirImagem(file) : spLerDataURL(file);
+    var p = isImg ? spComprimirImagem(file) : spLerDataURL(file).then(function(du){ return du.replace(/^data:[^;,]*/, 'data:application/pdf'); });
     p.then(function(dataUrl){
       var aid = spUid(), upd = {};
       upd['anexos/' + alvo.rod + '/' + alvo.reg + '/' + alvo.pid + '/' + aid] = { data: dataUrl };
@@ -15770,15 +15770,109 @@ function spDataUrlToBlob(du){
 }
 function spAbrirAnexo(pid, aid){
   var view = spView(SP.rodada, SP.regiao), meta = null;
-  view.itens.forEach(function(it){ if (it.id === pid) meta = it.anexos[aid]; });
-  if (meta && meta.url) { window.open(meta.url, '_blank'); return; }
-  var w = window.open('', '_blank');
-  if (w) w.document.write('<p style="font-family:sans-serif;padding:20px;color:#666">Carregando anexo…</p>');
+  view.itens.forEach(function(it){ if (it.id === pid && it.anexos) meta = it.anexos[aid]; });
+  meta = meta || {};
+  if (meta.url) { spMostrarAnexo({ url: meta.url, nome: meta.nome, tipo: meta.tipo }); return; }
+  spMostrarAnexo({ carregando: true, nome: meta.nome });
   spGetOnce('anexos/' + SP.rodada + '/' + SP.regiao + '/' + pid + '/' + aid).then(function(v){
-    if (!v || !v.data) { if (w) w.close(); alert('Anexo não encontrado.'); return; }
-    var url = URL.createObjectURL(spDataUrlToBlob(v.data));
-    if (w) w.location.href = url; else window.open(url, '_blank');
-  }).catch(function(){ if (w) w.close(); alert('Não consegui abrir o anexo.'); });
+    if (!v || !v.data) { spFecharAnexo(); alert('Anexo não encontrado.'); return; }
+    spMostrarAnexo({ data: v.data, nome: meta.nome, tipo: meta.tipo });
+  }).catch(function(){ spFecharAnexo(); alert('Não consegui abrir o anexo.'); });
+}
+// Visualizador de anexo dentro da própria página (imagem ou PDF).
+// O PDF é desenhado com o PDF.js, então abre em qualquer navegador e no celular,
+// mesmo quando o Chrome está configurado pra baixar PDF em vez de mostrar.
+function spFecharAnexo(){
+  var ov = document.getElementById('sp-anexo-ov');
+  if (ov) { if (ov._url) { try { URL.revokeObjectURL(ov._url); } catch (e) {} } ov.remove(); }
+  document.removeEventListener('keydown', spAnexoEsc);
+}
+function spAnexoEsc(e){ if (e.key === 'Escape') spFecharAnexo(); }
+function spEhPdf(o){
+  if (o.data) { var cab = o.data.slice(0, 80); if (/^data:application\/(x-)?pdf/i.test(cab) || cab.indexOf('base64,JVBER') !== -1) return true; }
+  return /pdf/i.test(o.tipo || '') || /\.pdf$/i.test(o.nome || '') || /\.pdf(\?|$)/i.test(o.url || '');
+}
+function spMostrarAnexo(o){
+  var ov = document.getElementById('sp-anexo-ov');
+  if (!ov) {
+    ov = document.createElement('div'); ov.id = 'sp-anexo-ov';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(20,20,20,.82);display:flex;flex-direction:column;';
+    ov.addEventListener('click', function(e){ if (e.target === ov || e.target.id === 'sp-anexo-body') spFecharAnexo(); });
+    document.body.appendChild(ov);
+    document.addEventListener('keydown', spAnexoEsc);
+  }
+  var nome = o.nome || 'anexo';
+  var btn = 'padding:7px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:13px;cursor:pointer;text-decoration:none;white-space:nowrap;';
+  ov.innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1C1C1C;color:#fff;flex-wrap:wrap;">' +
+      '<div style="flex:1;min-width:120px;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + spEsc(nome) + '</div>' +
+      '<a id="sp-anexo-baixar" style="' + btn + 'display:none;">⬇ Baixar</a>' +
+      '<a id="sp-anexo-aba" target="_blank" rel="noopener" style="' + btn + 'display:none;">↗ Nova aba</a>' +
+      '<button type="button" onclick="spFecharAnexo()" style="' + btn + 'background:#C41E1E;border-color:#C41E1E;">✕ Fechar</button>' +
+    '</div>' +
+    '<div id="sp-anexo-body" style="flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;">' +
+      '<div style="color:#fff;font-family:sans-serif;padding:30px;">Carregando anexo…</div></div>';
+  if (o.carregando) return;
+
+  var body = document.getElementById('sp-anexo-body');
+  var url = o.url;
+  if (o.data) {
+    var blob = spDataUrlToBlob(o.data);
+    if (spEhPdf(o) && blob.type !== 'application/pdf') blob = new Blob([blob], { type: 'application/pdf' });
+    url = URL.createObjectURL(blob); ov._url = url;
+  }
+  var bx = document.getElementById('sp-anexo-baixar'), ab = document.getElementById('sp-anexo-aba');
+  bx.href = url; bx.download = /\.\w{2,4}$/.test(nome) ? nome : (nome + (spEhPdf(o) ? '.pdf' : '.jpg')); bx.style.display = '';
+  ab.href = url; ab.style.display = '';
+
+  if (!spEhPdf(o)) {
+    body.innerHTML = '<img src="' + url + '" alt="" style="max-width:100%;height:auto;background:#fff;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,.4);">';
+    return;
+  }
+  spCarregarPdfJs().then(function(pdfjs){
+    return pdfjs.getDocument({ url: url }).promise.then(function(doc){
+      body.innerHTML = '';
+      var larg = Math.min(body.clientWidth - 32, 1000);
+      var cadeia = Promise.resolve();
+      for (var n = 1; n <= doc.numPages; n++) (function(n){
+        cadeia = cadeia.then(function(){
+          return doc.getPage(n).then(function(pg){
+            var v1 = pg.getViewport({ scale: 1 });
+            var esc = larg / v1.width, dpr = window.devicePixelRatio || 1;
+            var vp = pg.getViewport({ scale: esc * dpr });
+            var c = document.createElement('canvas');
+            c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+            c.style.cssText = 'width:' + Math.floor(vp.width / dpr) + 'px;max-width:100%;height:auto;background:#fff;border-radius:4px;box-shadow:0 4px 20px rgba(0,0,0,.4);';
+            body.appendChild(c);
+            return pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+          });
+        });
+      })(n);
+      return cadeia;
+    });
+  }).catch(function(err){
+    console.warn('PDF.js falhou, tentando o leitor do navegador:', err);
+    body.innerHTML = '<iframe src="' + url + '" style="width:100%;max-width:1000px;flex:1;min-height:75vh;border:0;background:#fff;border-radius:6px;"></iframe>' +
+      '<div style="color:#ddd;font-size:12px;font-family:sans-serif;">Se o PDF não aparecer acima, use <b>⬇ Baixar</b>.</div>';
+  });
+}
+var _spPdfJsP = null;
+function spCarregarPdfJs(){
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (_spPdfJsP) return _spPdfJsP;
+  var base = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/';
+  _spPdfJsP = new Promise(function(res, rej){
+    var s = document.createElement('script');
+    s.src = base + 'pdf.min.js';
+    s.onload = function(){
+      if (!window.pdfjsLib) { rej(new Error('pdfjs ausente')); return; }
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.js';
+      res(window.pdfjsLib);
+    };
+    s.onerror = function(){ _spPdfJsP = null; rej(new Error('não carregou o PDF.js')); };
+    document.head.appendChild(s);
+  });
+  return _spPdfJsP;
 }
 
 // ── CSV ──
