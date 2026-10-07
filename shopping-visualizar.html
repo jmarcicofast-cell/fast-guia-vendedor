@@ -108,8 +108,9 @@ td.p-tie { color:var(--sp-muted); }
 .sp-gap { font-family:var(--sp-mono); font-size:11px; color:var(--sp-muted2); margin-left:5px; }
 .sp-anx { display:flex; align-items:center; gap:5px; flex-wrap:wrap; min-width:110px; }
 .sp-chip { position:relative; display:inline-flex; }
-.sp-chip-b { height:24px; min-width:28px; padding:0 5px; border-radius:5px; border:1px solid var(--sp-border); background:var(--sp-panel2); font-size:10.5px; font-weight:700; color:#555; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-.sp-chip-b:hover { border-color:var(--sp-blue); color:var(--sp-blue); }
+.sp-chip-b { height:26px; padding:0 9px; border-radius:6px; border:1px solid #185FA5; background:#E8F1FB; font-size:11.5px; font-weight:700; color:#185FA5; cursor:pointer; display:flex; align-items:center; justify-content:center; white-space:nowrap; }
+.sp-table .c-anx { min-width:120px; background:#FAFCFF; }
+.sp-chip-b:hover { background:#185FA5; color:#fff; }
 .sp-chip-x { position:absolute; top:-6px; right:-6px; width:14px; height:14px; border-radius:50%; background:var(--sp-red); color:#fff; font-size:9px; line-height:14px; text-align:center; cursor:pointer; opacity:0; }
 .sp-chip:hover .sp-chip-x { opacity:1; }
 .sp-attach { width:26px; height:24px; border-radius:5px; border:1px dashed var(--sp-muted2); background:transparent; color:var(--sp-muted); font-size:12px; cursor:pointer; padding:0; }
@@ -526,8 +527,8 @@ function spHtmlTabela(view){
   if (prevView) prevView.itens.forEach(function(it){ prevMap[it.id] = it; });
   var ce = ed ? ' contenteditable="true"' : '';
 
-  var hm = '<tr><th class="c-cod">Cód.</th><th class="c-desc">Descrição</th><th class="c-fast">FAST</th>';
-  var hc = '<tr class="sp-hc"><th class="c-cod"></th><th class="c-desc"><div class="sp-hstack sp-hlabels sp-cond-l"><span>Condição de entrega</span><span>Responsável pela consulta</span><span>Telefone do concorrente</span></div></th><th class="c-fast" style="vertical-align:top">' + spCondSelect(view.fastCond, '__fast__', ed) + '</th>';
+  var hm = '<tr><th class="c-cod">Cód.</th><th class="c-desc">Descrição</th><th class="c-fast">FAST</th><th class="c-anx">📎 Comprovante</th>';
+  var hc = '<tr class="sp-hc"><th class="c-cod"></th><th class="c-desc"><div class="sp-hstack sp-hlabels sp-cond-l"><span>Condição de entrega</span><span>Responsável pela consulta</span><span>Telefone do concorrente</span></div></th><th class="c-fast" style="vertical-align:top">' + spCondSelect(view.fastCond, '__fast__', ed) + '</th><th class="c-anx"></th>';
   view.comps.forEach(function(c){
     hm += '<th><div class="sp-comp-h"><span>' + spEsc(c.nome) + '</span><span style="display:flex;gap:2px;">' +
           (ed ? '<span class="sp-mini" data-act="ren-comp" data-cid="' + c.id + '" title="Renomear">✎</span>' : '') +
@@ -535,8 +536,8 @@ function spHtmlTabela(view){
           '</span></div></th>';
     hc += '<th style="vertical-align:top"><div class="sp-hstack">' + spCondSelect(c.cond, c.id, ed) + spRespSelect(c, ed) + spTelInput(c, ed) + '</div></th>';
   });
-  hm += '<th style="min-width:150px">Posição da FAST</th><th>Anexos</th>' + (gest && ed ? '<th></th>' : '') + '</tr>';
-  hc += '<th></th><th></th>' + (gest && ed ? '<th></th>' : '') + '</tr>';
+  hm += '<th style="min-width:150px">Posição da FAST</th>' + (gest && ed ? '<th></th>' : '') + '</tr>';
+  hc += '<th></th>' + (gest && ed ? '<th></th>' : '') + '</tr>';
 
   var q = (SP.busca || '').trim().toLowerCase();
   var itens = view.itens.filter(function(it){ return !q || it.cod.toLowerCase().indexOf(q) >= 0 || it.desc.toLowerCase().indexOf(q) >= 0; });
@@ -552,6 +553,14 @@ function spHtmlTabela(view){
     tr += '<td class="c-cod sp-ed"' + ce + ' data-f="cod" data-pid="' + it.id + '" data-raw="' + spEsc(it.cod) + '">' + spEsc(it.cod) + '</td>';
     tr += '<td class="c-desc sp-ed"' + ce + ' data-f="desc" data-pid="' + it.id + '" data-raw="' + spEsc(it.desc) + '">' + spEsc(it.desc) + '</td>';
     tr += spCelula('c-fast', it.fast, pv ? pv.fast : null, prevKey, ce, 'fast', it.id, '');
+    var chips = Object.keys(it.anexos || {}).map(function(aid){
+      var m = it.anexos[aid] || {}, isImg = String(m.tipo || '').indexOf('image/') === 0;
+      var podeApagar = ed && (gest || m.por === currentUser);
+      return '<span class="sp-chip"><span class="sp-chip-b" data-act="ver-anexo" data-pid="' + it.id + '" data-aid="' + aid + '" title="Abrir ' + spEsc(m.nome || 'anexo') + (m.por ? ' · enviado por ' + spEsc(m.por) : '') + '">' + (isImg ? '🖼 Ver foto' : '📄 Ver PDF') + '</span>' +
+             (podeApagar ? '<span class="sp-chip-x" data-act="del-anexo" data-pid="' + it.id + '" data-aid="' + aid + '" title="Apagar anexo">×</span>' : '') + '</span>';
+    }).join('');
+    if (!chips && !ed) chips = '<span style="color:#bbb;font-size:11px;">—</span>';
+    tr += '<td class="c-anx"><div class="sp-anx">' + chips + (ed ? '<button class="sp-attach" data-act="anexar" data-pid="' + it.id + '" title="Anexar print (jpg/png) ou PDF">📎</button>' : '') + '</div></td>';
     view.comps.forEach(function(c){
       var v = spNum(it.precos[c.id]), cls = '';
       if (v !== null && a.hasFast) cls = v < it.fast ? 'p-lose' : (v > it.fast ? 'p-win' : 'p-tie');
@@ -565,13 +574,6 @@ function spHtmlTabela(view){
     else rk = '<span class="sp-rank mid">' + a.rank + 'ª de ' + a.total + '</span>';
     if (a.hasFast && a.gap !== null) rk += '<span class="sp-gap">' + spPctTxt(a.gap) + '</span>';
     tr += '<td>' + rk + '</td>';
-    var chips = Object.keys(it.anexos).map(function(aid){
-      var m = it.anexos[aid] || {}, isImg = String(m.tipo || '').indexOf('image/') === 0;
-      var podeApagar = ed && (gest || m.por === currentUser);
-      return '<span class="sp-chip"><span class="sp-chip-b" data-act="ver-anexo" data-pid="' + it.id + '" data-aid="' + aid + '" title="' + spEsc(m.nome || '') + (m.por ? ' · ' + spEsc(m.por) : '') + '">' + (isImg ? '🖼' : 'PDF') + '</span>' +
-             (podeApagar ? '<span class="sp-chip-x" data-act="del-anexo" data-pid="' + it.id + '" data-aid="' + aid + '">×</span>' : '') + '</span>';
-    }).join('');
-    tr += '<td><div class="sp-anx">' + chips + (ed ? '<button class="sp-attach" data-act="anexar" data-pid="' + it.id + '" title="Anexar print (jpg/png) ou PDF">📎</button>' : '') + '</div></td>';
     if (gest && ed) tr += '<td class="sp-rowdel" data-act="del-item" data-pid="' + it.id + '" title="Remover item">×</td>';
     body += tr + '</tr>';
   });
