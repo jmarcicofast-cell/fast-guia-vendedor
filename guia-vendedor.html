@@ -8082,10 +8082,36 @@ function initFirebase() {
         appId: "1:122472038745:web:8b5dcd190534d3e65d8c48"
       });
       db = firebase.database();
+      pedInstalarSaneamento();
       firebaseOK = true;
       console.log('Firebase conectado');
     }
   } catch(e) { console.warn('Firebase init erro:', e.message); }
+}
+
+// Todo pedido que chega do Firebase tem a lista de itens limpa (sem buracos/null
+// e sempre como lista). Item apagado de um pedido virava null e quebrava as somas.
+function pedSanearItens(v, depth) {
+  if (!v || typeof v !== 'object' || depth > 3) return v;
+  if (v.itens !== undefined && (v.empresa !== undefined || v.chamado !== undefined || v.status !== undefined || v.vTotal !== undefined)) {
+    v.itens = itensDoPedido(v);
+    return v;
+  }
+  Object.keys(v).forEach(function(k) { if (v[k] && typeof v[k] === 'object') pedSanearItens(v[k], depth + 1); });
+  return v;
+}
+function pedInstalarSaneamento() {
+  try {
+    var DS = firebase.database && firebase.database.DataSnapshot;
+    if (!DS || !DS.prototype || DS.prototype._fgvSaneado) return;
+    var original = DS.prototype.val;
+    DS.prototype.val = function() {
+      var v = original.apply(this, arguments);
+      try { var p = this.ref ? String(this.ref.toString()) : ''; if (p.indexOf('/pedidos') !== -1) pedSanearItens(v, 0); } catch (e) {}
+      return v;
+    };
+    DS.prototype._fgvSaneado = true;
+  } catch (e) { console.warn('saneamento de pedidos', e); }
 }
 
 function loadFirebase(cb) {
@@ -13168,8 +13194,16 @@ function rtCalc(vn) {
     if (x.cli || x.lig) x.alvoHoje = Math.ceil(x.alvoHoje);
     if (x.lig && x.ideal) x.alvoIdealHoje = Math.ceil(Math.max(0, (x.ideal - antesDeHoje) / dUteisRest));
   });
-  var menor = met.reduce(function(a, x) { return (!a || x.pct < a.pct) ? x : a; }, null);
-  var fase = met.length ? Math.max(0, Math.min(10, Math.floor((menor ? menor.pct : 0) / 10))) : 0;
+  // O avatar anda pelo % da meta de VALOR. As outras metas viram estrelas:
+  // ganha estrela a meta que está no nível da fase (sem meta de valor, anda pela mais baixa).
+  var mValor = met.find(function(x) { return x.key === 'valor'; });
+  var outras = met.filter(function(x) { return x.key !== 'valor'; });
+  var menor = outras.reduce(function(a, x) { return (!a || x.pct < a.pct) ? x : a; }, null);
+  var basePct = mValor ? mValor.pct : (menor ? menor.pct : 0);
+  var fase = met.length ? Math.max(0, Math.min(10, Math.floor(basePct / 10))) : 0;
+  var nivelEstrela = Math.max(1, fase) * 10;
+  outras.forEach(function(x) { x.estrela = x.pct >= nivelEstrela; });
+  var estrelas = outras.filter(function(x) { return x.estrela; }).length;
   var esperado = dUteisMes ? dUteisAteHoje / dUteisMes * 100 : 0;
   var carretas = peds.filter(function(p) { return p.veiculo === 'carreta'; }).length;
   var seq = 0, dt = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
@@ -13179,7 +13213,7 @@ function rtCalc(vn) {
     if (wd !== 0 && wd !== 6) { if (rtLigacoesDia(vn, ckDateToStr(dt)) >= ligDia) seq++; else break; }
     dt.setDate(dt.getDate() - 1);
   }
-  return { vn: vn, met: met, menor: menor, fase: fase, esperado: esperado, ligDia: ligDia, carretas: carretas, metaCarretas: porP('metaCarretasPorPessoa'), seq: seq,
+  return { vn: vn, met: met, menor: menor, fase: fase, esperado: esperado, mValor: mValor, outras: outras, estrelas: estrelas, nivelEstrela: nivelEstrela, basePct: basePct, ligDia: ligDia, carretas: carretas, metaCarretas: porP('metaCarretasPorPessoa'), seq: seq,
     lig: lig, ligIdeal: ligIdeal, ligHoje: ligHoje, dUteisRest: dUteisRest, semValor: !(metaValor > 0) };
 }
 function rtFmt(x, v) {
@@ -13271,6 +13305,13 @@ function rtMapa(calcs, foco) {
 
 // ── Tela ──
 function rtRender() {
+  try { rtRenderInner(); } catch (e) {
+    console.error('Rota da Meta:', e);
+    var root = document.getElementById('rota-root');
+    if (root) root.insertAdjacentHTML('afterbegin', '<div style="background:#FFF3E0;color:#7A4A00;border:2px solid #E8A020;padding:10px 14px;margin-bottom:10px;font-size:13px;">⚠️ Um dado inesperado atrapalhou esta tela (' + rtEsc(e && e.message) + '). Recarregue a página; se continuar, avise a Juliana.</div>');
+  }
+}
+function rtRenderInner() {
   var root = document.getElementById('rota-root');
   if (!root || !document.getElementById('tab-rota').classList.contains('active')) return;
   if (!RT.ckOk) { root.innerHTML = '<div class="rt-vazio">Carregando a Rota da Meta…</div>'; return; }
@@ -13307,12 +13348,12 @@ function rtAba(a) { RT.aba = a; if (a !== 'mapa') rcInit(); rtRender(); }
 function rtPainelVendedor(c) {
   var eu = c.vn === currentUser, h = '';
   var av = RT.avatares[c.vn];
-  var ritmo = c.menor && c.menor.pct + 3 >= c.esperado ? '<span class="rt-ok">No ritmo dos dias úteis</span>' : '<span class="rt-atras">Atrás do ritmo — acelera!</span>';
+  var ritmo = c.basePct + 3 >= c.esperado ? '<span class="rt-ok">No ritmo dos dias úteis</span>' : '<span class="rt-atras">Atrás do ritmo — acelera!</span>';
   h += '<div class="rt-card rt-ficha"><div class="rt-ficha-av">' + rtSpriteSvg(av || 'misterio', 6) + '</div><div>' +
     '<div class="rt-pix">' + rtEsc(rtNome(c.vn).toUpperCase()) + '</div>' +
     '<div class="rt-forte">' + (c.fase >= 10 ? '🏆 Meta batida!' : 'Mundo ' + (c.fase <= 3 ? 1 : c.fase <= 6 ? 2 : c.fase <= 8 ? 3 : 4) + ' · Fase ' + c.fase + ' de 10') + '</div>' +
     '<div>' + ritmo + '</div>' +
-    '<div class="rt-selos"><span class="rt-selo' + (c.seq ? ' on' : '') + '" title="Dias úteis seguidos batendo a meta de ligações">🔥 ' + c.seq + (c.seq === 1 ? ' dia' : ' dias') + '</span>' +
+    '<div class="rt-selos">' + (c.outras.length ? '<span class="rt-selo' + (c.estrelas ? ' on' : '') + '" title="Metas que acompanham o nível da fase">⭐ ' + c.estrelas + '/' + c.outras.length + ' estrelas</span>' : '') + '<span class="rt-selo' + (c.seq ? ' on' : '') + '" title="Dias úteis seguidos batendo a meta de ligações">🔥 ' + c.seq + (c.seq === 1 ? ' dia' : ' dias') + '</span>' +
     '<span class="rt-selo' + (c.carretas ? ' on' : '') + '" title="Cargas de carreta fechadas no mês">🚛 ' + c.carretas + (c.metaCarretas ? '/' + c.metaCarretas : '') + ' carreta' + ((c.metaCarretas || c.carretas) === 1 ? '' : 's') + '</span>' +
     (c.ligIdeal ? '<span class="rt-selo' + (c.lig >= c.ligIdeal ? ' on' : '') + '" title="Ligações no nível ideal do mês">⭐ ' + c.lig + '/' + c.ligIdeal + ' ideal</span>' : '') + '</div></div></div>';
   h += '<div class="rt-card rt-hoje"><div class="rt-pix">📅 META DE HOJE</div><div class="rt-sub">O que falta do mês dividido pelos ' + c.dUteisRest + ' dia(s) útil(eis) que restam.</div>' +
@@ -13323,28 +13364,37 @@ function rtPainelVendedor(c) {
     }).join('') + '</div>';
   if (c.fase < 10) {
     var alvo = (c.fase + 1) * 10;
-    h += '<div class="rt-card"><div class="rt-pix">PRÓXIMA FASE · ' + (c.fase + 1) + '</div><div class="rt-sub">Para chegar a ' + alvo + '% de todas as metas:</div>';
-    var okFase = 0;
-    c.met.forEach(function(x) {
-      var nec = x.meta * alvo / 100, falta = Math.max(0, nec - x.real), w = nec > 0 ? Math.min(100, x.real / nec * 100) : 100;
-      if (falta <= 0) { okFase++; return; }
-      h += '<div class="rt-barra-lin"><span class="rt-forte">' + rtEsc(x.label) + '</span>' + (falta > 0 ? '<span>falta ' + rtFmt(x, falta) + '</span>' : '<span class="rt-ok">ok ✓</span>') + '</div>' +
-        '<div class="rt-barra"><div style="width:' + w.toFixed(1) + '%;background:' + (falta > 0 ? '#C41E1E' : '#2E7D32') + '"></div></div>';
-    });
-    if (okFase) h += '<div class="rt-ok">✓ ' + okFase + (okFase === 1 ? ' meta já está' : ' metas já estão') + ' no nível desta fase</div>';
-    if (c.semValor) h += '<div class="rt-aviso">Meta de valor deste mês não cadastrada no Check-in.</div>';
+    h += '<div class="rt-card"><div class="rt-pix">PRÓXIMA FASE · ' + (c.fase + 1) + '</div>';
+    if (c.mValor) {
+      var necV = c.mValor.meta * alvo / 100, faltaV = Math.max(0, necV - c.mValor.real), wV = Math.min(100, c.mValor.real / necV * 100);
+      h += '<div class="rt-sub">O avatar anda pela meta de valor: chegar a ' + alvo + '% (' + rtFmt(c.mValor, necV) + ').</div>' +
+        '<div class="rt-barra-lin"><span class="rt-forte">Valor vendido</span><span>' + (faltaV > 0 ? 'falta ' + rtFmt(c.mValor, faltaV) : 'ok ✓') + '</span></div>' +
+        '<div class="rt-barra"><div style="width:' + wV.toFixed(1) + '%;background:#C41E1E"></div></div>' +
+        '<div class="rt-cinza" style="font-size:13px">' + Math.floor(c.mValor.pct) + '% da meta do mês (' + rtFmt(c.mValor, c.mValor.real) + ' de ' + rtFmt(c.mValor, c.mValor.meta) + ')</div>';
+    } else {
+      h += '<div class="rt-aviso">Meta de valor deste mês não cadastrada no Check-in: o avatar anda pela meta mais baixa.</div>';
+    }
     h += '</div>';
   } else {
-    h += '<div class="rt-card rt-trofeu"><div class="rt-pix">🏁 CHEGOU!</div><div>Todas as metas do mês batidas. Parabéns!</div></div>';
+    h += '<div class="rt-card rt-trofeu"><div class="rt-pix">🏁 CHEGOU!</div><div>Meta de valor do mês batida. Parabéns!</div></div>';
+  }
+  if (c.outras.length) {
+    h += '<div class="rt-card"><div class="rt-pix">⭐ ESTRELAS · ' + c.estrelas + '/' + c.outras.length + '</div><div class="rt-sub">Cada meta que acompanha a fase (' + c.nivelEstrela + '% do mês) vale uma estrela.</div>';
+    c.outras.slice().sort(function(a, b) { return (a.estrela === b.estrela) ? a.pct - b.pct : (a.estrela ? 1 : -1); }).forEach(function(x) {
+      var nec = x.meta * c.nivelEstrela / 100, falta = Math.max(0, nec - x.real);
+      h += '<div class="rt-dia' + (x.estrela ? ' feito' : '') + '"><span class="rt-check">' + (x.estrela ? '⭐' : '') + '</span><span class="rt-forte">' + rtEsc(x.label) + ' <span class="rt-cinza" style="font-weight:400">' + Math.floor(x.pct) + '%</span></span>' +
+        '<span class="rt-dia-v">' + (x.estrela ? 'estrela garantida' : 'falta ' + rtFmt(x, falta) + ' para a estrela') + '</span></div>';
+    });
+    h += '</div>';
   }
   // missão do dia
   var mis = [];
   var mLig = c.met.find(function(x) { return x.lig; }), alvoLig = mLig ? mLig.alvoHoje : c.ligDia;
   mis.push({ txt: alvoLig + ' ligações hoje (feitas: ' + c.ligHoje + ')', ok: c.ligHoje >= alvoLig });
-  var travando = c.met.filter(function(x) { return !x.lig && x.pct < 100; }).sort(function(a, b) { return a.pct - b.pct; })[0];
-  if (travando && c.fase < 10) {
-    var nec2 = travando.meta * (c.fase + 1) / 10, f2 = Math.max(0, nec2 - travando.real);
-    if (f2 > 0) mis.push({ txt: travando.key === 'valor' ? 'Vender mais ' + rtFmt(travando, f2) + ' para destravar a fase ' + (c.fase + 1) : 'Vender ' + rtFmt(travando, f2) + ' de ' + travando.label, ok: false });
+  var travando = c.outras.filter(function(x) { return !x.lig && !x.estrela; }).sort(function(a, b) { return a.pct - b.pct; })[0];
+  if (travando) {
+    var nec2 = travando.meta * c.nivelEstrela / 100, f2 = Math.max(0, nec2 - travando.real);
+    if (f2 > 0) mis.push({ txt: (travando.cli ? 'Fechar ' : 'Vender ') + rtFmt(travando, f2) + (travando.cli ? ' (' + travando.label.toLowerCase() + ')' : ' de ' + travando.label) + ' e ganhar uma ⭐', ok: false });
   }
   var mv = c.met.find(function(x) { return x.key === 'valor'; });
   if (mv && mv.alvoHoje > 0) mis.push({ txt: 'Vender ' + rtFmt(mv, mv.alvoHoje) + ' hoje (feito: ' + rtFmt(mv, mv.hoje) + ')', ok: mv.hoje >= mv.alvoHoje });
@@ -13360,15 +13410,15 @@ function rtPainelVendedor(c) {
   return h;
 }
 function rtPainelEquipe(calcs) {
-  var ord = calcs.slice().sort(function(a, b) { return b.fase - a.fase || (b.menor ? b.menor.pct : 0) - (a.menor ? a.menor.pct : 0); });
-  return '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase de cada um e a meta que está segurando o avanço.</div>' +
-    '<table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Fase</th><th title="Dias úteis na mesma fase">Dias</th><th>Travando</th></tr></thead><tbody>' +
+  var ord = calcs.slice().sort(function(a, b) { return b.fase - a.fase || b.basePct - a.basePct || b.estrelas - a.estrelas; });
+  return '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase pela meta de valor, estrelas das outras metas e a mais atrasada.</div>' +
+    '<table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Fase</th><th title="Dias úteis na mesma fase">Dias</th><th>⭐</th><th>Mais atrasada</th></tr></thead><tbody>' +
     ord.map(function(c) {
       var tr = c.menor ? rtEsc(c.menor.label) + ' <span class="rt-cinza" style="white-space:nowrap">· ' + Math.floor(c.menor.pct) + '%</span>' : '—';
       var hs = RT.hist[c.vn], dias = hs && hs.desde ? rtDiasUteisEntre(hs.desde, ckToday()) : null;
       var parado = dias !== null && dias >= 3 && c.fase < 10;
       return '<tr onclick="rtVer(\'' + c.vn + '\')"><td>' + rtSpriteSvg(RT.avatares[c.vn] || 'misterio', 3) + '</td><td class="rt-forte">' + rtEsc(rtNome(c.vn)) + (c.seq >= 3 ? ' <span style="white-space:nowrap;font-weight:400" title="Dias seguidos batendo ligações">🔥' + c.seq + '</span>' : '') + '</td><td style="white-space:nowrap">' + c.fase + '/10</td>' +
-        '<td style="white-space:nowrap"' + (parado ? ' class="rt-atras"' : '') + '>' + (dias === null ? '—' : dias + 'd' + (parado ? ' ⚠️' : '')) + '</td><td>' + (c.fase >= 10 ? '🏆 meta batida' : tr) + '</td></tr>';
+        '<td style="white-space:nowrap"' + (parado ? ' class="rt-atras"' : '') + '>' + (dias === null ? '—' : dias + 'd' + (parado ? ' ⚠️' : '')) + '</td><td style="white-space:nowrap">' + (c.outras.length ? c.estrelas + '/' + c.outras.length : '—') + '</td><td>' + (c.fase >= 10 && !c.menor ? '🏆 meta batida' : tr) + '</td></tr>';
     }).join('') + '</tbody></table><div class="rt-sub">Dias = dias úteis na mesma fase; ⚠️ = 3 ou mais. Clique num vendedor para ver o painel dele.</div></div>';
 }
 function rtDiasUteisEntre(deStr, ateStr) {
@@ -13505,7 +13555,7 @@ function rcHistorico(chave) {
     (RT.ped[vn] || []).forEach(function(p) {
       if (!p.empresa || p.status === 'cancelado' || cliChave(p.empresa) !== chave) return;
       n++;
-      (p.itens || []).forEach(function(it) {
+      itensDoPedido(p).forEach(function(it) {
         var v = numSafe(it.qtd) * numSafe(it.vUnit); total += v;
         var nome = String(it.material || '').split(' ').slice(0, 3).join(' ');
         if (nome) mats[nome] = (mats[nome] || 0) + v;
@@ -14853,13 +14903,21 @@ function ckUnidProduto(mes, key){
   var g = CK_PRODUTOS.find(function(x){ return x.key === key; });
   return g && g.dinheiro ? 'R$' : 'qtd';
 }
+/* Itens de um pedido sempre como lista limpa: o Firebase devolve a lista como
+   objeto ({0:…, 2:…}) ou com buracos (null) quando um item foi apagado. */
+function itensDoPedido(p){
+  var it = p && p.itens;
+  if (!it) return [];
+  if (!Array.isArray(it) && typeof it === 'object') it = Object.keys(it).map(function(k){ return it[k]; });
+  return Array.isArray(it) ? it.filter(function(x){ return x && typeof x === 'object'; }) : [];
+}
 /* Soma qtd e valor (R$) de cada grupo nos pedidos dados */
 function ckSomarProdutos(pedidos, deStr, ateStr){
   var t = {};
   CK_PRODUTOS.forEach(function(g){ t[g.key] = { qtd: 0, valor: 0 }; });
   (pedidos || []).forEach(function(p){
     if (!p || p.excluido || p.status === 'cancelado' || !p.data || p.data < deStr || p.data > ateStr) return;
-    (p.itens || []).forEach(function(it){
+    itensDoPedido(p).forEach(function(it){
       var gr = ckClassificarProduto(it.material);
       if (!gr && it.cat === 'aco' && !ckCategoriaDoProduto(it.material)) gr = 'perfil';
       if (!gr) return;
@@ -15863,7 +15921,8 @@ function mmDataPedido(p){
 }
 
 function mmValorPedido(p){
-  if (p.itens && p.itens.length) return p.itens.reduce(function(s,it){ return s + ckNum(it.qtd)*ckNum(it.vUnit); }, 0);
+  var its = itensDoPedido(p);
+  if (its.length) return its.reduce(function(s,it){ return s + ckNum(it.qtd)*ckNum(it.vUnit); }, 0);
   if (p.material) return ckNum(p.qtd)*ckNum(p.vUnit);
   return 0;
 }
