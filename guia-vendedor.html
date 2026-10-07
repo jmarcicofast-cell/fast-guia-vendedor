@@ -13572,6 +13572,9 @@ function rcPronto(vn) {
 function rcSortear(vn, qtd, jaTem) {
   var hoje = ckToday(), jog = ((RC.dados[vn] || {}).jogadas) || {};
   var ja = {}; (jaTem || []).forEach(function(x) { ja[x.chave] = 1; });
+  // cliente com pedido lançado (por qualquer vendedor) nos últimos 30 dias não está "à solta"
+  var recentes = {}, lim = new Date(); lim.setDate(lim.getDate() - 30); var limStr = ckDateToStr(lim);
+  CK_EQUIPE.forEach(function(x) { (RT.ped[x] || []).forEach(function(p) { if (p && p.empresa && p.status !== 'cancelado' && p.data && p.data >= limStr) recentes[cliChave(p.empresa)] = 1; }); });
   var cand = rcBase(vn).filter(function(c) {
     if (ja[c.chave]) return false;
     var j = jog[c.chave];
@@ -13581,6 +13584,7 @@ function rcSortear(vn, qtd, jaTem) {
       if (j.res === 'fugiu' && cliDiasEntre(j.ultima, hoje) < 2) return false;
       if ((j.res === 'mira' || j.res === 'pedido') && cliDiasEntre(j.ultima, hoje) < 7) return false;
     }
+    if (recentes[c.chave]) return false;
     if (c.vendedor === 'GERAL') return true;
     if (c.status === 'inativo') return true;
     return c.diasSemAtendimento === null || c.diasSemAtendimento >= 14;
@@ -13638,7 +13642,12 @@ function rcCliente(vn, carta) {
 function rcCaptura(vn, chave) {
   var j = (((RC.dados[vn] || {}).jogadas) || {})[chave];
   if (!j || !j.desde) return null;
-  var peds = (RT.ped[vn] || []).filter(function(p) { return p.empresa && p.status !== 'cancelado' && cliChave(p.empresa) === chave && p.data && p.data >= j.desde; });
+  var vincId = j.vinc && j.vinc.id;
+  var peds = (RT.ped[vn] || []).filter(function(p) {
+    if (!p || p.status === 'cancelado') return false;
+    if (vincId && p.id === vincId) return true;
+    return p.empresa && cliChave(p.empresa) === chave && p.data && p.data >= j.desde;
+  });
   if (!peds.length) return null;
   return { valor: peds.reduce(function(s, p) { return s + mmValorPedido(p); }, 0), faturado: peds.some(function(p) { return p.status === 'faturado'; }), data: peds.map(function(p) { return p.data; }).sort()[0] };
 }
@@ -13661,8 +13670,9 @@ function rcResumo(vn) {
 }
 
 // ── Jogar a carta ──
-function rcJogar(chave, res) {
+function rcJogar(chave, res, extra) {
   var vn = currentUser, hoje = ckToday(), d = rcMaoDeHoje(vn); if (!d) return;
+  if (res === 'pedido' && !extra) { rcEscolherFechamento(chave); return; }
   var carta = d.cartas.find(function(c) { return c.chave === chave; }); if (!carta) return;
   var c = rcCliente(vn, carta);
   var retorno = null;
@@ -13676,6 +13686,10 @@ function rcJogar(chave, res) {
   var antes = (((RC.dados[vn] || {}).jogadas) || {})[chave] || {};
   var jog = { res: res, nome: c.nome, vendOrig: carta.vendOrig, uf: c.uf || '', rar: rcRaridade(c), desde: antes.desde || hoje, ultima: hoje };
   if (retorno) jog.retorno = retorno;
+  if (extra && extra.vinc) {
+    jog.vinc = extra.vinc;
+    if (extra.vinc.data && extra.vinc.data < jog.desde) jog.desde = extra.vinc.data;
+  }
   var upd = {};
   upd['jogadas/' + chave] = jog;
   upd['dias/' + hoje + '/jog/' + chave] = res;
@@ -13694,6 +13708,8 @@ function rcJogar(chave, res) {
     var id = 'neg_' + Date.now();
     dbRef('negociacoes/' + vn + '/' + id).set({ id: id, empresa: c.nome, contato: '', telefone: '', estado: c.uf || '', valorEstimado: 0, etapa: 'orcamento', proximaAcao: 'Enviar cotação (vindo da Caçada)', proximaData: hoje, vendedor: vn, dataCriacao: new Date().toISOString(), historico: [{ data: new Date().toISOString(), texto: 'Negociação criada pela Caçada: cliente pediu cotação.' }] });
     rtComemorar('🎯 NA MIRA!', c.nome + ' virou negociação. Manda a cotação!');
+  } else if (res === 'pedido' && extra && extra.vinc) {
+    rtComemorar('✅ CAPTURADO!', c.nome + ' vinculado ao chamado ' + (extra.vinc.chamado || '') + '.');
   } else if (res === 'pedido') {
     rtComemorar('✅ CAPTURANDO…', 'Lança o pedido de ' + c.nome + ' para confirmar a captura.');
     setTimeout(function() {
@@ -13708,6 +13724,59 @@ function rcJogar(chave, res) {
   }
   rtRender();
 }
+
+// ── Fechou: vincular a um pedido que já existe ou abrir um novo ──
+function rcEscolherFechamento(chave) {
+  var vn = currentUser, d = rcMaoDeHoje(vn); if (!d) return;
+  var carta = d.cartas.find(function(x) { return x.chave === chave; }); if (!carta) return;
+  var c = rcCliente(vn, carta);
+  var lim = new Date(); lim.setDate(lim.getDate() - 30); var limStr = ckDateToStr(lim);
+  var lista = (RT.ped[vn] || []).filter(function(p) { return p && p.status !== 'cancelado' && p.data && p.data >= limStr; })
+    .map(function(p) { return { p: p, mesmo: p.empresa && cliChave(p.empresa) === chave }; })
+    .sort(function(a, b) { return (b.mesmo - a.mesmo) || String(b.p.data).localeCompare(String(a.p.data)); });
+  RC._fech = { chave: chave, lista: lista };
+  var ov = document.createElement('div'); ov.id = 'rc-fech';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(11,24,40,.8);display:flex;align-items:center;justify-content:center;padding:16px;';
+  ov.innerHTML = '<div style="background:#fff;border:4px solid #1C1C1C;box-shadow:8px 8px 0 #C41E1E;max-width:560px;width:100%;max-height:90vh;display:flex;flex-direction:column;font-family:\'Pixelify Sans\',system-ui,sans-serif;">' +
+    '<div style="padding:14px 16px;border-bottom:3px solid #1C1C1C;display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+      '<div><div style="font-family:\'Press Start 2P\',monospace;font-size:11px;">✅ FECHOU COM</div><div style="font-size:17px;font-weight:700;margin-top:4px;">' + rtEsc(c.nome) + '</div></div>' +
+      '<button type="button" onclick="rcFecharFechamento()" style="border:3px solid #1C1C1C;background:#fff;font-size:16px;font-weight:700;width:40px;height:40px;cursor:pointer;" aria-label="Fechar">✕</button></div>' +
+    '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px;overflow:auto;">' +
+      '<button type="button" onclick="rcFechamentoNovo()" style="border:3px solid #1C1C1C;background:#FFD23F;font-family:inherit;font-size:16px;font-weight:700;padding:12px;cursor:pointer;box-shadow:4px 4px 0 #0B1828;">➕ Abrir um pedido novo</button>' +
+      '<div style="font-weight:700;margin-top:4px;">Ou vincular a um pedido seu dos últimos 30 dias:</div>' +
+      '<input id="rc-fech-busca" type="text" placeholder="🔎 Buscar por chamado ou cliente…" oninput="rcFechamentoLista()" style="padding:9px 10px;border:2px solid #1C1C1C;font-size:14px;font-family:inherit;">' +
+      '<div id="rc-fech-lista" style="display:flex;flex-direction:column;gap:6px;"></div>' +
+    '</div></div>';
+  ov.addEventListener('click', function(e) { if (e.target === ov) rcFecharFechamento(); });
+  document.body.appendChild(ov);
+  rcFechamentoLista();
+}
+function rcFechamentoLista() {
+  var box = document.getElementById('rc-fech-lista'); if (!box || !RC._fech) return;
+  var q = String((document.getElementById('rc-fech-busca') || {}).value || '').toLowerCase().trim();
+  var itens = RC._fech.lista.filter(function(x) { return !q || String(x.p.chamado || '').toLowerCase().indexOf(q) !== -1 || String(x.p.empresa || '').toLowerCase().indexOf(q) !== -1; }).slice(0, 25);
+  if (!itens.length) { box.innerHTML = '<div style="color:#888;font-size:14px;">Nenhum pedido encontrado.</div>'; return; }
+  box.innerHTML = itens.map(function(x, i) {
+    var p = x.p;
+    return '<div style="display:flex;align-items:center;gap:10px;border:2px solid ' + (x.mesmo ? '#2E7D32' : '#E2E0D8') + ';background:' + (x.mesmo ? '#E8F5E9' : '#fff') + ';padding:8px 10px;">' +
+      '<div style="flex:1;min-width:0;"><div style="font-weight:700;">' + (p.chamado ? 'Chamado ' + rtEsc(p.chamado) : 'Sem chamado') + (x.mesmo ? ' <span style="font-size:12px;color:#1B5E20;">· mesmo cliente</span>' : '') + '</div>' +
+      '<div style="font-size:13px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + rtEsc(p.empresa || '—') + ' · ' + negFmtData(p.data) + ' · ' + rcBRL(mmValorPedido(p)) + ' · ' + rtEsc((STATUS_LABEL && STATUS_LABEL[p.status]) || p.status || '') + '</div></div>' +
+      '<button type="button" onclick="rcFechamentoVincular(' + RC._fech.lista.indexOf(x) + ')" style="border:3px solid #1C1C1C;background:#fff;font-family:inherit;font-weight:700;padding:8px 10px;cursor:pointer;min-height:40px;">Vincular</button></div>';
+  }).join('');
+}
+function rcFechamentoVincular(i) {
+  var f = RC._fech; if (!f || !f.lista[i]) return;
+  var p = f.lista[i].p, chave = f.chave;
+  rcFecharFechamento();
+  rcJogar(chave, 'pedido', { vinc: { id: p.id || '', chamado: p.chamado || '', data: p.data || '' } });
+}
+function rcFechamentoNovo() {
+  var f = RC._fech; if (!f) return;
+  var chave = f.chave;
+  rcFecharFechamento();
+  rcJogar(chave, 'pedido', { novo: true });
+}
+function rcFecharFechamento() { var o = document.getElementById('rc-fech'); if (o) o.remove(); }
 
 // ── Desenho ──
 var RC_LOJA = ['kkkkkkkkkk', 'kaAaAaAaAk', 'kaAaAaAaAk', 'kwwwwwwwwk', 'kwggwwddwk', 'kwggwwddwk', 'kwwwwwddwk', 'kkkkkkkkkk'];
