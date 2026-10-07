@@ -4316,7 +4316,7 @@
   <div class="ck-panel" id="ck-settings-metas2">
     <h3>Metas semanal, mensal e de clientes (por vendedor)</h3>
     <div style="overflow-x:auto;">
-      <table class="ck-table" style="min-width:640px;">
+      <table class="ck-table" style="min-width:900px;">
         <thead>
           <tr>
             <th>Vendedor(a)</th>
@@ -4324,6 +4324,9 @@
             <th class="num">Mensal (R$)</th>
             <th class="num">Clientes novos/mês</th>
             <th class="num">Clientes inativos/mês</th>
+            <th class="num">Ligações mín./mês</th>
+            <th class="num">Ligações ideal/mês</th>
+            <th class="num">Carretas/mês</th>
           </tr>
         </thead>
         <tbody id="ck-metas-periodo"></tbody>
@@ -4550,7 +4553,7 @@
 #tab-rota .rt-sel { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:12px 18px 0; color:#fff; font-size:15px; }
 #tab-rota .rt-sel button { font-family:'Pixelify Sans', sans-serif; font-size:14px; padding:5px 10px; border:3px solid #0B1828; background:#fff; cursor:pointer; }
 #tab-rota .rt-sel button.on { background:#FFD23F; }
-#tab-rota .rt-corpo { display:flex; flex-wrap:wrap; gap:18px; padding:16px 18px 20px; }
+#tab-rota .rt-corpo { display:flex; flex-wrap:wrap; gap:18px; padding:16px 18px 20px; align-items:flex-start; }
 #tab-rota .rt-mapa-box { flex:999 1 560px; min-width:0; border:4px solid #0B1828; background:#1B3A5C; }
 #tab-rota .rt-mapa { display:block; width:100%; height:auto; }
 #tab-rota .rt-painel { flex:1 1 300px; display:flex; flex-direction:column; gap:14px; min-width:0; }
@@ -4617,6 +4620,10 @@
 #tab-rota .rc-fig { border:4px solid; padding:8px; display:flex; flex-direction:column; align-items:center; gap:6px; min-height:170px; box-shadow:4px 4px 0 #0B1828; }
 #tab-rota .rc-fig.vazio { border:4px dashed #5B6672; background:#24507A; justify-content:center; box-shadow:none; }
 #tab-rota .rt-vazio { padding:40px; text-align:center; color:#888; }
+#tab-rota .rt-dia { display:grid; grid-template-columns:22px 1fr; column-gap:8px; align-items:center; font-size:14px; padding:3px 0; border-bottom:1px dashed #E8E6E1; }
+#tab-rota .rt-dia .rt-dia-v { grid-column:2; font-size:13.5px; }
+#tab-rota .rt-dia.feito { color:#1B5E20; }
+#tab-rota .rt-dia.feito .rt-check { background:#2E7D32; color:#fff; border-color:#1B5E20; }
 #tab-rota .rt-selos { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
 #tab-rota .rt-selo { font-size:13px; padding:2px 7px; border:2px solid #D8D6CF; color:#999; background:#fff; }
 #tab-rota .rt-selo.on { border-color:#1C1C1C; color:#1C1C1C; background:#FFD23F; }
@@ -13117,37 +13124,54 @@ function rtCalc(vn) {
   var hoje = new Date(), ano = hoje.getFullYear(), m = hoje.getMonth();
   var mes = ckMesAtualStr(), ini = mes + '-01', hojeStr = ckToday();
   var settings = (ckData && ckData.settings) || {};
+  var porP = function(campo) { return ckNum((settings[campo] || {})[vn]); };
+  var peds = (RT.ped[vn] || []).filter(function(p) { return p.status !== 'cancelado' && p.data && p.data >= ini && p.data <= hojeStr; });
+  var dUteisMes = rtDiasUteis(ano, m), dUteisAteHoje = rtDiasUteis(ano, m, hoje.getDate());
+  var wdHoje = hoje.getDay(), ehUtil = wdHoje !== 0 && wdHoje !== 6;
+  var dUteisRest = Math.max(1, dUteisMes - dUteisAteHoje + (ehUtil ? 1 : 0));
   var met = [];
+  function add(x) { met.push(x); }
   // valor
-  var valor = 0, prod = {};
-  CK_PRODUTOS.forEach(function(g) { prod[g.key] = 0; });
-  (RT.ped[vn] || []).forEach(function(p) {
-    if (p.status === 'cancelado' || !p.data || p.data < ini || p.data > hojeStr) return;
-    valor += mmValorPedido(p);
-    (p.itens || []).forEach(function(it) {
-      var gr = ckClassificarProduto(it.material);
-      if (!gr && it.cat === 'aco' && !ckCategoriaDoProduto(it.material)) gr = 'perfil';
-      if (!gr) return;
-      if (gr === 'perfil') prod.perfil += ckNum(it.qtd) * ckNum(it.vUnit); else prod[gr] += ckNum(it.qtd);
-    });
-  });
-  var metaValor = ckNum((settings.metaMensalPorPessoa || {})[vn]);
-  if (metaValor > 0) met.push({ key: 'valor', label: 'Valor', real: valor, meta: metaValor, din: true });
+  var valor = 0, valorHoje = 0;
+  peds.forEach(function(p) { var v = mmValorPedido(p); valor += v; if (p.data === hojeStr) valorHoje += v; });
+  var metaValor = porP('metaMensalPorPessoa');
+  if (metaValor > 0) add({ key: 'valor', label: 'Valor', real: valor, hoje: valorHoje, meta: metaValor, din: true });
+  // produtos (unidade da meta definida por mês: qtd ou R$)
+  var sMes = ckSomarProdutos(peds, ini, hojeStr), sHoje = ckSomarProdutos(peds, hojeStr, hojeStr);
   CK_PRODUTOS.forEach(function(g) {
-    var mt = ckMetaProduto(mes, g.key, vn);
-    if (mt > 0) met.push({ key: g.key, label: g.label, real: prod[g.key], meta: mt, din: !!g.dinheiro, prod: true });
+    var mt = ckMetaProduto(mes, g.key, vn); if (!(mt > 0)) return;
+    var emR = ckUnidProduto(mes, g.key) === 'R$';
+    add({ key: g.key, label: g.label, real: emR ? sMes[g.key].valor : sMes[g.key].qtd, hoje: emR ? sHoje[g.key].valor : sHoje[g.key].qtd, meta: mt, din: emR, prod: true });
   });
-  // ligações
+  // clientes reativados e novos (empresas diferentes no mês)
+  function clientes(tipo, soHoje) {
+    var vist = {};
+    peds.forEach(function(p) { if (p.tipoCliente === tipo && p.empresa && (!soHoje || p.data === hojeStr)) vist[cliChave(p.empresa)] = 1; });
+    return Object.keys(vist).length;
+  }
+  var mInat = porP('metaClientesInativosPorPessoa'), mNovo = porP('metaClientesNovosPorPessoa');
+  if (mInat > 0) add({ key: 'reativados', label: 'Clientes reativados', real: clientes('inativo'), hoje: clientes('inativo', true), meta: mInat, cli: true });
+  if (mNovo > 0) add({ key: 'novos', label: 'Clientes novos', real: clientes('novo'), hoje: clientes('novo', true), meta: mNovo, cli: true });
+  // ligações: mínimo do mês move o avatar; ideal vira selo
   var lig = 0;
   for (var d = 1; d <= hoje.getDate(); d++) lig += rtLigacoesDia(vn, mes + '-' + String(d).padStart(2, '0'));
-  var ligDia = ckNum(settings.metaLigDia) || CK_META_LIG_PADRAO;
-  var dUteisMes = rtDiasUteis(ano, m), dUteisAteHoje = rtDiasUteis(ano, m, hoje.getDate());
-  met.push({ key: 'ligacoes', label: 'Ligações', real: lig, meta: ligDia * dUteisMes, din: false, lig: true });
-  met.forEach(function(x) { x.pct = x.meta > 0 ? x.real / x.meta * 100 : 0; });
+  var ligHoje = rtLigacoesDia(vn, hojeStr);
+  var ligMin = porP('metaLigMinMesPorPessoa') || (ckNum(settings.metaLigDia) || CK_META_LIG_PADRAO) * dUteisMes;
+  var ligIdeal = porP('metaLigIdealMesPorPessoa');
+  add({ key: 'ligacoes', label: 'Ligações', real: lig, hoje: ligHoje, meta: ligMin, ideal: ligIdeal, lig: true });
+  var ligDia = Math.ceil(ligMin / Math.max(1, dUteisMes));
+  // meta de hoje: o que falta do mês dividido pelos dias úteis que restam (contando hoje)
+  met.forEach(function(x) {
+    x.pct = x.meta > 0 ? x.real / x.meta * 100 : 0;
+    var antesDeHoje = x.real - x.hoje;
+    x.alvoHoje = Math.max(0, (x.meta - antesDeHoje) / dUteisRest);
+    if (x.cli || x.lig) x.alvoHoje = Math.ceil(x.alvoHoje);
+    if (x.lig && x.ideal) x.alvoIdealHoje = Math.ceil(Math.max(0, (x.ideal - antesDeHoje) / dUteisRest));
+  });
   var menor = met.reduce(function(a, x) { return (!a || x.pct < a.pct) ? x : a; }, null);
   var fase = met.length ? Math.max(0, Math.min(10, Math.floor((menor ? menor.pct : 0) / 10))) : 0;
   var esperado = dUteisMes ? dUteisAteHoje / dUteisMes * 100 : 0;
-  var carretas = (RT.ped[vn] || []).filter(function(p) { return p.status !== 'cancelado' && p.veiculo === 'carreta' && p.data && p.data >= ini && p.data <= hojeStr; }).length;
+  var carretas = peds.filter(function(p) { return p.veiculo === 'carreta'; }).length;
   var seq = 0, dt = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
   if (rtLigacoesDia(vn, ckDateToStr(dt)) < ligDia) dt.setDate(dt.getDate() - 1); // hoje ainda pode bater
   for (var g = 0; g < 90; g++) {
@@ -13155,12 +13179,12 @@ function rtCalc(vn) {
     if (wd !== 0 && wd !== 6) { if (rtLigacoesDia(vn, ckDateToStr(dt)) >= ligDia) seq++; else break; }
     dt.setDate(dt.getDate() - 1);
   }
-  return { vn: vn, met: met, menor: menor, fase: fase, esperado: esperado, ligDia: ligDia, carretas: carretas, seq: seq,
-    ligHoje: rtLigacoesDia(vn, hojeStr), dUteisRest: Math.max(0, dUteisMes - dUteisAteHoje + 1), semValor: !(metaValor > 0) };
+  return { vn: vn, met: met, menor: menor, fase: fase, esperado: esperado, ligDia: ligDia, carretas: carretas, metaCarretas: porP('metaCarretasPorPessoa'), seq: seq,
+    lig: lig, ligIdeal: ligIdeal, ligHoje: ligHoje, dUteisRest: dUteisRest, semValor: !(metaValor > 0) };
 }
 function rtFmt(x, v) {
   if (x.din) return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
-  return Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) + (x.lig ? ' lig.' : ' un.');
+  return Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) + (x.lig ? ' lig.' : x.cli ? (Math.round(v) === 1 ? ' cliente' : ' clientes') : ' un.');
 }
 
 // ── Desenho ──
@@ -13289,15 +13313,25 @@ function rtPainelVendedor(c) {
     '<div class="rt-forte">' + (c.fase >= 10 ? '🏆 Meta batida!' : 'Mundo ' + (c.fase <= 3 ? 1 : c.fase <= 6 ? 2 : c.fase <= 8 ? 3 : 4) + ' · Fase ' + c.fase + ' de 10') + '</div>' +
     '<div>' + ritmo + '</div>' +
     '<div class="rt-selos"><span class="rt-selo' + (c.seq ? ' on' : '') + '" title="Dias úteis seguidos batendo a meta de ligações">🔥 ' + c.seq + (c.seq === 1 ? ' dia' : ' dias') + '</span>' +
-    '<span class="rt-selo' + (c.carretas ? ' on' : '') + '" title="Cargas de carreta fechadas no mês">🚛 ' + c.carretas + ' carreta' + (c.carretas === 1 ? '' : 's') + '</span></div></div></div>';
+    '<span class="rt-selo' + (c.carretas ? ' on' : '') + '" title="Cargas de carreta fechadas no mês">🚛 ' + c.carretas + (c.metaCarretas ? '/' + c.metaCarretas : '') + ' carreta' + ((c.metaCarretas || c.carretas) === 1 ? '' : 's') + '</span>' +
+    (c.ligIdeal ? '<span class="rt-selo' + (c.lig >= c.ligIdeal ? ' on' : '') + '" title="Ligações no nível ideal do mês">⭐ ' + c.lig + '/' + c.ligIdeal + ' ideal</span>' : '') + '</div></div></div>';
+  h += '<div class="rt-card rt-hoje"><div class="rt-pix">📅 META DE HOJE</div><div class="rt-sub">O que falta do mês dividido pelos ' + c.dUteisRest + ' dia(s) útil(eis) que restam.</div>' +
+    c.met.map(function(x) {
+      var ok = x.hoje >= x.alvoHoje && x.alvoHoje > 0, zerado = x.alvoHoje <= 0;
+      return '<div class="rt-dia' + (ok || zerado ? ' feito' : '') + '"><span class="rt-check">' + (ok || zerado ? '✓' : '') + '</span><span class="rt-forte">' + rtEsc(x.label) + '</span>' +
+        '<span class="rt-dia-v">' + (zerado ? 'meta do mês batida' : rtFmt(x, x.hoje) + ' de ' + rtFmt(x, x.alvoHoje)) + (x.alvoIdealHoje && !zerado ? ' <span class="rt-cinza">(ideal ' + x.alvoIdealHoje + ')</span>' : '') + '</span></div>';
+    }).join('') + '</div>';
   if (c.fase < 10) {
     var alvo = (c.fase + 1) * 10;
     h += '<div class="rt-card"><div class="rt-pix">PRÓXIMA FASE · ' + (c.fase + 1) + '</div><div class="rt-sub">Para chegar a ' + alvo + '% de todas as metas:</div>';
+    var okFase = 0;
     c.met.forEach(function(x) {
       var nec = x.meta * alvo / 100, falta = Math.max(0, nec - x.real), w = nec > 0 ? Math.min(100, x.real / nec * 100) : 100;
+      if (falta <= 0) { okFase++; return; }
       h += '<div class="rt-barra-lin"><span class="rt-forte">' + rtEsc(x.label) + '</span>' + (falta > 0 ? '<span>falta ' + rtFmt(x, falta) + '</span>' : '<span class="rt-ok">ok ✓</span>') + '</div>' +
         '<div class="rt-barra"><div style="width:' + w.toFixed(1) + '%;background:' + (falta > 0 ? '#C41E1E' : '#2E7D32') + '"></div></div>';
     });
+    if (okFase) h += '<div class="rt-ok">✓ ' + okFase + (okFase === 1 ? ' meta já está' : ' metas já estão') + ' no nível desta fase</div>';
     if (c.semValor) h += '<div class="rt-aviso">Meta de valor deste mês não cadastrada no Check-in.</div>';
     h += '</div>';
   } else {
@@ -13305,14 +13339,15 @@ function rtPainelVendedor(c) {
   }
   // missão do dia
   var mis = [];
-  mis.push({ txt: c.ligDia + ' ligações hoje (feitas: ' + c.ligHoje + ')', ok: c.ligHoje >= c.ligDia });
+  var mLig = c.met.find(function(x) { return x.lig; }), alvoLig = mLig ? mLig.alvoHoje : c.ligDia;
+  mis.push({ txt: alvoLig + ' ligações hoje (feitas: ' + c.ligHoje + ')', ok: c.ligHoje >= alvoLig });
   var travando = c.met.filter(function(x) { return !x.lig && x.pct < 100; }).sort(function(a, b) { return a.pct - b.pct; })[0];
   if (travando && c.fase < 10) {
     var nec2 = travando.meta * (c.fase + 1) / 10, f2 = Math.max(0, nec2 - travando.real);
     if (f2 > 0) mis.push({ txt: travando.key === 'valor' ? 'Vender mais ' + rtFmt(travando, f2) + ' para destravar a fase ' + (c.fase + 1) : 'Vender ' + rtFmt(travando, f2) + ' de ' + travando.label, ok: false });
   }
   var mv = c.met.find(function(x) { return x.key === 'valor'; });
-  if (mv && mv.real < mv.meta && c.dUteisRest > 0) mis.push({ txt: 'Vender ' + rtFmt(mv, (mv.meta - mv.real) / c.dUteisRest) + ' hoje (ritmo para a meta)', ok: false });
+  if (mv && mv.alvoHoje > 0) mis.push({ txt: 'Vender ' + rtFmt(mv, mv.alvoHoje) + ' hoje (feito: ' + rtFmt(mv, mv.hoje) + ')', ok: mv.hoje >= mv.alvoHoje });
   h += '<div class="rt-card rt-missao"><div class="rt-pix">MISSÃO DO DIA</div>' + mis.map(function(m) {
     return '<div class="rt-mis' + (m.ok ? ' feito' : '') + '"><span class="rt-check">' + (m.ok ? '✓' : '') + '</span>' + rtEsc(m.txt) + '</div>';
   }).join('') + '</div>';
@@ -13428,6 +13463,13 @@ function rcInit() {
   if (!cliGeralState || !Object.keys(cliGeralState).length) {
     dbRef('clientesGeral').on('value', function(snap) { cliGeralState = (snap && snap.val()) || {}; RC.geralOk = true; rtRender(); });
   } else RC.geralOk = true;
+  // gestão (Juliana e líder) precisa dos atendimentos de todos para montar as cartas de cada um
+  if (rtGestao()) {
+    CK_EQUIPE.forEach(function(vn) {
+      if (cliAtendState.porVendedor[vn]) return;
+      dbRef('atendimentos/' + vn).on('value', function(snap) { cliAtendState.porVendedor[vn] = (snap && snap.val()) || {}; rtRender(); });
+    });
+  }
   if (!cliAtendState.porVendedor.GERAL) {
     dbRef('atendimentos/GERAL').on('value', function(snap) { cliAtendState.porVendedor.GERAL = (snap && snap.val()) || {}; RC.atendGeralOk = true; rtRender(); });
   } else RC.atendGeralOk = true;
@@ -13519,7 +13561,7 @@ function rcSortear(vn, qtd, jaTem) {
 function rcMaoDeHoje(vn) {
   var d = (((RC.dados[vn] || {}).dias) || {})[ckToday()];
   if (d && d.cartas) return d;
-  if (vn !== currentUser || !rcPronto(vn) || RC.gerando[vn]) return null;
+  if ((vn !== currentUser && !rtGestao()) || !rcPronto(vn) || RC.gerando[vn]) return null;
   RC.gerando[vn] = true;
   var cartas = rcSortear(vn, 5);
   var nova = { cartas: cartas, criadoEm: Date.now() };
@@ -13658,7 +13700,7 @@ function rcTelaVendedor(vn) {
   var eu = vn === currentUser;
   if (!rcPronto(vn) && !(((RC.dados[vn] || {}).dias || {})[ckToday()])) return '<div class="rt-card"><div class="rt-sub">Preparando a caçada…</div></div>';
   RC._baseCache = null;
-  var d = eu ? rcMaoDeHoje(vn) : (((RC.dados[vn] || {}).dias || {})[ckToday()]);
+  var d = rcMaoDeHoje(vn);
   var r = rcResumo(vn), jog = (d && d.jog) || {};
   var h = '<div class="rc-placar">' +
     '<div><span>Pontos no mês</span><b>' + r.pts + '</b></div>' +
@@ -13669,7 +13711,7 @@ function rcTelaVendedor(vn) {
   h += '<div class="rc-titulo"><span class="rt-pix">CAÇADA DE HOJE · ' + new Date().toLocaleDateString('pt-BR').slice(0, 5) + '</span>' +
     (eu ? '<span class="rt-sub">Ligue para o cliente e registre o que aconteceu. Cada jogada já conta como atendimento na Base de Clientes.</span>' : '<span class="rt-sub">Cartas de ' + rtEsc(rtNome(vn)) + ' hoje.</span>') + '</div>';
   if (!d || !d.cartas || !d.cartas.length) {
-    h += '<div class="rt-card"><div class="rt-sub">' + (eu ? 'Nenhum cliente à solta na sua base agora. Volte amanhã!' : 'Ainda não abriu a caçada de hoje.') + '</div></div>';
+    h += '<div class="rt-card"><div class="rt-sub">' + (eu ? 'Nenhum cliente à solta na sua base agora. Volte amanhã!' : 'Nenhum cliente à solta na base de ' + rtEsc(rtNome(vn)) + ' hoje.') + '</div></div>';
   } else {
     h += '<div class="rc-mao">' + d.cartas.map(function(ct) { return rcCartaHtml(vn, ct, jog[ct.chave], eu); }).join('') + '</div>';
     var jogadas = d.cartas.filter(function(ct) { return jog[ct.chave]; }).length;
@@ -14750,7 +14792,9 @@ const CK_PRODUTOS = [
   { key: 'laVidroWF',       label: 'Lã de vidro WF',    match: function(n){ return n.indexOf('LA DE VIDRO') >= 0; } },
   { key: 'placaCimenticia', label: 'Placa cimentícia',  match: function(n){ return n.indexOf('PLACA CIMENTICIA') >= 0; } },
   { key: 'laRocha',         label: 'Lã de rocha',       match: function(n){ return n.indexOf('LA DE ROCHA') >= 0; } },
+  { key: 'glasroc',         label: 'Glasroc',           match: function(n){ return n.indexOf('GLASROC') >= 0; } },
   { key: 'placaST',         label: 'Placa ST',          match: function(n){ return n.indexOf('PLACA ST') >= 0; } },
+  { key: 'placaRU',         label: 'Placa RU',          match: function(n){ return n.indexOf('PLACA RU') >= 0; } },
   { key: 'placaVAB',        label: 'Placa VAB (demais)', match: null }, // preenchido por categoria, ver ckClassificarProduto
   { key: 'perfil',          label: 'Perfil (aço)',      match: null, dinheiro: true } // soma em R$ dos itens da categoria AÇO / AÇO PLACO
 ];
@@ -14801,6 +14845,29 @@ function ckCategoriaDoProduto(nomeMaterial){
   return CK_NOME_PARA_CATEGORIA[nomeMaterial] || '';
 }
 
+/* Unidade da meta de um produto num mês: 'qtd' (peças/baldes/pacotes) ou 'R$'.
+   Perfil é sempre em R$; os demais seguem o que a gestora definiu para o mês. */
+function ckUnidProduto(mes, key){
+  var u = (((ckData && ckData.settings && ckData.settings.metaProdutosUnidPorMes) || {})[mes] || {})[key];
+  if (u) return u;
+  var g = CK_PRODUTOS.find(function(x){ return x.key === key; });
+  return g && g.dinheiro ? 'R$' : 'qtd';
+}
+/* Soma qtd e valor (R$) de cada grupo nos pedidos dados */
+function ckSomarProdutos(pedidos, deStr, ateStr){
+  var t = {};
+  CK_PRODUTOS.forEach(function(g){ t[g.key] = { qtd: 0, valor: 0 }; });
+  (pedidos || []).forEach(function(p){
+    if (!p || p.excluido || p.status === 'cancelado' || !p.data || p.data < deStr || p.data > ateStr) return;
+    (p.itens || []).forEach(function(it){
+      var gr = ckClassificarProduto(it.material);
+      if (!gr && it.cat === 'aco' && !ckCategoriaDoProduto(it.material)) gr = 'perfil';
+      if (!gr) return;
+      t[gr].qtd += ckNum(it.qtd); t[gr].valor += ckNum(it.qtd) * ckNum(it.vUnit);
+    });
+  });
+  return t;
+}
 /* Classifica um item de pedido (it.material) num dos grupos CK_PRODUTOS, ou null */
 function ckClassificarProduto(nomeMaterial){
   var n = ckSemAcento(nomeMaterial);
@@ -14991,7 +15058,10 @@ function ckRenderMetasPeriodo(){
       '<td><input type="number" step="0.01" min="0" data-key="'+key+'" data-f="metaSemanalPorPessoa" value="'+sem+'"></td>' +
       '<td><input type="number" step="0.01" min="0" data-key="'+key+'" data-f="metaMensalPorPessoa" value="'+men+'"></td>' +
       '<td><input type="number" min="0" data-key="'+key+'" data-f="metaClientesNovosPorPessoa" value="'+novos+'"></td>' +
-      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaClientesInativosPorPessoa" value="'+inat+'"></td>';
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaClientesInativosPorPessoa" value="'+inat+'"></td>' +
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaLigMinMesPorPessoa" value="'+(((ckData.settings.metaLigMinMesPorPessoa||{})[key])||0)+'"></td>' +
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaLigIdealMesPorPessoa" value="'+(((ckData.settings.metaLigIdealMesPorPessoa||{})[key])||0)+'"></td>' +
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaCarretasPorPessoa" value="'+(((ckData.settings.metaCarretasPorPessoa||{})[key])||0)+'"></td>';
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll('input').forEach(function(inp){
@@ -15015,6 +15085,23 @@ function ckRenderMetasProdutoPessoa(){
   }
   var mes = (mesInp && mesInp.value) || ckMesAtualStr();
   var metasMes = ckMetasProdutoDoMes(mes);
+  var thr = tbody.parentNode && tbody.parentNode.querySelector('thead tr');
+  if (thr) {
+    thr.innerHTML = '<th>Vendedor(a)</th>' + CK_PRODUTOS.map(function(g){
+      var u = ckUnidProduto(mes, g.key);
+      return '<th class="num">' + g.label + '<br><button type="button" class="ck-unid" data-unid="' + g.key + '" title="Clique para alternar entre quantidade e R$" style="margin-top:3px;font-size:10px;padding:1px 6px;border-radius:4px;border:1px solid #bbb;background:' + (u === 'R$' ? '#E8F5E9' : '#fff') + ';cursor:pointer;">' + (u === 'R$' ? 'em R$' : 'em qtd') + '</button></th>';
+    }).join('');
+    thr.querySelectorAll('.ck-unid').forEach(function(bt){
+      bt.addEventListener('click', function(){
+        if (!ckIsAdmin()) return;
+        var k = bt.dataset.unid, s = ckData.settings;
+        s.metaProdutosUnidPorMes = s.metaProdutosUnidPorMes || {};
+        s.metaProdutosUnidPorMes[mes] = s.metaProdutosUnidPorMes[mes] || {};
+        s.metaProdutosUnidPorMes[mes][k] = ckUnidProduto(mes, k) === 'R$' ? 'qtd' : 'R$';
+        ckSaveSettings(); ckRenderMetasProdutoPessoa();
+      });
+    });
+  }
   tbody.innerHTML = '';
   CK_EQUIPE.forEach(function(pessoa){
     var nomeExibicao = vendedores[pessoa] ? vendedores[pessoa].nome : pessoa;
@@ -15885,34 +15972,22 @@ function mmRenderProdutos(){
   var ano = +mes.slice(0,4), m = +mes.slice(5,7) - 1;
   var inicio = new Date(ano, m, 1);
   var fim = new Date(ano, m + 1, 0, 23, 59, 59);
-  var totais = {};
-  CK_PRODUTOS.forEach(function(g){ totais[g.key] = 0; });
-
   var pessoas = (mmSelectedUser === 'EQUIPE') ? CK_EQUIPE : (CK_EQUIPE.indexOf(mmSelectedUser) >= 0 ? [mmSelectedUser] : []);
   if (pessoas.length === 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
-
-  pessoas.forEach(function(p){
-    (mmPedidosEquipe[p]||[]).forEach(function(ped){
-      if (ped.status === 'cancelado') return;
-      var d = mmDataPedido(ped);
-      if (!d || d < inicio || d > fim) return;
-      (ped.itens||[]).forEach(function(it){
-        var grupo = ckClassificarProduto(it.material);
-        // item fora da base de produtos mas marcado como aço no pedido também conta como perfil
-        if (!grupo && it.cat === 'aco' && !ckCategoriaDoProduto(it.material)) grupo = 'perfil';
-        if (!grupo) return;
-        if (grupo === 'perfil') totais.perfil += ckNum(it.qtd) * ckNum(it.vUnit);
-        else totais[grupo] += ckNum(it.qtd);
-      });
-    });
-  });
+  var deStr = mes + '-01', ateStr = ckDateToStr(fim);
+  var somaPessoas = [];
+  pessoas.forEach(function(p){ somaPessoas = somaPessoas.concat(mmPedidosEquipe[p] || []); });
+  var soma = ckSomarProdutos(somaPessoas, deStr, ateStr), totais = {};
+  CK_PRODUTOS.forEach(function(g){ totais[g.key] = ckUnidProduto(mes, g.key) === 'R$' ? soma[g.key].valor : soma[g.key].qtd; });
 
   var html = '';
   CK_PRODUTOS.forEach(function(g){
     var meta = (mmSelectedUser === 'EQUIPE')
       ? mmTotalMetaProdutoEquipe(g.key, mes)
       : ckMetaProduto(mes, g.key, mmSelectedUser);
-    html += mmItemHTML(g.label, totais[g.key], meta, meta>0?(totais[g.key]/meta*100):null, !!g.dinheiro, g.dinheiro ? '🔩' : '📦');
+    var emReais = ckUnidProduto(mes, g.key) === 'R$';
+    if (!meta && !totais[g.key]) return;
+    html += mmItemHTML(g.label, totais[g.key], meta, meta>0?(totais[g.key]/meta*100):null, emReais, g.key === 'perfil' ? '🔩' : '📦');
   });
   box.innerHTML = html;
 }
