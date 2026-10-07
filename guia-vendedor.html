@@ -4541,6 +4541,26 @@
   @media (max-width:600px){ #tab-minhasmetas .mm-grid2{ grid-template-columns:1fr; } }
 </style>
 <style>
+.mm-ed { background:#fff; border:1.5px solid #4A148C; border-radius:12px; margin:0 0 16px; }
+.mm-ed summary { cursor:pointer; padding:12px 16px; font-weight:700; color:#4A148C; font-size:14.5px; }
+.mm-ed-dica { font-weight:400; color:#888; font-size:12.5px; }
+.mm-ed-corpo { padding:0 16px 16px; display:flex; flex-direction:column; gap:12px; }
+.mm-ed-topo { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+.mm-ed-topo label { display:flex; flex-direction:column; gap:3px; font-size:12.5px; color:#555; font-weight:600; }
+.mm-ed-topo select, .mm-ed-topo input { padding:7px 10px; border:1.5px solid #E2E0D8; border-radius:7px; font-size:14px; }
+.mm-ed-sec { padding:8px 12px; border:1.5px solid #4A148C; background:#fff; color:#4A148C; border-radius:7px; font-weight:600; cursor:pointer; }
+.mm-ed-tit { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#444; margin-top:4px; }
+.mm-ed-grade { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:10px; }
+.mm-ed-campo { display:flex; flex-direction:column; gap:3px; font-size:12.5px; color:#555; }
+.mm-ed-campo input { padding:7px 9px; border:1.5px solid #E2E0D8; border-radius:7px; font-size:14px; width:100%; box-sizing:border-box; }
+.mm-ed-par { display:flex; gap:4px; }
+.mm-ed-par input { flex:1; min-width:0; }
+.mm-ed-par select { padding:6px; border:1.5px solid #E2E0D8; border-radius:7px; font-size:13px; }
+.mm-ed-rodape { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:4px; }
+.mm-ed-salvar { padding:10px 18px; border:none; border-radius:8px; background:#4A148C; color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
+.mm-ed-status { font-size:13px; color:#555; }
+.mm-ed-status.ok { color:#1B5E20; font-weight:700; }
+.mm-ed-status.erro { color:#C41E1E; font-weight:700; }
 /* ══ ROTA DA META (prefixo rt-) ══ */
 #tab-rota .rt-wrap { font-family:'Segoe UI', system-ui, sans-serif; background:#14263D; border:4px solid #0B1828; color:#1C1C1C; }
 #tab-rota .rt-topo { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:14px 18px; background:#1C1C1C; border-bottom:4px solid #C41E1E; }
@@ -4805,6 +4825,8 @@ td.p-tie { color:var(--sp-muted); }
     <p>Ligações e propostas vêm do check-in diário. Vendido, clientes e produtos são calculados automaticamente a partir dos seus pedidos.</p>
     <div id="mm-seletor" class="mm-seletor" style="display:none;"></div>
   </div>
+
+  <div id="mm-editor-metas"></div>
 
   <div id="mm-toast" class="mm-toast"></div>
 
@@ -13184,7 +13206,7 @@ function rtCalc(vn) {
   var hoje = new Date(), ano = hoje.getFullYear(), m = hoje.getMonth();
   var mes = ckMesAtualStr(), ini = mes + '-01', hojeStr = ckToday();
   var settings = (ckData && ckData.settings) || {};
-  var porP = function(campo) { return ckNum((settings[campo] || {})[vn]); };
+  var porP = function(campo) { return ckMetaPessoa(vn, campo, mes); };
   var peds = (RT.ped[vn] || []).filter(function(p) { return p.status !== 'cancelado' && p.data && p.data >= ini && p.data <= hojeStr; });
   var dUteisMes = rtDiasUteis(ano, m), dUteisAteHoje = rtDiasUteis(ano, m, hoje.getDate());
   var wdHoje = hoje.getDay(), ehUtil = wdHoje !== 0 && wdHoje !== 6;
@@ -15132,6 +15154,14 @@ function ckCategoriaDoProduto(nomeMaterial){
   return CK_NOME_PARA_CATEGORIA[nomeMaterial] || '';
 }
 
+/* Meta de uma pessoa num mês. Novo cadastro mensal (settings.metasMes[mes][vend][campo],
+   editado em Minhas Metas) tem prioridade; sem ele, vale o cadastro antigo (settings[campo][vend]). */
+function ckMetaPessoa(vn, campo, mes){
+  var s = (ckData && ckData.settings) || {};
+  var m = (((s.metasMes || {})[mes || ckMesAtualStr()] || {})[vn]) || {};
+  if (m[campo] !== undefined && m[campo] !== null && m[campo] !== '') return ckNum(m[campo]);
+  return ckNum((s[campo] || {})[vn]);
+}
 /* Unidade da meta de um produto num mês: 'qtd' (peças/baldes/pacotes) ou 'R$'.
    Perfil é sempre em R$; os demais seguem o que a gestora definiu para o mês. */
 function ckUnidProduto(mes, key){
@@ -15408,10 +15438,10 @@ function ckRenderMetasPeriodo(){
   tbody.innerHTML = '';
   CK_EQUIPE.forEach(function(key){
     var nomeExibicao = vendedores[key] ? vendedores[key].nome : key;
-    var sem = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[key]) || 0;
-    var men = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[key]) || 0;
-    var novos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[key]) || 0;
-    var inat = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[key]) || 0;
+    var sem = ckMetaPessoa(key, 'metaSemanalPorPessoa');
+    var men = ckMetaPessoa(key, 'metaMensalPorPessoa');
+    var novos = ckMetaPessoa(key, 'metaClientesNovosPorPessoa');
+    var inat = ckMetaPessoa(key, 'metaClientesInativosPorPessoa');
     var tr = document.createElement('tr');
     tr.innerHTML =
       '<td>'+nomeExibicao+'</td>' +
@@ -15419,16 +15449,18 @@ function ckRenderMetasPeriodo(){
       '<td><input type="number" step="0.01" min="0" data-key="'+key+'" data-f="metaMensalPorPessoa" value="'+men+'"></td>' +
       '<td><input type="number" min="0" data-key="'+key+'" data-f="metaClientesNovosPorPessoa" value="'+novos+'"></td>' +
       '<td><input type="number" min="0" data-key="'+key+'" data-f="metaClientesInativosPorPessoa" value="'+inat+'"></td>' +
-      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaLigMinMesPorPessoa" value="'+(((ckData.settings.metaLigMinMesPorPessoa||{})[key])||0)+'"></td>' +
-      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaLigIdealMesPorPessoa" value="'+(((ckData.settings.metaLigIdealMesPorPessoa||{})[key])||0)+'"></td>' +
-      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaCarretasPorPessoa" value="'+(((ckData.settings.metaCarretasPorPessoa||{})[key])||0)+'"></td>';
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaLigMinMesPorPessoa" value="'+ckMetaPessoa(key, 'metaLigMinMesPorPessoa')+'"></td>' +
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaLigIdealMesPorPessoa" value="'+ckMetaPessoa(key, 'metaLigIdealMesPorPessoa')+'"></td>' +
+      '<td><input type="number" min="0" data-key="'+key+'" data-f="metaCarretasPorPessoa" value="'+ckMetaPessoa(key, 'metaCarretasPorPessoa')+'"></td>';
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll('input').forEach(function(inp){
     inp.addEventListener('input', function(e){
-      var f = e.target.dataset.f, key = e.target.dataset.key;
-      if (!ckData.settings[f]) ckData.settings[f] = {};
-      ckData.settings[f][key] = Number(e.target.value) || 0;
+      var f = e.target.dataset.f, key = e.target.dataset.key, mesAt = ckMesAtualStr(), s = ckData.settings;
+      if (!s[f]) s[f] = {};
+      s[f][key] = Number(e.target.value) || 0;
+      s.metasMes = s.metasMes || {}; s.metasMes[mesAt] = s.metasMes[mesAt] || {}; s.metasMes[mesAt][key] = s.metasMes[mesAt][key] || {};
+      s.metasMes[mesAt][key][f] = Number(e.target.value) || 0;
       ckSaveSettings();
     });
   });
@@ -15956,6 +15988,7 @@ function mmRenderSeletor(){
     btn.textContent = key === 'EQUIPE' ? '👥 Equipe' : (vendedores[key] ? vendedores[key].nome : key);
     btn.addEventListener('click', function(){
       mmSelectedUser = key;
+      if (key !== 'EQUIPE' && !MMED.sujo) { MMED.vn = key; mmEdRender(true); }
       mmRenderSeletor();
       mmAtualizarTitulo();
       mmRenderTudo();
@@ -15967,7 +16000,7 @@ function mmRenderSeletor(){
 function mmTotalMetaEquipe(mapaKey){
   var total = 0;
   CK_EQUIPE.forEach(function(p){
-    total += (ckData.settings[mapaKey] && ckData.settings[mapaKey][p]) || 0;
+    total += ckMetaPessoa(p, mapaKey);
   });
   return total;
 }
@@ -15978,7 +16011,101 @@ function mmTotalMetaProdutoEquipe(produtoKey, mes){
   return total;
 }
 
+/* ══ EDITOR DE METAS DO MÊS (aba Minhas Metas, só gestão) ══
+   Grava tudo de uma vez no mês escolhido e confere lendo de volta do servidor.
+   settings.metasMes[mes][vend][campo] + metaProdutosPorMes[mes][produto][vend]
+   + metaProdutosUnidPorMes[mes][produto] (unidade vale para a equipe no mês). */
+var MMED = { vn: null, mes: null, sujo: false, msg: '', msgCls: '' };
+var MMED_GERAIS = [
+  ['metaMensalPorPessoa', 'Valor do mês (R$)', true],
+  ['metaSemanalPorPessoa', 'Valor por semana (R$)', true],
+  ['metaLigMinMesPorPessoa', 'Ligações no mês — mínimo', false],
+  ['metaLigIdealMesPorPessoa', 'Ligações no mês — ideal', false],
+  ['metaCarretasPorPessoa', 'Carretas no mês', false],
+  ['metaClientesInativosPorPessoa', 'Clientes reativados', false],
+  ['metaClientesNovosPorPessoa', 'Clientes novos', false]
+];
+function mmEdRender(forcar){
+  var box = document.getElementById('mm-editor-metas');
+  if (!box) return;
+  if (!(typeof ckIsAdmin === 'function' && ckIsAdmin())) { box.innerHTML = ''; return; }
+  if (!ckData || !ckData.settings) return;
+  if (!MMED.vn) MMED.vn = (mmSelectedUser && mmSelectedUser !== 'EQUIPE') ? mmSelectedUser : CK_EQUIPE[0];
+  if (!MMED.mes) MMED.mes = ckMesAtualStr();
+  var aberto = box.querySelector('details') ? box.querySelector('details').open : false;
+  if (!forcar && MMED.sujo && box.innerHTML) return; // não apaga o que está sendo digitado
+  var vn = MMED.vn, mes = MMED.mes, s = ckData.settings;
+  var metasP = ckMetasProdutoDoMes(mes);
+  var fmtIn = function(v){ return v ? String(v) : ''; };
+  var h = '<details class="mm-ed"' + (aberto ? ' open' : '') + '><summary>✏️ Editar metas do mês <span class="mm-ed-dica">(gestão)</span></summary>' +
+    '<div class="mm-ed-corpo">' +
+    '<div class="mm-ed-topo"><label>Vendedor <select id="mmed-vn" onchange="mmEdTrocar()">' +
+      CK_EQUIPE.map(function(k){ return '<option value="' + k + '"' + (k === vn ? ' selected' : '') + '>' + (vendedores[k] ? vendedores[k].nome : k) + '</option>'; }).join('') +
+    '</select></label><label>Mês <input type="month" id="mmed-mes" value="' + mes + '" onchange="mmEdTrocar()"></label>' +
+    '<button type="button" class="mm-ed-sec" onclick="mmEdCopiarAnterior()">↺ Trazer do mês anterior</button></div>' +
+    '<div class="mm-ed-tit">Metas gerais</div><div class="mm-ed-grade">' +
+    MMED_GERAIS.map(function(g){
+      return '<label class="mm-ed-campo"><span>' + g[1] + '</span><input type="number" min="0" step="' + (g[2] ? '0.01' : '1') + '" data-ger="' + g[0] + '" value="' + fmtIn(ckMetaPessoa(vn, g[0], mes)) + '" oninput="MMED.sujo=true"></label>';
+    }).join('') + '</div>' +
+    '<div class="mm-ed-tit">Metas de produto <span class="mm-ed-dica">— a unidade (qtd ou R$) vale para a equipe toda neste mês</span></div><div class="mm-ed-grade">' +
+    CK_PRODUTOS.map(function(g){
+      var v = (metasP[g.key] && metasP[g.key][vn]) || 0, u = ckUnidProduto(mes, g.key);
+      return '<label class="mm-ed-campo"><span>' + g.label + '</span><div class="mm-ed-par"><input type="number" min="0" step="0.01" data-prod="' + g.key + '" value="' + fmtIn(v) + '" oninput="MMED.sujo=true">' +
+        '<select data-unid="' + g.key + '" onchange="MMED.sujo=true"><option value="qtd"' + (u === 'qtd' ? ' selected' : '') + '>qtd</option><option value="R$"' + (u === 'R$' ? ' selected' : '') + '>R$</option></select></div></label>';
+    }).join('') + '</div>' +
+    '<div class="mm-ed-rodape"><button type="button" class="mm-ed-salvar" onclick="mmEdSalvar()">💾 Salvar metas de ' + (vendedores[vn] ? vendedores[vn].nome : vn) + ' · ' + mes.slice(5) + '/' + mes.slice(0, 4) + '</button><span id="mmed-status" class="mm-ed-status ' + MMED.msgCls + '">' + MMED.msg + '</span></div>' +
+    '</div></details>';
+  box.innerHTML = h;
+  MMED.sujo = false;
+}
+function mmEdTrocar(){
+  if (MMED.sujo && !confirm('Você tem alterações não salvas. Trocar mesmo assim?')) { mmEdRender(true); return; }
+  MMED.vn = document.getElementById('mmed-vn').value;
+  MMED.mes = document.getElementById('mmed-mes').value || ckMesAtualStr();
+  MMED.sujo = false; MMED.msg = ''; mmEdRender(true);
+  var d = document.querySelector('#mm-editor-metas details'); if (d) d.open = true;
+}
+function mmEdCopiarAnterior(){
+  var p = MMED.mes.split('-'), y = +p[0], m = +p[1] - 1; if (m < 1) { m = 12; y--; }
+  var ant = y + '-' + String(m).padStart(2, '0'), vn = MMED.vn, metasAnt = ckMetasProdutoDoMes(ant), n = 0;
+  document.querySelectorAll('#mm-editor-metas [data-ger]').forEach(function(inp){ var v = ckMetaPessoa(vn, inp.dataset.ger, ant); if (v) { inp.value = v; n++; } });
+  document.querySelectorAll('#mm-editor-metas [data-prod]').forEach(function(inp){ var v = (metasAnt[inp.dataset.prod] && metasAnt[inp.dataset.prod][vn]) || 0; if (v) { inp.value = v; n++; } });
+  document.querySelectorAll('#mm-editor-metas [data-unid]').forEach(function(sel){ sel.value = ckUnidProduto(ant, sel.dataset.unid); });
+  MMED.sujo = true;
+  var st = document.getElementById('mmed-status'); if (st) { st.textContent = n ? n + ' valor(es) trazidos de ' + ant.slice(5) + '/' + ant.slice(0, 4) + ' — confira e clique em Salvar.' : 'Nada cadastrado no mês anterior.'; st.className = 'mm-ed-status'; }
+}
+function mmEdSalvar(){
+  var vn = MMED.vn, mes = MMED.mes, upd = {}, n = 0;
+  // campo em branco = sem meta neste mês (null apaga); 0 digitado = meta zero
+  var val = function(inp){ var t = String(inp.value).trim(); return t === '' ? null : (Number(t) || 0); };
+  document.querySelectorAll('#mm-editor-metas [data-ger]').forEach(function(inp){ var v = val(inp); upd['metasMes/' + mes + '/' + vn + '/' + inp.dataset.ger] = v; if (v !== null) n++; });
+  document.querySelectorAll('#mm-editor-metas [data-prod]').forEach(function(inp){ var v = val(inp); upd['metaProdutosPorMes/' + mes + '/' + inp.dataset.prod + '/' + vn] = v; if (v !== null) n++; });
+  document.querySelectorAll('#mm-editor-metas [data-unid]').forEach(function(sel){ upd['metaProdutosUnidPorMes/' + mes + '/' + sel.dataset.unid] = sel.value; });
+  var st = document.getElementById('mmed-status'); if (st) { st.textContent = 'Salvando…'; st.className = 'mm-ed-status'; }
+  // aplica localmente
+  var s = ckData.settings;
+  Object.keys(upd).forEach(function(k){ var ps = k.split('/'), o = s; for (var i = 0; i < ps.length - 1; i++) { o[ps[i]] = o[ps[i]] || {}; o = o[ps[i]]; } if (upd[k] === null) delete o[ps[ps.length - 1]]; else o[ps[ps.length - 1]] = upd[k]; });
+  if (!(firebaseOK && db)) { ckSaveSettings(); if (st) { st.textContent = '⚠️ Sem conexão: salvo só neste aparelho.'; st.className = 'mm-ed-status erro'; } return; }
+  db.ref('checkinDiario/settings').update(upd).then(function(){
+    return db.ref('checkinDiario/settings').once('value');
+  }).then(function(snap){
+    var srv = snap.val() || {}, ok = 0, falhou = [];
+    Object.keys(upd).forEach(function(k){
+      var ps = k.split('/'), o = srv; for (var i = 0; i < ps.length && o != null; i++) o = o[ps[i]];
+      if ((upd[k] === null && (o === null || o === undefined)) || String(o) === String(upd[k])) ok++; else falhou.push(k);
+    });
+    MMED.sujo = false;
+    if (falhou.length) { MMED.msg = '⚠️ ' + falhou.length + ' campo(s) não confirmaram no servidor. Tente salvar de novo.'; MMED.msgCls = 'erro'; }
+    else { MMED.msg = '✅ Salvo e conferido no servidor (' + n + ' metas de ' + (vendedores[vn] ? vendedores[vn].nome : vn) + ', ' + mes.slice(5) + '/' + mes.slice(0, 4) + ').'; MMED.msgCls = 'ok'; }
+    mmEdRender(true);
+    var dd = document.querySelector('#mm-editor-metas details'); if (dd) dd.open = true;
+    if (typeof mmRenderTudo === 'function') mmRenderTudo();
+    try { if (typeof rtRender === 'function') rtRender(); } catch (e) {}
+  }).catch(function(e){ MMED.msg = '❌ Não salvou: ' + (e && e.message ? e.message : e); MMED.msgCls = 'erro'; if (st) { st.textContent = MMED.msg; st.className = 'mm-ed-status erro'; } });
+}
+
 function mmRenderTudo(){
+  try { mmEdRender(false); } catch(e){ console.warn('editor de metas', e); }
   mmRenderHoje();
   mmRenderSemana();
   mmRenderMes();
@@ -16190,7 +16317,7 @@ function mmRenderSemana(){
       var d = mmDataPedido(p);
       return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
     }, 0);
-    meta = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[mmSelectedUser]) || 0;
+    meta = ckMetaPessoa(mmSelectedUser, 'metaSemanalPorPessoa');
   }
   box.innerHTML = mmItemHTML('Vendido na semana', total, meta, meta>0?(total/meta*100):null, true, '💰');
 }
@@ -16228,7 +16355,7 @@ function mmRenderMes(){
       var d = mmDataPedido(p);
       return (d && d >= inicio && d <= hoje) ? s + mmValorPedido(p) : s;
     }, 0);
-    meta = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[mmSelectedUser]) || 0;
+    meta = ckMetaPessoa(mmSelectedUser, 'metaMensalPorPessoa');
   }
 
   var html = mmItemHTML('Vendido no mês', total, meta, meta>0?(total/meta*100):null, true, '💰');
@@ -16314,8 +16441,8 @@ function mmRenderClientes(){
     var pedidosMes = pedidos.filter(function(p){ var d = mmDataPedido(p); return d && d >= inicio && d <= hoje; });
     qtdNovos = pedidosMes.filter(function(p){ return p.tipoCliente === 'novo'; }).length;
     qtdInativos = pedidosMes.filter(function(p){ return p.tipoCliente === 'inativo'; }).length;
-    metaNovos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[mmSelectedUser]) || 0;
-    metaInativos = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[mmSelectedUser]) || 0;
+    metaNovos = ckMetaPessoa(mmSelectedUser, 'metaClientesNovosPorPessoa');
+    metaInativos = ckMetaPessoa(mmSelectedUser, 'metaClientesInativosPorPessoa');
   }
   box.innerHTML =
     mmItemHTML('Clientes novos', qtdNovos, metaNovos, metaNovos>0?(qtdNovos/metaNovos*100):null, false, '🆕') +
@@ -16447,21 +16574,21 @@ function mmVerificarConquistas(){
   // SEMANA — vendido
   var inicioSemana = mmInicioSemana(agora);
   var totalSemana = pedidosPessoa.reduce(function(s,p){ var d=mmDataPedido(p); return (d&&d>=inicioSemana&&d<=agora)?s+mmValorPedido(p):s; },0);
-  var metaSemana = (ckData.settings.metaSemanalPorPessoa && ckData.settings.metaSemanalPorPessoa[pessoa]) || 0;
+  var metaSemana = ckMetaPessoa(pessoa, 'metaSemanalPorPessoa');
   if (metaSemana>0 && totalSemana>=metaSemana && mmRegistrarSeNovo(pessoa,'vend_semana',ckDateToStr(inicioSemana))) conquistas.push('Meta de vendido da semana batida!');
 
   // MÊS — vendido, clientes novos, clientes inativos
   var inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
   var mesKey = agora.getFullYear() + '-' + (agora.getMonth()+1);
   var totalMes = pedidosPessoa.reduce(function(s,p){ var d=mmDataPedido(p); return (d&&d>=inicioMes&&d<=agora)?s+mmValorPedido(p):s; },0);
-  var metaMes = (ckData.settings.metaMensalPorPessoa && ckData.settings.metaMensalPorPessoa[pessoa]) || 0;
+  var metaMes = ckMetaPessoa(pessoa, 'metaMensalPorPessoa');
   if (metaMes>0 && totalMes>=metaMes && mmRegistrarSeNovo(pessoa,'vend_mes',mesKey)) conquistas.push('Meta de vendido do mês batida!');
 
   var pedidosMes = pedidosPessoa.filter(function(p){ var d=mmDataPedido(p); return d&&d>=inicioMes&&d<=agora; });
   var qtdNovos = pedidosMes.filter(function(p){ return p.tipoCliente==='novo'; }).length;
   var qtdInativos = pedidosMes.filter(function(p){ return p.tipoCliente==='inativo'; }).length;
-  var metaNovos = (ckData.settings.metaClientesNovosPorPessoa && ckData.settings.metaClientesNovosPorPessoa[pessoa]) || 0;
-  var metaInativos = (ckData.settings.metaClientesInativosPorPessoa && ckData.settings.metaClientesInativosPorPessoa[pessoa]) || 0;
+  var metaNovos = ckMetaPessoa(pessoa, 'metaClientesNovosPorPessoa');
+  var metaInativos = ckMetaPessoa(pessoa, 'metaClientesInativosPorPessoa');
   if (metaNovos>0 && qtdNovos>=metaNovos && mmRegistrarSeNovo(pessoa,'clientes_novos_mes',mesKey)) conquistas.push('Meta de clientes novos do mês batida!');
   if (metaInativos>0 && qtdInativos>=metaInativos && mmRegistrarSeNovo(pessoa,'clientes_inativos_mes',mesKey)) conquistas.push('Meta de clientes inativos reativados do mês batida!');
 
