@@ -4624,6 +4624,20 @@
 #tab-rota .rt-dia .rt-dia-v { grid-column:2; font-size:13.5px; }
 #tab-rota .rt-dia.feito { color:#1B5E20; }
 #tab-rota .rt-dia.feito .rt-check { background:#2E7D32; color:#fff; border-color:#1B5E20; }
+#tab-rota .rt-total { background:#1C1C1C; border:4px solid #FFD23F; box-shadow:6px 6px 0 #C41E1E; padding:14px 16px; color:#fff; display:flex; flex-direction:column; gap:6px; }
+#tab-rota .rt-total-rot { font-family:'Press Start 2P', monospace; font-size:10px; color:#FFD23F; }
+#tab-rota .rt-total-v { font-family:'Press Start 2P', monospace; font-size:24px; color:#fff; line-height:1.3; word-break:break-word; }
+#tab-rota .rt-total-barra { height:14px; background:#3A3A3A; border:2px solid #FFD23F; }
+#tab-rota .rt-total-barra div { height:100%; background:#FFD23F; }
+#tab-rota .rt-total-sub { font-size:14px; color:#E8E6E1; }
+#tab-rota .rt-total-pend { font-size:14px; color:#9FD3E8; }
+#tab-rota .rt-deficit { background:#FFF8E1; border-color:#7A4A00; }
+.rt-lembrete { position:fixed; right:16px; bottom:16px; z-index:99995; max-width:340px; width:calc(100% - 32px); background:#1C1C1C; color:#fff; border:4px solid #E8A020; box-shadow:8px 8px 0 #C41E1E; padding:14px 16px; font-family:'Pixelify Sans', system-ui, sans-serif; font-size:15px; }
+.rt-lembrete-tit { font-family:'Press Start 2P', monospace; font-size:10px; color:#FFD23F; margin-bottom:8px; }
+.rt-lembrete-lin { display:flex; justify-content:space-between; gap:10px; padding:3px 0; border-bottom:1px dashed #444; }
+.rt-lembrete-lin b { color:#FFD23F; white-space:nowrap; }
+.rt-lembrete button { flex:1; font-family:'Pixelify Sans', sans-serif; font-size:14px; font-weight:700; padding:9px; border:3px solid #FFD23F; background:#FFD23F; color:#1C1C1C; cursor:pointer; min-height:44px; }
+.rt-lembrete button.rt-lembrete-ver { background:transparent; color:#FFD23F; }
 #tab-rota .rt-selos { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
 #tab-rota .rt-selo { font-size:13px; padding:2px 7px; border:2px solid #D8D6CF; color:#999; background:#fff; }
 #tab-rota .rt-selo.on { border-color:#1C1C1C; color:#1C1C1C; background:#FFD23F; }
@@ -12666,6 +12680,7 @@ function entrarComoUsuario(user) {
   document.getElementById('vb-nome-text').textContent = v.nome;
   checkAdminAccess(v.nome);
   if (typeof spOnLogin === 'function') spOnLogin();
+  try { if (rtJoga(user)) { rtInit(); setTimeout(rtLembreteDiario, 3000); } } catch(e) {}
   if (typeof pedColRecarregarUsuario === 'function') pedColRecarregarUsuario();
   navAplicarOrdemSalva();
   navSetupDragDrop();
@@ -13160,6 +13175,9 @@ function rtCalc(vn) {
   // valor
   var valor = 0, valorHoje = 0;
   peds.forEach(function(p) { var v = mmValorPedido(p); valor += v; if (p.data === hojeStr) valorHoje += v; });
+  // Só pedido ENTREGUE (ou já faturado) faz o avatar subir de nível
+  var valorEnt = 0, qtdEnt = 0, qtdLanc = peds.length;
+  peds.forEach(function(p) { if (p.status === 'entregue' || p.status === 'faturado') { valorEnt += mmValorPedido(p); qtdEnt++; } });
   var metaValor = porP('metaMensalPorPessoa');
   if (metaValor > 0) add({ key: 'valor', label: 'Valor', real: valor, hoje: valorHoje, meta: metaValor, din: true });
   // produtos (unidade da meta definida por mês: qtd ou R$)
@@ -13187,9 +13205,14 @@ function rtCalc(vn) {
   add({ key: 'ligacoes', label: 'Ligações', real: lig, hoje: ligHoje, meta: ligMin, ideal: ligIdeal, lig: true });
   var ligDia = Math.ceil(ligMin / Math.max(1, dUteisMes));
   // meta de hoje: o que falta do mês dividido pelos dias úteis que restam (contando hoje)
+  var dUteisAteOntem = dUteisAteHoje - (ehUtil ? 1 : 0);
   met.forEach(function(x) {
     x.pct = x.meta > 0 ? x.real / x.meta * 100 : 0;
     var antesDeHoje = x.real - x.hoje;
+    // déficit: o que já deveria ter sido feito até ontem (ritmo dos dias úteis) e não foi
+    x.esperadoOntem = x.meta * Math.max(0, dUteisAteOntem) / Math.max(1, dUteisMes);
+    x.deficit = Math.max(0, x.esperadoOntem - antesDeHoje);
+    if (x.cli || x.lig || (x.prod && !x.din)) x.deficit = Math.ceil(x.deficit - 0.0001);
     x.alvoHoje = Math.max(0, (x.meta - antesDeHoje) / dUteisRest);
     if (x.cli || x.lig) x.alvoHoje = Math.ceil(x.alvoHoje);
     if (x.lig && x.ideal) x.alvoIdealHoje = Math.ceil(Math.max(0, (x.ideal - antesDeHoje) / dUteisRest));
@@ -13199,7 +13222,7 @@ function rtCalc(vn) {
   var mValor = met.find(function(x) { return x.key === 'valor'; });
   var outras = met.filter(function(x) { return x.key !== 'valor'; });
   var menor = outras.reduce(function(a, x) { return (!a || x.pct < a.pct) ? x : a; }, null);
-  var basePct = mValor ? mValor.pct : (menor ? menor.pct : 0);
+  var basePct = mValor ? (valorEnt / mValor.meta * 100) : (menor ? menor.pct : 0);
   var fase = met.length ? Math.max(0, Math.min(10, Math.floor(basePct / 10))) : 0;
   var nivelEstrela = Math.max(1, fase) * 10;
   outras.forEach(function(x) { x.estrela = x.pct >= nivelEstrela; });
@@ -13213,7 +13236,7 @@ function rtCalc(vn) {
     if (wd !== 0 && wd !== 6) { if (rtLigacoesDia(vn, ckDateToStr(dt)) >= ligDia) seq++; else break; }
     dt.setDate(dt.getDate() - 1);
   }
-  return { vn: vn, met: met, menor: menor, fase: fase, esperado: esperado, mValor: mValor, outras: outras, estrelas: estrelas, nivelEstrela: nivelEstrela, basePct: basePct, ligDia: ligDia, carretas: carretas, metaCarretas: porP('metaCarretasPorPessoa'), seq: seq,
+  return { vn: vn, valorEnt: valorEnt, valorLanc: valor, qtdEnt: qtdEnt, qtdLanc: qtdLanc, metaValor: metaValor, met: met, menor: menor, fase: fase, esperado: esperado, mValor: mValor, outras: outras, estrelas: estrelas, nivelEstrela: nivelEstrela, basePct: basePct, ligDia: ligDia, carretas: carretas, metaCarretas: porP('metaCarretasPorPessoa'), seq: seq,
     lig: lig, ligIdeal: ligIdeal, ligHoje: ligHoje, dUteisRest: dUteisRest, semValor: !(metaValor > 0) };
 }
 function rtFmt(x, v) {
@@ -13344,6 +13367,27 @@ function rtRenderInner() {
   root.innerHTML = html;
 }
 function rtVer(v) { RT.ver = v; rtRender(); }
+// Lembrete do déficit de produtos: aparece uma vez por dia quando o vendedor entra no guia
+function rtLembreteDiario() {
+  if (!currentUser || !rtJoga(currentUser)) return;
+  var chave = 'rt_lembrete_' + currentUser + '_' + ckToday();
+  if (document.querySelector('.rt-lembrete')) return;
+  try { if (localStorage.getItem(chave)) return; } catch (e) {}
+  var pronto = RT.ckOk && CK_EQUIPE.every(function(vn) { return RT.pedOk[vn]; });
+  if (!pronto) { setTimeout(rtLembreteDiario, 2500); return; }
+  var c = rtCalc(currentUser);
+  var dev = c.met.filter(function(x) { return x.prod && x.deficit > 0; }).sort(function(a, b) { return (b.deficit / b.meta) - (a.deficit / a.meta); });
+  if (!dev.length) return;
+  try { localStorage.setItem(chave, '1'); } catch (e) {}
+  var box = document.createElement('div'); box.className = 'rt-lembrete';
+  box.innerHTML = '<div class="rt-lembrete-tit">⚠️ LEMBRETE DE PRODUTOS</div><div style="margin-bottom:6px;">Você está devendo, no ritmo do mês:</div>' +
+    dev.slice(0, 5).map(function(x) { return '<div class="rt-lembrete-lin"><span>' + rtEsc(x.label) + '</span><b>' + rtFmt(x, x.deficit) + '</b></div>'; }).join('') +
+    (dev.length > 5 ? '<div style="opacity:.8;font-size:13px;">+ ' + (dev.length - 5) + ' produto(s)</div>' : '') +
+    '<div style="display:flex;gap:8px;margin-top:10px;"><button type="button" class="rt-lembrete-ver">Ver na Rota da Meta</button><button type="button" class="rt-lembrete-ok">Ok, bora!</button></div>';
+  document.body.appendChild(box);
+  box.querySelector('.rt-lembrete-ok').onclick = function() { box.remove(); };
+  box.querySelector('.rt-lembrete-ver').onclick = function() { box.remove(); var b = document.getElementById('nav-rota'); if (b) showTab('rota', b); };
+}
 function rtAba(a) { RT.aba = a; if (a !== 'mapa') rcInit(); rtRender(); }
 function rtPainelVendedor(c) {
   var eu = c.vn === currentUser, h = '';
@@ -13356,6 +13400,23 @@ function rtPainelVendedor(c) {
     '<div class="rt-selos">' + (c.outras.length ? '<span class="rt-selo' + (c.estrelas ? ' on' : '') + '" title="Metas que acompanham o nível da fase">⭐ ' + c.estrelas + '/' + c.outras.length + ' estrelas</span>' : '') + '<span class="rt-selo' + (c.seq ? ' on' : '') + '" title="Dias úteis seguidos batendo a meta de ligações">🔥 ' + c.seq + (c.seq === 1 ? ' dia' : ' dias') + '</span>' +
     '<span class="rt-selo' + (c.carretas ? ' on' : '') + '" title="Cargas de carreta fechadas no mês">🚛 ' + c.carretas + (c.metaCarretas ? '/' + c.metaCarretas : '') + ' carreta' + ((c.metaCarretas || c.carretas) === 1 ? '' : 's') + '</span>' +
     (c.ligIdeal ? '<span class="rt-selo' + (c.lig >= c.ligIdeal ? ' on' : '') + '" title="Ligações no nível ideal do mês">⭐ ' + c.lig + '/' + c.ligIdeal + ' ideal</span>' : '') + '</div></div></div>';
+  var pctE = c.metaValor ? c.valorEnt / c.metaValor * 100 : 0, pend = Math.max(0, c.valorLanc - c.valorEnt);
+  h += '<div class="rt-total"><div class="rt-total-rot">💰 VALOR ENTREGUE NO MÊS</div>' +
+    '<div class="rt-total-v">' + rcBRL(c.valorEnt) + '</div>' +
+    (c.metaValor ? '<div class="rt-total-barra"><div style="width:' + Math.min(100, pctE).toFixed(1) + '%"></div></div><div class="rt-total-sub"><b>' + Math.floor(pctE) + '%</b> da meta de ' + rcBRL(c.metaValor) + ' · faltam <b>' + rcBRL(Math.max(0, c.metaValor - c.valorEnt)) + '</b></div>' : '<div class="rt-total-sub">Meta de valor não cadastrada</div>') +
+    '<div class="rt-total-pend">🚚 ' + rcBRL(pend) + ' lançados aguardando entrega' + (pend > 0 ? ' — viram nível quando entregarem' : '') + '</div>' +
+    '<div class="rt-total-sub" style="opacity:.8">' + c.qtdEnt + ' de ' + c.qtdLanc + ' pedido(s) do mês entregues · total lançado ' + rcBRL(c.valorLanc) + '</div></div>';
+  var devendo = c.met.filter(function(x) { return x.prod && x.deficit > 0; }).sort(function(a, b) { return (b.deficit / b.meta) - (a.deficit / a.meta); });
+  if (devendo.length) {
+    h += '<div class="rt-card rt-deficit"><div class="rt-pix">⚠️ DÉFICIT DOS PRODUTOS</div><div class="rt-sub">O que já devia ter saído até ontem, no ritmo dos dias úteis. Fica acumulado até você alcançar a meta do produto.</div>' +
+      devendo.map(function(x) {
+        var w = Math.min(100, x.esperadoOntem > 0 ? (x.real - x.hoje) / x.esperadoOntem * 100 : 100);
+        return '<div class="rt-barra-lin"><span class="rt-forte">' + rtEsc(x.label) + '</span><span class="rt-atras">devendo ' + rtFmt(x, x.deficit) + '</span></div>' +
+          '<div class="rt-barra"><div style="width:' + w.toFixed(1) + '%;background:#E8A020"></div></div>';
+      }).join('') + '</div>';
+  } else if (c.met.some(function(x) { return x.prod; })) {
+    h += '<div class="rt-card"><div class="rt-ok">✓ Nenhum produto em déficit — você está no ritmo de todas as metas de produto.</div></div>';
+  }
   h += '<div class="rt-card rt-hoje"><div class="rt-pix">📅 META DE HOJE</div><div class="rt-sub">O que falta do mês dividido pelos ' + c.dUteisRest + ' dia(s) útil(eis) que restam.</div>' +
     c.met.map(function(x) {
       var ok = x.hoje >= x.alvoHoje && x.alvoHoje > 0, zerado = x.alvoHoje <= 0;
@@ -13366,11 +13427,12 @@ function rtPainelVendedor(c) {
     var alvo = (c.fase + 1) * 10;
     h += '<div class="rt-card"><div class="rt-pix">PRÓXIMA FASE · ' + (c.fase + 1) + '</div>';
     if (c.mValor) {
-      var necV = c.mValor.meta * alvo / 100, faltaV = Math.max(0, necV - c.mValor.real), wV = Math.min(100, c.mValor.real / necV * 100);
-      h += '<div class="rt-sub">O avatar anda pela meta de valor: chegar a ' + alvo + '% (' + rtFmt(c.mValor, necV) + ').</div>' +
-        '<div class="rt-barra-lin"><span class="rt-forte">Valor vendido</span><span>' + (faltaV > 0 ? 'falta ' + rtFmt(c.mValor, faltaV) : 'ok ✓') + '</span></div>' +
+      var necV = c.mValor.meta * alvo / 100, faltaV = Math.max(0, necV - c.valorEnt), wV = Math.min(100, c.valorEnt / necV * 100);
+      var pendFase = Math.min(faltaV, Math.max(0, c.valorLanc - c.valorEnt));
+      h += '<div class="rt-sub">Sobe de nível com pedido <b>entregue</b>: chegar a ' + alvo + '% (' + rtFmt(c.mValor, necV) + ' entregues).</div>' +
+        '<div class="rt-barra-lin"><span class="rt-forte">Valor entregue</span><span>' + (faltaV > 0 ? 'falta ' + rtFmt(c.mValor, faltaV) : 'ok ✓') + '</span></div>' +
         '<div class="rt-barra"><div style="width:' + wV.toFixed(1) + '%;background:#C41E1E"></div></div>' +
-        '<div class="rt-cinza" style="font-size:13px">' + Math.floor(c.mValor.pct) + '% da meta do mês (' + rtFmt(c.mValor, c.mValor.real) + ' de ' + rtFmt(c.mValor, c.mValor.meta) + ')</div>';
+        (pendFase > 0 ? '<div class="rt-cinza" style="font-size:13px">🚚 ' + rtFmt(c.mValor, pendFase) + ' disso já está lançado, esperando entrega.</div>' : '');
     } else {
       h += '<div class="rt-aviso">Meta de valor deste mês não cadastrada no Check-in: o avatar anda pela meta mais baixa.</div>';
     }
@@ -13411,13 +13473,13 @@ function rtPainelVendedor(c) {
 }
 function rtPainelEquipe(calcs) {
   var ord = calcs.slice().sort(function(a, b) { return b.fase - a.fase || b.basePct - a.basePct || b.estrelas - a.estrelas; });
-  return '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase pela meta de valor, estrelas das outras metas e a mais atrasada.</div>' +
-    '<table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Fase</th><th title="Dias úteis na mesma fase">Dias</th><th>⭐</th><th>Mais atrasada</th></tr></thead><tbody>' +
+  return '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase pelo valor <b>entregue</b>, estrelas das outras metas e a mais atrasada.</div>' +
+    '<table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Fase</th><th>Entregue</th><th title="Dias úteis na mesma fase">Dias</th><th>⭐</th><th>Mais atrasada</th></tr></thead><tbody>' +
     ord.map(function(c) {
       var tr = c.menor ? rtEsc(c.menor.label) + ' <span class="rt-cinza" style="white-space:nowrap">· ' + Math.floor(c.menor.pct) + '%</span>' : '—';
       var hs = RT.hist[c.vn], dias = hs && hs.desde ? rtDiasUteisEntre(hs.desde, ckToday()) : null;
       var parado = dias !== null && dias >= 3 && c.fase < 10;
-      return '<tr onclick="rtVer(\'' + c.vn + '\')"><td>' + rtSpriteSvg(RT.avatares[c.vn] || 'misterio', 3) + '</td><td class="rt-forte">' + rtEsc(rtNome(c.vn)) + (c.seq >= 3 ? ' <span style="white-space:nowrap;font-weight:400" title="Dias seguidos batendo ligações">🔥' + c.seq + '</span>' : '') + '</td><td style="white-space:nowrap">' + c.fase + '/10</td>' +
+      return '<tr onclick="rtVer(\'' + c.vn + '\')"><td>' + rtSpriteSvg(RT.avatares[c.vn] || 'misterio', 3) + '</td><td class="rt-forte">' + rtEsc(rtNome(c.vn)) + (c.seq >= 3 ? ' <span style="white-space:nowrap;font-weight:400" title="Dias seguidos batendo ligações">🔥' + c.seq + '</span>' : '') + '</td><td style="white-space:nowrap">' + c.fase + '/10</td><td style="white-space:nowrap" class="rt-forte">' + rcBRL(c.valorEnt) + (c.metaValor ? ' <span class="rt-cinza" style="font-weight:400">' + Math.floor(c.valorEnt / c.metaValor * 100) + '%</span>' : '') + '</td>' +
         '<td style="white-space:nowrap"' + (parado ? ' class="rt-atras"' : '') + '>' + (dias === null ? '—' : dias + 'd' + (parado ? ' ⚠️' : '')) + '</td><td style="white-space:nowrap">' + (c.outras.length ? c.estrelas + '/' + c.outras.length : '—') + '</td><td>' + (c.fase >= 10 && !c.menor ? '🏆 meta batida' : tr) + '</td></tr>';
     }).join('') + '</tbody></table><div class="rt-sub">Dias = dias úteis na mesma fase; ⚠️ = 3 ou mais. Clique num vendedor para ver o painel dele.</div></div>';
 }
