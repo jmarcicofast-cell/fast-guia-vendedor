@@ -4554,7 +4554,8 @@
 #tab-rota .rt-sel button { font-family:'Segoe UI', system-ui, sans-serif; font-size:14px; padding:5px 10px; border:3px solid #0B1828; background:#fff; cursor:pointer; }
 #tab-rota .rt-sel button.on { background:#FFD23F; }
 #tab-rota .rt-corpo { display:flex; flex-wrap:wrap; gap:18px; padding:16px 18px 20px; align-items:flex-start; }
-#tab-rota .rt-mapa-box { flex:999 1 560px; min-width:0; border:4px solid #0B1828; background:#1B3A5C; }
+#tab-rota .rt-col-esq { flex:999 1 560px; min-width:0; display:flex; flex-direction:column; gap:16px; }
+#tab-rota .rt-mapa-box { border:4px solid #0B1828; background:#1B3A5C; }
 #tab-rota .rt-mapa { display:block; width:100%; height:auto; }
 #tab-rota .rt-painel { flex:1 1 300px; display:flex; flex-direction:column; gap:14px; min-width:0; }
 #tab-rota .rt-card { background:#fff; border:4px solid #1C1C1C; box-shadow:6px 6px 0 #0B1828; padding:12px 14px; display:flex; flex-direction:column; gap:8px; font-size:15px; }
@@ -4638,6 +4639,24 @@
 .rt-lembrete-lin b { color:#FFD23F; white-space:nowrap; }
 .rt-lembrete button { flex:1; font-family:'Segoe UI', system-ui, sans-serif; font-size:14px; font-weight:700; padding:9px; border:3px solid #FFD23F; background:#FFD23F; color:#1C1C1C; cursor:pointer; min-height:44px; }
 .rt-lembrete button.rt-lembrete-ver { background:transparent; color:#FFD23F; }
+#tab-rota .rt-prodbox { margin:0; background:#14263D; border:4px solid #FFD23F; padding:14px 16px; }
+#tab-rota .rt-prodbox-topo { display:flex; flex-wrap:wrap; gap:6px 14px; align-items:baseline; margin-bottom:12px; }
+#tab-rota .rt-prodbox-sub { color:#C9D6E6; font-size:13px; }
+#tab-rota .rt-prodgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:12px; }
+#tab-rota .rt-prodtile { background:#fff; border:4px solid; box-shadow:4px 4px 0 #0B1828; padding:10px 12px; display:flex; flex-direction:column; gap:4px; }
+#tab-rota .rt-prodtile-nome { font-weight:700; font-size:15px; }
+#tab-rota .rt-prodtile-pct { font-weight:800; font-size:26px; line-height:1.1; }
+#tab-rota .rt-prodtile-num { font-size:14px; color:#333; }
+#tab-rota .rt-prodtile-barra { height:9px; background:#E8E6E1; margin-top:2px; }
+#tab-rota .rt-prodtile-barra div { height:100%; }
+#tab-rota .rt-prodtile-falta { font-size:12.5px; color:#666; }
+#tab-rota .rt-prod { width:100%; border-collapse:collapse; font-size:14px; }
+#tab-rota .rt-prod th { text-align:left; font-size:12px; color:#666; padding:4px 4px; border-bottom:2px solid #1C1C1C; }
+#tab-rota .rt-prod td { padding:6px 4px 2px; vertical-align:bottom; }
+#tab-rota .rt-prod th:not(:first-child), #tab-rota .rt-prod td:not(:first-child) { text-align:right; white-space:nowrap; }
+#tab-rota .rt-prod tr.rt-prod-barra td { padding:0 4px 6px; border-bottom:1px solid #E8E6E1; }
+#tab-rota .rt-prod tr.rt-prod-barra td > div { height:7px; background:#E8E6E1; }
+#tab-rota .rt-prod tr.rt-prod-barra td > div > div { height:100%; }
 #tab-rota .rt-selos { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
 #tab-rota .rt-selo { font-size:13px; padding:2px 7px; border:2px solid #D8D6CF; color:#999; background:#fff; }
 #tab-rota .rt-selo.on { border-color:#1C1C1C; color:#1C1C1C; background:#FFD23F; }
@@ -13182,6 +13201,10 @@ function rtCalc(vn) {
   if (metaValor > 0) add({ key: 'valor', label: 'Valor', real: valor, hoje: valorHoje, meta: metaValor, din: true });
   // produtos (unidade da meta definida por mês: qtd ou R$)
   var sMes = ckSomarProdutos(peds, ini, hojeStr), sHoje = ckSomarProdutos(peds, hojeStr, hojeStr);
+  var prodTodos = CK_PRODUTOS.map(function(g) {
+    var emR = ckUnidProduto(mes, g.key) === 'R$', mt = ckMetaProduto(mes, g.key, vn);
+    return { key: g.key, label: g.label, din: emR, prod: true, real: emR ? sMes[g.key].valor : sMes[g.key].qtd, meta: mt > 0 ? mt : 0 };
+  });
   CK_PRODUTOS.forEach(function(g) {
     var mt = ckMetaProduto(mes, g.key, vn); if (!(mt > 0)) return;
     var emR = ckUnidProduto(mes, g.key) === 'R$';
@@ -13236,7 +13259,7 @@ function rtCalc(vn) {
     if (wd !== 0 && wd !== 6) { if (rtLigacoesDia(vn, ckDateToStr(dt)) >= ligDia) seq++; else break; }
     dt.setDate(dt.getDate() - 1);
   }
-  return { vn: vn, valorEnt: valorEnt, valorLanc: valor, qtdEnt: qtdEnt, qtdLanc: qtdLanc, metaValor: metaValor, met: met, menor: menor, fase: fase, esperado: esperado, mValor: mValor, outras: outras, estrelas: estrelas, nivelEstrela: nivelEstrela, basePct: basePct, ligDia: ligDia, carretas: carretas, metaCarretas: porP('metaCarretasPorPessoa'), seq: seq,
+  return { vn: vn, prodTodos: prodTodos, valorEnt: valorEnt, valorLanc: valor, qtdEnt: qtdEnt, qtdLanc: qtdLanc, metaValor: metaValor, met: met, menor: menor, fase: fase, esperado: esperado, mValor: mValor, outras: outras, estrelas: estrelas, nivelEstrela: nivelEstrela, basePct: basePct, ligDia: ligDia, carretas: carretas, metaCarretas: porP('metaCarretasPorPessoa'), seq: seq,
     lig: lig, ligIdeal: ligIdeal, ligHoje: ligHoje, dUteisRest: dUteisRest, semValor: !(metaValor > 0) };
 }
 function rtFmt(x, v) {
@@ -13354,7 +13377,7 @@ function rtRenderInner() {
     return '<button type="button" class="' + (aba === a[0] ? 'on' : '') + '" onclick="rtAba(\'' + a[0] + '\')">' + a[1] + '</button>';
   }).join('') + '</div>';
   if (aba === 'mapa') {
-    html += '<div class="rt-corpo"><div class="rt-mapa-box">' + rtMapa(calcs, foco) + '</div><div class="rt-painel">';
+    html += '<div class="rt-corpo"><div class="rt-col-esq"><div class="rt-mapa-box">' + rtMapa(calcs, foco) + '</div>' + (foco ? rtQuadroProdutos(foco) : '') + '</div><div class="rt-painel">';
     html += foco ? rtPainelVendedor(foco) : rtPainelEquipe(calcs);
     html += '</div></div>';
   } else {
@@ -13469,6 +13492,25 @@ function rtPainelVendedor(c) {
         return '<button type="button" class="' + (av === k ? 'on' : '') + '" onclick="rtEscolherAvatar(\'' + k + '\')" title="' + RT_SPR[k].nome + '" aria-label="' + RT_SPR[k].nome + '">' + rtSpriteSvg(k, 4) + '</button>';
       }).join('') + '</div>' + (av ? '<div class="rt-sub">Escolhido: <b>' + RT_SPR[av].nome + '</b></div>' : '') + '</div>';
   }
+  return h;
+}
+// Quadro de produtos (atingido x meta), em largura total abaixo do mapa
+function rtQuadroProdutos(c) {
+  var comMeta = c.prodTodos.filter(function(x) { return x.meta > 0; });
+  var lista = c.prodTodos.filter(function(x) { return x.meta > 0 || x.real > 0; })
+    .sort(function(a, b) { return (b.meta > 0) - (a.meta > 0) || (a.meta ? a.real / a.meta : 9) - (b.meta ? b.real / b.meta : 9); });
+  var h = '<div class="rt-prodbox"><div class="rt-prodbox-topo"><span class="rt-pix" style="color:#FFD23F">📦 PRODUTOS DO MÊS · ' + rtEsc(rtNome(c.vn).toUpperCase()) + '</span><span class="rt-prodbox-sub">Atingido × meta · pedidos lançados no mês (não cancelados)</span></div>';
+  if (!comMeta.length) h += '<div class="rt-aviso" style="margin-bottom:10px">Nenhuma meta de produto cadastrada para este mês — cadastre em Check-in › Metas de produto.</div>';
+  if (!lista.length) return h + '<div style="color:#C9D6E6">Nenhum produto vendido ainda no mês.</div></div>';
+  h += '<div class="rt-prodgrid">' + lista.map(function(x) {
+    var pct = x.meta ? x.real / x.meta * 100 : null, cor = pct === null ? '#8A8F98' : pct >= 100 ? '#2E7D32' : pct >= 50 ? '#E8A020' : '#C41E1E';
+    return '<div class="rt-prodtile" style="border-color:' + cor + '"><div class="rt-prodtile-nome">' + rtEsc(x.label) + '</div>' +
+      '<div class="rt-prodtile-pct" style="color:' + cor + '">' + (pct === null ? 'sem meta' : Math.floor(pct) + '%') + '</div>' +
+      '<div class="rt-prodtile-num"><b>' + rtFmt(x, x.real) + '</b>' + (x.meta ? ' de ' + rtFmt(x, x.meta) : '') + '</div>' +
+      (x.meta ? '<div class="rt-prodtile-barra"><div style="width:' + Math.min(100, pct).toFixed(1) + '%;background:' + cor + '"></div></div>' +
+        '<div class="rt-prodtile-falta">' + (x.real >= x.meta ? '✓ meta batida' : 'faltam ' + rtFmt(x, x.meta - x.real)) + '</div>' : '') +
+      '</div>';
+  }).join('') + '</div></div>';
   return h;
 }
 function rtPainelEquipe(calcs) {
