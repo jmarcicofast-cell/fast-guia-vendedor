@@ -4625,6 +4625,7 @@ td.p-tie { color:var(--sp-muted); }
 .sp-chip-b { height:26px; padding:0 9px; border-radius:6px; border:1px solid #185FA5; background:#E8F1FB; font-size:11.5px; font-weight:700; color:#185FA5; cursor:pointer; display:flex; align-items:center; justify-content:center; white-space:nowrap; }
 .sp-table .c-anx { min-width:120px; background:#FAFCFF; }
 .sp-chip-b:hover { background:#185FA5; color:#fff; }
+.sp-chip-b.sp-chip-old { border-style:dashed; background:#F4F4F2; color:#555; border-color:#999; }
 .sp-chip-x { position:absolute; top:-6px; right:-6px; width:14px; height:14px; border-radius:50%; background:var(--sp-red); color:#fff; font-size:9px; line-height:14px; text-align:center; cursor:pointer; opacity:0; }
 .sp-chip:hover .sp-chip-x { opacity:1; }
 .sp-attach { width:26px; height:24px; border-radius:5px; border:1px dashed var(--sp-muted2); background:transparent; color:var(--sp-muted); font-size:12px; cursor:pointer; padding:0; }
@@ -15389,11 +15390,12 @@ function spHtmlTabela(view){
     tr += '<td class="c-cod sp-ed"' + ce + ' data-f="cod" data-pid="' + it.id + '" data-raw="' + spEsc(it.cod) + '">' + spEsc(it.cod) + '</td>';
     tr += '<td class="c-desc sp-ed"' + ce + ' data-f="desc" data-pid="' + it.id + '" data-raw="' + spEsc(it.desc) + '">' + spEsc(it.desc) + '</td>';
     tr += spCelula('c-fast', it.fast, pv ? pv.fast : null, prevKey, ce, 'fast', it.id, '');
-    var chips = Object.keys(it.anexos || {}).map(function(aid){
-      var m = it.anexos[aid] || {}, isImg = String(m.tipo || '').indexOf('image/') === 0;
-      var podeApagar = ed && (gest || m.por === currentUser);
-      return '<span class="sp-chip"><span class="sp-chip-b" data-act="ver-anexo" data-pid="' + it.id + '" data-aid="' + aid + '" title="Abrir ' + spEsc(m.nome || 'anexo') + (m.por ? ' · enviado por ' + spEsc(m.por) : '') + '">' + (isImg ? '🖼 Ver foto' : '📄 Ver PDF') + '</span>' +
-             (podeApagar ? '<span class="sp-chip-x" data-act="del-anexo" data-pid="' + it.id + '" data-aid="' + aid + '" title="Apagar anexo">×</span>' : '') + '</span>';
+    var chips = spAnexosDoItem(it).map(function(x){
+      var m = x.meta, isImg = String(m.tipo || '').indexOf('image/') === 0, atual = x.rod === SP.rodada;
+      var podeApagar = atual && ed && (gest || m.por === currentUser);
+      var rot = (isImg ? '🖼 Ver foto' : '📄 Ver PDF') + (atual ? '' : ' <span style="font-weight:500;opacity:.75;margin-left:5px;">' + spFmtData(x.rod).slice(0, 5) + '</span>');
+      return '<span class="sp-chip"><span class="sp-chip-b' + (atual ? '' : ' sp-chip-old') + '" data-act="ver-anexo" data-pid="' + it.id + '" data-aid="' + x.aid + '" data-rod="' + x.rod + '" title="Abrir ' + spEsc(m.nome || 'anexo') + (m.por ? ' · enviado por ' + spEsc(m.por) : '') + (atual ? '' : ' · rodada de ' + spFmtData(x.rod)) + '">' + rot + '</span>' +
+             (podeApagar ? '<span class="sp-chip-x" data-act="del-anexo" data-pid="' + it.id + '" data-aid="' + x.aid + '" title="Apagar anexo">×</span>' : '') + '</span>';
     }).join('');
     if (!chips && !ed) chips = '<span style="color:#bbb;font-size:11px;">—</span>';
     tr += '<td class="c-anx"><div class="sp-anx">' + chips + (ed ? '<button class="sp-attach" data-act="anexar" data-pid="' + it.id + '" title="Anexar print (jpg/png) ou PDF">📎</button>' : '') + '</div></td>';
@@ -15631,7 +15633,7 @@ function spAcao(act, el){
     case 'anexar':
       SP.attachTarget = { rod: SP.rodada, reg: SP.regiao, pid: el.dataset.pid };
       spFileInput().click(); break;
-    case 'ver-anexo': spAbrirAnexo(el.dataset.pid, el.dataset.aid); break;
+    case 'ver-anexo': spAbrirAnexo(el.dataset.pid, el.dataset.aid, el.dataset.rod); break;
     case 'del-anexo':
       if (!confirm('Remover este anexo?')) return;
       upd[spBase() + '/itens/' + el.dataset.pid + '/anexos/' + el.dataset.aid] = null;
@@ -15770,16 +15772,30 @@ function spDataUrlToBlob(du){
   for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
   return new Blob([arr], { type: mime });
 }
-function spAbrirAnexo(pid, aid){
-  var view = spView(SP.rodada, SP.regiao), meta = null;
-  view.itens.forEach(function(it){ if (it.id === pid && it.anexos) meta = it.anexos[aid]; });
-  meta = meta || {};
+// Anexos de um item: os da rodada aberta + os das rodadas anteriores (mesma região,
+// mesmo item). A rodada nova copia os itens mas não os comprovantes, então sem isso
+// o que foi anexado antes some da tela.
+function spAnexosDoItem(it){
+  var lista = [];
+  Object.keys(it.anexos || {}).forEach(function(aid){ if (it.anexos[aid]) lista.push({ rod: SP.rodada, aid: aid, meta: it.anexos[aid] }); });
+  spRodadasKeys().forEach(function(rk){
+    if (rk >= SP.rodada) return;
+    var r = spRod(rk), reg = r && r.regioes && r.regioes[SP.regiao], src = reg && reg.itens && reg.itens[it.id];
+    var anx = src && src.anexos;
+    Object.keys(anx || {}).forEach(function(aid){ if (anx[aid]) lista.push({ rod: rk, aid: aid, meta: anx[aid] }); });
+  });
+  return lista;
+}
+function spAbrirAnexo(pid, aid, rod){
+  rod = rod || SP.rodada;
+  var r = spRod(rod), reg = r && r.regioes && r.regioes[SP.regiao], src = reg && reg.itens && reg.itens[pid];
+  var meta = (src && src.anexos && src.anexos[aid]) || {};
   if (meta.url) { spMostrarAnexo({ url: meta.url, nome: meta.nome, tipo: meta.tipo }); return; }
   spMostrarAnexo({ carregando: true, nome: meta.nome });
-  spGetOnce('anexos/' + SP.rodada + '/' + SP.regiao + '/' + pid + '/' + aid).then(function(v){
-    if (!v || !v.data) { spFecharAnexo(); alert('Anexo não encontrado.'); return; }
+  spGetOnce('anexos/' + rod + '/' + SP.regiao + '/' + pid + '/' + aid).then(function(v){
+    if (!v || !v.data) { spFecharAnexo(); alert('O arquivo desse anexo não foi encontrado no servidor.'); return; }
     spMostrarAnexo({ data: v.data, nome: meta.nome, tipo: meta.tipo });
-  }).catch(function(){ spFecharAnexo(); alert('Não consegui abrir o anexo.'); });
+  }).catch(function(e){ spFecharAnexo(); alert('Não consegui abrir o anexo: ' + (e && e.message ? e.message : e)); });
 }
 // Visualizador de anexo dentro da própria página (imagem ou PDF).
 // O PDF é desenhado com o PDF.js, então abre em qualquer navegador e no celular,
