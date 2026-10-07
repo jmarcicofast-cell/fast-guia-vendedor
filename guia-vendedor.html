@@ -13520,6 +13520,8 @@ function rtQuadroProdutos(c) {
     .sort(function(a, b) { return (b.meta > 0) - (a.meta > 0) || (a.meta ? a.real / a.meta : 9) - (b.meta ? b.real / b.meta : 9); });
   var h = '<div class="rt-prodbox"><div class="rt-prodbox-topo"><span class="rt-pix" style="color:#FFD23F">📦 PRODUTOS DO MÊS · ' + rtEsc(rtNome(c.vn).toUpperCase()) + '</span><span class="rt-prodbox-sub">Atingido × meta · pedidos lançados no mês (não cancelados)</span></div>';
   if (!comMeta.length) h += '<div class="rt-aviso" style="margin-bottom:10px">Nenhuma meta de produto cadastrada para este mês — cadastre em Check-in › Metas de produto.</div>';
+  var semMeta = c.prodTodos.filter(function(x) { return !(x.meta > 0); }).length;
+  if (semMeta && rtGestao()) h += rtAvisoMetasOutrosMeses(c.vn);
   if (!lista.length) return h + '<div style="color:#C9D6E6">Nenhum produto vendido ainda no mês.</div></div>';
   h += '<div class="rt-prodgrid">' + lista.map(function(x) {
     var pct = x.meta ? x.real / x.meta * 100 : null, cor = pct === null ? '#8A8F98' : pct >= 100 ? '#2E7D32' : pct >= 50 ? '#E8A020' : '#C41E1E';
@@ -13531,6 +13533,49 @@ function rtQuadroProdutos(c) {
       '</div>';
   }).join('') + '</div></div>';
   return h;
+}
+// Procura metas de produto desse vendedor gravadas em OUTROS meses (ou no cadastro antigo)
+function rtAvisoMetasOutrosMeses(vn) {
+  var s = (ckData && ckData.settings) || {}, mesAt = ckMesAtualStr(), achados = [];
+  var porMes = s.metaProdutosPorMes || {};
+  function conta(m) { var n = 0; CK_PRODUTOS.forEach(function(g) { if (m && m[g.key] && ckNum(m[g.key][vn]) > 0) n++; }); return n; }
+  Object.keys(porMes).sort().reverse().forEach(function(m) { if (m !== mesAt) { var n = conta(porMes[m]); if (n) achados.push({ m: m, n: n }); } });
+  var nAnt = conta(s.metaProdutosMes); if (nAnt) achados.push({ m: 'antigo', n: nAnt });
+  var nAt = conta(porMes[mesAt]);
+  var nomesMes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  function rot(m) { return m === 'antigo' ? 'cadastro antigo (sem mês)' : nomesMes[+m.slice(5, 7) - 1] + '/' + m.slice(0, 4); }
+  var h = '<div class="rt-aviso" style="margin-bottom:10px;font-size:13.5px;line-height:1.5">📍 As metas vêm de <b>Check-in › Metas de produto</b>, mês <b>' + rot(mesAt) + '</b> (' + nAt + ' de ' + CK_PRODUTOS.length + ' produtos preenchidos para ' + rtEsc(rtNome(vn)) + ').';
+  if (achados.length) {
+    h += '<br>Encontrei metas de produto de ' + rtEsc(rtNome(vn)) + ' em: ' + achados.map(function(a) { return '<b>' + rot(a.m) + '</b> (' + a.n + ' produtos)'; }).join(', ') + '.';
+    if (currentUser === 'JULIANA') h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' + achados.map(function(a) {
+      return '<button type="button" onclick="rtCopiarMetas(\'' + vn + '\',\'' + a.m + '\')" style="border:2px solid #7A4A00;background:#fff;padding:5px 10px;font-weight:700;cursor:pointer;font-family:inherit">Usar as de ' + rot(a.m) + ' em ' + rot(mesAt) + '</button>';
+    }).join('') + '</div><div style="font-size:12.5px;margin-top:4px">Copia só os produtos que ainda estão sem meta em ' + rot(mesAt) + '; o que já está preenchido não muda.</div>';
+  }
+  return h + '</div>';
+}
+function rtCopiarMetas(vn, origem) {
+  if (currentUser !== 'JULIANA') return;
+  var s = ckData.settings, mesAt = ckMesAtualStr();
+  var src = origem === 'antigo' ? (s.metaProdutosMes || {}) : ((s.metaProdutosPorMes || {})[origem] || {});
+  s.metaProdutosPorMes = s.metaProdutosPorMes || {};
+  var dst = s.metaProdutosPorMes[mesAt] = s.metaProdutosPorMes[mesAt] || {};
+  var n = 0;
+  CK_PRODUTOS.forEach(function(g) {
+    var v = src[g.key] && ckNum(src[g.key][vn]);
+    if (!(v > 0)) return;
+    dst[g.key] = dst[g.key] || {};
+    if (!(ckNum(dst[g.key][vn]) > 0)) { dst[g.key][vn] = v; n++; }
+  });
+  // a unidade (qtd ou R$) do mês de origem vem junto, se o mês atual ainda não tiver
+  if (origem !== 'antigo') {
+    var uSrc = ((s.metaProdutosUnidPorMes || {})[origem]) || {};
+    s.metaProdutosUnidPorMes = s.metaProdutosUnidPorMes || {};
+    var uDst = s.metaProdutosUnidPorMes[mesAt] = s.metaProdutosUnidPorMes[mesAt] || {};
+    Object.keys(uSrc).forEach(function(k) { if (!uDst[k]) uDst[k] = uSrc[k]; });
+  }
+  ckSaveSettings();
+  rtComemorar('📦 METAS COPIADAS', n + ' meta(s) de produto de ' + rtNome(vn) + ' agora valem para este mês.');
+  rtRender();
 }
 function rtPainelEquipe(calcs) {
   var ord = calcs.slice().sort(function(a, b) { return b.fase - a.fase || b.basePct - a.basePct || b.estrelas - a.estrelas; });
@@ -15484,7 +15529,10 @@ function ckRecalcMetaDia(){
   return meta;
 }
 
+// Salva só as configurações/metas (não regrava os dias): evita que um computador
+// com o guia aberto apague o que outro acabou de preencher.
 function ckSaveSettings(){
+  if (firebaseOK && db) { db.ref('checkinDiario/settings').set(ckData.settings).catch(function(){}); return; }
   dbRef('checkinDiario').set(ckData).catch(function(){});
 }
 
@@ -15493,7 +15541,8 @@ function ckSaveSettings(){
 var ckSaveTimer = null;
 function ckPersistDia(dateStr, showStatus){
   ckData.dias[dateStr] = { rows: ckRows };
-  dbRef('checkinDiario').set(ckData).then(function(){
+  var gravar = (firebaseOK && db) ? db.ref('checkinDiario/dias/' + dateStr).set(ckData.dias[dateStr]) : dbRef('checkinDiario').set(ckData);
+  gravar.then(function(){
     if (showStatus){
       var st = document.getElementById('ck-savestatus');
       if (st){ st.textContent = 'Salvo automaticamente ✓'; st.className = 'ck-savestatus ok'; }
