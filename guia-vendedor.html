@@ -13294,6 +13294,7 @@ function rtMapa(calcs, foco) {
     '<g fill="#5C3A1A"><rect x="238" y="446" width="4" height="8"/><rect x="68" y="456" width="4" height="8"/><rect x="258" y="576" width="4" height="8"/><rect x="338" y="346" width="4" height="8"/><rect x="488" y="456" width="4" height="8"/><rect x="718" y="346" width="4" height="8"/><rect x="588" y="266" width="4" height="8"/><rect x="668" y="76" width="4" height="8"/></g>' +
     '<polyline points="' + pts + '" fill="none" stroke="#0F2740" stroke-width="10"/>' +
     '<polyline points="' + pts + '" fill="none" stroke="#F7E7B4" stroke-width="6" stroke-dasharray="10 6"/>' +
+    rtTrilhaVerde(foco) +
     '<rect x="40" y="586" width="56" height="30" fill="#E8E6E1"/><rect x="36" y="578" width="64" height="10" fill="#C41E1E"/><rect x="58" y="598" width="20" height="18" fill="#5B6672"/><rect x="44" y="594" width="10" height="8" fill="#9AA5B1"/><rect x="82" y="594" width="10" height="8" fill="#9AA5B1"/>' +
     '<rect x="790" y="36" width="6" height="64" fill="#E8E6E1"/><rect x="796" y="36" width="34" height="22" fill="#C41E1E"/><rect x="802" y="42" width="8" height="4" fill="#FFFFFF"/><rect x="776" y="100" width="34" height="8" fill="#5B6672"/>';
   function tag(x, y, txt, fg, bg, borda, tam) {
@@ -13347,6 +13348,24 @@ function rtMapa(calcs, foco) {
     });
   });
   return s + '</svg>';
+}
+
+// Trecho já percorrido da trilha em verde (barra de progresso): até a fase atual
+// cheio, e o pedaço até a próxima fase proporcional ao avanço dentro dela.
+function rtTrilhaVerde(c) {
+  if (!c) return '';
+  var nos = [RT_LARGADA].concat(RT_STOPS);
+  var prog = Math.max(0, Math.min(10, (c.basePct || 0) / 10));
+  var cheias = Math.floor(prog), resto = prog - cheias;
+  var pts = nos.slice(0, cheias + 1).map(function(p) { return p.slice(); });
+  if (cheias < 10 && resto > 0) {
+    var a = nos[cheias], b = nos[cheias + 1];
+    pts.push([a[0] + (b[0] - a[0]) * resto, a[1] + (b[1] - a[1]) * resto]);
+  }
+  if (pts.length < 2) return '';
+  var s = pts.map(function(p) { return Math.round(p[0]) + ',' + Math.round(p[1]); }).join(' ');
+  return '<polyline points="' + s + '" fill="none" stroke="#1B5E20" stroke-width="10"/>' +
+    '<polyline points="' + s + '" fill="none" stroke="#5BD45B" stroke-width="6" stroke-dasharray="10 6"/>';
 }
 
 // ── Tela ──
