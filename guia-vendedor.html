@@ -4578,10 +4578,16 @@
 #tab-rota .rt-trofeu { background:#FFD23F; }
 #tab-rota .rt-tab { width:100%; border-collapse:collapse; font-size:14.5px; }
 #tab-rota .rt-tab th { text-align:left; font-size:12px; color:#666; padding:4px 6px; border-bottom:2px solid #1C1C1C; }
-#tab-rota .rt-tab td { padding:5px 6px; border-bottom:1px solid #E8E6E1; vertical-align:middle; }
+#tab-rota .rt-tab td { padding:5px 4px; border-bottom:1px solid #E8E6E1; vertical-align:middle; }
 #tab-rota .rt-tab tr { cursor:pointer; }
 #tab-rota .rt-tab tbody tr:hover { background:#FFF6D6; }
 #tab-rota .rt-vazio { padding:40px; text-align:center; color:#888; }
+#tab-rota .rt-selos { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+#tab-rota .rt-selo { font-size:13px; padding:2px 7px; border:2px solid #D8D6CF; color:#999; background:#fff; }
+#tab-rota .rt-selo.on { border-color:#1C1C1C; color:#1C1C1C; background:#FFD23F; }
+.rt-festa { position:fixed; left:50%; top:90px; transform:translateX(-50%); z-index:100001; background:#1C1C1C; color:#fff; border:4px solid #FFD23F; box-shadow:8px 8px 0 #C41E1E; padding:16px 22px; font-family:'Pixelify Sans', system-ui, sans-serif; font-size:16px; text-align:center; display:flex; flex-direction:column; gap:8px; animation:rtPula .5s steps(4) 2; transition:opacity .5s; }
+.rt-festa.sai { opacity:0; }
+@keyframes rtPula { 0%{ transform:translate(-50%,0); } 50%{ transform:translate(-50%,-14px); } 100%{ transform:translate(-50%,0); } }
 /* ══ VENDEDORA LÍDER — modo leitura dos painéis de gestão ══ */
 .lider-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:#F3E5F5; border:1.5px solid #4A148C; color:#4A148C; border-radius:10px; padding:9px 14px; margin-bottom:14px; font-size:12.5px; }
 .lider-bar.pend { background:#FFF8E1; border-color:#E8A020; color:#7A4A00; }
@@ -13004,7 +13010,7 @@ function liderTravar(u) {
 // tem: pedidos (aba Pedidos) e check-in diário / ligações lançadas.
 // Firebase: rotaMeta/avatares/{USUARIO} = chave do avatar
 // ══════════════════════════════════════════════════════════════
-var RT = { ped: {}, lig: {}, avatares: {}, ligado: false, ver: null, ckOk: false };
+var RT = { ped: {}, lig: {}, avatares: {}, ligado: false, ver: null, ckOk: false, hist: {}, histOk: false, chegadas: {}, chegOk: false, pedOk: {} };
 var RT_STOPS = [[80,560],[180,520],[150,420],[300,400],[400,450],[470,350],[600,330],[680,250],[600,150],[720,110]];
 var RT_LARGADA = [70, 596];
 var RT_MUNDOS = ['Prospecção', 'Propostas', 'Cargas', 'Meta batida'];
@@ -13043,6 +13049,7 @@ function rtInit() {
       dbRef('pedidos/' + vn).on('value', function(snap) {
         var v = (snap && snap.val()) || {};
         RT.ped[vn] = Object.keys(v).map(function(k) { return v[k]; }).filter(function(p) { return p && !p.excluido; });
+        RT.pedOk[vn] = true;
         rtRender();
       });
       dbRef('ligacoes/' + vn).on('value', function(snap) {
@@ -13052,6 +13059,8 @@ function rtInit() {
       });
     });
     dbRef('rotaMeta/avatares').on('value', function(snap) { RT.avatares = (snap && snap.val()) || {}; rtRender(); });
+    dbRef('rotaMeta/historico/' + ckMesAtualStr()).on('value', function(snap) { RT.hist = (snap && snap.val()) || {}; RT.histOk = true; rtRender(); });
+    dbRef('rotaMeta/chegadas/' + ckMesAtualStr()).on('value', function(snap) { RT.chegadas = (snap && snap.val()) || {}; RT.chegOk = true; rtRender(); });
   }
   rtRender();
 }
@@ -13103,7 +13112,15 @@ function rtCalc(vn) {
   var menor = met.reduce(function(a, x) { return (!a || x.pct < a.pct) ? x : a; }, null);
   var fase = met.length ? Math.max(0, Math.min(10, Math.floor((menor ? menor.pct : 0) / 10))) : 0;
   var esperado = dUteisMes ? dUteisAteHoje / dUteisMes * 100 : 0;
-  return { vn: vn, met: met, menor: menor, fase: fase, esperado: esperado, ligDia: ligDia,
+  var carretas = (RT.ped[vn] || []).filter(function(p) { return p.status !== 'cancelado' && p.veiculo === 'carreta' && p.data && p.data >= ini && p.data <= hojeStr; }).length;
+  var seq = 0, dt = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  if (rtLigacoesDia(vn, ckDateToStr(dt)) < ligDia) dt.setDate(dt.getDate() - 1); // hoje ainda pode bater
+  for (var g = 0; g < 90; g++) {
+    var wd = dt.getDay();
+    if (wd !== 0 && wd !== 6) { if (rtLigacoesDia(vn, ckDateToStr(dt)) >= ligDia) seq++; else break; }
+    dt.setDate(dt.getDate() - 1);
+  }
+  return { vn: vn, met: met, menor: menor, fase: fase, esperado: esperado, ligDia: ligDia, carretas: carretas, seq: seq,
     ligHoje: rtLigacoesDia(vn, hojeStr), dUteisRest: Math.max(0, dUteisMes - dUteisAteHoje + 1), semValor: !(metaValor > 0) };
 }
 function rtFmt(x, v) {
@@ -13199,6 +13216,7 @@ function rtRender() {
   if (!root || !document.getElementById('tab-rota').classList.contains('active')) return;
   if (!RT.ckOk) { root.innerHTML = '<div class="rt-vazio">Carregando a Rota da Meta…</div>'; return; }
   var calcs = CK_EQUIPE.map(rtCalc);
+  rtRegistrarProgresso(calcs);
   var foco = RT.ver !== 'EQUIPE' ? calcs.find(function(c) { return c.vn === RT.ver; }) : null;
   var nomesMes = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
   var hoje = new Date();
@@ -13221,7 +13239,9 @@ function rtPainelVendedor(c) {
   h += '<div class="rt-card rt-ficha"><div class="rt-ficha-av">' + rtSpriteSvg(av || 'misterio', 6) + '</div><div>' +
     '<div class="rt-pix">' + rtEsc(rtNome(c.vn).toUpperCase()) + '</div>' +
     '<div class="rt-forte">' + (c.fase >= 10 ? '🏆 Meta batida!' : 'Mundo ' + (c.fase <= 3 ? 1 : c.fase <= 6 ? 2 : c.fase <= 8 ? 3 : 4) + ' · Fase ' + c.fase + ' de 10') + '</div>' +
-    '<div>' + ritmo + '</div></div></div>';
+    '<div>' + ritmo + '</div>' +
+    '<div class="rt-selos"><span class="rt-selo' + (c.seq ? ' on' : '') + '" title="Dias úteis seguidos batendo a meta de ligações">🔥 ' + c.seq + (c.seq === 1 ? ' dia' : ' dias') + '</span>' +
+    '<span class="rt-selo' + (c.carretas ? ' on' : '') + '" title="Cargas de carreta fechadas no mês">🚛 ' + c.carretas + ' carreta' + (c.carretas === 1 ? '' : 's') + '</span></div></div></div>';
   if (c.fase < 10) {
     var alvo = (c.fase + 1) * 10;
     h += '<div class="rt-card"><div class="rt-pix">PRÓXIMA FASE · ' + (c.fase + 1) + '</div><div class="rt-sub">Para chegar a ' + alvo + '% de todas as metas:</div>';
@@ -13259,11 +13279,76 @@ function rtPainelVendedor(c) {
 function rtPainelEquipe(calcs) {
   var ord = calcs.slice().sort(function(a, b) { return b.fase - a.fase || (b.menor ? b.menor.pct : 0) - (a.menor ? a.menor.pct : 0); });
   return '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase de cada um e a meta que está segurando o avanço.</div>' +
-    '<table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Fase</th><th>Travando em</th></tr></thead><tbody>' +
+    '<table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Fase</th><th title="Dias úteis na mesma fase">Dias</th><th>Travando</th></tr></thead><tbody>' +
     ord.map(function(c) {
       var tr = c.menor ? rtEsc(c.menor.label) + ' <span class="rt-cinza" style="white-space:nowrap">· ' + Math.floor(c.menor.pct) + '%</span>' : '—';
-      return '<tr onclick="rtVer(\'' + c.vn + '\')"><td>' + rtSpriteSvg(RT.avatares[c.vn] || 'misterio', 3) + '</td><td class="rt-forte">' + rtEsc(rtNome(c.vn)) + '</td><td>' + c.fase + '/10</td><td>' + (c.fase >= 10 ? '🏆 meta batida' : tr) + '</td></tr>';
-    }).join('') + '</tbody></table><div class="rt-sub">Clique num vendedor para ver o painel dele.</div></div>';
+      var hs = RT.hist[c.vn], dias = hs && hs.desde ? rtDiasUteisEntre(hs.desde, ckToday()) : null;
+      var parado = dias !== null && dias >= 3 && c.fase < 10;
+      return '<tr onclick="rtVer(\'' + c.vn + '\')"><td>' + rtSpriteSvg(RT.avatares[c.vn] || 'misterio', 3) + '</td><td class="rt-forte">' + rtEsc(rtNome(c.vn)) + (c.seq >= 3 ? ' <span style="white-space:nowrap;font-weight:400" title="Dias seguidos batendo ligações">🔥' + c.seq + '</span>' : '') + '</td><td style="white-space:nowrap">' + c.fase + '/10</td>' +
+        '<td style="white-space:nowrap"' + (parado ? ' class="rt-atras"' : '') + '>' + (dias === null ? '—' : dias + 'd' + (parado ? ' ⚠️' : '')) + '</td><td>' + (c.fase >= 10 ? '🏆 meta batida' : tr) + '</td></tr>';
+    }).join('') + '</tbody></table><div class="rt-sub">Dias = dias úteis na mesma fase; ⚠️ = 3 ou mais. Clique num vendedor para ver o painel dele.</div></div>';
+}
+function rtDiasUteisEntre(deStr, ateStr) {
+  var d = new Date(deStr + 'T12:00:00'), fim = new Date(ateStr + 'T12:00:00'), n = 0;
+  while (d < fim) { d.setDate(d.getDate() + 1); var w = d.getDay(); if (w !== 0 && w !== 6) n++; }
+  return n;
+}
+// Guarda desde quando cada um está na fase (só avança: a fase do mês nunca volta)
+// e dispara as comemorações de quem está usando o guia.
+function rtRegistrarProgresso(calcs) {
+  var hojeStr = ckToday(), mes = ckMesAtualStr();
+  var tudoCarregado = CK_EQUIPE.every(function(vn) { return RT.pedOk[vn]; });
+  if (!tudoCarregado) return;
+  calcs.forEach(function(c) {
+    if (RT.histOk && firebaseOK) {
+      var h0 = RT.hist[c.vn];
+      if (!h0 || c.fase > ckNum(h0.fase)) {
+        RT.hist[c.vn] = { fase: c.fase, desde: hojeStr };
+        dbRef('rotaMeta/historico/' + mes + '/' + c.vn).set(RT.hist[c.vn]);
+      }
+    }
+    if (c.fase >= 10 && RT.chegOk && firebaseOK && !RT.chegadas[c.vn]) {
+      RT.chegadas[c.vn] = { em: Date.now() };
+      dbRef('rotaMeta/chegadas/' + mes + '/' + c.vn).set(RT.chegadas[c.vn]);
+      rtPostarChegada(c);
+    }
+  });
+  var meu = calcs.find(function(c) { return c.vn === currentUser; });
+  if (!meu) return;
+  var chave = 'rt_vist_' + currentUser + '_' + mes, antes = null;
+  try { antes = JSON.parse(localStorage.getItem(chave) || 'null'); } catch (e) {}
+  if (antes) {
+    if (meu.fase > antes.fase) rtComemorar(meu.fase >= 10 ? '🏆 META BATIDA!' : '⭐ FASE ' + meu.fase + '!', meu.fase >= 10 ? 'Você chegou ao fim da Rota de ' + rtMesNome() + '!' : 'Você subiu para a fase ' + meu.fase + '. Bora pra próxima!');
+    else if (meu.carretas > antes.carretas) rtComemorar('🚛 TURBO!', 'Carreta fechada! Isso empurra todas as metas.');
+    else if (meu.seq > antes.seq && meu.seq >= 3) rtComemorar('🔥 ' + meu.seq + ' DIAS!', 'Sequência batendo a meta de ligações.');
+  }
+  try { localStorage.setItem(chave, JSON.stringify({ fase: meu.fase, carretas: meu.carretas, seq: meu.seq })); } catch (e) {}
+}
+function rtMesNome() { return ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'][new Date().getMonth()]; }
+function rtComemorar(titulo, texto) {
+  var t = document.createElement('div'); t.className = 'rt-festa';
+  t.innerHTML = '<div class="rt-pix" style="font-size:14px;color:#FFD23F;">' + rtEsc(titulo) + '</div><div>' + rtEsc(texto) + '</div>';
+  document.body.appendChild(t);
+  try { if (typeof mmTocarSom === 'function') mmTocarSom(); } catch (e) {}
+  setTimeout(function() { t.classList.add('sai'); }, 3800);
+  setTimeout(function() { t.remove(); }, 4400);
+}
+// Card de "meta batida" desenhado em pixel art e postado no feed de premiações
+function rtPostarChegada(c) {
+  try {
+    var cv = document.createElement('canvas'); cv.width = 720; cv.height = 480;
+    var x = cv.getContext('2d'); x.imageSmoothingEnabled = false;
+    x.fillStyle = '#1B3A5C'; x.fillRect(0, 0, 720, 480);
+    x.fillStyle = '#24507A'; [[60,60],[540,90],[120,400],[600,380],[330,40]].forEach(function(p) { x.fillRect(p[0], p[1], 40, 6); x.fillRect(p[0] + 40, p[1] + 6, 24, 6); });
+    x.fillStyle = '#FFD23F'; x.fillRect(40, 40, 640, 400); x.fillStyle = '#1C1C1C'; x.fillRect(52, 52, 616, 376);
+    var s = RT_SPR[RT.avatares[c.vn]] || RT_SPR.misterio, px = 16;
+    s.rows.forEach(function(r, ri) { for (var ci = 0; ci < r.length; ci++) { var ch = r.charAt(ci); if (ch === '.') continue; x.fillStyle = s.pal[ch]; x.fillRect(296 + ci * px, 92 + ri * px, px, px); } });
+    x.textAlign = 'center'; x.fillStyle = '#FFD23F'; x.font = 'bold 44px "Press Start 2P", monospace'; x.fillText('META BATIDA!', 360, 290);
+    x.fillStyle = '#FFFFFF'; x.font = 'bold 30px "Press Start 2P", monospace'; x.fillText(rtNome(c.vn).toUpperCase(), 360, 345);
+    x.fillStyle = '#E8E6E1'; x.font = '20px "Press Start 2P", monospace'; x.fillText('ROTA DA META · ' + rtMesNome().toUpperCase(), 360, 395);
+    var id = 'rota_' + c.vn + '_' + ckMesAtualStr();
+    dbRef('feedPremiacoes/posts/' + id).set({ foto: cv.toDataURL('image/png'), legenda: '🏆 ' + rtNome(c.vn) + ' completou a Rota da Meta de ' + rtMesNome() + ': bateu todas as metas do mês! Parabéns!', data: new Date().toISOString(), autor: 'ROTA' });
+  } catch (e) { console.warn('rota chegada', e); }
 }
 function rtEscolherAvatar(k) {
   if (!rtJoga(currentUser) || !RT_SPR[k]) return;
