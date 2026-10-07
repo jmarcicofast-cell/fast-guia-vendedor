@@ -1106,6 +1106,10 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
     Ranking
   </button>
+  <button class="nav-btn" id="nav-rota" draggable="true" data-nav-id="rota" onclick="showTab('rota',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+    Rota da Meta
+  </button>
   <button class="nav-btn" draggable="true" data-nav-id="evolucao" onclick="showTab('evolucao',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
     Evolução
@@ -2793,6 +2797,10 @@
 </div>
 
 <!-- ══ RECONHECIMENTO ══ -->
+<div id="tab-rota" class="tab-content">
+  <div class="page-section" style="max-width:100%;"><div id="rota-root"></div></div>
+</div>
+
 <div id="tab-reconhecimento" class="tab-content">
   <div class="page-section" style="max-width:100%;">
 
@@ -4530,6 +4538,50 @@
   @media (max-width:600px){ #tab-minhasmetas .mm-grid2{ grid-template-columns:1fr; } }
 </style>
 <style>
+/* ══ ROTA DA META (prefixo rt-) ══ */
+#tab-rota .rt-wrap { font-family:'Pixelify Sans', system-ui, sans-serif; background:#14263D; border:4px solid #0B1828; color:#1C1C1C; }
+#tab-rota .rt-topo { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:14px 18px; background:#1C1C1C; border-bottom:4px solid #C41E1E; }
+#tab-rota .rt-topo-esq { display:flex; align-items:center; gap:12px; }
+#tab-rota .rt-logo { font-family:'Press Start 2P', monospace; font-size:16px; color:#FFD23F; }
+#tab-rota .rt-mes { font-family:'Press Start 2P', monospace; font-size:9px; color:#fff; background:#C41E1E; padding:6px 8px; }
+#tab-rota .rt-legenda { display:flex; gap:16px; flex-wrap:wrap; color:#E8E6E1; font-size:15px; }
+#tab-rota .rt-legenda span { display:flex; align-items:center; gap:6px; }
+#tab-rota .rt-legenda i { width:13px; height:13px; border:2px solid #fff; display:inline-block; }
+#tab-rota .rt-sel { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:12px 18px 0; color:#fff; font-size:15px; }
+#tab-rota .rt-sel button { font-family:'Pixelify Sans', sans-serif; font-size:14px; padding:5px 10px; border:3px solid #0B1828; background:#fff; cursor:pointer; }
+#tab-rota .rt-sel button.on { background:#FFD23F; }
+#tab-rota .rt-corpo { display:flex; flex-wrap:wrap; gap:18px; padding:16px 18px 20px; }
+#tab-rota .rt-mapa-box { flex:999 1 560px; min-width:0; border:4px solid #0B1828; background:#1B3A5C; }
+#tab-rota .rt-mapa { display:block; width:100%; height:auto; }
+#tab-rota .rt-painel { flex:1 1 300px; display:flex; flex-direction:column; gap:14px; min-width:0; }
+#tab-rota .rt-card { background:#fff; border:4px solid #1C1C1C; box-shadow:6px 6px 0 #0B1828; padding:12px 14px; display:flex; flex-direction:column; gap:8px; font-size:15px; }
+#tab-rota .rt-pix { font-family:'Press Start 2P', monospace; font-size:10px; line-height:1.5; }
+#tab-rota .rt-forte { font-weight:700; }
+#tab-rota .rt-sub { font-size:14px; color:#555; }
+#tab-rota .rt-cinza { color:#888; font-weight:400; }
+#tab-rota .rt-ok { color:#1B5E20; font-weight:700; }
+#tab-rota .rt-atras { color:#C41E1E; font-weight:700; }
+#tab-rota .rt-aviso { font-size:13px; color:#7A4A00; background:#FFF6D6; padding:6px 8px; }
+#tab-rota .rt-ficha { flex-direction:row; align-items:center; gap:14px; }
+#tab-rota .rt-ficha-av { width:64px; height:64px; flex-shrink:0; background:#F4E9C9; border:3px solid #1C1C1C; display:flex; align-items:center; justify-content:center; }
+#tab-rota .rt-barra-lin { display:flex; justify-content:space-between; gap:8px; font-size:14.5px; }
+#tab-rota .rt-barra { height:12px; background:#E8E6E1; border:2px solid #1C1C1C; margin-bottom:4px; }
+#tab-rota .rt-barra div { height:100%; }
+#tab-rota .rt-missao { background:#FFF6D6; }
+#tab-rota .rt-mis { display:flex; gap:10px; align-items:center; }
+#tab-rota .rt-mis.feito { color:#1B5E20; text-decoration:line-through; }
+#tab-rota .rt-check { width:18px; height:18px; border:3px solid #1C1C1C; background:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
+#tab-rota .rt-mis.feito .rt-check { background:#2E7D32; color:#fff; border-color:#1B5E20; }
+#tab-rota .rt-galeria { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:6px; }
+#tab-rota .rt-galeria button { height:48px; border:3px solid #D8D6CF; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+#tab-rota .rt-galeria button.on { border-color:#C41E1E; background:#FFF6D6; }
+#tab-rota .rt-trofeu { background:#FFD23F; }
+#tab-rota .rt-tab { width:100%; border-collapse:collapse; font-size:14.5px; }
+#tab-rota .rt-tab th { text-align:left; font-size:12px; color:#666; padding:4px 6px; border-bottom:2px solid #1C1C1C; }
+#tab-rota .rt-tab td { padding:5px 6px; border-bottom:1px solid #E8E6E1; vertical-align:middle; }
+#tab-rota .rt-tab tr { cursor:pointer; }
+#tab-rota .rt-tab tbody tr:hover { background:#FFF6D6; }
+#tab-rota .rt-vazio { padding:40px; text-align:center; color:#888; }
 /* ══ VENDEDORA LÍDER — modo leitura dos painéis de gestão ══ */
 .lider-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; background:#F3E5F5; border:1.5px solid #4A148C; color:#4A148C; border-radius:10px; padding:9px 14px; margin-bottom:14px; font-size:12.5px; }
 .lider-bar.pend { background:#FFF8E1; border-color:#E8A020; color:#7A4A00; }
@@ -12944,7 +12996,283 @@ function liderTravar(u) {
     .catch(function(e) { alert('Não consegui travar: ' + (e && e.message ? e.message : e)); });
 }
 
+// ══════════════════════════════════════════════════════════════
+// ROTA DA META — game do mês
+// O avatar escolhido pelo vendedor anda por 10 fases. Cada fase = +10% das
+// metas do mês (valor, cada produto com meta e ligações); ele só avança
+// quando TODAS chegam ao nível da fase. Tudo calculado com o que o guia já
+// tem: pedidos (aba Pedidos) e check-in diário / ligações lançadas.
+// Firebase: rotaMeta/avatares/{USUARIO} = chave do avatar
+// ══════════════════════════════════════════════════════════════
+var RT = { ped: {}, lig: {}, avatares: {}, ligado: false, ver: null, ckOk: false };
+var RT_STOPS = [[80,560],[180,520],[150,420],[300,400],[400,450],[470,350],[600,330],[680,250],[600,150],[720,110]];
+var RT_LARGADA = [70, 596];
+var RT_MUNDOS = ['Prospecção', 'Propostas', 'Cargas', 'Meta batida'];
+var RT_SPR = {
+  capivara:   { nome: 'Capivara',   pal: { d:'#5C3A1A', b:'#8B5A2B', k:'#1C1C1C', n:'#3B2614' }, rows: ['.d....d.','dbbbbbbd','bbkbbkbb','bbbbbbbb','bbbnnbbb','.bbbbbb.','.b.bb.b.','.d.dd.d.'] },
+  arara:      { nome: 'Arara',      pal: { R:'#D7263D', y:'#F2C14E', B:'#1F6FB2', k:'#1C1C1C', n:'#2B2B2B' }, rows: ['..RRRR..','.RRRRRR.','.RRkRRR.','.RRRRnn.','..RRRn..','.yyRRyy.','BByRRyBB','.B.RR.B.'] },
+  robo:       { nome: 'Robô',       pal: { g:'#9AA5B1', G:'#5B6672', r:'#C41E1E' }, rows: ['...rr...','..GGGG..','.gggggg.','.grggrg.','.gggggg.','.gGGGGg.','..g..g..','.GG..GG.'] },
+  astronauta: { nome: 'Astronauta', pal: { w:'#F4F4F4', v:'#3B82C4', s:'#C9CED6' }, rows: ['..wwww..','.wwwwww.','wwvvvvww','wvvvvvvw','wwvvvvww','.wwwwww.','.ss..ss.','.ww..ww.'] },
+  gato:       { nome: 'Gato',       pal: { k:'#2B2B2B', g:'#7BD389', p:'#F4A6B5' }, rows: ['k......k','kk....kk','kkkkkkkk','kgkkkkgk','kkkppkkk','.kkkkkk.','.k.kk.k.','.kk..kk.'] },
+  raposa:     { nome: 'Raposa',     pal: { o:'#E07A2E', w:'#FAF4EA', k:'#1C1C1C' }, rows: ['o......o','oo....oo','oooooooo','okooooko','wwwkkwww','.wwwwww.','..oooo..','.o.oo.o.'] },
+  onca:       { nome: 'Onça',       pal: { y:'#E8A93B', k:'#2B2B2B', w:'#FAF4EA' }, rows: ['y......y','yy....yy','ykyyykyy','yyyyyyyy','ykyykyyk','.wwkkww.','.yyyyyy.','.y.yy.y.'] },
+  tucano:     { nome: 'Tucano',     pal: { k:'#1C1C1C', w:'#FAF4EA', o:'#F28C28', y:'#F2C14E' }, rows: ['..kkk...','.kkkkk..','.kwkkoo.','.kkkkooo','.kwwk.o.','.kwwk...','.kkkk...','..y.y...'] },
+  misterio:   { nome: '?',          pal: { g:'#8A8F98', G:'#5B6672' }, rows: ['..gggg..','.gGGGGg.','.gg..Gg.','....gGg.','...gGg..','...gg...','........','...gg...'] }
+};
+var RT_ORDEM = ['capivara','arara','robo','astronauta','gato','raposa','onca','tucano'];
+
+function rtEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+function rtGestao() { return currentUser === 'JULIANA' || (typeof ehLider === 'function' && ehLider()); }
+function rtNome(vn) { return (vendedores[vn] && vendedores[vn].nome) || vn; }
+function rtJoga(vn) { return CK_EQUIPE.indexOf(vn) !== -1; }
+
+function rtInit() {
+  if (!document.getElementById('rt-fonte')) {
+    var l = document.createElement('link'); l.id = 'rt-fonte'; l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Pixelify+Sans:wght@400;600;700&display=swap';
+    document.head.appendChild(l);
+  }
+  if (!RT.ver) RT.ver = rtJoga(currentUser) ? currentUser : 'EQUIPE';
+  if (!RT.ligado) {
+    RT.ligado = true;
+    dbRef('checkinDiario').on('value', function(snap) {
+      ckData = ckGarantirDefaults(snap && snap.val());
+      RT.ckOk = true; rtRender();
+    });
+    CK_EQUIPE.forEach(function(vn) {
+      dbRef('pedidos/' + vn).on('value', function(snap) {
+        var v = (snap && snap.val()) || {};
+        RT.ped[vn] = Object.keys(v).map(function(k) { return v[k]; }).filter(function(p) { return p && !p.excluido; });
+        rtRender();
+      });
+      dbRef('ligacoes/' + vn).on('value', function(snap) {
+        var dados = (snap && snap.val()) || {}, mapa = {};
+        Object.keys(dados).forEach(function(k) { var l = dados[k]; if (l && l.data) mapa[l.data] = (mapa[l.data] || 0) + ckNum(l.qtd); });
+        RT.lig[vn] = mapa; rtRender();
+      });
+    });
+    dbRef('rotaMeta/avatares').on('value', function(snap) { RT.avatares = (snap && snap.val()) || {}; rtRender(); });
+  }
+  rtRender();
+}
+
+// ── Cálculo ──
+function rtDiasUteis(ano, mes, ateDia) {
+  var ult = new Date(ano, mes + 1, 0).getDate(), n = 0;
+  for (var d = 1; d <= Math.min(ult, ateDia || ult); d++) { var w = new Date(ano, mes, d).getDay(); if (w !== 0 && w !== 6) n++; }
+  return n;
+}
+function rtLigacoesDia(vn, dStr) {
+  var nome = rtNome(vn);
+  var rows = (ckData && ckData.dias && ckData.dias[dStr] && ckData.dias[dStr].rows) || [];
+  var row = rows.find(function(r) { return ckNormNome(r.nome) === ckNormNome(nome); });
+  var ck = row ? ckNum(row.ligacoes) : 0;
+  return ck > 0 ? ck : ckNum((RT.lig[vn] || {})[dStr]);
+}
+function rtCalc(vn) {
+  var hoje = new Date(), ano = hoje.getFullYear(), m = hoje.getMonth();
+  var mes = ckMesAtualStr(), ini = mes + '-01', hojeStr = ckToday();
+  var settings = (ckData && ckData.settings) || {};
+  var met = [];
+  // valor
+  var valor = 0, prod = {};
+  CK_PRODUTOS.forEach(function(g) { prod[g.key] = 0; });
+  (RT.ped[vn] || []).forEach(function(p) {
+    if (p.status === 'cancelado' || !p.data || p.data < ini || p.data > hojeStr) return;
+    valor += mmValorPedido(p);
+    (p.itens || []).forEach(function(it) {
+      var gr = ckClassificarProduto(it.material);
+      if (!gr && it.cat === 'aco' && !ckCategoriaDoProduto(it.material)) gr = 'perfil';
+      if (!gr) return;
+      if (gr === 'perfil') prod.perfil += ckNum(it.qtd) * ckNum(it.vUnit); else prod[gr] += ckNum(it.qtd);
+    });
+  });
+  var metaValor = ckNum((settings.metaMensalPorPessoa || {})[vn]);
+  if (metaValor > 0) met.push({ key: 'valor', label: 'Valor', real: valor, meta: metaValor, din: true });
+  CK_PRODUTOS.forEach(function(g) {
+    var mt = ckMetaProduto(mes, g.key, vn);
+    if (mt > 0) met.push({ key: g.key, label: g.label, real: prod[g.key], meta: mt, din: !!g.dinheiro, prod: true });
+  });
+  // ligações
+  var lig = 0;
+  for (var d = 1; d <= hoje.getDate(); d++) lig += rtLigacoesDia(vn, mes + '-' + String(d).padStart(2, '0'));
+  var ligDia = ckNum(settings.metaLigDia) || CK_META_LIG_PADRAO;
+  var dUteisMes = rtDiasUteis(ano, m), dUteisAteHoje = rtDiasUteis(ano, m, hoje.getDate());
+  met.push({ key: 'ligacoes', label: 'Ligações', real: lig, meta: ligDia * dUteisMes, din: false, lig: true });
+  met.forEach(function(x) { x.pct = x.meta > 0 ? x.real / x.meta * 100 : 0; });
+  var menor = met.reduce(function(a, x) { return (!a || x.pct < a.pct) ? x : a; }, null);
+  var fase = met.length ? Math.max(0, Math.min(10, Math.floor((menor ? menor.pct : 0) / 10))) : 0;
+  var esperado = dUteisMes ? dUteisAteHoje / dUteisMes * 100 : 0;
+  return { vn: vn, met: met, menor: menor, fase: fase, esperado: esperado, ligDia: ligDia,
+    ligHoje: rtLigacoesDia(vn, hojeStr), dUteisRest: Math.max(0, dUteisMes - dUteisAteHoje + 1), semValor: !(metaValor > 0) };
+}
+function rtFmt(x, v) {
+  if (x.din) return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+  return Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) + (x.lig ? ' lig.' : ' un.');
+}
+
+// ── Desenho ──
+function rtSprite(key, x, y, px) {
+  var s = RT_SPR[key] || RT_SPR.misterio, out = '';
+  s.rows.forEach(function(r, ri) {
+    for (var ci = 0; ci < r.length; ci++) {
+      var ch = r.charAt(ci); if (ch === '.') continue;
+      out += '<rect x="' + (x + ci * px) + '" y="' + (y + ri * px) + '" width="' + px + '" height="' + px + '" fill="' + s.pal[ch] + '"/>';
+    }
+  });
+  return out;
+}
+function rtSpriteSvg(key, px) {
+  return '<svg width="' + (px * 8) + '" height="' + (px * 8) + '" viewBox="0 0 ' + (px * 8) + ' ' + (px * 8) + '" shape-rendering="crispEdges" aria-hidden="true">' + rtSprite(key, 0, 0, px) + '</svg>';
+}
+function rtMapa(calcs, foco) {
+  var pts = [RT_LARGADA].concat(RT_STOPS).concat([[800, 90]]).map(function(p) { return p.join(','); }).join(' ');
+  var faseFoco = foco ? foco.fase : -1;
+  var s = '<svg class="rt-mapa" viewBox="0 0 860 684" shape-rendering="crispEdges" role="img" aria-label="Mapa da Rota da Meta">' +
+    '<rect width="860" height="684" fill="#1B3A5C"/>' +
+    '<g fill="#24507A"><rect x="40" y="40" width="24" height="4"/><rect x="64" y="44" width="16" height="4"/><rect x="260" y="120" width="24" height="4"/><rect x="284" y="124" width="16" height="4"/><rect x="420" y="40" width="24" height="4"/><rect x="444" y="44" width="16" height="4"/><rect x="140" y="250" width="24" height="4"/><rect x="164" y="254" width="16" height="4"/><rect x="360" y="580" width="24" height="4"/><rect x="384" y="584" width="16" height="4"/><rect x="620" y="480" width="24" height="4"/><rect x="644" y="484" width="16" height="4"/><rect x="760" y="300" width="24" height="4"/><rect x="784" y="304" width="16" height="4"/><rect x="560" y="620" width="24" height="4"/><rect x="584" y="624" width="16" height="4"/></g>' +
+    '<g fill="#0F2740"><rect x="38" y="414" width="270" height="198"/><rect x="54" y="398" width="238" height="230"/><rect x="288" y="324" width="250" height="168"/><rect x="304" y="308" width="218" height="200"/><rect x="558" y="234" width="210" height="158"/><rect x="574" y="218" width="178" height="190"/><rect x="548" y="54" width="300" height="128"/><rect x="564" y="38" width="268" height="160"/></g>' +
+    '<g fill="#E3C27A"><rect x="30" y="406" width="270" height="198"/><rect x="46" y="390" width="238" height="230"/><rect x="280" y="316" width="250" height="168"/><rect x="296" y="300" width="218" height="200"/><rect x="550" y="226" width="210" height="158"/><rect x="566" y="210" width="178" height="190"/><rect x="540" y="46" width="300" height="128"/><rect x="556" y="30" width="268" height="160"/></g>' +
+    '<g fill="#4C9A3F"><rect x="38" y="414" width="254" height="182"/><rect x="54" y="398" width="222" height="214"/><rect x="288" y="324" width="234" height="152"/><rect x="304" y="308" width="202" height="184"/><rect x="558" y="234" width="194" height="142"/><rect x="574" y="218" width="162" height="174"/><rect x="548" y="54" width="284" height="112"/><rect x="564" y="38" width="252" height="144"/></g>' +
+    '<g fill="#3B7D31"><rect x="230" y="430" width="16" height="16"/><rect x="60" y="440" width="16" height="16"/><rect x="250" y="560" width="16" height="16"/><rect x="330" y="330" width="16" height="16"/><rect x="480" y="440" width="16" height="16"/><rect x="710" y="330" width="16" height="16"/><rect x="580" y="250" width="16" height="16"/><rect x="660" y="60" width="16" height="16"/></g>' +
+    '<g fill="#5C3A1A"><rect x="238" y="446" width="4" height="8"/><rect x="68" y="456" width="4" height="8"/><rect x="258" y="576" width="4" height="8"/><rect x="338" y="346" width="4" height="8"/><rect x="488" y="456" width="4" height="8"/><rect x="718" y="346" width="4" height="8"/><rect x="588" y="266" width="4" height="8"/><rect x="668" y="76" width="4" height="8"/></g>' +
+    '<polyline points="' + pts + '" fill="none" stroke="#0F2740" stroke-width="10"/>' +
+    '<polyline points="' + pts + '" fill="none" stroke="#F7E7B4" stroke-width="6" stroke-dasharray="10 6"/>' +
+    '<rect x="40" y="586" width="56" height="30" fill="#E8E6E1"/><rect x="36" y="578" width="64" height="10" fill="#C41E1E"/><rect x="58" y="598" width="20" height="18" fill="#5B6672"/><rect x="44" y="594" width="10" height="8" fill="#9AA5B1"/><rect x="82" y="594" width="10" height="8" fill="#9AA5B1"/>' +
+    '<rect x="790" y="36" width="6" height="64" fill="#E8E6E1"/><rect x="796" y="36" width="34" height="22" fill="#C41E1E"/><rect x="802" y="42" width="8" height="4" fill="#FFFFFF"/><rect x="776" y="100" width="34" height="8" fill="#5B6672"/>';
+  function tag(x, y, txt, fg, bg, borda, tam) {
+    var w = Math.round(txt.length * (tam * 1.02) + 14);
+    return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + (tam + 12) + '" fill="' + bg + '" stroke="' + borda + '" stroke-width="2"/>' +
+      '<text x="' + (x + 7) + '" y="' + (y + tam + 5) + '" font-family="\'Press Start 2P\', monospace" font-size="' + tam + '" fill="' + fg + '">' + rtEsc(txt) + '</text>';
+  }
+  s += tag(30, 626, 'CD FAST · LARGADA', '#FFFFFF', '#1C1C1C', '#E8E6E1', 8);
+  s += tag(150, 598, 'MUNDO 1 · PROSPECÇÃO', '#FFD23F', '#1C1C1C', '#FFD23F', 9);
+  s += tag(304, 484, 'MUNDO 2 · PROPOSTAS', '#FFD23F', '#1C1C1C', '#FFD23F', 9);
+  s += tag(560, 380, 'MUNDO 3 · CARGAS', '#FFD23F', '#1C1C1C', '#FFD23F', 9);
+  s += tag(556, 8, 'MUNDO 4 · META BATIDA', '#FFD23F', '#1C1C1C', '#FFD23F', 9);
+  s += tag(744, 118, '100% · CHEGADA', '#1C1C1C', '#FFD23F', '#1C1C1C', 8);
+  RT_STOPS.forEach(function(p, i) {
+    var n = i + 1, bg = '#FFFFFF', fg = '#1C1C1C';
+    if (faseFoco >= 0) { if (n <= faseFoco) bg = '#FFD23F'; if (n === faseFoco + 1 && faseFoco < 10) { bg = '#C41E1E'; fg = '#FFFFFF'; } }
+    s += '<rect x="' + (p[0] - 14) + '" y="' + (p[1] - 14) + '" width="36" height="36" fill="#0B1828"/>' +
+      '<rect x="' + (p[0] - 18) + '" y="' + (p[1] - 18) + '" width="36" height="36" fill="' + bg + '" stroke="#1C1C1C" stroke-width="4"/>' +
+      '<text x="' + p[0] + '" y="' + (p[1] + 5) + '" text-anchor="middle" font-family="\'Press Start 2P\', monospace" font-size="11" fill="' + fg + '">' + n + '</text>';
+  });
+  // píer da largada: quem ainda está na fase 0 espera aqui, em fila
+  s += '<rect x="378" y="560" width="276" height="114" fill="#0F2740"/><rect x="374" y="556" width="276" height="114" fill="#A0703F"/>' +
+    '<g fill="#8B5A2B"><rect x="374" y="584" width="276" height="3"/><rect x="374" y="612" width="276" height="3"/><rect x="374" y="640" width="276" height="3"/></g>';
+  s += tag(382, 534, 'FILA DA LARGADA', '#1C1C1C', '#F7E7B4', '#1C1C1C', 8);
+  var porFase = {};
+  calcs.forEach(function(c) { (porFase[c.fase] = porFase[c.fase] || []).push(c); });
+  function boneco(c, cx, baseY, px) {
+    var eu = foco && c.vn === foco.vn, w = px * 8;
+    var x = Math.round(cx - w / 2), y = Math.round(baseY - w);
+    var nome = eu ? 'VOCÊ' : rtNome(c.vn).split(' ')[0].toUpperCase().slice(0, 7);
+    var tw = Math.round(nome.length * 6 + 6);
+    return '<g class="rt-av"><title>' + rtEsc(rtNome(c.vn)) + '</title>' + (eu ? '<rect x="' + (x - 3) + '" y="' + (y - 3) + '" width="' + (w + 6) + '" height="' + (w + 6) + '" fill="none" stroke="#FFD23F" stroke-width="2"/>' : '') +
+      rtSprite(RT.avatares[c.vn] || 'misterio', x, y, px) +
+      '<rect x="' + Math.round(cx - tw / 2) + '" y="' + (y - 14) + '" width="' + tw + '" height="11" fill="' + (eu ? '#C41E1E' : '#1C1C1C') + '"/>' +
+      '<text x="' + Math.round(cx) + '" y="' + (y - 5) + '" text-anchor="middle" font-family="\'Press Start 2P\', monospace" font-size="6" fill="#FFFFFF">' + rtEsc(nome) + '</text></g>';
+  }
+  Object.keys(porFase).forEach(function(f) {
+    var grupo = porFase[f].slice().sort(function(a, b) { return (foco && a.vn === foco.vn) ? 1 : (foco && b.vn === foco.vn) ? -1 : 0; });
+    if (+f === 0) {
+      grupo.forEach(function(c, i) {
+        var col = i % 5, lin = Math.floor(i / 5);
+        s += boneco(c, 408 + col * 52, 608 + lin * 54, 3);
+      });
+      return;
+    }
+    var p = RT_STOPS[+f - 1], cols = Math.min(3, grupo.length), px = grupo.length <= 2 ? 4 : 3;
+    grupo.forEach(function(c, i) {
+      var col = i % cols, lin = Math.floor(i / cols), nCol = Math.min(cols, grupo.length - lin * cols);
+      var cx = p[0] + (col - (nCol - 1) / 2) * 46;
+      s += boneco(c, cx, p[1] - 24 - lin * (px * 8 + 20), (foco && c.vn === foco.vn) ? 4 : px);
+    });
+  });
+  return s + '</svg>';
+}
+
+// ── Tela ──
+function rtRender() {
+  var root = document.getElementById('rota-root');
+  if (!root || !document.getElementById('tab-rota').classList.contains('active')) return;
+  if (!RT.ckOk) { root.innerHTML = '<div class="rt-vazio">Carregando a Rota da Meta…</div>'; return; }
+  var calcs = CK_EQUIPE.map(rtCalc);
+  var foco = RT.ver !== 'EQUIPE' ? calcs.find(function(c) { return c.vn === RT.ver; }) : null;
+  var nomesMes = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+  var hoje = new Date();
+  var html = '<div class="rt-wrap"><div class="rt-topo"><div class="rt-topo-esq"><span class="rt-logo">ROTA DA META</span><span class="rt-mes">' + nomesMes[hoje.getMonth()] + '</span></div>' +
+    '<div class="rt-legenda"><span><i style="background:#FFD23F"></i>Fase vencida</span><span><i style="background:#C41E1E"></i>Próxima fase</span><span><i style="background:#FFFFFF"></i>A caminho</span></div></div>';
+  if (rtGestao()) {
+    html += '<div class="rt-sel"><span>Ver:</span><button type="button" class="' + (RT.ver === 'EQUIPE' ? 'on' : '') + '" onclick="rtVer(\'EQUIPE\')">👥 Equipe</button>' +
+      CK_EQUIPE.map(function(vn) { return '<button type="button" class="' + (RT.ver === vn ? 'on' : '') + '" onclick="rtVer(\'' + vn + '\')">' + rtEsc(rtNome(vn)) + '</button>'; }).join('') + '</div>';
+  }
+  html += '<div class="rt-corpo"><div class="rt-mapa-box">' + rtMapa(calcs, foco) + '</div><div class="rt-painel">';
+  html += foco ? rtPainelVendedor(foco) : rtPainelEquipe(calcs);
+  html += '</div></div></div>';
+  root.innerHTML = html;
+}
+function rtVer(v) { RT.ver = v; rtRender(); }
+function rtPainelVendedor(c) {
+  var eu = c.vn === currentUser, h = '';
+  var av = RT.avatares[c.vn];
+  var ritmo = c.menor && c.menor.pct + 3 >= c.esperado ? '<span class="rt-ok">No ritmo dos dias úteis</span>' : '<span class="rt-atras">Atrás do ritmo — acelera!</span>';
+  h += '<div class="rt-card rt-ficha"><div class="rt-ficha-av">' + rtSpriteSvg(av || 'misterio', 6) + '</div><div>' +
+    '<div class="rt-pix">' + rtEsc(rtNome(c.vn).toUpperCase()) + '</div>' +
+    '<div class="rt-forte">' + (c.fase >= 10 ? '🏆 Meta batida!' : 'Mundo ' + (c.fase <= 3 ? 1 : c.fase <= 6 ? 2 : c.fase <= 8 ? 3 : 4) + ' · Fase ' + c.fase + ' de 10') + '</div>' +
+    '<div>' + ritmo + '</div></div></div>';
+  if (c.fase < 10) {
+    var alvo = (c.fase + 1) * 10;
+    h += '<div class="rt-card"><div class="rt-pix">PRÓXIMA FASE · ' + (c.fase + 1) + '</div><div class="rt-sub">Para chegar a ' + alvo + '% de todas as metas:</div>';
+    c.met.forEach(function(x) {
+      var nec = x.meta * alvo / 100, falta = Math.max(0, nec - x.real), w = nec > 0 ? Math.min(100, x.real / nec * 100) : 100;
+      h += '<div class="rt-barra-lin"><span class="rt-forte">' + rtEsc(x.label) + '</span>' + (falta > 0 ? '<span>falta ' + rtFmt(x, falta) + '</span>' : '<span class="rt-ok">ok ✓</span>') + '</div>' +
+        '<div class="rt-barra"><div style="width:' + w.toFixed(1) + '%;background:' + (falta > 0 ? '#C41E1E' : '#2E7D32') + '"></div></div>';
+    });
+    if (c.semValor) h += '<div class="rt-aviso">Meta de valor deste mês não cadastrada no Check-in.</div>';
+    h += '</div>';
+  } else {
+    h += '<div class="rt-card rt-trofeu"><div class="rt-pix">🏁 CHEGOU!</div><div>Todas as metas do mês batidas. Parabéns!</div></div>';
+  }
+  // missão do dia
+  var mis = [];
+  mis.push({ txt: c.ligDia + ' ligações hoje (feitas: ' + c.ligHoje + ')', ok: c.ligHoje >= c.ligDia });
+  var travando = c.met.filter(function(x) { return !x.lig && x.pct < 100; }).sort(function(a, b) { return a.pct - b.pct; })[0];
+  if (travando && c.fase < 10) {
+    var nec2 = travando.meta * (c.fase + 1) / 10, f2 = Math.max(0, nec2 - travando.real);
+    if (f2 > 0) mis.push({ txt: travando.key === 'valor' ? 'Vender mais ' + rtFmt(travando, f2) + ' para destravar a fase ' + (c.fase + 1) : 'Vender ' + rtFmt(travando, f2) + ' de ' + travando.label, ok: false });
+  }
+  var mv = c.met.find(function(x) { return x.key === 'valor'; });
+  if (mv && mv.real < mv.meta && c.dUteisRest > 0) mis.push({ txt: 'Vender ' + rtFmt(mv, (mv.meta - mv.real) / c.dUteisRest) + ' hoje (ritmo para a meta)', ok: false });
+  h += '<div class="rt-card rt-missao"><div class="rt-pix">MISSÃO DO DIA</div>' + mis.map(function(m) {
+    return '<div class="rt-mis' + (m.ok ? ' feito' : '') + '"><span class="rt-check">' + (m.ok ? '✓' : '') + '</span>' + rtEsc(m.txt) + '</div>';
+  }).join('') + '</div>';
+  if (eu) {
+    h += '<div class="rt-card"><div class="rt-pix">' + (av ? 'TROCAR AVATAR' : 'ESCOLHA SEU AVATAR') + '</div>' + (av ? '' : '<div class="rt-sub">Escolha um personagem para entrar no mapa.</div>') +
+      '<div class="rt-galeria">' + RT_ORDEM.map(function(k) {
+        return '<button type="button" class="' + (av === k ? 'on' : '') + '" onclick="rtEscolherAvatar(\'' + k + '\')" title="' + RT_SPR[k].nome + '" aria-label="' + RT_SPR[k].nome + '">' + rtSpriteSvg(k, 4) + '</button>';
+      }).join('') + '</div>' + (av ? '<div class="rt-sub">Escolhido: <b>' + RT_SPR[av].nome + '</b></div>' : '') + '</div>';
+  }
+  return h;
+}
+function rtPainelEquipe(calcs) {
+  var ord = calcs.slice().sort(function(a, b) { return b.fase - a.fase || (b.menor ? b.menor.pct : 0) - (a.menor ? a.menor.pct : 0); });
+  return '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase de cada um e a meta que está segurando o avanço.</div>' +
+    '<table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Fase</th><th>Travando em</th></tr></thead><tbody>' +
+    ord.map(function(c) {
+      var tr = c.menor ? rtEsc(c.menor.label) + ' <span class="rt-cinza" style="white-space:nowrap">· ' + Math.floor(c.menor.pct) + '%</span>' : '—';
+      return '<tr onclick="rtVer(\'' + c.vn + '\')"><td>' + rtSpriteSvg(RT.avatares[c.vn] || 'misterio', 3) + '</td><td class="rt-forte">' + rtEsc(rtNome(c.vn)) + '</td><td>' + c.fase + '/10</td><td>' + (c.fase >= 10 ? '🏆 meta batida' : tr) + '</td></tr>';
+    }).join('') + '</tbody></table><div class="rt-sub">Clique num vendedor para ver o painel dele.</div></div>';
+}
+function rtEscolherAvatar(k) {
+  if (!rtJoga(currentUser) || !RT_SPR[k]) return;
+  RT.avatares[currentUser] = k; rtRender();
+  dbRef('rotaMeta/avatares/' + currentUser).set(k);
+}
+
 function doLogout() {
+  try { RT.ver = null; } catch(e) {}
   try { liderAoSair(); } catch(e) {}
   currentUser = null;
   try { localStorage.removeItem('fgv_session_user'); } catch(e) {}
@@ -13442,6 +13770,7 @@ function showTab(name, btn) {
   if (name === 'parana') prInit();
   if (name === 'checkin') ckInit();
   if (name === 'minhasmetas') mmInit();
+  if (name === 'rota' && typeof rtInit === 'function') rtInit();
   if (name === 'shopping' && typeof spInit === 'function') spInit();
   if (name === 'abastecimento' && typeof abInit === 'function') abInit();
   if (name === 'sugestoes' && typeof sgInit === 'function') sgInit();
