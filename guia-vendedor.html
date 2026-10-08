@@ -4616,6 +4616,7 @@
 #tab-rota .rt-galeria button.on { border-color:#C41E1E; background:#FFF6D6; }
 #tab-rota .rt-trofeu { background:#FFD23F; }
 #tab-rota .rt-prem { background:linear-gradient(180deg,#FFF6D6 0%,#FFFFFF 60%); }
+#tab-rota .rt-com { background:linear-gradient(180deg,#E6F1FB 0%,#FFFFFF 60%); }
 #tab-rota .rt-prem-total { font-size:30px; font-weight:800; color:#1B5E20; line-height:1.1; }
 #tab-rota .rt-prem-lin { display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px dashed #E2D9B8; }
 #tab-rota .rt-prem-ic { font-size:20px; width:26px; text-align:center; flex-shrink:0; }
@@ -14096,7 +14097,7 @@ function rtMapa(calcs, foco) {
   var porFase = {};
   calcs.forEach(function(c) { (porFase[c.fase] = porFase[c.fase] || []).push(c); });
   function moeda(vn, cx, yy) {
-    var t = premRS(premCalc(vn).total), tw = Math.round(t.length * 6.2 + 20);
+    var t = comRS(premCalc(vn).total + comCalc(vn).ok).replace(',00', ''), tw = Math.round(t.length * 6.2 + 20);
     return '<rect x="' + Math.round(cx - tw / 2 + 2) + '" y="' + (yy + 2) + '" width="' + tw + '" height="14" fill="#0B1828"/>' +
       '<rect x="' + Math.round(cx - tw / 2) + '" y="' + yy + '" width="' + tw + '" height="14" fill="#FFD23F" stroke="#1C1C1C" stroke-width="1.5"/>' +
       '<circle cx="' + Math.round(cx - tw / 2 + 8) + '" cy="' + (yy + 7) + '" r="4" fill="#E8A93B" stroke="#7A4A00" stroke-width="1"/>' +
@@ -14239,29 +14240,67 @@ function premCardHtml(vn, eu) {
 }
 
 // Placa dourada no canto do mapa com o total de premiações
+// ── Comissão do mês (mesma regra da aba Pedidos) ──
+// Garantida = cargas vendidas, faturadas e conciliadas no mesmo mês (valor congelado na conciliação).
+// Prevista = cargas do mês ainda não conciliadas, pela taxa cheia (o redutor só é decidido na conciliação).
+function comCalc(vn) {
+  RT.comCache = RT.comCache || {};
+  if (RT.comCache[vn] && RT.comCache[vn].n === RT.premN) return RT.comCache[vn];
+  var mes = ckMesAtualStr(), peds = (RT.ped[vn] || []).filter(function(p) { return p && !p.excluido; });
+  var ok = (typeof somarComissaoElegivel === 'function') ? somarComissaoElegivel(peds, function(p, m) { return m === mes; }) : { valor: 0, placas: 0, comp: 0, aco: 0, cargas: 0, redutor: 0 };
+  var prev = 0, nPrev = 0;
+  peds.forEach(function(p) {
+    if (p.status === 'cancelado' || !p.data || String(p.data).slice(0, 7) !== mes || p.conciliado) return;
+    try { prev += calcComissaoPedidoBruta(p).cheia || 0; nPrev++; } catch (e) {}
+  });
+  var lig = 0, lm = RT.lig[vn] || {};
+  Object.keys(lm).forEach(function(d) { if (d.slice(0, 7) === mes) lig += Number(lm[d]) || 0; });
+  var r = { n: RT.premN, ok: Math.round((ok.valor || 0) * 100) / 100, placas: ok.placas || 0, comp: ok.comp || 0, aco: ok.aco || 0, cargas: ok.cargas || 0, redutor: ok.redutor || 0,
+    prev: Math.round(prev * 100) / 100, nPrev: nPrev, lig: lig, metaLig: (typeof META_LIGACOES_COMISSAO !== 'undefined' ? META_LIGACOES_COMISSAO : 600) };
+  RT.comCache[vn] = r;
+  return r;
+}
+function comRS(v) { return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function comCardHtml(vn, eu) {
+  var c = comCalc(vn), pctLig = Math.min(100, Math.round(c.lig / c.metaLig * 100));
+  return '<div class="rt-card rt-com"><div class="rt-pix">💼 ' + (eu ? 'MINHA COMISSÃO' : 'COMISSÃO') + '</div>' +
+    '<div class="rt-prem-total" style="color:#185FA5">' + comRS(c.ok) + '</div>' +
+    '<div class="rt-sub">Garantida: ' + c.cargas + ' carga' + (c.cargas === 1 ? '' : 's') + ' conciliada' + (c.cargas === 1 ? '' : 's') + ' no mês' + (c.redutor ? ' · ⚠️ redutor em ' + c.redutor : '') + '</div>' +
+    (c.cargas ? '<div class="rt-prem-lin"><span class="rt-prem-ic">🧱</span><div class="rt-prem-txt"><div class="rt-forte">Placas · 0,5%</div></div><div class="rt-prem-val">' + comRS(c.placas) + '</div></div>' +
+      '<div class="rt-prem-lin"><span class="rt-prem-ic">🔩</span><div class="rt-prem-txt"><div class="rt-forte">Complementos / GRX · 0,75%</div></div><div class="rt-prem-val">' + comRS(c.comp) + '</div></div>' +
+      '<div class="rt-prem-lin"><span class="rt-prem-ic">⚙️</span><div class="rt-prem-txt"><div class="rt-forte">Aço / Piso · 1%</div></div><div class="rt-prem-val">' + comRS(c.aco) + '</div></div>' : '') +
+    '<div class="rt-prem-lin"><span class="rt-prem-ic">⏳</span><div class="rt-prem-txt"><div class="rt-forte">Prevista (a conciliar)</div><div class="rt-sub">' + c.nPrev + ' pedido' + (c.nPrev === 1 ? '' : 's') + ' do mês ainda sem conciliação · taxa cheia</div></div><div class="rt-prem-val" style="color:#7A4A00">+' + comRS(c.prev) + '</div></div>' +
+    '<div class="rt-barra-lin" style="margin-top:6px"><span>📞 Ligações no mês</span><span class="' + (c.lig >= c.metaLig ? 'rt-ok' : 'rt-atras') + '">' + c.lig + ' / ' + c.metaLig + '</span></div>' +
+    '<div class="rt-barra"><div style="width:' + pctLig + '%;background:' + (c.lig >= c.metaLig ? '#2E7D32' : '#E8A020') + '"></div></div>' +
+    '<div class="rt-sub" style="font-size:12px">' + (c.lig >= c.metaLig ? '✅ Meta de ligações batida: comissão na taxa cheia.' : 'Abaixo de ' + c.metaLig + ' ligações no mês, a comissão cai para 0,5% sobre tudo. Faltam ' + (c.metaLig - c.lig) + '.') + ' Só conta carga vendida, faturada e conciliada no mesmo mês.</div></div>';
+}
+// Placa dourada no canto do mapa: prêmios + comissão do mês
 function rtPlacaPremios(calcs, foco) {
-  var tit, val, sub;
+  var tit, val, l1, l2;
   if (foco) {
-    var r = premCalc(foco.vn);
-    tit = foco.vn === currentUser ? 'SUAS PREMIAÇÕES' : 'PREMIAÇÕES · ' + rtNome(foco.vn).split(' ')[0].toUpperCase();
-    val = premRS(r.total); sub = r.pend ? '+' + premRS(r.pend) + ' a conciliar' : 'pedidos conciliados';
+    var r = premCalc(foco.vn), c = comCalc(foco.vn);
+    tit = foco.vn === currentUser ? 'SEUS GANHOS DO MÊS' : 'GANHOS · ' + rtNome(foco.vn).split(' ')[0].toUpperCase();
+    val = comRS(r.total + c.ok);
+    l1 = '🏆 Prêmios ' + premRS(r.total) + '   💼 Comissão ' + comRS(c.ok);
+    l2 = (r.pend + c.prev) ? '+' + comRS(r.pend + c.prev) + ' previstos (a conciliar)' : 'tudo conciliado';
   } else {
-    var tots = calcs.map(function(c) { return { vn: c.vn, t: premCalc(c.vn).total, p: premCalc(c.vn).pend }; });
-    var soma = tots.reduce(function(a, x) { return a + x.t; }, 0), pend = tots.reduce(function(a, x) { return a + x.p; }, 0);
-    var top = tots.slice().sort(function(a, b) { return b.t - a.t; })[0];
-    tit = 'PREMIAÇÕES DA EQUIPE'; val = premRS(soma);
-    sub = top && top.t > 0 ? 'Líder: ' + rtNome(top.vn).split(' ')[0] + ' ' + premRS(top.t) : (pend ? '+' + premRS(pend) + ' a conciliar' : 'conciliou, contou!');
+    var tp = 0, tc = 0, tpend = 0, top = null;
+    calcs.forEach(function(x) { var r2 = premCalc(x.vn), c2 = comCalc(x.vn), g = r2.total + c2.ok; tp += r2.total; tc += c2.ok; tpend += r2.pend + c2.prev; if (!top || g > top.g) top = { vn: x.vn, g: g }; });
+    tit = 'GANHOS DA EQUIPE'; val = comRS(tp + tc);
+    l1 = '🏆 Prêmios ' + premRS(tp) + '   💼 Comissão ' + comRS(tc);
+    l2 = top && top.g > 0 ? 'Líder: ' + rtNome(top.vn).split(' ')[0] + ' ' + comRS(top.g) + (tpend ? ' · +' + comRS(tpend) + ' previstos' : '') : (tpend ? '+' + comRS(tpend) + ' previstos (a conciliar)' : 'conciliou, contou!');
   }
-  var x = 22, y = 18, w = 300, h = 84;
+  var x = 22, y = 18, w = 340, h = 104;
   return '<g class="rt-placa-prem" style="cursor:pointer" onclick="var e=document.querySelector(\'#tab-rota .rt-prem\'); if(e) e.scrollIntoView({behavior:\'smooth\',block:\'center\'});">' +
     '<rect x="' + (x + 5) + '" y="' + (y + 5) + '" width="' + w + '" height="' + h + '" fill="#0B1828"/>' +
     '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="#1C1C1C" stroke="#FFD23F" stroke-width="4"/>' +
-    '<g fill="#E8A93B" stroke="#7A4A00" stroke-width="2"><circle cx="' + (x + 34) + '" cy="' + (y + 50) + '" r="17"/></g>' +
-    '<circle cx="' + (x + 34) + '" cy="' + (y + 50) + '" r="11" fill="none" stroke="#FFD23F" stroke-width="2"/>' +
-    '<text x="' + (x + 34) + '" y="' + (y + 56) + '" text-anchor="middle" font-family="\'Press Start 2P\', monospace" font-size="12" fill="#7A4A00">$</text>' +
+    '<g fill="#E8A93B" stroke="#7A4A00" stroke-width="2"><circle cx="' + (x + 34) + '" cy="' + (y + 48) + '" r="17"/></g>' +
+    '<circle cx="' + (x + 34) + '" cy="' + (y + 48) + '" r="11" fill="none" stroke="#FFD23F" stroke-width="2"/>' +
+    '<text x="' + (x + 34) + '" y="' + (y + 54) + '" text-anchor="middle" font-family="\'Press Start 2P\', monospace" font-size="12" fill="#7A4A00">$</text>' +
     '<text x="' + (x + 62) + '" y="' + (y + 22) + '" font-family="\'Press Start 2P\', monospace" font-size="8" fill="#FFD23F">' + rtEsc(tit) + '</text>' +
     '<text x="' + (x + 62) + '" y="' + (y + 52) + '" font-family="Segoe UI, system-ui, sans-serif" font-weight="800" font-size="25" fill="#FFFFFF">' + rtEsc(val) + '</text>' +
-    '<text x="' + (x + 62) + '" y="' + (y + 72) + '" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#E8E6E1">' + rtEsc(sub) + '</text></g>';
+    '<text x="' + (x + 62) + '" y="' + (y + 72) + '" font-family="Segoe UI, system-ui, sans-serif" font-size="11.5" font-weight="700" fill="#FFD23F">' + rtEsc(l1) + '</text>' +
+    '<text x="' + (x + 62) + '" y="' + (y + 90) + '" font-family="Segoe UI, system-ui, sans-serif" font-size="11.5" fill="#E8E6E1">' + rtEsc(l2) + '</text></g>';
 }
 // ── Tela ──
 function rtRender() {
@@ -14434,6 +14473,7 @@ function rtPainelVendedor(c) {
   var mv = c.met.find(function(x) { return x.key === 'valor'; });
   if (mv && mv.alvoHoje > 0) mis.push({ txt: 'Vender ' + rtFmt(mv, mv.alvoHoje) + ' hoje (feito: ' + rtFmt(mv, mv.hoje) + ')', ok: mv.hoje >= mv.alvoHoje });
   h += premCardHtml(c.vn, eu);
+  h += comCardHtml(c.vn, eu);
   h += '<div class="rt-card rt-missao"><div class="rt-pix">MISSÃO DO DIA</div>' + mis.map(function(m) {
     return '<div class="rt-mis' + (m.ok ? ' feito' : '') + '"><span class="rt-check">' + (m.ok ? '✓' : '') + '</span>' + rtEsc(m.txt) + '</div>';
   }).join('') + '</div>';
@@ -14514,10 +14554,10 @@ function rtCopiarMetas(vn, origem) {
 }
 function rtPainelEquipe(calcs) {
   var ord = calcs.slice().sort(function(a, b) { return b.fase - a.fase || b.basePct - a.basePct || b.estrelas - a.estrelas; });
-  var pr = calcs.map(function(c) { var r = premCalc(c.vn); return { vn: c.vn, t: r.total, p: r.pend }; }).sort(function(a, b) { return b.t - a.t || b.p - a.p; });
-  var premHtml = '<div class="rt-card rt-prem"><div class="rt-pix">💰 PREMIAÇÕES DA EQUIPE</div><div class="rt-prem-total">' + premRS(pr.reduce(function(a, x) { return a + x.t; }, 0)) + '</div>' +
-    '<div class="rt-sub">Garantido (conciliado) · clique num vendedor para ver o detalhe</div><table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Garantido</th><th>A conciliar</th></tr></thead><tbody>' +
-    pr.map(function(x, i) { return '<tr onclick="rtVer(\'' + x.vn + '\')"><td>' + rtAvatarSvg(RT.avatares[x.vn], 28) + '</td><td class="rt-forte">' + (i < 3 && x.t ? ['🥇', '🥈', '🥉'][i] + ' ' : '') + rtEsc(rtNome(x.vn)) + '</td><td class="rt-forte">' + premRS(x.t) + '</td><td class="rt-cinza">' + (x.p ? '+' + premRS(x.p) : '—') + '</td></tr>'; }).join('') +
+  var pr = calcs.map(function(c) { var r = premCalc(c.vn), cm = comCalc(c.vn); return { vn: c.vn, t: r.total, p: r.pend + cm.prev, c: cm.ok, g: r.total + cm.ok }; }).sort(function(a, b) { return b.g - a.g || b.p - a.p; });
+  var premHtml = '<div class="rt-card rt-prem"><div class="rt-pix">💰 GANHOS DA EQUIPE</div><div class="rt-prem-total">' + comRS(pr.reduce(function(a, x) { return a + x.g; }, 0)) + '</div>' +
+    '<div class="rt-sub">Prêmios + comissão garantidos (conciliado) · clique num vendedor para ver o detalhe</div><table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Prêmios</th><th>Comissão</th></tr></thead><tbody>' +
+    pr.map(function(x, i) { return '<tr onclick="rtVer(\'' + x.vn + '\')"><td>' + rtAvatarSvg(RT.avatares[x.vn], 28) + '</td><td class="rt-forte">' + (i < 3 && x.g ? ['🥇', '🥈', '🥉'][i] + ' ' : '') + rtEsc(rtNome(x.vn)) + (x.p ? '<div class="rt-cinza" style="font-size:11.5px;font-weight:400;white-space:nowrap">+' + premRS(Math.round(x.p)) + ' previsto</div>' : '') + '</td><td class="rt-forte" style="white-space:nowrap">' + premRS(x.t) + '</td><td class="rt-forte" style="color:#185FA5;white-space:nowrap">' + premRS(Math.round(x.c)) + '</td></tr>'; }).join('') +
     '</tbody></table></div>';
   return premHtml + '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase pelo valor <b>entregue</b>, estrelas das outras metas e a mais atrasada.</div>' +
     '<table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Fase</th><th>Entregue</th><th title="Dias úteis na mesma fase">Dias</th><th>⭐</th><th>Mais atrasada</th></tr></thead><tbody>' +
