@@ -4617,6 +4617,14 @@
 #tab-rota .rt-trofeu { background:#FFD23F; }
 #tab-rota .rt-prem { background:linear-gradient(180deg,#FFF6D6 0%,#FFFFFF 60%); }
 #tab-rota .rt-com { background:linear-gradient(180deg,#E6F1FB 0%,#FFFFFF 60%); }
+#tab-rota .rt-faixa-ganhos { display:flex; flex-wrap:wrap; align-items:center; gap:10px 22px; background:#1C1C1C; border:4px solid #FFD23F; box-shadow:5px 5px 0 #0B1828; padding:10px 16px; cursor:pointer; }
+#tab-rota .rt-fg-moeda { width:38px; height:38px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #FFE08A, #E8A93B 60%, #B9781F); border:2px solid #7A4A00; color:#7A4A00; font-family:'Press Start 2P', monospace; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+#tab-rota .rt-fg-bloco { display:flex; flex-direction:column; gap:3px; }
+#tab-rota .rt-fg-rot { font-family:'Press Start 2P', monospace; font-size:8px; color:#FFD23F; letter-spacing:.02em; }
+#tab-rota .rt-fg-total { font-size:26px; font-weight:800; color:#fff; line-height:1; }
+#tab-rota .rt-fg-val { font-size:17px; font-weight:800; color:#fff; line-height:1.1; }
+#tab-rota .rt-fg-prev { color:#FFD9A0; }
+#tab-rota .rt-fg-mini { font-size:11px; color:#aaa; }
 #tab-rota .rt-prem-total { font-size:30px; font-weight:800; color:#1B5E20; line-height:1.1; }
 #tab-rota .rt-prem-lin { display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px dashed #E2D9B8; }
 #tab-rota .rt-prem-ic { font-size:20px; width:26px; text-align:center; flex-shrink:0; }
@@ -14274,6 +14282,25 @@ function comCardHtml(vn, eu) {
     '<div class="rt-barra"><div style="width:' + pctLig + '%;background:' + (c.lig >= c.metaLig ? '#2E7D32' : '#E8A020') + '"></div></div>' +
     '<div class="rt-sub" style="font-size:12px">' + (c.lig >= c.metaLig ? '✅ Meta de ligações batida: comissão na taxa cheia.' : 'Abaixo de ' + c.metaLig + ' ligações no mês, a comissão cai para 0,5% sobre tudo. Faltam ' + (c.metaLig - c.lig) + '.') + ' Só conta carga vendida, faturada e conciliada no mesmo mês.</div></div>';
 }
+// Faixa de ganhos acima do mapa (sempre visível, independente do zoom)
+function rtFaixaGanhos(calcs, foco) {
+  var tit, prem, com, prev;
+  if (foco) {
+    var r = premCalc(foco.vn), c = comCalc(foco.vn);
+    tit = foco.vn === currentUser ? 'SEUS GANHOS DO MÊS' : 'GANHOS · ' + rtNome(foco.vn).split(' ')[0].toUpperCase();
+    prem = r.total; com = c.ok; prev = r.pend + c.prev;
+  } else {
+    tit = 'GANHOS DA EQUIPE'; prem = 0; com = 0; prev = 0;
+    calcs.forEach(function(x) { var r2 = premCalc(x.vn), c2 = comCalc(x.vn); prem += r2.total; com += c2.ok; prev += r2.pend + c2.prev; });
+  }
+  return '<div class="rt-faixa-ganhos" onclick="var e=document.querySelector(\'#tab-rota .rt-prem\'); if(e) e.scrollIntoView({behavior:\'smooth\',block:\'center\'});" title="Ver o detalhe">' +
+    '<span class="rt-fg-moeda">$</span>' +
+    '<div class="rt-fg-bloco"><div class="rt-fg-rot">' + rtEsc(tit) + '</div><div class="rt-fg-total">' + comRS(prem + com) + '</div></div>' +
+    '<div class="rt-fg-bloco"><div class="rt-fg-rot">🏆 PRÊMIOS</div><div class="rt-fg-val">' + premRS(prem) + '</div></div>' +
+    '<div class="rt-fg-bloco"><div class="rt-fg-rot">💼 COMISSÃO</div><div class="rt-fg-val">' + comRS(com) + '</div></div>' +
+    '<div class="rt-fg-bloco"><div class="rt-fg-rot">⏳ PREVISTO</div><div class="rt-fg-val rt-fg-prev">+' + comRS(prev) + '</div><div class="rt-fg-mini">a conciliar</div></div>' +
+    '</div>';
+}
 // Placa dourada no canto do mapa: prêmios + comissão do mês
 function rtPlacaPremios(calcs, foco) {
   var tit, val, l1, l2;
@@ -14331,7 +14358,7 @@ function rtRenderInner() {
     return '<button type="button" class="' + (aba === a[0] ? 'on' : '') + '" onclick="rtAba(\'' + a[0] + '\')">' + a[1] + '</button>';
   }).join('') + '</div>';
   if (aba === 'mapa') {
-    html += '<div class="rt-corpo"><div class="rt-col-esq">' + rtZoomBarra() + '<div class="rt-mapa-box" id="rt-mapa-box">' + rtMapa(calcs, foco).replace('<svg class="rt-mapa"', '<svg class="rt-mapa" style="width:' + rtZoomAtual() + '%"') + '</div>' + (foco ? rtQuadroProdutos(foco) : '') + '</div><div class="rt-painel">';
+    html += '<div class="rt-corpo"><div class="rt-col-esq">' + rtFaixaGanhos(calcs, foco) + rtZoomBarra() + '<div class="rt-mapa-box" id="rt-mapa-box">' + rtMapa(calcs, foco).replace('<svg class="rt-mapa"', '<svg class="rt-mapa" style="width:' + rtZoomAtual() + '%"') + '</div>' + (foco ? rtQuadroProdutos(foco) : '') + '</div><div class="rt-painel">';
     html += foco ? rtPainelVendedor(foco) : rtPainelEquipe(calcs);
     html += '</div></div>';
   } else {
