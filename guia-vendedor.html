@@ -2828,43 +2828,52 @@
     <div style="background:#1C1C1C;border-radius:14px;padding:1.5rem;">
       <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#FAC775;margin-bottom:1rem;">🎁 Premiações do Mês</div>
 
+      <div style="font-size:12px;color:#aaa;margin:-0.5rem 0 1rem;">Campanhas vigentes · Atacado · Outubro/2026</div>
       <div style="display:grid;gap:10px;" id="premiacoes-lista">
+
+        <div style="background:#2A2A2A;border-radius:10px;padding:1rem;display:flex;align-items:flex-start;gap:12px;">
+          <div style="font-size:22px;flex-shrink:0;">🔥</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">Lã de vidro ISOVER — último mês da campanha</div>
+            <div style="font-size:12px;color:#888;">Último mês para venda da campanha da Isover. Priorize a oferta e o fechamento em todas as ligações.</div>
+          </div>
+          <div style="margin-left:auto;font-size:11px;font-weight:700;color:#1C1C1C;background:#FAC775;border-radius:6px;padding:4px 8px;white-space:nowrap;">PRIORIDADE</div>
+        </div>
 
         <div style="background:#2A2A2A;border-radius:10px;padding:1rem;display:flex;align-items:flex-start;gap:12px;">
           <div style="font-size:22px;flex-shrink:0;">💰</div>
           <div>
-            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 50 por Cliente Novo ou Inativo</div>
-            <div style="font-size:12px;color:#888;">Válido para qualquer cliente novo ou reativado no mês</div>
+            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 50 por Cliente Novo</div>
+            <div style="font-size:12px;color:#888;">Cliente que nunca comprou na Fast. Válido para o mês de outubro.</div>
           </div>
           <div id="prem-novos-total" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
         </div>
 
         <div style="background:#2A2A2A;border-radius:10px;padding:1rem;display:flex;align-items:flex-start;gap:12px;">
-          <div style="font-size:22px;flex-shrink:0;">🏆</div>
+          <div style="font-size:22px;flex-shrink:0;">🔄</div>
           <div>
-            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 75 por Cliente Novo de MG comprando por Mogi</div>
-            <div style="font-size:12px;color:#888;">Pedido com UF = MG e entregue via Mogi das Cruzes</div>
+            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 25 por Cliente Reativado</div>
+            <div style="font-size:12px;color:#888;">Cliente sem compras há 60 dias ou mais que voltou a comprar. Válido para o mês de outubro.</div>
           </div>
-          <div id="prem-mg-total" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
+          <div id="prem-inativo-total" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
         </div>
 
         <div style="background:#2A2A2A;border-radius:10px;padding:1rem;display:flex;align-items:flex-start;gap:12px;">
-          <div style="font-size:22px;flex-shrink:0;">⚙️</div>
+          <div style="font-size:22px;flex-shrink:0;">📦</div>
           <div>
-            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 300 para quem mais vender Aço</div>
-            <div style="font-size:12px;color:#888;">Meta de Aço precisa estar batida para pontuar. Líder em aço leva o prêmio.</div>
-            <div id="prem-aco-lider" style="font-size:11px;color:#FAC775;margin-top:4px;"></div>
+            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 100 a cada 100 caixas de Fita Hobby</div>
+            <div style="font-size:12px;color:#888;">A cada 100 caixas de Fita Hobby vendidas, R$ 100. Válido para o mês de outubro.</div>
           </div>
-          <div id="prem-aco-status" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
+          <div id="prem-fita-total" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
         </div>
 
         <div style="background:#2A2A2A;border-radius:10px;padding:1rem;display:flex;align-items:flex-start;gap:12px;">
-          <div style="font-size:22px;flex-shrink:0;">⭐</div>
+          <div style="font-size:22px;flex-shrink:0;">🧴</div>
           <div>
-            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">Premiação Surpresa — Diretora Poliana</div>
-            <div style="font-size:12px;color:#888;">Para quem mais vender entre Pedro, Wellington, Antônio e Jonatas. Fique de olho!</div>
+            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 100 para quem mais vender Espuma Expansiva</div>
+            <div style="font-size:12px;color:#888;">Vai para o vendedor com a maior quantidade vendida em cada BU. Válido para o mês de outubro.</div>
           </div>
-          <div style="margin-left:auto;font-size:20px;">🎁</div>
+          <div id="prem-espuma-total" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
         </div>
 
       </div>
@@ -2884,23 +2893,18 @@
           </div>
           <div onclick="selecionarTipoPremio('inativo',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
             <div style="font-size:18px;">🔄</div>
-            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Cliente Inativo</div>
-            <div style="font-size:11px;color:#FAC775;">R$ 50</div>
+            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Cliente Reativado (60 dias)</div>
+            <div style="font-size:11px;color:#FAC775;">R$ 25</div>
           </div>
-          <div onclick="selecionarTipoPremio('mg',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
-            <div style="font-size:18px;">🏆</div>
-            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">MG via Mogi</div>
-            <div style="font-size:11px;color:#FAC775;">R$ 75</div>
+          <div onclick="selecionarTipoPremio('fita',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
+            <div style="font-size:18px;">📦</div>
+            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Fita Hobby (100 cx)</div>
+            <div style="font-size:11px;color:#FAC775;">R$ 100</div>
           </div>
-          <div onclick="selecionarTipoPremio('aco',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
-            <div style="font-size:18px;">⚙️</div>
-            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Líder em Aço</div>
-            <div style="font-size:11px;color:#FAC775;">R$ 300</div>
-          </div>
-          <div onclick="selecionarTipoPremio('surpresa',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
-            <div style="font-size:18px;">⭐</div>
-            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Surpresa Poliana</div>
-            <div style="font-size:11px;color:#aaa;">Valor variável</div>
+          <div onclick="selecionarTipoPremio('espuma',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
+            <div style="font-size:18px;">🧴</div>
+            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Líder Espuma (BU)</div>
+            <div style="font-size:11px;color:#FAC775;">R$ 100</div>
           </div>
         </div>
         <input type="hidden" id="prem-cliente-tipo" value="">
@@ -5682,7 +5686,7 @@ function prInit(){
 <script>
 // ── SELEÇÃO VISUAL TIPO PREMIAÇÃO ──
 var premTipoSelecionado = '';
-var premValorMap = { novo:50, inativo:50, mg:75, aco:300, surpresa:0 };
+var premValorMap = { novo:50, inativo:25, fita:100, espuma:100 };
 
 function selecionarTipoPremio(tipo, el) {
   premTipoSelecionado = tipo;
@@ -6721,24 +6725,13 @@ function renderPremiacoes(allPedidos) {
     var clientes = snap.val() ? Object.values(snap.val()) : [];
     var doMes = clientes.filter(function(c){ return c.data && c.data.startsWith(mesAtual); });
 
-    // Tally by vendedor
-    var novos = {}, mg = {};
-    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].forEach(function(vn){ novos[vn]=0; mg[vn]=0; });
-    doMes.forEach(function(c) {
-      if (c.tipo === 'mg') { if(mg[c.vend]!==undefined) mg[c.vend]++; }
-      else { if(novos[c.vend]!==undefined) novos[c.vend]++; }
+    // Total do mês por tipo de premiação (soma dos valores registrados)
+    var tot = { novo:0, inativo:0, fita:0, espuma:0 };
+    doMes.forEach(function(c) { if (tot[c.tipo] !== undefined) tot[c.tipo] += Number(c.valor) || 0; });
+    [['prem-novos-total','novo'],['prem-inativo-total','inativo'],['prem-fita-total','fita'],['prem-espuma-total','espuma']].forEach(function(par) {
+      var el = document.getElementById(par[0]);
+      if (el) el.textContent = 'R$ ' + tot[par[1]].toLocaleString('pt-BR');
     });
-
-    var totalNovos = 0, totalMG = 0;
-    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].forEach(function(vn){
-      totalNovos += novos[vn] * 50;
-      totalMG += mg[vn] * 75;
-    });
-
-    var el1 = document.getElementById('prem-novos-total');
-    var el2 = document.getElementById('prem-mg-total');
-    if (el1) el1.textContent = 'R$ ' + totalNovos;
-    if (el2) el2.textContent = 'R$ ' + totalMG;
   }).catch(function(){});
 
   // Aço: who sold most and if meta was hit
@@ -6847,7 +6840,7 @@ function carregarListaRegistros() {
     if (!lista) return;
     if (!doMes.length) { lista.innerHTML = '<div style="font-size:11px;color:#666;text-align:center;padding:8px;">Nenhuma premiação registrada este mês.</div>'; return; }
 
-    var tipoLabel = { novo:'Cliente Novo', mg:'MG/Mogi', inativo:'Cliente Inativo', aco:'Lider Aço', surpresa:'Surpresa Poliana' };
+    var tipoLabel = { novo:'Cliente Novo', inativo:'Cliente Reativado', fita:'Fita Hobby (100 cx)', espuma:'Líder Espuma (BU)', mg:'MG/Mogi', aco:'Lider Aço', surpresa:'Surpresa Poliana' };
     lista.innerHTML = '';
     doMes.forEach(function(c) {
       var pago = c.status === 'pago';
@@ -8005,7 +7998,7 @@ function renderEvConquistas() {
       box.innerHTML = '<div style="font-size:12.5px;color:#aaa;text-align:center;padding:1rem;">Nenhuma premiação registrada ainda.</div>';
       return;
     }
-    var tipoLabel = { novo:'🔵 Cliente Novo', mg:'🟣 MG/Mogi', inativo:'🔴 Cliente Inativo Reativado', aco:'⚙️ Líder em Aço', surpresa:'🎁 Surpresa Poliana' };
+    var tipoLabel = { novo:'🔵 Cliente Novo', inativo:'🔴 Cliente Reativado', fita:'📦 Fita Hobby (100 cx)', espuma:'🧴 Líder Espuma Expansiva', mg:'🟣 MG/Mogi', aco:'⚙️ Líder em Aço', surpresa:'🎁 Surpresa Poliana' };
     var totalPago = minhas.filter(function(c){ return c.status==='pago'; }).reduce(function(s,c){ return s + (Number(c.valor)||0); }, 0);
     var totalPendente = minhas.filter(function(c){ return c.status!=='pago'; }).length;
 
