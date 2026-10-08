@@ -14283,21 +14283,24 @@ function comCardHtml(vn, eu) {
 }
 // Faixa de ganhos acima do mapa (sempre visível, independente do zoom)
 function rtFaixaGanhos(calcs, foco) {
-  var tit, prem, com, prev;
-  if (foco) {
-    var r = premCalc(foco.vn), c = comCalc(foco.vn);
-    tit = foco.vn === currentUser ? 'SEUS GANHOS DO MÊS' : 'GANHOS · ' + rtNome(foco.vn).split(' ')[0].toUpperCase();
-    prem = r.total; com = c.ok; prev = r.pend + c.prev;
-  } else {
-    tit = 'GANHOS DA EQUIPE'; prem = 0; com = 0; prev = 0;
-    calcs.forEach(function(x) { var r2 = premCalc(x.vn), c2 = comCalc(x.vn); prem += r2.total; com += c2.ok; prev += r2.pend + c2.prev; });
-  }
+  var tit, prem, com, prev, prevCom = 0, prevPrem = 0, nPed = 0, partes = {};
+  var lista = foco ? [foco] : calcs;
+  tit = foco ? (foco.vn === currentUser ? 'SEUS GANHOS DO MÊS' : 'GANHOS · ' + rtNome(foco.vn).split(' ')[0].toUpperCase()) : 'GANHOS DA EQUIPE';
+  prem = 0; com = 0;
+  lista.forEach(function(x) {
+    var r2 = premCalc(x.vn), c2 = comCalc(x.vn);
+    prem += r2.total; com += c2.ok; prevCom += c2.prev; prevPrem += r2.pend; nPed += c2.nPrev;
+    r2.itens.forEach(function(it) { if (it.pend) partes[it.rot] = (partes[it.rot] || 0) + it.pend; });
+  });
+  prev = prevCom + prevPrem;
+  var dica = 'Previsto = comissão de ' + nPed + ' pedido(s) do mês ainda não conciliado(s): ' + comRS(prevCom) + ' (taxa cheia)' +
+    Object.keys(partes).map(function(k) { return '\n+ ' + k + ' a conciliar: ' + comRS(partes[k]); }).join('');
   return '<div class="rt-faixa-ganhos" onclick="var e=document.querySelector(\'#tab-rota .rt-prem\'); if(e) e.scrollIntoView({behavior:\'smooth\',block:\'center\'});" title="Ver o detalhe">' +
     '<span class="rt-fg-moeda">$</span>' +
     '<div class="rt-fg-bloco"><div class="rt-fg-rot">' + rtEsc(tit) + '</div><div class="rt-fg-total">' + comRS(prem + com) + '</div></div>' +
     '<div class="rt-fg-bloco"><div class="rt-fg-rot">🏆 PRÊMIOS</div><div class="rt-fg-val">' + premRS(prem) + '</div></div>' +
     '<div class="rt-fg-bloco"><div class="rt-fg-rot">💼 COMISSÃO</div><div class="rt-fg-val">' + comRS(com) + '</div></div>' +
-    '<div class="rt-fg-bloco"><div class="rt-fg-rot">⏳ PREVISTO</div><div class="rt-fg-val rt-fg-prev">+' + comRS(prev) + '</div><div class="rt-fg-mini">a conciliar</div></div>' +
+    '<div class="rt-fg-bloco" title="' + rtEsc(dica) + '"><div class="rt-fg-rot">⏳ PREVISTO</div><div class="rt-fg-val rt-fg-prev">+' + comRS(prev) + '</div><div class="rt-fg-mini">a conciliar: comissão ' + comRS(prevCom) + ' · prêmios ' + comRS(prevPrem) + '</div></div>' +
     '</div>';
 }
 // Placa dourada no canto do mapa: prêmios + comissão do mês
