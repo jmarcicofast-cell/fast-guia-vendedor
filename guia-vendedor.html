@@ -14292,15 +14292,17 @@ function rtFaixaGanhos(calcs, foco) {
     prem += r2.total; com += c2.ok; prevCom += c2.prev; prevPrem += r2.pend; nPed += c2.nPrev;
     r2.itens.forEach(function(it) { if (it.pend) partes[it.rot] = (partes[it.rot] || 0) + it.pend; });
   });
+  // Visão da equipe (gestão): premiações não somam, só a comissão da equipe
+  if (!foco) { prem = 0; prevPrem = 0; partes = {}; tit = 'COMISSÃO DA EQUIPE'; }
   prev = prevCom + prevPrem;
   var dica = 'Previsto = comissão de ' + nPed + ' pedido(s) do mês ainda não conciliado(s): ' + comRS(prevCom) + ' (taxa cheia)' +
     Object.keys(partes).map(function(k) { return '\n+ ' + k + ' a conciliar: ' + comRS(partes[k]); }).join('');
   return '<div class="rt-faixa-ganhos" onclick="var e=document.querySelector(\'#tab-rota .rt-prem\'); if(e) e.scrollIntoView({behavior:\'smooth\',block:\'center\'});" title="Ver o detalhe">' +
     '<span class="rt-fg-moeda">$</span>' +
     '<div class="rt-fg-bloco"><div class="rt-fg-rot">' + rtEsc(tit) + '</div><div class="rt-fg-total">' + comRS(prem + com) + '</div></div>' +
-    '<div class="rt-fg-bloco"><div class="rt-fg-rot">🏆 PRÊMIOS</div><div class="rt-fg-val">' + premRS(prem) + '</div></div>' +
-    '<div class="rt-fg-bloco"><div class="rt-fg-rot">💼 COMISSÃO</div><div class="rt-fg-val">' + comRS(com) + '</div></div>' +
-    '<div class="rt-fg-bloco" title="' + rtEsc(dica) + '"><div class="rt-fg-rot">⏳ PREVISTO</div><div class="rt-fg-val rt-fg-prev">+' + comRS(prev) + '</div><div class="rt-fg-mini">a conciliar: comissão ' + comRS(prevCom) + ' · prêmios ' + comRS(prevPrem) + '</div></div>' +
+    (foco ? '<div class="rt-fg-bloco"><div class="rt-fg-rot">🏆 PRÊMIOS</div><div class="rt-fg-val">' + premRS(prem) + '</div></div>' +
+    '<div class="rt-fg-bloco"><div class="rt-fg-rot">💼 COMISSÃO</div><div class="rt-fg-val">' + comRS(com) + '</div></div>' : '') +
+    '<div class="rt-fg-bloco" title="' + rtEsc(dica) + '"><div class="rt-fg-rot">⏳ PREVISTO</div><div class="rt-fg-val rt-fg-prev">+' + comRS(prev) + '</div><div class="rt-fg-mini">' + (foco ? 'a conciliar: comissão ' + comRS(prevCom) + ' · prêmios ' + comRS(prevPrem) : 'comissão a conciliar') + '</div></div>' +
     '</div>';
 }
 // Placa dourada no canto do mapa: prêmios + comissão do mês
@@ -14584,8 +14586,8 @@ function rtCopiarMetas(vn, origem) {
 function rtPainelEquipe(calcs) {
   var ord = calcs.slice().sort(function(a, b) { return b.fase - a.fase || b.basePct - a.basePct || b.estrelas - a.estrelas; });
   var pr = calcs.map(function(c) { var r = premCalc(c.vn), cm = comCalc(c.vn); return { vn: c.vn, t: r.total, p: r.pend + cm.prev, c: cm.ok, g: r.total + cm.ok }; }).sort(function(a, b) { return b.g - a.g || b.p - a.p; });
-  var premHtml = '<div class="rt-card rt-prem"><div class="rt-pix">💰 GANHOS DA EQUIPE</div><div class="rt-prem-total">' + comRS(pr.reduce(function(a, x) { return a + x.g; }, 0)) + '</div>' +
-    '<div class="rt-sub">Prêmios + comissão garantidos (conciliado) · clique num vendedor para ver o detalhe</div><table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Prêmios</th><th>Comissão</th></tr></thead><tbody>' +
+  var premHtml = '<div class="rt-card rt-prem"><div class="rt-pix">💼 COMISSÃO DA EQUIPE</div><div class="rt-prem-total" style="color:#185FA5">' + comRS(pr.reduce(function(a, x) { return a + x.c; }, 0)) + '</div>' +
+    '<div class="rt-sub">Comissão garantida (conciliada). Prêmios aparecem por vendedor e não somam no total da equipe · clique num vendedor para ver o detalhe</div><table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Prêmios</th><th>Comissão</th></tr></thead><tbody>' +
     pr.map(function(x, i) { return '<tr onclick="rtVer(\'' + x.vn + '\')"><td>' + rtAvatarSvg(RT.avatares[x.vn], 28) + '</td><td class="rt-forte">' + (i < 3 && x.g ? ['🥇', '🥈', '🥉'][i] + ' ' : '') + rtEsc(rtNome(x.vn)) + (x.p ? '<div class="rt-cinza" style="font-size:11.5px;font-weight:400;white-space:nowrap">+' + premRS(Math.round(x.p)) + ' previsto</div>' : '') + '</td><td class="rt-forte" style="white-space:nowrap">' + premRS(x.t) + '</td><td class="rt-forte" style="color:#185FA5;white-space:nowrap">' + premRS(Math.round(x.c)) + '</td></tr>'; }).join('') +
     '</tbody></table></div>';
   return premHtml + '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase pelo valor <b>entregue</b>, estrelas das outras metas e a mais atrasada.</div>' +
