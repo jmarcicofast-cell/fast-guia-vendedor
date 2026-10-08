@@ -2918,6 +2918,7 @@
               <option value="LETICIA">Letícia</option>
               <option value="ELIZIANE">Eliziane</option>
               <option value="BREDER">Priscilla Breder</option>
+              <option value="VITOR">Vitor</option>
             </select>
           </div>
           <div class="ped-field">
@@ -3481,6 +3482,7 @@
         <button onclick="adminSelect('JONATAS',this)" class="qf-btn" id="abtn-JONATAS">Jonatas</button>
         <button onclick="adminSelect('ANTONIO',this)" class="qf-btn" id="abtn-ANTONIO">Antônio</button>
         <button onclick="adminSelect('BREDER',this)" class="qf-btn" id="abtn-BREDER">Priscilla Breder</button>
+        <button onclick="adminSelect('VITOR',this)" class="qf-btn" id="abtn-VITOR">Vitor</button>
       </div>
       <div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Veteranos</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -3635,6 +3637,7 @@
           <button onclick="admTempoSelect('ANTONIO',this)" class="qf-btn" id="atbtn-ANTONIO">Antônio</button>
           <button onclick="admTempoSelect('THALES',this)" class="qf-btn" id="atbtn-THALES">Thales</button>
           <button onclick="admTempoSelect('BREDER',this)" class="qf-btn" id="atbtn-BREDER">Priscilla Breder</button>
+          <button onclick="admTempoSelect('VITOR',this)" class="qf-btn" id="atbtn-VITOR">Vitor</button>
         </div>
         <div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;">Veteranos</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -5125,7 +5128,7 @@ td.p-tie { color:var(--sp-muted); }
 var QZ_QUIZZES = [
   { id: 'drywall-parede-forro', titulo: 'Drywall: parede e forro',
     desc: 'O que se usa para montar uma parede e um forro de drywall.',
-    para: ['BREDER'],
+    para: ['BREDER','VITOR'],
     perguntas: [
       {s:'Parede',p:'Na montagem de uma parede de drywall, qual perfil é fixado no piso e no teto, servindo de "trilho" para a estrutura?',o:['Montante','Guia','F530','Cantoneira'],c:1,h:'Ele "guia" onde a parede vai ficar.',e:'A guia é o perfil em U fixado no piso e no teto. Ela define a posição da parede e recebe os montantes.'},
       {s:'Parede',p:'Qual perfil fica na vertical, encaixado dentro das guias, e recebe o parafusamento das chapas?',o:['Tabica','Guia','Montante','Tirante'],c:2,e:'O montante é o perfil vertical da parede. Normalmente é instalado a cada 40 ou 60 cm, e é nele que as chapas são parafusadas.'},
@@ -5141,7 +5144,7 @@ var QZ_QUIZZES = [
   ,
   { id: 'forro-basico', titulo: 'Forro de drywall do início ao fim',
     desc: 'Tudo o que vai num forro de drywall básico, na ordem da montagem.',
-    para: ['BREDER'],
+    para: ['BREDER','VITOR'],
     perguntas: [
       {s:'1. Marcação',p:'Qual é o primeiro passo na montagem de um forro de drywall?',o:['Parafusar as chapas na laje','Marcar o nível do forro nas paredes','Passar a massa nas juntas','Instalar o F530 direto na laje'],c:1,h:'Antes de tudo, é preciso saber a altura.',e:'Primeiro marca-se o nível (a altura do forro) em todas as paredes. Essa linha guia a instalação de todo o resto.'},
       {s:'2. Perímetro',p:'Que perfil é fixado nas paredes, na altura do forro, para servir de apoio e acabamento no encontro com a parede?',o:['Montante','Cantoneira ou tabica','Guia 90','Tirante'],c:1,e:'A cantoneira (perimetral) ou a tabica é fixada nas paredes na linha do nível. A tabica ainda dá o acabamento em "negativo", com um pequeno rebaixo.'},
@@ -5157,7 +5160,7 @@ var QZ_QUIZZES = [
   ,
   { id: 'chapas-isolamentos', titulo: 'Chapas e lãs: para que serve cada uma',
     desc: 'ST, RU, RF, Performa, lã de vidro, lã de PET e lã de rocha.',
-    para: ['BREDER'],
+    para: ['BREDER','VITOR'],
     perguntas: [
       {s:'Chapa ST',p:'Para que serve a chapa ST (standard)?',o:['Paredes e forros de áreas secas, como salas, quartos e escritórios','Banheiros e cozinhas','Saídas de emergência e escadas','Áreas externas'],c:0,h:'ST vem de "standard", padrão.',e:'A ST é a chapa padrão, a mais vendida. Vai em paredes, forros e revestimentos de ambientes internos secos.'},
       {s:'Chapa RU',p:'O cliente vai fechar a parede de um banheiro e da lavanderia. Qual chapa ele precisa?',o:['ST','RU (verde)','RF (rosa)','Qualquer uma'],c:1,h:'RU = Resistente à Umidade.',e:'A RU (verde) recebe aditivos que reduzem a absorção de água. É para áreas úmidas internas, como banheiro, cozinha e lavanderia. Não é para área externa nem contato direto com água, que pede impermeabilização ou outra solução.'},
@@ -5169,7 +5172,7 @@ var QZ_QUIZZES = [
     ] }  ,
   { id: 'glasroc-x', titulo: 'Sistema Glasroc X',
     desc: 'A placa de gesso para áreas externas e muito úmidas: o que é, onde usar e como vender o sistema completo.',
-    para: ['BREDER'],
+    para: ['BREDER','VITOR'],
     perguntas: [
       {s:'O que é',p:'O que é a placa Glasroc X?',o:['Uma placa cimentícia para fachadas','Uma placa de gesso revestida com véu de fibra de vidro nas duas faces, sem papel cartão','Uma chapa ST com papel tratado contra umidade','Um painel de OSB com tratamento contra água'],c:1,h:'A grande diferença está no que reveste as faces.',e:'O Glasroc X é uma placa de gesso de nova geração da Placo: o miolo tem aditivos e as duas faces são revestidas com véu de fibra de vidro. Sem papel cartão, ela não mofa e não se desfaz com a água.'},
       {s:'Diferença',p:'Qual a principal diferença entre o Glasroc X e a chapa RU (verde)?',o:['Nenhuma, é a mesma chapa com outro nome','A RU é para áreas úmidas internas; o Glasroc X aguenta áreas externas e intempéries (chuva, sol, mofo)','O Glasroc X é só para forro','A RU é mais resistente que o Glasroc X'],c:1,e:'A RU resolve banheiro, cozinha e lavanderia, mas não pode ficar exposta ao tempo. O Glasroc X foi feito para o lado de fora da obra: resiste a umidade, mofo, raios UV e impactos.'},
@@ -5185,7 +5188,7 @@ var QZ_QUIZZES = [
   ,
   { id: 'estrutura-drywall-steel', titulo: 'Estrutura: drywall x steel frame, comercial x normatizado',
     desc: 'Perfis de drywall e de steel frame, a diferença entre linha comercial e normatizada e como oferecer cada um.',
-    para: ['BREDER'],
+    para: ['BREDER','VITOR'],
     perguntas: [
       {s:'Conceito',p:'Qual a principal diferença entre a estrutura de drywall e a de steel frame?',o:['Nenhuma, são o mesmo perfil','O drywall é vedação (divide ambientes e não segura a casa); o steel frame é estrutural (sustenta a edificação: paredes, laje e telhado)','O steel frame é só para forro','O drywall é usado só em área externa'],c:1,h:'Uma estrutura divide, a outra segura.',e:'O perfil de drywall faz paredes internas e forros, sem carga da construção. O steel frame (LSF) é a própria estrutura da casa ou do prédio, por isso usa aço bem mais grosso e precisa de projeto de engenharia.'},
       {s:'Espessura',p:'No catálogo da FAST, qual é a espessura do aço do perfil de drywall NORMATIZADO?',o:['0,43 mm','0,50 mm','0,80 mm','1,25 mm'],c:1,e:'O normatizado tem 0,50 mm (ex.: Montante drywall 48 mm 0,50 3m NORMATIZADO). O comercial tem 0,43 mm (ex.: F530 0,43 COMERCIAL).'},
@@ -6091,7 +6094,7 @@ var META_EQUIPE = 7319212.09;
 var importLinhas = [];
 var importIdxCount = 0;
 var IMPORT_UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-var IMPORT_VENDS = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'];
+var IMPORT_VENDS = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
 
 function togglePlanilhaImport() {
   var panel = document.getElementById('planilha-import');
@@ -6272,7 +6275,7 @@ function exportarPedidosExcel() {
   if (btn) { btn.textContent = 'Gerando...'; btn.disabled = true; }
 
   // Collect all pedidos
-  var nomes = currentUser === 'JULIANA' ? ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'] : [currentUser];
+  var nomes = currentUser === 'JULIANA' ? ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'] : [currentUser];
   var allPedidos = [];
   var pendentes = nomes.length;
 
@@ -6362,7 +6365,7 @@ function gerarExcel(pedidos, btn) {
 // ── RANKING & RECONHECIMENTO ──
 
 /* ── Fotos da equipe (aparecem no Ranking) ── */
-var RANK_EQUIPE = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'];
+var RANK_EQUIPE = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
 var vendedorFotos = {};
 
 function avatarHTML(vn, nome, size){
@@ -6540,7 +6543,7 @@ function listenFeedPremiacoes(){
 
 function listenRanking() {
   var allPedidos = {}, allLigacoes = {};
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
   // Garante que os dados de TODOS os vendedores (incluindo a meta) venham do
   // Firebase, usando o MESMO mecanismo ja comprovado que a aba Gestao/Evolucao
   // usa (fbListenVendedor le o no inteiro em tempo real). Antes so a meta era
@@ -6577,7 +6580,7 @@ function listenRanking() {
 // Ranking (todos os vendedores), filtrando só os pedidos de HOJE.
 function renderPodioDia(allPedidos) {
   var hojeIso = new Date().toISOString().split('T')[0];
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
   var dl = document.getElementById('podio-dia-data');
   if (dl) dl.textContent = new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'2-digit'});
 
@@ -6628,7 +6631,7 @@ function renderRanking(allPedidos, allLigacoes) {
     return Number(p.vTotal||0);
   }
 
-  var dados = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].map(function(vn) {
+  var dados = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].map(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p){
       return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado';
     });
@@ -6716,14 +6719,14 @@ function renderPremiacoes(allPedidos) {
 
     // Tally by vendedor
     var novos = {}, mg = {};
-    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].forEach(function(vn){ novos[vn]=0; mg[vn]=0; });
+    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].forEach(function(vn){ novos[vn]=0; mg[vn]=0; });
     doMes.forEach(function(c) {
       if (c.tipo === 'mg') { if(mg[c.vend]!==undefined) mg[c.vend]++; }
       else { if(novos[c.vend]!==undefined) novos[c.vend]++; }
     });
 
     var totalNovos = 0, totalMG = 0;
-    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].forEach(function(vn){
+    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].forEach(function(vn){
       totalNovos += novos[vn] * 50;
       totalMG += mg[vn] * 75;
     });
@@ -6741,7 +6744,7 @@ function renderPremiacoes(allPedidos) {
     return p.cat === 'aco' ? Number(p.vTotal||0) : 0;
   }
 
-  var acoVend = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].map(function(vn) {
+  var acoVend = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].map(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p){ return p.data&&p.data.startsWith(mesAtual)&&p.status!=='cancelado'; });
     var vlAco = peds.reduce(function(s,p){ return s+getVlAco(p); },0);
     return { vn: vn, nome: vendedores[vn].nome, vlAco: vlAco };
@@ -6910,7 +6913,7 @@ function deletarPremio(id) {
 
 function renderPaineisGestora(allPedidos, allLigacoes) {
   var todos = [];
-  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].forEach(function(vn) {
     if (allPedidos[vn]) todos = todos.concat(allPedidos[vn]);
   });
 
@@ -6948,7 +6951,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
 
   // Taxa de conversão por vendedor
   var conversao = {};
-  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].forEach(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p){ return isMes(p) && notCanceled(p); }).length;
     var ligs = (allLigacoes[vn]||[]).filter(function(l){ return l.data && l.data.startsWith(mesAtual); })
                .reduce(function(s,l){ return s+(l.qtd||0); },0);
@@ -6962,7 +6965,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
   var diasUteisTotal = Math.round(diasNoMes * 0.72);
 
   var ritmo = {};
-  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].forEach(function(vn) {
     var ligs = (allLigacoes[vn]||[]).filter(function(l){ return l.data && l.data.startsWith(mesAtual); });
     var totalLigs = ligs.reduce(function(s,l){ return s+(l.qtd||0); },0);
     var diasReg = ligs.length;
@@ -6975,7 +6978,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
   });
 
   // ── PAINEL 4: RANKING SEMANA ──
-  var ranking = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].map(function(vn) {
+  var ranking = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].map(function(vn) {
     var pedsSem = (allPedidos[vn]||[]).filter(function(p){ return isSem(p) && notCanceled(p); });
     var vendSem = pedsSem.reduce(function(s,p){ return s+getValor(p); },0);
     var ligsSem = (allLigacoes[vn]||[]).filter(function(l){
@@ -7003,7 +7006,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
       '</div>' +
       '<div style="font-size:11px;font-weight:600;color:#555;margin-bottom:8px;">Taxa de Conversão (ligações → pedidos)</div>' +
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">' +
-        ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].map(function(vn) {
+        ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].map(function(vn) {
           var c = conversao[vn];
           var cor = c.taxa >= 5 ? '#2E7D32' : c.taxa >= 2 ? '#E65100' : '#C41E1E';
           return '<div style="background:#F8F7F3;border-radius:8px;padding:8px;text-align:center;">' +
@@ -7019,7 +7022,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
     '<div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.1rem 1.25rem;">' +
       '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#185FA5;margin-bottom:12px;">📞 Ritmo Projetado de Ligações</div>' +
       '<div style="display:grid;gap:10px;">' +
-        ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].map(function(vn) {
+        ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].map(function(vn) {
           var r = ritmo[vn];
           var pct = Math.min(Math.round((r.total/600)*100),100);
           var cor = r.vaiBater ? '#2E7D32' : '#C41E1E';
@@ -7073,7 +7076,7 @@ function renderPaineisGestora(allPedidos, allLigacoes) {
 }
 
 // ── RAMPA DOS NOVOS ──
-var NOVOS_VENDEDORES = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','BREDER'];
+var NOVOS_VENDEDORES = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','BREDER','VITOR'];
 var rampaPeriodo = 'semana'; // 'semana' | 'mes' | 'total'
 var rampaState = { pedidos: {}, ligacoes: {}, admissao: {} };
 var DEFAULT_ADMISSAO = {
@@ -7081,7 +7084,8 @@ var DEFAULT_ADMISSAO = {
   WELLINGTON: '2026-07-07',
   JONATAS:    '2026-07-07',
   ANTONIO:    '2026-07-08',
-  BREDER:     '2026-10-05'
+  BREDER:     '2026-10-05',
+  VITOR:      '2026-10-08'
 };
 
 function setRampaPeriodo(p) {
@@ -7411,7 +7415,7 @@ function renderRampaChart(chartData) {
 
 function listenPaineisGestora() {
   var allPedidos = {}, allLigacoes = {};
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
   var pendP = nomes.length, pendL = nomes.length;
 
   nomes.forEach(function(vn) {
@@ -7429,7 +7433,7 @@ function listenPaineisGestora() {
 
 // ── EVOLUÇÃO DA GESTORA ──
 function listenEvolucaoGestora() {
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
   var allPedidos = {};
 
   nomes.forEach(function(vn) {
@@ -7442,7 +7446,7 @@ function listenEvolucaoGestora() {
 
 function renderEvolucaoGestora(allPedidos) {
   var todos = [];
-  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].forEach(function(vn) {
+  ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].forEach(function(vn) {
     if (allPedidos[vn]) todos = todos.concat(allPedidos[vn]);
   });
 
@@ -7570,7 +7574,7 @@ function renderEvolucaoGestora(allPedidos) {
 function recalcGestora() {
   // Get all pedidos from all vendedores
   var todos = [];
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','JULIANA'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR','JULIANA'];
   var pendentes = nomes.length;
   nomes.forEach(function(vn) {
     dbRef('pedidos/' + vn).once('value').then(function(snap) {
@@ -8089,7 +8093,7 @@ function renderEvRankingMes() {
     return Number(p.vTotal||0);
   }
 
-  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'];
+  var nomes = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
   var MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   var hoje = new Date();
   var anoAtual = hoje.getFullYear();
@@ -10240,7 +10244,7 @@ function listenPedidos(vendNome, isGestora) {
     // Inclui o próprio login da gestora na varredura: garante que nenhum pedido
     // fique invisível/preso caso alguma conversão ou ação acabe salvando sob o
     // usuário dela por engano (assim sempre dá pra achar e reatribuir na tela).
-    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','JULIANA'].forEach(vn => {
+    ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR','JULIANA'].forEach(vn => {
       dbRef('pedidos/' + vn).on('value', snap => {
         allPedidos[vn] = snap.val() ? Object.values(snap.val()) : [];
         const todos = Object.values(allPedidos).flat();
@@ -10287,7 +10291,7 @@ function listenPedidos(vendNome, isGestora) {
 // Guardado em negociacoes/{VENDEDOR}/{id}. Cada negociação vira
 // pedido de verdade só quando o vendedor clica em "Converter em Pedido".
 // ══════════════════════════════════════════════════════════════
-var NEG_VENDEDORES_LISTA = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'];
+var NEG_VENDEDORES_LISTA = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
 var NEG_ETAPAS = [
   { key: 'contato',    label: '🔵 Contato',            cor: '#185FA5' },
   { key: 'orcamento',  label: '📋 Orçamento enviado',   cor: '#7A4A00' },
@@ -12096,7 +12100,7 @@ function renderResumoEquipe(allPedidos) {
   var box = document.getElementById('ped-resumo-equipe');
   if (!box) return;
   var mesAtual = new Date().toISOString().slice(0,7);
-  box.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].map(function(vn) {
+  box.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].map(function(vn) {
     var peds = (allPedidos[vn]||[]).filter(function(p) { return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado'; });
     var total = peds.reduce(function(s,p) { return s + Number(p.vTotal||0); }, 0);
     if (!vendedores[vn]) return '';
@@ -12595,6 +12599,16 @@ const vendedores = {
   'BREDER':    { senha: 'BREDER123', nome: 'Priscilla Breder', tipo: 'novo',
     meta: 'R$ 80.000', realizado: 'R$ 0', pedidos: '0', ticket: 'R$ 0', pct: 0,
     obs: 'Bem-vinda, Priscilla Breder! Seus dados serao atualizados pela gestao.', credenciais: [] },
+  'VITOR':     { senha: 'VITOR123', nome: 'Vitor', tipo: 'novo',
+    meta: 'R$ 80.000', realizado: 'R$ 0', pedidos: '0', ticket: 'R$ 0', pct: 0,
+    obs: 'Bem-vindo, Vitor! Seus dados serao atualizados pela gestao.',
+    credenciais: [
+      { titulo: 'Portal Varejo', usuario: 'COM490', senha: '2T56h53f6c', icone: '🛒', cor: '#FBE9E9', corTexto: '#7A0000', link: 'https://portal.fastdrywall.com.br/login' },
+      { titulo: 'Portal Atacado', usuario: 'COM490', senha: '2T56h53f6c', icone: '🏭', cor: '#F3E5F5', corTexto: '#4A148C', link: 'https://portalatacado.fastdrywall.com.br/documents' },
+      { titulo: 'E-mail Corporativo', usuario: 'vitor.silva@fastdrywall.com.br', senha: '@!@Vitorsilva', icone: '📧', cor: '#E6F1FB', corTexto: '#0C447C' },
+      { titulo: 'Sults', usuario: 'vitor.silva', senha: 'Gerada e enviada por e-mail', icone: '🎫', cor: '#E8F5E9', corTexto: '#1B5E20' },
+    ]
+  },
   // Administrativo — acesso ao Abastecimento (edição) e consulta de materiais
   'JEFFERSON': { senha: 'JEFFERSON1234', nome: 'Jefferson', tipo: 'administrativo',
     meta: '', realizado: '', pedidos: '0', ticket: '', pct: 0, obs: '', credenciais: [] },
@@ -14276,7 +14290,7 @@ function adminClear() {
 function renderAdminResumo() {
   var grid = document.getElementById('adm-resumo');
   if (!grid) return;
-  grid.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].map(function(n) {
+  grid.innerHTML = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].map(function(n) {
     var v = vendedores[n];
     if (!v) return '';
     var notas = criterios.map(function(c) { return v.notas ? (v.notas[c.id]||0) : 0; });
@@ -14313,7 +14327,7 @@ function checkAdminAccess(nome) {
     if (rampaNav) rampaNav.style.display = 'flex';
     if (checkinNav) checkinNav.style.display = 'flex';
     // Load all vendedores from Firebase
-    Promise.all(['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'].map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
+    Promise.all(['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
       .then(function() {
         adminSelect('PEDRO', document.getElementById('abtn-PEDRO'));
         renderAdminResumo();
@@ -15072,7 +15086,7 @@ function importarArquivo(event) {
    dbRef(), já que o fallback não entende caminhos aninhados.
    Estrutura: { settings: {metaMensal, diasUteis}, dias: { 'YYYY-MM-DD': { rows:[...] } } }
    ══════════════════════════════════════════════════════════════ */
-const CK_EQUIPE = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER'];
+const CK_EQUIPE = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
 
 /* Metas individuais de vendido/dia + mínimos universais de ligação/proposta.
    Se o vendedor não bater a meta do dia, a diferença some para a meta do dia
@@ -15088,7 +15102,8 @@ const CK_METAS_VENDIDO = {
   LETICIA: 79545.45,
   ELIZIANE: 56818.18,
   THALES: 38132.23,
-  BREDER: 22727.27
+  BREDER: 22727.27,
+  VITOR: 22727.27
 };
 
 /* Grupos de produto p/ meta mensal da equipe. 'match' recebe o nome do
