@@ -1066,7 +1066,7 @@
 </header>
 
 <nav id="main-nav">
-  <button class="nav-btn" draggable="true" data-nav-id="materiais" onclick="showTab('materiais',this)">
+  <button class="nav-btn" id="nav-materiais" draggable="true" data-nav-id="materiais" style="display:none;" onclick="showTab('materiais',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="8" height="8" rx="1"/><rect x="14" y="3" width="8" height="8" rx="1"/><rect x="2" y="13" width="8" height="8" rx="1"/><rect x="14" y="13" width="8" height="8" rx="1"/></svg>
     Materiais
   </button>
@@ -1082,11 +1082,11 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
     Pedidos
   </button>
-  <button class="nav-btn" draggable="true" data-nav-id="clientes" onclick="showTab('clientes',this)">
+  <button class="nav-btn" id="nav-clientes" draggable="true" data-nav-id="clientes" style="display:none;" onclick="showTab('clientes',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     Base de Clientes
   </button>
-  <button class="nav-btn" id="nav-negociacoes" draggable="true" data-nav-id="negociacoes" onclick="showTab('negociacoes',this)">
+  <button class="nav-btn" id="nav-negociacoes" draggable="true" data-nav-id="negociacoes" style="display:none;" onclick="showTab('negociacoes',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
     Negociações
   </button>
@@ -1110,11 +1110,15 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
     Rota da Meta
   </button>
-  <button class="nav-btn" draggable="true" data-nav-id="evolucao" onclick="showTab('evolucao',this)">
+  <button class="nav-btn" id="nav-quadro" draggable="true" data-nav-id="quadro" onclick="showTab('quadro',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6.5" y="6.5" width="4" height="10" rx="1"/><rect x="13.5" y="6.5" width="4" height="6" rx="1"/></svg>
+    Quadro
+  </button>
+  <button class="nav-btn" id="nav-evolucao" draggable="true" data-nav-id="evolucao" style="display:none;" onclick="showTab('evolucao',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
     Evolução
   </button>
-  <button class="nav-btn" draggable="true" data-nav-id="outros" onclick="showTab('outros',this)">
+  <button class="nav-btn" id="nav-outros" draggable="true" data-nav-id="outros" style="display:none;" onclick="showTab('outros',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
     Outros
   </button>
@@ -5085,6 +5089,384 @@ td.p-tie { color:var(--sp-muted); }
   #tab-sugestoes .sg-voto{ border:1.5px solid #E2E0D8; background:#fff; border-radius:8px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer; color:#555; }
   #tab-sugestoes .sg-voto.on{ border-color:#C41E1E; color:#C41E1E; background:#FFF4F4; }
 </style>
+<style>
+  #tab-quadro .qd-topo{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  #tab-quadro .qd-filtros{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  #tab-quadro .qd-chip{ padding:6px 12px; border-radius:20px; font-size:12px; font-weight:700; cursor:pointer; border:1.5px solid #D9D6CC; background:#fff; color:#555; }
+  #tab-quadro .qd-chip.on{ background:#1C1C1C; border-color:#1C1C1C; color:#fff; }
+  #tab-quadro .qd-in{ padding:6px 10px; border:1.5px solid #D9D6CC; border-radius:8px; font-size:12.5px; background:#fff; outline:none; }
+  #tab-quadro .qd-btn{ padding:7px 14px; border-radius:8px; border:none; background:#C41E1E; color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; }
+  #tab-quadro .qd-btn.sec{ background:#fff; color:#1C1C1C; border:1.5px solid #D9D6CC; }
+  #tab-quadro .qd-board{ display:flex; gap:12px; overflow-x:auto; align-items:flex-start; padding:4px 2px 16px; min-height:420px; }
+  #tab-quadro .qd-col{ flex:0 0 285px; background:#EFEDE7; border-radius:12px; display:flex; flex-direction:column; max-height:calc(100vh - 230px); border-top:5px solid #999; }
+  #tab-quadro .qd-col-topo{ display:flex; align-items:center; gap:6px; padding:10px 12px 6px; }
+  #tab-quadro .qd-col-nome{ font-size:13px; font-weight:800; color:#1C1C1C; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #tab-quadro .qd-col-n{ font-size:11px; font-weight:700; color:#777; background:#fff; border-radius:10px; padding:1px 8px; }
+  #tab-quadro .qd-col-menu{ border:none; background:none; cursor:pointer; font-size:16px; color:#777; padding:0 4px; }
+  #tab-quadro .qd-lista{ padding:4px 8px 6px; overflow-y:auto; min-height:30px; display:flex; flex-direction:column; gap:8px; flex:1; }
+  #tab-quadro .qd-lista.over{ background:#E2DFD6; border-radius:8px; }
+  #tab-quadro .qd-card{ background:#fff; border-radius:9px; box-shadow:0 1px 2px rgba(0,0,0,.12); cursor:pointer; overflow:hidden; border:1.5px solid transparent; }
+  #tab-quadro .qd-card:hover{ border-color:#C9C5BA; }
+  #tab-quadro .qd-card.arrastando{ opacity:.4; }
+  #tab-quadro .qd-card.bloq{ cursor:pointer; }
+  #tab-quadro .qd-capa{ height:8px; }
+  #tab-quadro .qd-card-corpo{ padding:8px 10px 9px; display:flex; flex-direction:column; gap:6px; }
+  #tab-quadro .qd-etqs{ display:flex; flex-wrap:wrap; gap:4px; }
+  #tab-quadro .qd-etq{ font-size:10px; font-weight:800; color:#fff; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+  #tab-quadro .qd-tit{ font-size:13px; font-weight:600; color:#1C1C1C; line-height:1.35; word-break:break-word; }
+  #tab-quadro .qd-rodape{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  #tab-quadro .qd-bdg{ font-size:11px; color:#666; display:inline-flex; align-items:center; gap:3px; padding:1px 6px; border-radius:5px; background:#F4F3EF; }
+  #tab-quadro .qd-bdg.atras{ background:#C41E1E; color:#fff; font-weight:700; }
+  #tab-quadro .qd-bdg.breve{ background:#F2C14E; color:#1C1C1C; font-weight:700; }
+  #tab-quadro .qd-bdg.ok{ background:#2E7D32; color:#fff; font-weight:700; }
+  #tab-quadro .qd-resps{ margin-left:auto; display:flex; }
+  #tab-quadro .qd-resps > *{ margin-left:-6px; border:2px solid #fff !important; border-radius:50%; }
+  #tab-quadro .qd-add{ margin:2px 8px 10px; padding:7px 10px; border:none; background:none; text-align:left; color:#666; font-size:12.5px; font-weight:600; cursor:pointer; border-radius:7px; }
+  #tab-quadro .qd-add:hover{ background:#E2DFD6; color:#1C1C1C; }
+  #tab-quadro .qd-novo{ margin:0 8px 10px; display:flex; flex-direction:column; gap:6px; }
+  #tab-quadro .qd-novo textarea{ width:100%; border:none; border-radius:8px; padding:8px 10px; font-size:13px; font-family:inherit; resize:vertical; min-height:56px; box-shadow:0 1px 2px rgba(0,0,0,.15); outline:none; box-sizing:border-box; }
+  #tab-quadro .qd-vazio{ text-align:center; color:#999; font-size:12px; padding:10px 0; }
+  #qd-modal-ov{ position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100000; display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:30px 12px; }
+  #qd-modal{ background:#F7F6F2; border-radius:14px; width:100%; max-width:760px; box-shadow:0 20px 50px rgba(0,0,0,.3); overflow:hidden; }
+  #qd-modal .qm-capa{ height:34px; }
+  #qd-modal .qm-corpo{ padding:16px 20px 20px; display:grid; grid-template-columns:minmax(0,1fr) 210px; gap:18px; }
+  @media (max-width:640px){ #qd-modal .qm-corpo{ grid-template-columns:1fr; } }
+  #qd-modal .qm-tit{ width:100%; font-size:18px; font-weight:800; border:1.5px solid transparent; background:transparent; border-radius:7px; padding:4px 6px; font-family:inherit; color:#1C1C1C; resize:none; box-sizing:border-box; }
+  #qd-modal .qm-tit:focus{ border-color:#C9C5BA; background:#fff; outline:none; }
+  #qd-modal .qm-sec{ margin-top:14px; }
+  #qd-modal .qm-rot{ font-size:11px; font-weight:800; color:#777; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+  #qd-modal textarea.qm-desc{ width:100%; min-height:90px; border:1.5px solid #E2E0D8; border-radius:8px; padding:9px 10px; font-size:13px; font-family:inherit; resize:vertical; box-sizing:border-box; background:#fff; }
+  #qd-modal .qm-lado{ display:flex; flex-direction:column; gap:12px; }
+  #qd-modal select, #qd-modal input[type=date], #qd-modal input[type=text]{ width:100%; padding:7px 9px; border:1.5px solid #E2E0D8; border-radius:7px; font-size:13px; background:#fff; box-sizing:border-box; }
+  #qd-modal .qm-chips{ display:flex; flex-wrap:wrap; gap:5px; }
+  #qd-modal .qm-chip{ font-size:11.5px; font-weight:700; padding:4px 9px; border-radius:14px; border:1.5px solid #D9D6CC; background:#fff; color:#555; cursor:pointer; }
+  #qd-modal .qm-chip.on{ color:#fff; border-color:transparent; }
+  #qd-modal .qm-cores{ display:flex; gap:6px; flex-wrap:wrap; }
+  #qd-modal .qm-cor{ width:24px; height:24px; border-radius:6px; border:2px solid #fff; box-shadow:0 0 0 1.5px #D9D6CC; cursor:pointer; }
+  #qd-modal .qm-cor.on{ box-shadow:0 0 0 2.5px #1C1C1C; }
+  #qd-modal .qm-ck{ display:flex; align-items:center; gap:8px; padding:4px 0; font-size:13px; }
+  #qd-modal .qm-ck.feito span{ text-decoration:line-through; color:#999; }
+  #qd-modal .qm-ck button{ margin-left:auto; border:none; background:none; color:#bbb; cursor:pointer; font-size:14px; }
+  #qd-modal .qm-barra{ height:6px; background:#E2E0D8; border-radius:4px; overflow:hidden; margin-bottom:6px; }
+  #qd-modal .qm-barra div{ height:100%; background:#2E7D32; }
+  #qd-modal .qm-com{ background:#fff; border:1.5px solid #ECEAE4; border-radius:9px; padding:8px 10px; margin-top:6px; font-size:13px; }
+  #qd-modal .qm-com-meta{ font-size:11px; color:#999; margin-bottom:3px; }
+  #qd-modal .qm-acao{ width:100%; padding:7px 10px; border-radius:7px; border:1.5px solid #D9D6CC; background:#fff; font-size:12.5px; font-weight:700; cursor:pointer; text-align:left; }
+  #qd-modal .qm-acao.perigo{ color:#C41E1E; border-color:#F0C4C4; }
+  #qd-modal .qm-x{ float:right; border:none; background:rgba(255,255,255,.8); border-radius:50%; width:30px; height:30px; font-size:16px; cursor:pointer; margin:2px 6px 0 0; }
+  #qd-modal .qm-aviso{ font-size:12px; color:#7A4A00; background:#FFF6D6; border-radius:7px; padding:7px 10px; margin-bottom:8px; }
+</style>
+<div id="tab-quadro" class="tab-content">
+  <div class="page-section" style="max-width:none;">
+    <div class="qd-topo">
+      <div>
+        <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:2px;">📋 Quadro da Equipe</h2>
+        <p style="font-size:12px;color:#999;">Tarefas e demandas da gestão e da equipe. Arraste os cards entre as colunas. Todos veem; cada um mexe nos cards em que é responsável.</p>
+      </div>
+      <div id="qd-acoes-topo" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+    <div class="qd-filtros" id="qd-filtros"></div>
+    <div class="qd-board" id="qd-board"><div class="qd-vazio">Carregando quadro…</div></div>
+  </div>
+</div>
+<div id="qd-modal-ov" onclick="if(event.target===this) qdFechar()"><div id="qd-modal"></div></div>
+<script>
+/* ══ QUADRO (estilo Trello) ══
+   Firebase: quadro/colunas = [{id, nome, cor}]
+             quadro/cards/{id} = {id, titulo, desc, col, ordem, resp:[LOGIN], prazo, etiquetas:[key],
+                                  capa, check:[{t, ok}], coment:{id:{autor, txt, em}}, criadoPor, criadoEm, atualizadoEm, arquivado}
+   Gestora mexe em tudo; os demais criam cards e editam/movem os cards em que são responsáveis ou que criaram.
+   Comentários: qualquer pessoa. */
+var QD = { colunas: null, cards: {}, ok: false, ouvindo: false, filtro: 'todos', busca: '', resp: '', etq: '', arquivados: false, aberto: null, novoEm: null, drag: null };
+var QD_COLS_PADRAO = [
+  { id: 'afazer', nome: 'A fazer', cor: '#7A7A7A' },
+  { id: 'fazendo', nome: 'Fazendo', cor: '#1F6FB2' },
+  { id: 'aguardando', nome: 'Aguardando', cor: '#E8A020' },
+  { id: 'feito', nome: 'Feito', cor: '#2E7D32' }
+];
+var QD_ETQ = {
+  urgente: { rot: 'Urgente', cor: '#C41E1E' }, comercial: { rot: 'Comercial', cor: '#1F6FB2' },
+  cliente: { rot: 'Cliente', cor: '#2E7D32' }, logistica: { rot: 'Logística', cor: '#E07A2E' },
+  treinamento: { rot: 'Treinamento', cor: '#6B3FA0' }, adm: { rot: 'Administrativo', cor: '#5B6672' },
+  ideia: { rot: 'Ideia', cor: '#B8860B' }
+};
+var QD_CAPAS = ['', '#C41E1E', '#1F6FB2', '#2E7D32', '#E8A020', '#6B3FA0', '#E07A2E', '#1C1C1C', '#F4A6B5'];
+var QD_CORES_COL = ['#7A7A7A', '#1F6FB2', '#E8A020', '#2E7D32', '#C41E1E', '#6B3FA0', '#E07A2E', '#0B1828'];
+
+function qdEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+function qdHoje() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function qdGestao() { return !!(currentUser && vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora'); }
+function qdPode(c) { if (!currentUser || !c) return false; if (qdGestao()) return true; return c.criadoPor === currentUser || (c.resp || []).indexOf(currentUser) >= 0; }
+function qdNome(u) { return (vendedores[u] && vendedores[u].nome) || u; }
+function qdPessoas() { return Object.keys(vendedores).sort(function(a, b) { return qdNome(a).localeCompare(qdNome(b), 'pt-BR'); }); }
+function qdCols() { return (QD.colunas && QD.colunas.length) ? QD.colunas : QD_COLS_PADRAO; }
+function qdColFeito(colId) { var cs = qdCols(); return colId === 'feito' || (cs.length && cs[cs.length - 1].id === colId); }
+
+function qdOuvir() {
+  if (QD.ouvindo) return; QD.ouvindo = true;
+  dbRef('quadro').on('value', function(snap) {
+    var v = (snap && snap.val()) || {};
+    QD.colunas = Array.isArray(v.colunas) ? v.colunas.filter(Boolean) : (v.colunas ? Object.values(v.colunas) : null);
+    QD.cards = v.cards || {};
+    QD.ok = true;
+    qdRender(); qdBadge();
+    if (QD.aberto) qdAbrir(QD.aberto, true);
+  });
+}
+function qdInit() { qdOuvir(); qdRender(); }
+
+// Quantos cards meus estão atrasados (bolinha no menu)
+function qdBadge() {
+  var btn = document.getElementById('nav-quadro'); if (!btn || !currentUser) return;
+  var n = Object.values(QD.cards || {}).filter(function(c) { return c && !c.arquivado && c.prazo && c.prazo < qdHoje() && !qdColFeito(c.col) && (c.resp || []).indexOf(currentUser) >= 0; }).length;
+  var b = btn.querySelector('.qd-nav-bdg');
+  if (!b) { b = document.createElement('span'); b.className = 'qd-nav-bdg'; b.style.cssText = 'background:#C41E1E;color:#fff;border-radius:10px;font-size:10px;font-weight:800;padding:1px 6px;margin-left:4px;'; btn.appendChild(b); }
+  b.textContent = n; b.style.display = n ? 'inline-block' : 'none';
+  b.title = n + ' card(s) seu(s) atrasado(s)';
+}
+
+function qdSalvarCard(c) {
+  c.atualizadoEm = Date.now();
+  QD.cards[c.id] = c;
+  dbRef('quadro/cards/' + c.id).set(c);
+  qdRender(); qdBadge();
+}
+function qdSalvarCols(cols) { QD.colunas = cols; dbRef('quadro/colunas').set(cols); qdRender(); }
+
+function qdFiltrados(colId) {
+  var hoje = qdHoje(), b = QD.busca.trim().toLowerCase();
+  return Object.values(QD.cards || {}).filter(function(c) {
+    if (!c || c.col !== colId) return false;
+    if (!!c.arquivado !== QD.arquivados) return false;
+    if (QD.filtro === 'meus' && (c.resp || []).indexOf(currentUser) < 0 && c.criadoPor !== currentUser) return false;
+    if (QD.filtro === 'atrasados' && !(c.prazo && c.prazo < hoje && !qdColFeito(c.col))) return false;
+    if (QD.resp && (c.resp || []).indexOf(QD.resp) < 0) return false;
+    if (QD.etq && (c.etiquetas || []).indexOf(QD.etq) < 0) return false;
+    if (b && (String(c.titulo || '') + ' ' + String(c.desc || '')).toLowerCase().indexOf(b) < 0) return false;
+    return true;
+  }).sort(function(a, b2) { return (a.ordem || 0) - (b2.ordem || 0); });
+}
+
+function qdPrazoBadge(c) {
+  if (!c.prazo) return '';
+  var hoje = qdHoje(), p = c.prazo, d = p.split('-'), txt = d[2] + '/' + d[1], cls = '';
+  if (qdColFeito(c.col)) cls = 'ok';
+  else if (p < hoje) cls = 'atras';
+  else { var am = new Date(); am.setDate(am.getDate() + 1); var amS = am.getFullYear() + '-' + String(am.getMonth() + 1).padStart(2, '0') + '-' + String(am.getDate()).padStart(2, '0'); if (p <= amS) cls = 'breve'; }
+  return '<span class="qd-bdg ' + cls + '" title="Prazo">🕒 ' + txt + '</span>';
+}
+
+function qdCardHtml(c) {
+  var etqs = (c.etiquetas || []).filter(function(k) { return QD_ETQ[k]; }).map(function(k) { return '<span class="qd-etq" style="background:' + QD_ETQ[k].cor + '">' + QD_ETQ[k].rot + '</span>'; }).join('');
+  var ck = c.check || [], feitos = ck.filter(function(x) { return x && x.ok; }).length;
+  var nCom = Object.keys(c.coment || {}).length, pode = qdPode(c);
+  var resp = (c.resp || []).slice(0, 4).map(function(u) { return '<span title="' + qdEsc(qdNome(u)) + '">' + avatarHTML(u, qdNome(u), 24) + '</span>'; }).join('');
+  return '<div class="qd-card' + (pode ? '' : ' bloq') + '" data-id="' + c.id + '" draggable="' + (pode && !QD.arquivados ? 'true' : 'false') + '" onclick="qdAbrir(\'' + c.id + '\')"' +
+    ' ondragstart="qdDragIni(event,\'' + c.id + '\')" ondragend="qdDragFim(event)">' +
+    (c.capa ? '<div class="qd-capa" style="background:' + c.capa + '"></div>' : '') +
+    '<div class="qd-card-corpo">' + (etqs ? '<div class="qd-etqs">' + etqs + '</div>' : '') +
+    '<div class="qd-tit">' + qdEsc(c.titulo) + '</div>' +
+    '<div class="qd-rodape">' + qdPrazoBadge(c) +
+      (c.desc ? '<span class="qd-bdg" title="Tem descrição">≡</span>' : '') +
+      (ck.length ? '<span class="qd-bdg' + (feitos === ck.length ? ' ok' : '') + '" title="Checklist">☑ ' + feitos + '/' + ck.length + '</span>' : '') +
+      (nCom ? '<span class="qd-bdg" title="Comentários">💬 ' + nCom + '</span>' : '') +
+      (pode ? '' : '<span class="qd-bdg" title="Só os responsáveis ou a gestão editam">🔒</span>') +
+      '<span class="qd-resps">' + resp + '</span></div></div></div>';
+}
+
+function qdRender() {
+  var board = document.getElementById('qd-board');
+  var tab = document.getElementById('tab-quadro');
+  if (!board || !tab || !tab.classList.contains('active')) return;
+  if (!QD.ok) { board.innerHTML = '<div class="qd-vazio">Carregando quadro…</div>'; return; }
+  var gest = qdGestao();
+  // filtros
+  var pess = qdPessoas();
+  document.getElementById('qd-filtros').innerHTML =
+    [['todos', 'Todos'], ['meus', '👤 Meus'], ['atrasados', '⏰ Atrasados']].map(function(f) {
+      return '<button type="button" class="qd-chip' + (QD.filtro === f[0] ? ' on' : '') + '" onclick="QD.filtro=\'' + f[0] + '\';qdRender()">' + f[1] + '</button>';
+    }).join('') +
+    '<input class="qd-in" type="search" placeholder="🔎 Buscar card…" value="' + qdEsc(QD.busca) + '" oninput="QD.busca=this.value;qdRenderBoard()" style="min-width:170px;">' +
+    '<select class="qd-in" onchange="QD.resp=this.value;qdRender()"><option value="">Responsável: todos</option>' + pess.map(function(u) { return '<option value="' + u + '"' + (QD.resp === u ? ' selected' : '') + '>' + qdEsc(qdNome(u)) + '</option>'; }).join('') + '</select>' +
+    '<select class="qd-in" onchange="QD.etq=this.value;qdRender()"><option value="">Etiqueta: todas</option>' + Object.keys(QD_ETQ).map(function(k) { return '<option value="' + k + '"' + (QD.etq === k ? ' selected' : '') + '>' + QD_ETQ[k].rot + '</option>'; }).join('') + '</select>' +
+    '<button type="button" class="qd-chip' + (QD.arquivados ? ' on' : '') + '" onclick="QD.arquivados=!QD.arquivados;qdRender()">🗄 Arquivados</button>';
+  document.getElementById('qd-acoes-topo').innerHTML = gest ? '<button type="button" class="qd-btn sec" onclick="qdNovaColuna()">+ Nova coluna</button>' : '';
+  qdRenderBoard();
+}
+function qdRenderBoard() {
+  var board = document.getElementById('qd-board'); if (!board) return;
+  var gest = qdGestao(), cols = qdCols();
+  board.innerHTML = cols.map(function(col, i) {
+    var cards = qdFiltrados(col.id);
+    var menu = gest ? '<button type="button" class="qd-col-menu" title="Opções da coluna" onclick="qdMenuColuna(\'' + col.id + '\')">⋯</button>' : '';
+    var add = QD.arquivados ? '' : (QD.novoEm === col.id
+      ? '<div class="qd-novo"><textarea id="qd-novo-txt" placeholder="Título do card… (Enter para salvar)" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();qdCriar(\'' + col.id + '\');}else if(event.key===\'Escape\'){QD.novoEm=null;qdRenderBoard();}"></textarea>' +
+        '<div style="display:flex;gap:6px;"><button type="button" class="qd-btn" onclick="qdCriar(\'' + col.id + '\')">Adicionar</button><button type="button" class="qd-btn sec" onclick="QD.novoEm=null;qdRenderBoard()">Cancelar</button></div></div>'
+      : '<button type="button" class="qd-add" onclick="QD.novoEm=\'' + col.id + '\';qdRenderBoard();setTimeout(function(){var t=document.getElementById(\'qd-novo-txt\');if(t)t.focus();},30)">+ Adicionar card</button>');
+    return '<div class="qd-col" style="border-top-color:' + (col.cor || '#999') + '">' +
+      '<div class="qd-col-topo"><span class="qd-col-nome" title="' + qdEsc(col.nome) + '">' + qdEsc(col.nome) + '</span><span class="qd-col-n">' + cards.length + '</span>' + menu + '</div>' +
+      '<div class="qd-lista" data-col="' + col.id + '" ondragover="qdDragOver(event)" ondragleave="this.classList.remove(\'over\')" ondrop="qdDrop(event,\'' + col.id + '\')">' +
+      (cards.length ? cards.map(qdCardHtml).join('') : '<div class="qd-vazio">' + (QD.arquivados ? 'Nada arquivado' : 'Sem cards') + '</div>') + '</div>' + add + '</div>';
+  }).join('');
+}
+
+function qdCriar(colId) {
+  var t = document.getElementById('qd-novo-txt'), tit = t ? t.value.trim() : '';
+  if (!tit) { if (t) t.focus(); return; }
+  var cards = qdFiltrados(colId), ultimo = Object.values(QD.cards).filter(function(c) { return c && c.col === colId; }).reduce(function(m, c) { return Math.max(m, c.ordem || 0); }, 0);
+  var id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  var c = { id: id, titulo: tit, desc: '', col: colId, ordem: ultimo + 1000, resp: [currentUser], prazo: '', etiquetas: [], capa: '', check: [], criadoPor: currentUser, criadoEm: Date.now() };
+  QD.novoEm = colId;
+  qdSalvarCard(c);
+  setTimeout(function() { var t2 = document.getElementById('qd-novo-txt'); if (t2) t2.focus(); }, 30);
+}
+
+// ── Arrastar e soltar ──
+function qdDragIni(ev, id) {
+  var c = QD.cards[id]; if (!qdPode(c)) { ev.preventDefault(); return; }
+  QD.drag = id; ev.dataTransfer.effectAllowed = 'move'; try { ev.dataTransfer.setData('text/plain', id); } catch (e) {}
+  setTimeout(function() { var el = document.querySelector('#tab-quadro .qd-card[data-id="' + id + '"]'); if (el) el.classList.add('arrastando'); }, 0);
+}
+function qdDragFim() { QD.drag = null; document.querySelectorAll('#tab-quadro .qd-lista.over').forEach(function(l) { l.classList.remove('over'); }); document.querySelectorAll('#tab-quadro .qd-card.arrastando').forEach(function(l) { l.classList.remove('arrastando'); }); }
+function qdDragOver(ev) { if (!QD.drag) return; ev.preventDefault(); ev.currentTarget.classList.add('over'); }
+function qdDrop(ev, colId) {
+  ev.preventDefault(); var id = QD.drag; ev.currentTarget.classList.remove('over');
+  if (!id || !QD.cards[id]) return;
+  var lista = ev.currentTarget, y = ev.clientY;
+  var outros = Array.prototype.slice.call(lista.querySelectorAll('.qd-card')).filter(function(el) { return el.getAttribute('data-id') !== id; });
+  var idx = outros.length;
+  for (var i = 0; i < outros.length; i++) { var r = outros[i].getBoundingClientRect(); if (y < r.top + r.height / 2) { idx = i; break; } }
+  qdMover(id, colId, idx, outros.map(function(el) { return QD.cards[el.getAttribute('data-id')]; }));
+}
+// Move o card para a coluna, na posição idx entre os cards visíveis "vizinhos"
+function qdMover(id, colId, idx, vizinhos) {
+  var c = JSON.parse(JSON.stringify(QD.cards[id]));
+  if (!vizinhos) vizinhos = qdFiltrados(colId).filter(function(x) { return x.id !== id; });
+  var ant = vizinhos[idx - 1], prox = vizinhos[idx];
+  c.ordem = ant && prox ? ((ant.ordem || 0) + (prox.ordem || 0)) / 2 : ant ? (ant.ordem || 0) + 1000 : prox ? (prox.ordem || 0) - 1000 : 1000;
+  if (c.col !== colId) c.movidoEm = Date.now();
+  c.col = colId;
+  qdSalvarCard(c);
+}
+
+// ── Colunas (gestão) ──
+function qdNovaColuna() {
+  var nome = prompt('Nome da nova coluna:'); if (!nome || !nome.trim()) return;
+  var cols = qdCols().slice(); cols.push({ id: 'col' + Date.now().toString(36), nome: nome.trim(), cor: QD_CORES_COL[cols.length % QD_CORES_COL.length] });
+  qdSalvarCols(cols);
+}
+function qdMenuColuna(colId) {
+  var cols = qdCols().slice(), i = cols.findIndex(function(c) { return c.id === colId; }); if (i < 0) return;
+  var op = prompt('Coluna "' + cols[i].nome + '" — digite o número:\n1 = Renomear\n2 = Mudar cor\n3 = Mover para a esquerda\n4 = Mover para a direita\n5 = Excluir coluna (só se estiver vazia)');
+  if (!op) return;
+  cols = cols.map(function(c) { return { id: c.id, nome: c.nome, cor: c.cor }; });
+  if (op === '1') { var n = prompt('Novo nome:', cols[i].nome); if (n && n.trim()) cols[i].nome = n.trim(); }
+  else if (op === '2') { cols[i].cor = QD_CORES_COL[(QD_CORES_COL.indexOf(cols[i].cor) + 1) % QD_CORES_COL.length]; }
+  else if (op === '3' && i > 0) { var t = cols[i - 1]; cols[i - 1] = cols[i]; cols[i] = t; }
+  else if (op === '4' && i < cols.length - 1) { var t2 = cols[i + 1]; cols[i + 1] = cols[i]; cols[i] = t2; }
+  else if (op === '5') {
+    var tem = Object.values(QD.cards).some(function(c) { return c && c.col === colId; });
+    if (tem) { alert('Essa coluna ainda tem cards (inclusive arquivados). Mova ou exclua os cards antes.'); return; }
+    if (cols.length <= 1) { alert('O quadro precisa de pelo menos uma coluna.'); return; }
+    if (!confirm('Excluir a coluna "' + cols[i].nome + '"?')) return;
+    cols.splice(i, 1);
+  } else return;
+  qdSalvarCols(cols);
+}
+
+// ── Detalhe do card ──
+function qdAbrir(id, soAtualizar) {
+  var c = QD.cards[id];
+  if (!c) { if (soAtualizar) qdFechar(); return; }
+  QD.aberto = id;
+  var ov = document.getElementById('qd-modal-ov'), m = document.getElementById('qd-modal');
+  if (soAtualizar && ov.style.display !== 'flex') return;
+  // Não redesenha enquanto a pessoa digita num campo do modal
+  if (soAtualizar && m.contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  var pode = qdPode(c), dis = pode ? '' : ' disabled', ck = c.check || [], feitos = ck.filter(function(x) { return x && x.ok; }).length;
+  var cols = qdCols();
+  var coms = Object.keys(c.coment || {}).map(function(k) { var x = c.coment[k]; x._k = k; return x; }).sort(function(a, b) { return (b.em || 0) - (a.em || 0); });
+  m.innerHTML = '<div class="qm-capa" style="background:' + (c.capa || '#E2E0D8') + '"><button type="button" class="qm-x" onclick="qdFechar()" title="Fechar">✕</button></div>' +
+    '<div class="qm-corpo"><div>' +
+      (pode ? '' : '<div class="qm-aviso">🔒 Só os responsáveis por este card (ou a gestão) podem editar. Você pode comentar.</div>') +
+      '<textarea class="qm-tit" rows="1"' + dis + ' onchange="qdCampo(\'titulo\', this.value)">' + qdEsc(c.titulo) + '</textarea>' +
+      '<div style="font-size:12px;color:#888;padding:0 6px;">na coluna <b>' + qdEsc((cols.find(function(x) { return x.id === c.col; }) || {}).nome || '—') + '</b> · criado por ' + qdEsc(qdNome(c.criadoPor)) + (c.criadoEm ? ' em ' + new Date(c.criadoEm).toLocaleDateString('pt-BR') : '') + (c.arquivado ? ' · <b style="color:#C41E1E">arquivado</b>' : '') + '</div>' +
+      '<div class="qm-sec"><div class="qm-rot">Etiquetas</div><div class="qm-chips">' + Object.keys(QD_ETQ).map(function(k) {
+        var on = (c.etiquetas || []).indexOf(k) >= 0;
+        return '<button type="button" class="qm-chip' + (on ? ' on' : '') + '"' + (on ? ' style="background:' + QD_ETQ[k].cor + '"' : '') + dis + ' onclick="qdToggle(\'etiquetas\',\'' + k + '\')">' + QD_ETQ[k].rot + '</button>';
+      }).join('') + '</div></div>' +
+      '<div class="qm-sec"><div class="qm-rot">Descrição</div><textarea class="qm-desc" placeholder="Detalhes, contexto, links…"' + dis + ' onchange="qdCampo(\'desc\', this.value)">' + qdEsc(c.desc || '') + '</textarea></div>' +
+      '<div class="qm-sec"><div class="qm-rot">Checklist ' + (ck.length ? '· ' + feitos + '/' + ck.length : '') + '</div>' +
+        (ck.length ? '<div class="qm-barra"><div style="width:' + Math.round(feitos / ck.length * 100) + '%"></div></div>' : '') +
+        ck.map(function(x, i) { return '<label class="qm-ck' + (x.ok ? ' feito' : '') + '"><input type="checkbox"' + (x.ok ? ' checked' : '') + dis + ' onchange="qdCheck(' + i + ', this.checked)"><span>' + qdEsc(x.t) + '</span>' + (pode ? '<button type="button" title="Remover" onclick="event.preventDefault();qdCheckDel(' + i + ')">✕</button>' : '') + '</label>'; }).join('') +
+        (pode ? '<div style="display:flex;gap:6px;margin-top:6px;"><input type="text" id="qm-ck-novo" placeholder="Novo item…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();qdCheckAdd();}"><button type="button" class="qd-btn sec" style="padding:6px 12px;border:1.5px solid #D9D6CC;background:#fff;border-radius:7px;font-weight:700;cursor:pointer;" onclick="qdCheckAdd()">+</button></div>' : '') +
+      '</div>' +
+      '<div class="qm-sec"><div class="qm-rot">Comentários</div>' +
+        '<div style="display:flex;gap:6px;"><input type="text" id="qm-com-novo" placeholder="Escreva um comentário…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();qdComentar();}"><button type="button" style="padding:6px 12px;border:none;background:#C41E1E;color:#fff;border-radius:7px;font-weight:700;cursor:pointer;" onclick="qdComentar()">Enviar</button></div>' +
+        coms.map(function(x) { return '<div class="qm-com"><div class="qm-com-meta"><b>' + qdEsc(qdNome(x.autor)) + '</b> · ' + (x.em ? new Date(x.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '') + (x.autor === currentUser || qdGestao() ? ' · <a href="#" style="color:#999" onclick="event.preventDefault();qdComDel(\'' + x._k + '\')">apagar</a>' : '') + '</div>' + qdEsc(x.txt).replace(/\n/g, '<br>') + '</div>'; }).join('') +
+      '</div>' +
+    '</div><div class="qm-lado">' +
+      '<div><div class="qm-rot">Coluna</div><select' + dis + ' onchange="qdMover(QD.aberto, this.value, 9999)">' + cols.map(function(x) { return '<option value="' + x.id + '"' + (x.id === c.col ? ' selected' : '') + '>' + qdEsc(x.nome) + '</option>'; }).join('') + '</select></div>' +
+      '<div><div class="qm-rot">Prazo</div><input type="date" value="' + (c.prazo || '') + '"' + dis + ' onchange="qdCampo(\'prazo\', this.value)">' + (c.prazo ? '<div style="margin-top:5px;">' + qdPrazoBadge(c) + '</div>' : '') + '</div>' +
+      '<div><div class="qm-rot">Responsáveis</div><div class="qm-chips">' + qdPessoas().map(function(u) {
+        var on = (c.resp || []).indexOf(u) >= 0;
+        return '<button type="button" class="qm-chip' + (on ? ' on' : '') + '"' + (on ? ' style="background:#1C1C1C"' : '') + dis + ' onclick="qdToggle(\'resp\',\'' + u + '\')">' + qdEsc(qdNome(u)) + '</button>';
+      }).join('') + '</div></div>' +
+      '<div><div class="qm-rot">Capa</div><div class="qm-cores">' + QD_CAPAS.map(function(cor) {
+        return '<button type="button" class="qm-cor' + ((c.capa || '') === cor ? ' on' : '') + '" style="background:' + (cor || '#fff') + '"' + dis + ' title="' + (cor ? cor : 'Sem capa') + '" onclick="qdCampo(\'capa\',\'' + cor + '\')">' + (cor ? '' : '∅') + '</button>';
+      }).join('') + '</div></div>' +
+      (pode ? '<div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">' +
+        '<button type="button" class="qm-acao" onclick="qdCampo(\'arquivado\', ' + (!c.arquivado) + ')">' + (c.arquivado ? '↩ Restaurar card' : '🗄 Arquivar card') + '</button>' +
+        (qdGestao() || c.criadoPor === currentUser ? '<button type="button" class="qm-acao perigo" onclick="qdExcluir()">🗑 Excluir card</button>' : '') + '</div>' : '') +
+    '</div></div>';
+  ov.style.display = 'flex';
+}
+function qdFechar() { QD.aberto = null; var ov = document.getElementById('qd-modal-ov'); if (ov) ov.style.display = 'none'; }
+function qdAtual() { return QD.aberto && QD.cards[QD.aberto] ? JSON.parse(JSON.stringify(QD.cards[QD.aberto])) : null; }
+function qdCampo(campo, val) {
+  var c = qdAtual(); if (!c || !qdPode(c)) return;
+  if (campo === 'titulo') { val = String(val || '').trim(); if (!val) { qdAbrir(c.id); return; } }
+  c[campo] = val; qdSalvarCard(c); qdAbrir(c.id);
+}
+function qdToggle(campo, k) {
+  var c = qdAtual(); if (!c || !qdPode(c)) return;
+  var arr = (c[campo] || []).slice(), i = arr.indexOf(k);
+  if (i >= 0) arr.splice(i, 1); else arr.push(k);
+  if (campo === 'resp' && !arr.length && !qdGestao()) { alert('O card precisa de pelo menos um responsável.'); return; }
+  c[campo] = arr; qdSalvarCard(c); qdAbrir(c.id);
+}
+function qdCheck(i, ok) { var c = qdAtual(); if (!c || !qdPode(c) || !c.check || !c.check[i]) return; c.check[i].ok = ok; qdSalvarCard(c); qdAbrir(c.id); }
+function qdCheckDel(i) { var c = qdAtual(); if (!c || !qdPode(c)) return; (c.check || []).splice(i, 1); qdSalvarCard(c); qdAbrir(c.id); }
+function qdCheckAdd() {
+  var c = qdAtual(), inp = document.getElementById('qm-ck-novo'); if (!c || !qdPode(c) || !inp || !inp.value.trim()) return;
+  c.check = (c.check || []).concat([{ t: inp.value.trim(), ok: false }]); qdSalvarCard(c); qdAbrir(c.id);
+  setTimeout(function() { var i2 = document.getElementById('qm-ck-novo'); if (i2) i2.focus(); }, 30);
+}
+function qdComentar() {
+  var c = qdAtual(), inp = document.getElementById('qm-com-novo'); if (!c || !inp || !inp.value.trim()) return;
+  var k = 'm' + Date.now().toString(36), com = { autor: currentUser, txt: inp.value.trim(), em: Date.now() };
+  c.coment = c.coment || {}; c.coment[k] = com;
+  QD.cards[c.id] = c;
+  dbRef('quadro/cards/' + c.id + '/coment/' + k).set(com);
+  qdRender(); qdAbrir(c.id);
+}
+function qdComDel(k) {
+  var c = qdAtual(); if (!c || !c.coment || !c.coment[k]) return;
+  if (c.coment[k].autor !== currentUser && !qdGestao()) return;
+  if (!confirm('Apagar este comentário?')) return;
+  delete c.coment[k]; QD.cards[c.id] = c;
+  dbRef('quadro/cards/' + c.id + '/coment/' + k).remove();
+  qdRender(); qdAbrir(c.id);
+}
+function qdExcluir() {
+  var c = qdAtual(); if (!c || !(qdGestao() || c.criadoPor === currentUser)) return;
+  if (!confirm('Excluir o card "' + c.titulo + '"? Isso não tem volta (para guardar, use Arquivar).')) return;
+  delete QD.cards[c.id]; dbRef('quadro/cards/' + c.id).remove();
+  qdFechar(); qdRender(); qdBadge();
+}
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && QD.aberto) qdFechar(); });
+</script>
+
 <div id="tab-sugestoes" class="tab-content">
   <div class="page-section" style="max-width:900px;">
     <div style="margin-bottom:1rem;">
@@ -12806,6 +13188,10 @@ function entrarComoUsuario(user) {
   });
   // Start listening to pedidos
   listenPedidos(user, v.tipo === 'gestora' || v.tipo === 'administrativo');
+  try { if (typeof qdOuvir === 'function') qdOuvir(); } catch (e) { console.warn('quadro', e); }
+  // Base de Clientes: só a Juliana vê
+  var navCli = document.getElementById('nav-clientes');
+  if (navCli) navCli.style.display = (user === 'JULIANA') ? '' : 'none';
   listenNegociacoes(user, v.tipo === 'gestora');
   listenAtendimentos(user, v.tipo === 'gestora');
   checarPedidosLocaisPendentes();
@@ -14483,8 +14869,10 @@ function doLogout() {
   const paranaNav = document.getElementById('nav-parana');
   if (paranaNav) paranaNav.style.display = 'none';
   // Switch back to materiais if on admin tab
-  if (document.getElementById('tab-admin').classList.contains('active')) {
-    showTab('materiais', document.querySelector('.nav-btn'));
+  var navCliOut = document.getElementById('nav-clientes');
+  if (navCliOut) navCliOut.style.display = 'none';
+  if (document.getElementById('tab-admin').classList.contains('active') || document.getElementById('tab-clientes').classList.contains('active')) {
+    showTab('minhasmetas', document.getElementById('nav-minhasmetas'));
   }
 }
 
@@ -14968,6 +15356,7 @@ function showTab(name, btn) {
   if (name === 'abastecimento' && typeof abInit === 'function') abInit();
   if (name === 'sugestoes' && typeof sgInit === 'function') sgInit();
   if (name === 'quiz' && typeof qzInit === 'function') qzInit();
+  if (name === 'quadro' && typeof qdInit === 'function') qdInit();
   btn.classList.add('active');
 }
 
@@ -18309,7 +18698,7 @@ function abPodeEditar(){ return currentUser === 'JULIANA' || abEhAdm(); }
 function abVeTudo(){ return currentUser === 'JULIANA' || currentUser === 'ELIZIANE' || abEhAdm(); }
 
 /* administrativo entra direto no Abastecimento e só vê as abas de consulta */
-var AB_NAV_ADM = ['abastecimento', 'pedidos', 'materiais', 'tabela', 'empresa', 'sugestoes'];
+var AB_NAV_ADM = ['abastecimento', 'pedidos', 'materiais', 'tabela', 'empresa', 'sugestoes', 'quadro'];
 function abAplicarPerfilNav(v){
   document.querySelectorAll('#main-nav .nav-btn[data-ab-oculto]').forEach(function(b){ b.style.display = ''; b.removeAttribute('data-ab-oculto'); });
   if (!v || v.tipo !== 'administrativo') return;
