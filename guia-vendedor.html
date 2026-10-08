@@ -13718,12 +13718,15 @@ var AV3D = {
   corCabelo: ['#1C1C1C', '#4A2E1A', '#8B5A2B', '#D4A15A', '#EADBA8', '#B5502A', '#A8B0BA', '#C41E1E', '#6B3FA0', '#1F6FB2'],
   corOlhos: ['#4A2E1A', '#1C1C1C', '#2E7D9A', '#2E7D32', '#8B6B2B'],
   corRoupa: ['#C41E1E', '#1C1C1C', '#1F6FB2', '#2E7D32', '#F2C14E', '#6B3FA0', '#E07A2E', '#F4F4F4', '#F4A6B5', '#0B1828'],
-  cabelo: [['curto', 'Curto'], ['lateral', 'Franja'], ['longo', 'Longo'], ['cacheado', 'Cacheado'], ['coque', 'Coque'], ['rabo', 'Rabo de cavalo'], ['black', 'Black power'], ['moicano', 'Moicano'], ['careca', 'Careca']],
+  cabelo: [['ondulado', 'Longo ondulado'], ['longo', 'Longo liso'], ['franja', 'Longo com franja'], ['chanel', 'Chanel'], ['cachosLongos', 'Cachos longos'], ['trancas', 'Tranças'], ['rabo', 'Rabo de cavalo'], ['coque', 'Coque'], ['black', 'Black power'], ['cacheado', 'Cacheado curto'], ['curto', 'Curto'], ['lateral', 'Topete'], ['moicano', 'Moicano'], ['careca', 'Careca']],
+  cilios: [['nao', 'Sem'], ['sim', 'Com cílios']],
+  batom: ['', '#C2185B', '#E53935', '#D9777F', '#8E2440', '#B5651D'],
+  brinco: [['nenhum', 'Nenhum'], ['ponto', 'Pontinho'], ['argola', 'Argola'], ['pendente', 'Pendente']],
   olhos: [['normal', 'Normal'], ['feliz', 'Feliz'], ['piscando', 'Piscando'], ['determinado', 'Focado']],
   boca: [['sorriso', 'Sorriso'], ['aberto', 'Animado'], ['dentes', 'Sorrisão'], ['neutro', 'Sério']],
   barba: [['nenhuma', 'Nenhuma'], ['bigode', 'Bigode'], ['cavanhaque', 'Cavanhaque'], ['cheia', 'Barba cheia']],
-  roupa: [['camiseta', 'Camiseta'], ['polo', 'Polo'], ['social', 'Blazer'], ['moletom', 'Moletom']],
-  acessorio: [['nenhum', 'Nenhum'], ['headset', 'Headset'], ['oculos', 'Óculos'], ['bone', 'Boné'], ['capacete', 'Capacete'], ['brincos', 'Brincos']]
+  roupa: [['blusa', 'Blusa com colar'], ['camiseta', 'Camiseta'], ['polo', 'Polo'], ['social', 'Blazer'], ['moletom', 'Moletom']],
+  acessorio: [['nenhum', 'Nenhum'], ['headset', 'Headset'], ['oculos', 'Óculos'], ['laco', 'Laço'], ['tiara', 'Tiara'], ['flor', 'Flor'], ['bone', 'Boné'], ['capacete', 'Capacete']]
 };
 var AV3D_N = 0;
 function av3dCor(hex, amt) {
@@ -13734,15 +13737,39 @@ function av3dCor(hex, amt) {
   return '#' + [f(r), f(g), f(b)].map(function(c) { return ('0' + c.toString(16)).slice(-2); }).join('');
 }
 function av3dEhObj(av) { return av && typeof av === 'object' && av.v === 3; }
-function av3dPadrao() {
-  return { v: 3, pele: AV3D.pele[1], cabelo: 'curto', corCabelo: AV3D.corCabelo[1], olhos: 'normal', corOlhos: AV3D.corOlhos[0], boca: 'sorriso', barba: 'nenhuma', roupa: 'polo', corRoupa: AV3D.corRoupa[0], acessorio: 'headset' };
+var AV3D_FEM_LOGINS = ['GESSICA', 'LETICIA', 'ELIZIANE', 'BREDER', 'JULIANA', 'MARIA PRISCILLA'];
+var AV3D_BASE = {
+  fem:  { cabelo: 'ondulado', cilios: 'sim', batom: '#C2185B', barba: 'nenhuma', roupa: 'blusa', brinco: 'argola' },
+  masc: { cabelo: 'curto', cilios: 'nao', batom: '', barba: 'nenhuma', roupa: 'polo', brinco: 'nenhum' }
+};
+function av3dPadrao(fem) {
+  if (fem === undefined) fem = AV3D_FEM_LOGINS.indexOf(currentUser) >= 0;
+  var a = { v: 3, pele: AV3D.pele[1], corCabelo: AV3D.corCabelo[1], olhos: 'normal', corOlhos: AV3D.corOlhos[0], boca: 'sorriso', corRoupa: AV3D.corRoupa[0], acessorio: 'headset' };
+  var b = AV3D_BASE[fem ? 'fem' : 'masc']; Object.keys(b).forEach(function(k) { a[k] = b[k]; });
+  return a;
 }
 function av3dSorteio() {
-  function um(a) { var x = a[Math.floor(Math.random() * a.length)]; return Array.isArray(x) ? x[0] : x; }
-  var a = { v: 3 };
-  ['pele', 'corCabelo', 'corOlhos', 'corRoupa', 'cabelo', 'olhos', 'boca', 'roupa', 'acessorio'].forEach(function(k) { a[k] = um(AV3D[k]); });
-  a.barba = Math.random() < 0.7 ? 'nenhuma' : um(AV3D.barba);
+  function um(arr) { var x = arr[Math.floor(Math.random() * arr.length)]; return Array.isArray(x) ? x[0] : x; }
+  var fem = Math.random() < 0.5, a = av3dPadrao(fem);
+  if (RT.avDraft && RT.avDraft.estilo) a.estilo = RT.avDraft.estilo;
+  ['pele', 'corCabelo', 'corOlhos', 'corRoupa', 'olhos', 'boca'].forEach(function(k) { a[k] = um(AV3D[k]); });
+  a.acessorio = um(fem ? ['nenhum', 'headset', 'oculos', 'laco', 'tiara', 'flor', 'headset'] : ['nenhum', 'headset', 'oculos', 'bone', 'capacete', 'headset']);
+  if (fem) {
+    a.cabelo = um(['ondulado', 'longo', 'franja', 'chanel', 'cachosLongos', 'trancas', 'rabo', 'coque', 'black']);
+    a.batom = um(AV3D.batom.slice(1)); a.brinco = um(['ponto', 'argola', 'pendente', 'nenhum']);
+    a.roupa = um(['blusa', 'blusa', 'camiseta', 'social', 'polo']);
+  } else {
+    a.cabelo = um(['curto', 'lateral', 'cacheado', 'black', 'moicano', 'careca', 'curto']);
+    a.barba = Math.random() < 0.6 ? 'nenhuma' : um(['bigode', 'cavanhaque', 'cheia']);
+    a.roupa = um(['camiseta', 'polo', 'social', 'moletom']);
+  }
   return a;
+}
+function av3dBase(tipo) {
+  if (!RT.avDraft) RT.avDraft = av3dPadrao(tipo === 'fem');
+  var b = AV3D_BASE[tipo]; Object.keys(b).forEach(function(k) { RT.avDraft[k] = b[k]; });
+  if (tipo === 'fem' && ['bone', 'capacete'].indexOf(RT.avDraft.acessorio) >= 0) RT.avDraft.acessorio = 'headset';
+  rtAvEdRender();
 }
 // Grupo SVG do avatar, desenhado na caixa 0..100
 function av3dGrupo(a) {
@@ -13759,14 +13786,22 @@ function av3dGrupo(a) {
   // sombra no chão
   s += '<ellipse cx="50" cy="97" rx="30" ry="3.5" fill="#000" opacity=".28"/>';
   // cabelo de trás (longo, rabo)
-  if (a.cabelo === 'longo') s += '<path d="M22 40 Q18 76 24 90 L76 90 Q82 76 78 40 Z" fill="' + C + '"/>';
+  if (a.cabelo === 'longo' || a.cabelo === 'franja') s += '<path d="M21 38 Q16 74 22 92 L78 92 Q84 74 79 38 Z" fill="' + C + '"/>';
+  if (a.cabelo === 'ondulado') s += '<path d="M21 36 Q12 54 18 66 Q12 78 20 88 Q18 94 24 96 L76 96 Q82 94 80 88 Q88 78 82 66 Q88 54 79 36 Z" fill="' + C + '"/>';
+  if (a.cabelo === 'chanel') s += '<path d="M21 38 Q17 60 22 68 L78 68 Q83 60 79 38 Z" fill="' + C + '"/>';
+  if (a.cabelo === 'cachosLongos') [[20, 50], [17, 62], [19, 74], [22, 85], [80, 50], [83, 62], [81, 74], [78, 85], [30, 88], [70, 88]].forEach(function(q) { s += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="9" fill="' + C + '"/>'; });
+  if (a.cabelo === 'trancas') [[22, 56], [21, 64], [20, 72], [20, 80], [78, 56], [79, 64], [80, 72], [80, 80]].forEach(function(q) { s += '<ellipse cx="' + q[0] + '" cy="' + q[1] + '" rx="5" ry="5.2" fill="' + C + '" stroke="' + av3dCor(cab, -0.3) + '" stroke-width=".8"/>'; });
   if (a.cabelo === 'rabo') s += '<path d="M70 26 Q90 30 86 58 Q84 70 76 74 Q82 58 74 40 Z" fill="' + C + '"/>';
   if (a.cabelo === 'black') s += '<circle cx="50" cy="34" r="33" fill="' + C + '"/>';
   // corpo
   s += '<path d="M18 98 Q18 72 50 69 Q82 72 82 98 Z" fill="' + R + '"/>';
   // pescoço
   s += '<path d="M43 58 L57 58 L57 71 Q50 75 43 71 Z" fill="' + av3dCor(pele, -0.18) + '"/>';
-  if (a.roupa === 'camiseta') {
+  if (a.roupa === 'blusa') {
+    s += '<path d="M36 70 Q50 88 64 70 Q57 69 50 69 Q43 69 36 70 Z" fill="' + av3dCor(pele, -0.08) + '"/>' +
+      '<path d="M36 70 Q50 89 64 70" fill="none" stroke="' + av3dCor(roupa, 0.35) + '" stroke-width="2.5" stroke-dasharray="3 1.6" stroke-linecap="round"/>' +
+      '<path d="M41 72 Q50 82 59 72" fill="none" stroke="#E8B84A" stroke-width="1"/><path d="M50 80 L52.4 82.6 L50 85.2 L47.6 82.6 Z" fill="#E8B84A" stroke="#B8860B" stroke-width=".6"/>';
+  } else if (a.roupa === 'camiseta') {
     s += '<path d="M41 70 Q50 79 59 70 Q55 69 50 69 Q45 69 41 70 Z" fill="' + av3dCor(pele, -0.1) + '"/><path d="M41 70 Q50 80 59 70" fill="none" stroke="' + escRoupa + '" stroke-width="2"/>';
     s += '<path d="M64 82 L68 86 L64 90 L60 86 Z" fill="' + (roupa === '#C41E1E' ? '#FFFFFF' : '#C41E1E') + '"/>';
   } else if (a.roupa === 'polo') {
@@ -13797,11 +13832,13 @@ function av3dGrupo(a) {
     '<path d="M' + (foc ? '66 33 Q60 34 55 37' : '66 35 Q60 31 55 34') + '" fill="none" stroke="' + sob + '" stroke-width="2.4" stroke-linecap="round"/>';
   // olhos
   function olho(cx, fechado) {
-    if (fechado) return '<path d="M' + (cx - 5) + ' 43 Q' + cx + ' 37.5 ' + (cx + 5) + ' 43" fill="none" stroke="' + linha + '" stroke-width="2.4" stroke-linecap="round"/>';
+    var lado = cx < 50 ? -1 : 1, cil = a.cilios === 'sim';
+    var lash = cil ? '<path d="M' + (cx + lado * 4.2) + ' ' + (fechado ? 41.5 : 39.6) + ' l' + (lado * 2.6) + ' -2.2 M' + (cx + lado * 2.4) + ' ' + (fechado ? 39.6 : 37.6) + ' l' + (lado * 1.6) + ' -2.6 M' + (cx + lado * 0.2) + ' ' + (fechado ? 39 : 37) + ' l' + (lado * 0.6) + ' -2.6" stroke="#1C1C1C" stroke-width="1.3" stroke-linecap="round"/>' : '';
+    if (fechado) return '<path d="M' + (cx - 5) + ' 43 Q' + cx + ' 37.5 ' + (cx + 5) + ' 43" fill="none" stroke="' + linha + '" stroke-width="2.4" stroke-linecap="round"/>' + lash;
     return '<ellipse cx="' + cx + '" cy="42" rx="4.6" ry="' + (foc ? 4.2 : 5.2) + '" fill="#FFFFFF"/>' +
       '<circle cx="' + cx + '" cy="42.6" r="3.3" fill="' + a.corOlhos + '"/><circle cx="' + cx + '" cy="42.8" r="1.7" fill="#111"/>' +
       '<circle cx="' + (cx - 1.2) + '" cy="41.2" r="1.1" fill="#FFFFFF"/>' +
-      '<path d="M' + (cx - 4.8) + ' 40 Q' + cx + ' ' + (foc ? 37.5 : 36) + ' ' + (cx + 4.8) + ' 40" fill="none" stroke="' + linha + '" stroke-width="1.3"/>';
+      '<path d="M' + (cx - 4.8) + ' 40 Q' + cx + ' ' + (foc ? 37.5 : 36) + ' ' + (cx + 4.8) + ' 40" fill="none" stroke="' + (cil ? '#1C1C1C' : linha) + '" stroke-width="' + (cil ? 2 : 1.3) + '"/>' + lash;
   }
   s += olho(40, a.olhos === 'feliz') + olho(60, a.olhos === 'feliz' || a.olhos === 'piscando');
   // barba (antes da boca)
@@ -13809,11 +13846,12 @@ function av3dGrupo(a) {
   if (a.barba === 'cavanhaque') s += '<path d="M43 60 Q50 70 57 60 Q55 64 50 64 Q45 64 43 60 Z" fill="' + C + '"/>';
   if (a.barba === 'bigode' || a.barba === 'cheia' || a.barba === 'cavanhaque') s += '<path d="M42 54 Q46 50 50 52 Q54 50 58 54 Q54 53 50 54.5 Q46 53 42 54 Z" fill="' + C + '"/>';
   // boca
-  var bc = '#7A2E2E';
+  var bc = a.batom || '#7A2E2E';
+  if (a.batom && (a.boca === 'sorriso' || !a.boca)) s += '<path d="M42 55 Q50 52.6 58 55 Q50 63.5 42 55 Z" fill="' + a.batom + '"/><path d="M45 55.6 Q50 57.6 55 55.6" fill="none" stroke="' + av3dCor(a.batom, -0.35) + '" stroke-width=".9"/>';
   if (a.boca === 'aberto') s += '<path d="M43 55 Q50 66 57 55 Z" fill="' + bc + '"/><path d="M46 60 Q50 63.5 54 60 Q50 58 46 60 Z" fill="#F08A8A"/>';
   else if (a.boca === 'dentes') s += '<path d="M41 54 Q50 67 59 54 Z" fill="' + bc + '"/><path d="M42.5 55 L57.5 55 Q57 58 56 58.5 L44 58.5 Q43 58 42.5 55 Z" fill="#FFFFFF"/>';
   else if (a.boca === 'neutro') s += '<path d="M44 57 Q50 58.5 56 57" fill="none" stroke="' + bc + '" stroke-width="2.2" stroke-linecap="round"/>';
-  else s += '<path d="M42 55 Q50 63 58 55" fill="none" stroke="' + bc + '" stroke-width="2.4" stroke-linecap="round"/>';
+  else if (!a.batom) s += '<path d="M42 55 Q50 63 58 55" fill="none" stroke="' + bc + '" stroke-width="2.4" stroke-linecap="round"/>';
   // cabelo da frente
   var brilho = '<path d="M34 20 Q44 13 56 15" fill="none" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="2.5" stroke-linecap="round"/>';
   switch (a.cabelo) {
@@ -13826,6 +13864,13 @@ function av3dGrupo(a) {
       [[26, 36], [27, 25], [34, 17], [43, 13], [52, 12], [61, 14], [69, 19], [74, 28], [75, 38], [38, 23], [50, 21], [62, 23]].forEach(function(p) { s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="7.5" fill="' + C + '"/>'; });
       s += '<circle cx="40" cy="15" r="2.5" fill="#FFFFFF" opacity=".25"/>'; break;
     case 'black': s += '<path d="M24 38 Q26 22 50 22 Q74 22 76 38 Q70 28 50 28 Q30 28 24 38 Z" fill="' + C + '"/><circle cx="36" cy="12" r="3" fill="#FFFFFF" opacity=".2"/>'; break;
+    case 'ondulado': s += '<path d="M21 70 Q15 10 50 10 Q85 10 79 70 Q75 70 73 64 Q77 34 64 25 Q52 32 38 25 Q24 34 27 64 Q25 70 21 70 Z" fill="' + C + '"/><path d="M27 40 Q24 48 27 56 M73 40 Q76 48 73 56" fill="none" stroke="' + av3dCor(cab, 0.25) + '" stroke-width="1.4" opacity=".7"/>' + brilho; break;
+    case 'franja': s += '<path d="M21 64 Q16 10 50 10 Q84 10 79 64 Q76 64 74 58 Q76 40 73 31 Q62 34 50 31 Q38 34 27 31 Q24 40 26 58 Q24 64 21 64 Z" fill="' + C + '"/>' + brilho; break;
+    case 'chanel': s += '<path d="M21 66 Q16 11 50 11 Q84 11 79 66 Q75 67 72 62 Q75 36 63 26 Q50 33 30 28 Q36 25 40 21 Q25 30 28 62 Q25 67 21 66 Z" fill="' + C + '"/>' + brilho; break;
+    case 'cachosLongos':
+      [[24, 40], [26, 28], [33, 19], [42, 14], [52, 13], [61, 15], [69, 21], [75, 30], [76, 42], [38, 24], [50, 22], [62, 24]].forEach(function(q) { s += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="8" fill="' + C + '"/>'; });
+      s += '<circle cx="40" cy="15" r="2.5" fill="#FFFFFF" opacity=".25"/>'; break;
+    case 'trancas': s += '<path d="M23.5 46 Q20 12 50 12 Q80 12 76.5 46 Q74 26 52 22 L50 27 L48 22 Q26 26 23.5 46 Z" fill="' + C + '"/><rect x="17" y="84" width="7" height="4" rx="2" fill="#C41E1E"/><rect x="77" y="84" width="7" height="4" rx="2" fill="#C41E1E"/>' + brilho; break;
     case 'moicano': s += '<path d="M42 28 Q42 4 50 2 Q58 4 58 28 Q50 24 42 28 Z" fill="' + C + '"/><path d="M25 36 Q27 22 34 19 L34 23 Q28 27 25 36 Z M75 36 Q73 22 66 19 L66 23 Q72 27 75 36 Z" fill="' + C + '" opacity=".55"/>'; break;
     default: s += '<ellipse cx="44" cy="20" rx="8" ry="3.5" fill="#FFFFFF" opacity=".3"/>';
   }
@@ -13845,19 +13890,108 @@ function av3dGrupo(a) {
       '<rect x="17.5" y="37" width="10" height="15" rx="4.5" fill="#2B2B2B"/><rect x="72.5" y="37" width="10" height="15" rx="4.5" fill="#2B2B2B"/>' +
       '<rect x="19" y="39" width="3" height="9" rx="1.5" fill="#C41E1E"/><rect x="78" y="39" width="3" height="9" rx="1.5" fill="#C41E1E"/>' +
       '<path d="M23 51 Q26 61 38 60" fill="none" stroke="#2B2B2B" stroke-width="2.2" stroke-linecap="round"/><ellipse cx="40" cy="60" rx="3.2" ry="2.6" fill="#1C1C1C"/>';
-  } else if (a.acessorio === 'brincos') {
-    s += '<circle cx="24" cy="52" r="2.4" fill="#F2C14E" stroke="#B8860B" stroke-width=".8"/><circle cx="76" cy="52" r="2.4" fill="#F2C14E" stroke="#B8860B" stroke-width=".8"/>';
+  } else if (a.acessorio === 'laco') {
+    s += '<path d="M66 16 L56 8 L57 22 Z M66 16 L77 9 L75 23 Z" fill="#E94F7A" stroke="#B0325A" stroke-width="1"/><circle cx="66" cy="16" r="3.2" fill="#C2185B"/>';
+  } else if (a.acessorio === 'tiara') {
+    s += '<path d="M25 30 Q50 6 75 30" fill="none" stroke="' + av3dCor(roupa, -0.1) + '" stroke-width="4.5" stroke-linecap="round"/><path d="M30 24 Q50 8 70 24" fill="none" stroke="#FFFFFF" stroke-opacity=".35" stroke-width="1.5" stroke-linecap="round"/>';
+  } else if (a.acessorio === 'flor') {
+    var fx = 70, fy = 20;
+    [[0, -5], [4.8, -1.5], [3, 4], [-3, 4], [-4.8, -1.5]].forEach(function(q) { s += '<circle cx="' + (fx + q[0]) + '" cy="' + (fy + q[1]) + '" r="3.6" fill="#F48FB1" stroke="#D81B60" stroke-width=".6"/>'; });
+    s += '<circle cx="' + fx + '" cy="' + fy + '" r="2.6" fill="#F2C14E"/>';
   }
+  var br = a.brinco || (a.acessorio === 'brincos' ? 'ponto' : 'nenhum');
+  if (br === 'ponto') s += '<circle cx="24" cy="51" r="2.2" fill="#F2C14E" stroke="#B8860B" stroke-width=".8"/><circle cx="76" cy="51" r="2.2" fill="#F2C14E" stroke="#B8860B" stroke-width=".8"/>';
+  if (br === 'argola') s += '<circle cx="24" cy="54.5" r="4" fill="none" stroke="#E8B84A" stroke-width="1.6"/><circle cx="76" cy="54.5" r="4" fill="none" stroke="#E8B84A" stroke-width="1.6"/>';
+  if (br === 'pendente') s += '<path d="M24 50 L24 54 M76 50 L76 54" stroke="#B8860B" stroke-width="1"/><path d="M24 54 L26.4 57.4 L24 60.8 L21.6 57.4 Z M76 54 L78.4 57.4 L76 60.8 L73.6 57.4 Z" fill="#E94F7A" stroke="#B0325A" stroke-width=".6"/>';
   return s;
+}
+// Versão pixel retrô (8-bit) do mesmo avatar: 16x16 "quadradinhos", corpo inteiro de jogo de plataforma
+function av3dPixelGrid(a) {
+  var g = [
+    '.....HHHHHH.....',
+    '....HHHHHHHH....',
+    '...HHSSSSSSHH...',
+    '...HSSSSSSSSH...',
+    '...SSWESSEWSS...',
+    '...SSSSSSSSSS...',
+    '....SSSMMSSS....',
+    '.....SSSSSS.....',
+    '....RRRRRRRR....',
+    '...RRRRRRRRRR...',
+    '..SRRRRRRRRRRS..',
+    '..SRRRRRRRRRRS..',
+    '....PPPPPPPP....',
+    '....PPP..PPP....',
+    '....PPP..PPP....',
+    '...BBBB..BBBB...'
+  ].map(function(r) { return r.split(''); });
+  function put(r, c, ch) { if (g[r] && c >= 0 && c < 16) g[r][c] = ch; }
+  function lin(r, c1, c2, ch) { for (var c = c1; c <= c2; c++) put(r, c, ch); }
+  var h = a.cabelo;
+  if (h === 'careca') { lin(0, 5, 10, '.'); lin(1, 4, 11, 'S'); lin(2, 3, 12, 'S'); put(2, 3, '.'); put(2, 12, '.'); put(3, 3, 'S'); put(3, 12, 'S'); lin(0, 0, 15, '.'); }
+  if (h === 'moicano') { lin(0, 0, 15, '.'); lin(0, 7, 8, 'H'); lin(1, 4, 11, 'S'); lin(1, 7, 8, 'H'); lin(2, 4, 11, 'S'); put(2, 3, '.'); put(2, 12, '.'); }
+  if (h === 'longo' || h === 'ondulado' || h === 'franja' || h === 'chanel' || h === 'cachosLongos' || h === 'trancas') {
+    var ate = h === 'chanel' ? 7 : h === 'trancas' ? 11 : 10;
+    for (var r = 3; r <= ate; r++) { put(r, 2, 'H'); put(r, 13, 'H'); if (r <= 7) { put(r, 3, 'H'); put(r, 12, 'H'); } }
+    if (h === 'trancas') { put(11, 2, 'A'); put(11, 13, 'A'); }
+    if (h === 'ondulado' || h === 'cachosLongos') { put(9, 1, 'H'); put(10, 1, 'H'); put(9, 14, 'H'); put(10, 14, 'H'); }
+    if (h === 'franja') lin(3, 4, 11, 'H');
+  }
+  if (h === 'cacheado' || h === 'cachosLongos' || h === 'black') { lin(0, 3, 12, 'H'); put(1, 2, 'H'); put(1, 13, 'H'); put(2, 2, 'H'); put(2, 13, 'H'); }
+  if (h === 'black') { lin(0, 2, 13, 'H'); put(3, 2, 'H'); put(3, 13, 'H'); }
+  if (h === 'coque') { lin(0, 0, 15, '.'); lin(0, 6, 9, 'H'); }
+  if (h === 'rabo') { put(2, 13, 'H'); put(3, 13, 'H'); put(4, 14, 'H'); put(5, 14, 'H'); put(6, 14, 'H'); put(2, 13, 'A'); }
+  if (h === 'lateral') { put(1, 3, 'H'); lin(2, 4, 7, 'H'); }
+  if (a.cilios === 'sim') { put(3, 5, 'E'); put(3, 10, 'E'); }
+  if (a.olhos === 'feliz') { put(4, 5, 'E'); put(4, 6, 'E'); put(4, 9, 'E'); put(4, 10, 'E'); }
+  if (a.olhos === 'piscando') { put(4, 9, 'E'); put(4, 10, 'E'); }
+  if (a.boca === 'aberto' || a.boca === 'dentes') { lin(6, 6, 9, 'M'); put(7, 7, 'M'); put(7, 8, 'M'); if (a.boca === 'dentes') { put(6, 7, 'W'); put(6, 8, 'W'); } }
+  if (a.boca === 'neutro') { put(6, 7, 'E'); put(6, 8, 'E'); }
+  if (a.barba === 'cheia') { put(5, 3, 'H'); put(5, 12, 'H'); lin(6, 4, 6, 'H'); lin(6, 9, 11, 'H'); lin(7, 5, 10, 'H'); }
+  if (a.barba === 'cavanhaque') lin(7, 7, 8, 'H');
+  if (a.barba === 'bigode' || a.barba === 'cheia' || a.barba === 'cavanhaque') lin(5, 6, 9, 'H');
+  if (a.roupa === 'blusa') { lin(8, 6, 9, 'S'); put(9, 7, 'G'); put(9, 8, 'G'); }
+  if (a.roupa === 'camiseta' || a.roupa === 'polo') { put(8, 7, 'S'); put(8, 8, 'S'); put(10, 10, 'F'); }
+  if (a.roupa === 'polo') { put(8, 6, 'r'); put(8, 9, 'r'); }
+  if (a.roupa === 'social') { lin(8, 6, 9, 'W'); put(9, 7, 'T'); put(9, 8, 'T'); put(10, 7, 'T'); put(10, 8, 'T'); put(11, 7, 'T'); }
+  if (a.roupa === 'moletom') { lin(8, 5, 10, 'r'); lin(11, 5, 10, 'r'); }
+  var br = a.brinco || 'nenhum';
+  if (br !== 'nenhum') { put(5, 2, 'G'); put(5, 13, 'G'); if (br === 'pendente' || br === 'argola') { put(6, 2, 'G'); put(6, 13, 'G'); } }
+  var ac = a.acessorio;
+  if (ac === 'headset') { lin(0, 4, 11, 'K'); put(1, 3, 'K'); put(1, 12, 'K'); put(2, 2, 'K'); put(2, 13, 'K'); put(3, 2, 'K'); put(4, 2, 'K'); put(3, 13, 'K'); put(4, 13, 'K'); put(5, 3, 'K'); put(6, 4, 'K'); }
+  if (ac === 'oculos') { lin(3, 4, 6, 'K'); lin(3, 9, 11, 'K'); put(4, 4, 'K'); put(4, 7, 'K'); put(4, 8, 'K'); put(4, 11, 'K'); }
+  if (ac === 'bone') { lin(0, 4, 11, 'A'); lin(1, 3, 12, 'A'); lin(2, 9, 14, 'a'); }
+  if (ac === 'capacete') { lin(0, 4, 11, 'Y'); lin(1, 3, 12, 'Y'); lin(2, 2, 13, 'y'); }
+  if (ac === 'laco') { put(0, 11, 'L'); put(0, 13, 'L'); put(1, 12, 'L'); put(1, 11, 'L'); put(1, 13, 'L'); }
+  if (ac === 'tiara') lin(1, 4, 11, 'r');
+  if (ac === 'flor') { put(0, 12, 'L'); put(1, 11, 'L'); put(1, 13, 'L'); put(1, 12, 'G'); put(2, 12, 'L'); }
+  return g;
+}
+function av3dPixel(a) {
+  var roupa = a.corRoupa || '#C41E1E', pele = a.pele || '#F5C6A0';
+  var pal = { H: a.corCabelo || '#4A2E1A', S: pele, W: '#FFFFFF', E: '#1C1C1C', M: a.batom || '#8E2440', R: roupa, r: av3dCor(roupa, -0.3),
+    P: '#2B3A55', B: '#4A2E1A', A: '#C41E1E', a: '#8E1414', K: '#2B2B2B', G: '#E8B84A', F: roupa === '#C41E1E' ? '#FFFFFF' : '#C41E1E',
+    T: roupa === '#C41E1E' ? '#1C1C1C' : '#C41E1E', Y: '#F2C14E', y: '#D9A22C', L: '#E94F7A' };
+  if (a.olhos !== 'feliz') pal.E = '#1C1C1C';
+  var g = av3dPixelGrid(a), out = '<rect x="2" y="15.5" width="12" height=".6" fill="#000" opacity=".25"/>';
+  g.forEach(function(row, r) { row.forEach(function(ch, c) {
+    if (ch === '.' || !pal[ch]) return;
+    var cor = ch === 'E' && r === 4 && (c === 6 || c === 9) && a.olhos !== 'feliz' ? (a.corOlhos || '#1C1C1C') : pal[ch];
+    out += '<rect x="' + c + '" y="' + r + '" width="1.02" height="1.02" fill="' + cor + '"/>';
+  }); });
+  // sombra lateral para dar volume
+  return out + '<rect x="11" y="9" width="2" height="3" fill="#000" opacity=".12"/>';
 }
 // Avatar dentro de outro SVG (mapa): caixa w x w a partir de (x, y)
 function rtAvatarEm(av, x, y, w) {
   if (!av3dEhObj(av)) return rtSprite(av || 'misterio', x, y, Math.max(1, Math.round(w / 8)));
+  if (av.estilo === 'pixel') return '<g shape-rendering="crispEdges" transform="translate(' + x + ' ' + y + ') scale(' + (w / 16) + ')">' + av3dPixel(av) + '</g>';
   return '<g shape-rendering="geometricPrecision" transform="translate(' + x + ' ' + y + ') scale(' + (w / 100) + ')">' + av3dGrupo(av) + '</g>';
 }
 // Avatar como SVG solto (cards, tabelas, editor)
 function rtAvatarSvg(av, tam) {
   if (!av3dEhObj(av)) return rtSpriteSvg(av || 'misterio', Math.max(1, Math.round(tam / 8)));
+  if (av.estilo === 'pixel') return '<svg xmlns="http://www.w3.org/2000/svg" width="' + tam + '" height="' + tam + '" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">' + av3dPixel(av) + '</svg>';
   return '<svg xmlns="http://www.w3.org/2000/svg" width="' + tam + '" height="' + tam + '" viewBox="0 0 100 100" aria-hidden="true">' + av3dGrupo(av) + '</svg>';
 }
 
@@ -13875,13 +14009,23 @@ function rtAvEditorHtml() {
       return '<button type="button" class="av3-cor' + (d[campo] === c ? ' on' : '') + '" style="background:' + c + '" title="' + c + '" aria-label="Cor ' + c + '" onclick="rtAvEd(\'' + campo + '\',\'' + c + '\')"></button>';
     }).join('') + '</div></div>';
   }
+  function batons() {
+    return '<div class="av3-lin"><div class="av3-rot">Batom</div><div class="av3-ops">' + AV3D.batom.map(function(c) {
+      var on = (d.batom || '') === c;
+      return '<button type="button" class="av3-cor' + (on ? ' on' : '') + '" style="background:' + (c || '#fff') + '" title="' + (c || 'Sem batom') + '" aria-label="' + (c ? 'Batom ' + c : 'Sem batom') + '" onclick="rtAvEd(\'batom\',\'' + c + '\')">' + (c ? '' : '∅') + '</button>';
+    }).join('') + '</div></div>';
+  }
   return '<div class="av3-topo"><div class="av3-prev">' + rtAvatarSvg(d, 150) + '</div><div class="av3-acoes">' +
       '<button type="button" class="av3-salvar" onclick="rtAvSalvar()">' + (salvo ? '✓ Avatar salvo' : '💾 Salvar avatar') + '</button>' +
       '<button type="button" class="av3-sec" onclick="rtAvSortear()">🎲 Sortear</button>' +
       '<div class="rt-sub">Monte do seu jeito: ele é quem anda no mapa.</div></div></div>' +
+    '<div class="av3-lin"><div class="av3-rot">Estilo</div><div class="av3-ops">' + [['3d', '✨ 3D'], ['pixel', '👾 Pixel retrô 8-bit']].map(function(o) {
+      return '<button type="button" class="av3-op' + ((d.estilo || '3d') === o[0] ? ' on' : '') + '" onclick="rtAvEd(\'estilo\',\'' + o[0] + '\')">' + o[1] + '</button>';
+    }).join('') + '</div></div>' +
+    '<div class="av3-lin"><div class="av3-rot">Começar com</div><div class="av3-ops"><button type="button" class="av3-op" onclick="av3dBase(\'fem\')">👩 Base feminina</button><button type="button" class="av3-op" onclick="av3dBase(\'masc\')">👨 Base masculina</button></div></div>' +
     cores('pele', 'Tom de pele') + opcoes('cabelo', 'Cabelo') + cores('corCabelo', 'Cor do cabelo') +
-    opcoes('olhos', 'Olhos') + cores('corOlhos', 'Cor dos olhos') + opcoes('boca', 'Boca') + opcoes('barba', 'Barba') +
-    opcoes('roupa', 'Roupa') + cores('corRoupa', 'Cor da roupa') + opcoes('acessorio', 'Acessório');
+    opcoes('olhos', 'Olhos') + opcoes('cilios', 'Cílios') + cores('corOlhos', 'Cor dos olhos') + opcoes('boca', 'Boca') + batons() + opcoes('barba', 'Barba') +
+    opcoes('roupa', 'Roupa') + cores('corRoupa', 'Cor da roupa') + opcoes('brinco', 'Brincos') + opcoes('acessorio', 'Acessório');
 }
 function rtAvEdRender() {
   var box = document.getElementById('rt-av-editor');
