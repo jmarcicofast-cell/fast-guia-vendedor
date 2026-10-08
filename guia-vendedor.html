@@ -2835,7 +2835,7 @@
           <div style="font-size:22px;flex-shrink:0;">🔥</div>
           <div>
             <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">Lã de vidro ISOVER — último mês da campanha</div>
-            <div style="font-size:12px;color:#888;">Último mês para venda da campanha da Isover. Priorize a oferta e o fechamento em todas as ligações.</div>
+            <div style="font-size:12px;color:#888;">Último mês da campanha Isover: R$ 7,50 por rolo, somando setembro, outubro e novembro. Priorize a oferta e o fechamento em todas as ligações.</div>
           </div>
           <div style="margin-left:auto;font-size:11px;font-weight:700;color:#1C1C1C;background:#FAC775;border-radius:6px;padding:4px 8px;white-space:nowrap;">PRIORIDADE</div>
         </div>
@@ -2861,8 +2861,8 @@
         <div style="background:#2A2A2A;border-radius:10px;padding:1rem;display:flex;align-items:flex-start;gap:12px;">
           <div style="font-size:22px;flex-shrink:0;">📦</div>
           <div>
-            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 100 a cada 100 caixas de Fita Hobby</div>
-            <div style="font-size:12px;color:#888;">A cada 100 caixas de Fita Hobby vendidas, R$ 100. Válido para o mês de outubro.</div>
+            <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 100 a cada 2.400 rolos de Fita Hobby</div>
+            <div style="font-size:12px;color:#888;">A cada 2.400 rolos de Fita Hobby vendidos, R$ 100. Válido para o mês de outubro.</div>
           </div>
           <div id="prem-fita-total" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
         </div>
@@ -2871,7 +2871,7 @@
           <div style="font-size:22px;flex-shrink:0;">🧴</div>
           <div>
             <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;">R$ 100 para quem mais vender Espuma Expansiva</div>
-            <div style="font-size:12px;color:#888;">Vai para o vendedor com a maior quantidade vendida em cada BU. Válido para o mês de outubro.</div>
+            <div style="font-size:12px;color:#888;">Vai para o vendedor com a maior quantidade vendida no mês. Válido para o mês de outubro.</div>
           </div>
           <div id="prem-espuma-total" style="margin-left:auto;font-size:16px;font-weight:700;color:#FAC775;white-space:nowrap;">—</div>
         </div>
@@ -2898,7 +2898,7 @@
           </div>
           <div onclick="selecionarTipoPremio('fita',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
             <div style="font-size:18px;">📦</div>
-            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Fita Hobby (100 cx)</div>
+            <div style="font-size:12px;font-weight:600;color:#fff;margin-top:4px;">Fita Hobby (2.400 rolos)</div>
             <div style="font-size:11px;color:#FAC775;">R$ 100</div>
           </div>
           <div onclick="selecionarTipoPremio('espuma',this)" class="prem-tipo-card" style="background:#2A2A2A;border:2px solid #444;border-radius:8px;padding:10px;cursor:pointer;text-align:center;transition:all .15s;">
@@ -4611,6 +4611,14 @@
 #tab-rota .rt-galeria button { height:48px; border:3px solid #D8D6CF; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
 #tab-rota .rt-galeria button.on { border-color:#C41E1E; background:#FFF6D6; }
 #tab-rota .rt-trofeu { background:#FFD23F; }
+#tab-rota .rt-prem { background:linear-gradient(180deg,#FFF6D6 0%,#FFFFFF 60%); }
+#tab-rota .rt-prem-total { font-size:30px; font-weight:800; color:#1B5E20; line-height:1.1; }
+#tab-rota .rt-prem-lin { display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px dashed #E2D9B8; }
+#tab-rota .rt-prem-ic { font-size:20px; width:26px; text-align:center; flex-shrink:0; }
+#tab-rota .rt-prem-txt { flex:1; min-width:0; }
+#tab-rota .rt-prem-txt .rt-sub { font-size:12.5px; }
+#tab-rota .rt-prem-val { text-align:right; font-weight:800; white-space:nowrap; }
+#tab-rota .rt-prem-pend { font-size:11.5px; font-weight:600; color:#7A4A00; }
 #tab-rota .av3-topo { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
 #tab-rota .av3-prev { width:150px; height:150px; flex-shrink:0; border:3px solid #1C1C1C; border-radius:50%; background:radial-gradient(circle at 40% 35%, #FFF6D6 0%, #F4E9C9 55%, #E2CF9A 100%); box-shadow:inset 0 -8px 16px rgba(0,0,0,.12); display:flex; align-items:center; justify-content:center; overflow:hidden; }
 #tab-rota .av3-acoes { display:flex; flex-direction:column; gap:8px; flex:1; min-width:140px; }
@@ -6854,7 +6862,7 @@ function carregarListaRegistros() {
     if (!lista) return;
     if (!doMes.length) { lista.innerHTML = '<div style="font-size:11px;color:#666;text-align:center;padding:8px;">Nenhuma premiação registrada este mês.</div>'; return; }
 
-    var tipoLabel = { novo:'Cliente Novo', inativo:'Cliente Reativado', fita:'Fita Hobby (100 cx)', espuma:'Líder Espuma (BU)', mg:'MG/Mogi', aco:'Lider Aço', surpresa:'Surpresa Poliana' };
+    var tipoLabel = { novo:'Cliente Novo', inativo:'Cliente Reativado', fita:'Fita Hobby (2.400 rolos)', espuma:'Líder Espuma (BU)', mg:'MG/Mogi', aco:'Lider Aço', surpresa:'Surpresa Poliana' };
     lista.innerHTML = '';
     doMes.forEach(function(c) {
       var pago = c.status === 'pago';
@@ -8012,7 +8020,7 @@ function renderEvConquistas() {
       box.innerHTML = '<div style="font-size:12.5px;color:#aaa;text-align:center;padding:1rem;">Nenhuma premiação registrada ainda.</div>';
       return;
     }
-    var tipoLabel = { novo:'🔵 Cliente Novo', inativo:'🔴 Cliente Reativado', fita:'📦 Fita Hobby (100 cx)', espuma:'🧴 Líder Espuma Expansiva', mg:'🟣 MG/Mogi', aco:'⚙️ Líder em Aço', surpresa:'🎁 Surpresa Poliana' };
+    var tipoLabel = { novo:'🔵 Cliente Novo', inativo:'🔴 Cliente Reativado', fita:'📦 Fita Hobby (2.400 rolos)', espuma:'🧴 Líder Espuma Expansiva', mg:'🟣 MG/Mogi', aco:'⚙️ Líder em Aço', surpresa:'🎁 Surpresa Poliana' };
     var totalPago = minhas.filter(function(c){ return c.status==='pago'; }).reduce(function(s,c){ return s + (Number(c.valor)||0); }, 0);
     var totalPendente = minhas.filter(function(c){ return c.status!=='pago'; }).length;
 
@@ -13557,6 +13565,13 @@ function rtMapa(calcs, foco) {
   s += tag(382, 534, 'FILA DA LARGADA', '#1C1C1C', '#F7E7B4', '#1C1C1C', 8);
   var porFase = {};
   calcs.forEach(function(c) { (porFase[c.fase] = porFase[c.fase] || []).push(c); });
+  function moeda(vn, cx, yy) {
+    var t = premRS(premCalc(vn).total), tw = Math.round(t.length * 6.2 + 20);
+    return '<rect x="' + Math.round(cx - tw / 2 + 2) + '" y="' + (yy + 2) + '" width="' + tw + '" height="14" fill="#0B1828"/>' +
+      '<rect x="' + Math.round(cx - tw / 2) + '" y="' + yy + '" width="' + tw + '" height="14" fill="#FFD23F" stroke="#1C1C1C" stroke-width="1.5"/>' +
+      '<circle cx="' + Math.round(cx - tw / 2 + 8) + '" cy="' + (yy + 7) + '" r="4" fill="#E8A93B" stroke="#7A4A00" stroke-width="1"/>' +
+      '<text x="' + Math.round(cx + 5) + '" y="' + (yy + 10.5) + '" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-weight="800" font-size="10" fill="#1C1C1C">' + rtEsc(t) + '</text>';
+  }
   function boneco(c, cx, baseY, px) {
     var eu = foco && c.vn === foco.vn, w = Math.round(px * 8 * (av3dEhObj(RT.avatares[c.vn]) ? 1.4 : 1));
     var x = Math.round(cx - w / 2), y = Math.round(baseY - w);
@@ -13565,7 +13580,7 @@ function rtMapa(calcs, foco) {
     return '<g class="rt-av"><title>' + rtEsc(rtNome(c.vn)) + '</title>' + (eu ? '<rect x="' + (x - 3) + '" y="' + (y - 3) + '" width="' + (w + 6) + '" height="' + (w + 6) + '" fill="none" stroke="#FFD23F" stroke-width="2"/>' : '') +
       rtAvatarEm(RT.avatares[c.vn], x, y, w) +
       '<rect x="' + Math.round(cx - tw / 2) + '" y="' + (y - 14) + '" width="' + tw + '" height="11" fill="' + (eu ? '#C41E1E' : '#1C1C1C') + '"/>' +
-      '<text x="' + Math.round(cx) + '" y="' + (y - 4) + '" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="9.5" fill="#FFFFFF">' + rtEsc(nome) + '</text></g>';
+      '<text x="' + Math.round(cx) + '" y="' + (y - 4) + '" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="9.5" fill="#FFFFFF">' + rtEsc(nome) + '</text>' + (eu ? moeda(c.vn, cx, y + w + 3) : '') + '</g>';
   }
   Object.keys(porFase).forEach(function(f) {
     var grupo = porFase[f].slice().sort(function(a, b) { return (foco && a.vn === foco.vn) ? 1 : (foco && b.vn === foco.vn) ? -1 : 0; });
@@ -13583,6 +13598,7 @@ function rtMapa(calcs, foco) {
       s += boneco(c, cx, p[1] - 24 - lin * (px * 8 + 20), (foco && c.vn === foco.vn) ? 4 : px);
     });
   });
+  s += rtPlacaPremios(calcs, foco);
   return s + '</svg>';
 }
 
@@ -13604,6 +13620,119 @@ function rtTrilhaVerde(c) {
     '<polyline points="' + s + '" fill="none" stroke="#5BD45B" stroke-width="6" stroke-dasharray="10 6"/>';
 }
 
+// ── Premiações automáticas (campanhas do atacado) ──
+// Calculadas a partir dos pedidos lançados na aba Pedidos. Só contam pedidos
+// CONCILIADOS (o que ainda não foi conciliado aparece como "a conciliar").
+// Para atualizar as campanhas do mês seguinte, mexa só em PREM_CAMP.
+var PREM_CAMP = {
+  la:      { rot: 'Lã de vidro Isover', meses: ['2026-09', '2026-10', '2026-11'], porRolo: 7.5 },
+  novo:    { rot: 'Cliente novo', valor: 50 },
+  inativo: { rot: 'Cliente inativo reativado', valor: 25 },
+  fita:    { rot: 'Fita Hobby', rolos: 2400, valor: 100 },
+  espuma:  { rot: 'Espuma expansiva (maior venda)', valor: 100 }
+};
+function premNorm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase(); }
+function premEhLa(m) { var n = premNorm(m); return !/ROCHA|PET\b/.test(n) && (/\bLA\b.*VIDRO|\bLA VIDRO/.test(n) || /ISOVER|WALL ?FELT/.test(n)); }
+function premEhFita(m) { var n = premNorm(m); return /FITA/.test(n) && /HOBBY/.test(n); }
+function premEhEspuma(m) { return /ESPUMA/.test(premNorm(m)); }
+function premQtd(p, teste) {
+  return (p.itens || []).reduce(function(s, it) { return s + (it && teste(it.material) ? (Number(String(it.qtd).replace(',', '.')) || 0) : 0); }, 0);
+}
+function premPedidos(vn) {
+  return (RT.ped[vn] || []).filter(function(p) { return p && !p.excluido && p.status !== 'cancelado' && p.data; });
+}
+function premRS(v) { return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 }); }
+// Espuma: quem mais vendeu no mês (só conciliado) leva; empate divide o pódio
+function premEspumaRanking() {
+  var mes = ckMesAtualStr();
+  if (RT.premEsp && RT.premEsp.mes === mes && RT.premEsp.n === RT.premN) return RT.premEsp;
+  var lista = CK_EQUIPE.map(function(vn) {
+    var ok = 0, pend = 0;
+    premPedidos(vn).forEach(function(p) {
+      if (String(p.data).slice(0, 7) !== mes) return;
+      var q = premQtd(p, premEhEspuma); if (p.conciliado) ok += q; else pend += q;
+    });
+    return { vn: vn, ok: ok, pend: pend };
+  });
+  var max = Math.max.apply(null, lista.map(function(x) { return x.ok; }).concat([0]));
+  RT.premEsp = { mes: mes, n: RT.premN, lista: lista, max: max, lideres: max > 0 ? lista.filter(function(x) { return x.ok === max; }).map(function(x) { return x.vn; }) : [] };
+  return RT.premEsp;
+}
+function premCalc(vn) {
+  RT.premCache = RT.premCache || {};
+  if (RT.premCache[vn] && RT.premCache[vn].n === RT.premN) return RT.premCache[vn];
+  var mes = ckMesAtualStr(), peds = premPedidos(vn), C = PREM_CAMP;
+  var laOk = 0, laPend = 0, novoOk = {}, novoPend = {}, inaOk = {}, inaPend = {}, fitaOk = 0, fitaPend = 0;
+  peds.forEach(function(p) {
+    var m = String(p.data).slice(0, 7), conc = !!p.conciliado;
+    if (C.la.meses.indexOf(m) >= 0) { var q = premQtd(p, premEhLa); if (conc) laOk += q; else laPend += q; }
+    if (m !== mes) return;
+    var ch = typeof cliChave === 'function' ? cliChave(p.empresa) : premNorm(p.empresa);
+    if (p.tipoCliente === 'novo' && ch) (conc ? novoOk : novoPend)[ch] = 1;
+    if (p.tipoCliente === 'inativo' && ch) (conc ? inaOk : inaPend)[ch] = 1;
+    var f = premQtd(p, premEhFita); if (conc) fitaOk += f; else fitaPend += f;
+  });
+  Object.keys(novoOk).forEach(function(k) { delete novoPend[k]; });
+  Object.keys(inaOk).forEach(function(k) { delete inaPend[k]; });
+  var nN = Object.keys(novoOk).length, nNp = Object.keys(novoPend).length, nI = Object.keys(inaOk).length, nIp = Object.keys(inaPend).length;
+  var fitaPremOk = Math.floor(fitaOk / C.fita.rolos) * C.fita.valor;
+  var fitaPremTot = Math.floor((fitaOk + fitaPend) / C.fita.rolos) * C.fita.valor;
+  var esp = premEspumaRanking(), meuEsp = esp.lista.find(function(x) { return x.vn === vn; }) || { ok: 0, pend: 0 };
+  var lider = esp.lideres.indexOf(vn) >= 0;
+  var itens = [
+    { key: 'la', ic: '🧶', rot: C.la.rot, ok: laOk * C.la.porRolo, pend: laPend * C.la.porRolo,
+      det: fmtN(laOk) + ' rolo' + (laOk === 1 ? '' : 's') + ' × ' + premRS(C.la.porRolo) + ' · set+out+nov' + (laPend ? ' · +' + fmtN(laPend) + ' a conciliar' : '') },
+    { key: 'novo', ic: '💰', rot: C.novo.rot, ok: nN * C.novo.valor, pend: nNp * C.novo.valor,
+      det: nN + ' cliente' + (nN === 1 ? '' : 's') + ' × ' + premRS(C.novo.valor) + (nNp ? ' · +' + nNp + ' a conciliar' : '') },
+    { key: 'inativo', ic: '🔄', rot: C.inativo.rot, ok: nI * C.inativo.valor, pend: nIp * C.inativo.valor,
+      det: nI + ' cliente' + (nI === 1 ? '' : 's') + ' × ' + premRS(C.inativo.valor) + (nIp ? ' · +' + nIp + ' a conciliar' : '') },
+    { key: 'fita', ic: '📦', rot: C.fita.rot, ok: fitaPremOk, pend: fitaPremTot - fitaPremOk,
+      det: fmtN(fitaOk) + ' rolos · faltam ' + fmtN(C.fita.rolos - (fitaOk % C.fita.rolos)) + ' p/ +' + premRS(C.fita.valor) + (fitaPend ? ' · +' + fmtN(fitaPend) + ' a conciliar' : '') },
+    { key: 'espuma', ic: '🧴', rot: C.espuma.rot, ok: lider ? C.espuma.valor : 0, pend: 0,
+      det: fmtN(meuEsp.ok) + ' un. · ' + (lider ? (esp.lideres.length > 1 ? 'empatado na liderança' : '🥇 líder da equipe') : esp.max > 0 ? 'líder tem ' + fmtN(esp.max) + ' un.' : 'ninguém vendeu ainda') + (meuEsp.pend ? ' · +' + fmtN(meuEsp.pend) + ' a conciliar' : '') }
+  ];
+  function fmtN(n) { return Number(n || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); }
+  var r = { n: RT.premN, itens: itens, total: itens.reduce(function(s, x) { return s + x.ok; }, 0), pend: itens.reduce(function(s, x) { return s + x.pend; }, 0) };
+  RT.premCache[vn] = r;
+  return r;
+}
+function premCardHtml(vn, eu) {
+  var r = premCalc(vn);
+  return '<div class="rt-card rt-prem"><div class="rt-pix">💰 ' + (eu ? 'MINHAS PREMIAÇÕES' : 'PREMIAÇÕES') + '</div>' +
+    '<div class="rt-prem-total">' + premRS(r.total) + '</div>' +
+    '<div class="rt-sub">Garantido (pedidos conciliados)' + (r.pend ? ' · <b>+' + premRS(r.pend) + '</b> a conciliar' : '') + '</div>' +
+    r.itens.map(function(x) {
+      return '<div class="rt-prem-lin"><span class="rt-prem-ic">' + x.ic + '</span><div class="rt-prem-txt"><div class="rt-forte">' + rtEsc(x.rot) + '</div><div class="rt-sub">' + rtEsc(x.det) + '</div></div>' +
+        '<div class="rt-prem-val">' + (x.ok ? premRS(x.ok) : '<span class="rt-cinza">R$ 0</span>') + (x.pend ? '<div class="rt-prem-pend">+' + premRS(x.pend) + '</div>' : '') + '</div></div>';
+    }).join('') +
+    '<div class="rt-sub" style="font-size:12px">Calculado pelos pedidos da aba Pedidos (tipo de cliente e itens). Só conta depois de conciliado.</div></div>';
+}
+
+// Placa dourada no canto do mapa com o total de premiações
+function rtPlacaPremios(calcs, foco) {
+  var tit, val, sub;
+  if (foco) {
+    var r = premCalc(foco.vn);
+    tit = foco.vn === currentUser ? 'SUAS PREMIAÇÕES' : 'PREMIAÇÕES · ' + rtNome(foco.vn).split(' ')[0].toUpperCase();
+    val = premRS(r.total); sub = r.pend ? '+' + premRS(r.pend) + ' a conciliar' : 'pedidos conciliados';
+  } else {
+    var tots = calcs.map(function(c) { return { vn: c.vn, t: premCalc(c.vn).total, p: premCalc(c.vn).pend }; });
+    var soma = tots.reduce(function(a, x) { return a + x.t; }, 0), pend = tots.reduce(function(a, x) { return a + x.p; }, 0);
+    var top = tots.slice().sort(function(a, b) { return b.t - a.t; })[0];
+    tit = 'PREMIAÇÕES DA EQUIPE'; val = premRS(soma);
+    sub = top && top.t > 0 ? 'Líder: ' + rtNome(top.vn).split(' ')[0] + ' ' + premRS(top.t) : (pend ? '+' + premRS(pend) + ' a conciliar' : 'conciliou, contou!');
+  }
+  var x = 22, y = 18, w = 300, h = 84;
+  return '<g class="rt-placa-prem" style="cursor:pointer" onclick="var e=document.querySelector(\'#tab-rota .rt-prem\'); if(e) e.scrollIntoView({behavior:\'smooth\',block:\'center\'});">' +
+    '<rect x="' + (x + 5) + '" y="' + (y + 5) + '" width="' + w + '" height="' + h + '" fill="#0B1828"/>' +
+    '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="#1C1C1C" stroke="#FFD23F" stroke-width="4"/>' +
+    '<g fill="#E8A93B" stroke="#7A4A00" stroke-width="2"><circle cx="' + (x + 34) + '" cy="' + (y + 50) + '" r="17"/></g>' +
+    '<circle cx="' + (x + 34) + '" cy="' + (y + 50) + '" r="11" fill="none" stroke="#FFD23F" stroke-width="2"/>' +
+    '<text x="' + (x + 34) + '" y="' + (y + 56) + '" text-anchor="middle" font-family="\'Press Start 2P\', monospace" font-size="12" fill="#7A4A00">$</text>' +
+    '<text x="' + (x + 62) + '" y="' + (y + 22) + '" font-family="\'Press Start 2P\', monospace" font-size="8" fill="#FFD23F">' + rtEsc(tit) + '</text>' +
+    '<text x="' + (x + 62) + '" y="' + (y + 52) + '" font-family="Segoe UI, system-ui, sans-serif" font-weight="800" font-size="25" fill="#FFFFFF">' + rtEsc(val) + '</text>' +
+    '<text x="' + (x + 62) + '" y="' + (y + 72) + '" font-family="Segoe UI, system-ui, sans-serif" font-size="12" fill="#E8E6E1">' + rtEsc(sub) + '</text></g>';
+}
 // ── Tela ──
 function rtRender() {
   try { rtRenderInner(); } catch (e) {
@@ -13616,6 +13745,7 @@ function rtRenderInner() {
   var root = document.getElementById('rota-root');
   if (!root || !document.getElementById('tab-rota').classList.contains('active')) return;
   if (!RT.ckOk) { root.innerHTML = '<div class="rt-vazio">Carregando a Rota da Meta…</div>'; return; }
+  RT.premN = (RT.premN || 0) + 1;
   var calcs = CK_EQUIPE.map(rtCalc);
   rtRegistrarProgresso(calcs);
   var foco = RT.ver !== 'EQUIPE' ? calcs.find(function(c) { return c.vn === RT.ver; }) : null;
@@ -13773,6 +13903,7 @@ function rtPainelVendedor(c) {
   }
   var mv = c.met.find(function(x) { return x.key === 'valor'; });
   if (mv && mv.alvoHoje > 0) mis.push({ txt: 'Vender ' + rtFmt(mv, mv.alvoHoje) + ' hoje (feito: ' + rtFmt(mv, mv.hoje) + ')', ok: mv.hoje >= mv.alvoHoje });
+  h += premCardHtml(c.vn, eu);
   h += '<div class="rt-card rt-missao"><div class="rt-pix">MISSÃO DO DIA</div>' + mis.map(function(m) {
     return '<div class="rt-mis' + (m.ok ? ' feito' : '') + '"><span class="rt-check">' + (m.ok ? '✓' : '') + '</span>' + rtEsc(m.txt) + '</div>';
   }).join('') + '</div>';
@@ -13853,7 +13984,12 @@ function rtCopiarMetas(vn, origem) {
 }
 function rtPainelEquipe(calcs) {
   var ord = calcs.slice().sort(function(a, b) { return b.fase - a.fase || b.basePct - a.basePct || b.estrelas - a.estrelas; });
-  return '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase pelo valor <b>entregue</b>, estrelas das outras metas e a mais atrasada.</div>' +
+  var pr = calcs.map(function(c) { var r = premCalc(c.vn); return { vn: c.vn, t: r.total, p: r.pend }; }).sort(function(a, b) { return b.t - a.t || b.p - a.p; });
+  var premHtml = '<div class="rt-card rt-prem"><div class="rt-pix">💰 PREMIAÇÕES DA EQUIPE</div><div class="rt-prem-total">' + premRS(pr.reduce(function(a, x) { return a + x.t; }, 0)) + '</div>' +
+    '<div class="rt-sub">Garantido (conciliado) · clique num vendedor para ver o detalhe</div><table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Garantido</th><th>A conciliar</th></tr></thead><tbody>' +
+    pr.map(function(x, i) { return '<tr onclick="rtVer(\'' + x.vn + '\')"><td>' + rtAvatarSvg(RT.avatares[x.vn], 28) + '</td><td class="rt-forte">' + (i < 3 && x.t ? ['🥇', '🥈', '🥉'][i] + ' ' : '') + rtEsc(rtNome(x.vn)) + '</td><td class="rt-forte">' + premRS(x.t) + '</td><td class="rt-cinza">' + (x.p ? '+' + premRS(x.p) : '—') + '</td></tr>'; }).join('') +
+    '</tbody></table></div>';
+  return premHtml + '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase pelo valor <b>entregue</b>, estrelas das outras metas e a mais atrasada.</div>' +
     '<table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Fase</th><th>Entregue</th><th title="Dias úteis na mesma fase">Dias</th><th>⭐</th><th>Mais atrasada</th></tr></thead><tbody>' +
     ord.map(function(c) {
       var tr = c.menor ? rtEsc(c.menor.label) + ' <span class="rt-cinza" style="white-space:nowrap">· ' + Math.floor(c.menor.pct) + '%</span>' : '—';
