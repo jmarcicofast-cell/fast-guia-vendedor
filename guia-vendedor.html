@@ -13040,15 +13040,31 @@ function cliAliasesDaChave(chave) {
 }
 // Atendimento do cliente: o da chave canônica; se ainda não existir, o mais
 // recente entre os nomes antigos daquele PN (para não perder o histórico).
+function cliDataLocal(iso) {
+  var d = new Date(iso); if (isNaN(d.getTime())) return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+// Junta o registro da chave canônica com os dos nomes antigos do mesmo PN:
+// último atendimento = o mais recente entre todos (inclusive anotações do
+// histórico), histórico somado; frequência/carga/controle vêm da canônica e,
+// se faltar lá, do nome antigo que tiver.
 function cliAtendGet(vend, chave) {
   var dados = (cliAtendState.porVendedor || {})[vend] || {};
-  if (dados[chave]) return dados[chave];
-  var melhor = null;
-  cliAliasesDaChave(chave).forEach(function(nk) {
-    var a = dados[nk]; if (!a) return;
-    if (!melhor || String(a.ultimoAtendimento || '') > String(melhor.ultimoAtendimento || '')) melhor = a;
+  var chaves = [chave].concat(cliAliasesDaChave(chave).filter(function(k) { return k !== chave; }));
+  var regs = chaves.map(function(k) { return dados[k]; }).filter(Boolean);
+  if (!regs.length) return null;
+  var m = {}, hist = [], ult = '';
+  regs.forEach(function(a) {
+    Object.keys(a).forEach(function(k) { if (m[k] == null || m[k] === '') m[k] = a[k]; });
+    var cc = a.controleCompras || {};
+    m.controleCompras = m.controleCompras || {};
+    Object.keys(cc).forEach(function(mes) { if (!m.controleCompras[mes]) m.controleCompras[mes] = cc[mes]; });
+    (a.historico || []).forEach(function(x) { hist.push(x); var d = x && x.data ? cliDataLocal(x.data) : ''; if (d > ult) ult = d; });
+    if (a.ultimoAtendimento && String(a.ultimoAtendimento) > ult) ult = String(a.ultimoAtendimento);
   });
-  return melhor;
+  m.historico = hist;
+  m.ultimoAtendimento = ult || null;
+  return m;
 }
 // Usado ao gravar o primeiro atendimento na chave canônica: começa com uma
 // cópia do registro antigo, assim histórico e controle de compras vêm junto.
@@ -14041,6 +14057,7 @@ function cliSalvarNotaAtendimento() {
     var atual = snap.val() || cliAtendSemente(vend, chave) || { nome: reg ? reg.nome : chave, historico: [] };
     atual.historico = atual.historico || [];
     atual.historico.push({ data: new Date().toISOString(), texto: texto });
+    atual.ultimoAtendimento = cliDataLocal(new Date().toISOString());
     dbRef('atendimentos/' + vend + '/' + chave).set(atual).then(function() {
       cliRenderHistoricoAtendimento(atual.historico);
       input.value = '';
@@ -16417,14 +16434,46 @@ function rcPronto(vn) {
   return RC.ok && RC.geralOk && RC.atendGeralOk && CK_EQUIPE.every(function(x) { return RT.pedOk[x]; }) &&
     !!cliAtendState.porVendedor[vn];
 }
+// Dono do cliente na equipe: quem tem pedido com ele (peso 3) ou carteira
+// com atendimento/controle de compras (peso 2). Negociação sozinha não faz dono.
+// Casa pelo PN/nome e também por nome que começa igual ("GESSO REAL" x
+// "GESSO REAL MATERIAIS"), porque a digitação varia.
+function rcIndiceDonos() {
+  var idx = {};
+  function marca(k, vn, peso) { if (!k) return; var o = idx[k] = idx[k] || {}; o[vn] = Math.max(o[vn] || 0, peso); }
+  CK_EQUIPE.forEach(function(vn) {
+    (RT.ped[vn] || []).forEach(function(p) { if (p && p.empresa && p.status !== 'cancelado') marca(cliChavePedido(p), p.vendedor || vn, 3); });
+    var at = (cliAtendState.porVendedor || {})[vn] || {};
+    Object.keys(at).forEach(function(k) { var a = at[k] || {}; if (a.ultimoAtendimento || (a.historico && a.historico.length) || a.qtdMes || a.tipoCarga) { marca(k, vn, 2); if (a.nome) marca(cliChave(a.nome), vn, 2); } });
+  });
+  return idx;
+}
+function rcDonoOutro(vn, c, idx) {
+  if (c.vendedor === vn && c.qtdPedidos > 0) return null; // ele mesmo já vendeu: é dele
+  var alvo = [c.chave].concat(cliAliasesDaChave(c.chave)), melhor = null, pMelhor = 0;
+  Object.keys(idx).forEach(function(k) {
+    var bate = alvo.indexOf(k) !== -1 || alvo.some(function(a) { var cur = a.length <= k.length ? a : k, lon = cur === a ? k : a; return cur.length >= 6 && lon.indexOf(cur + ' ') === 0; });
+    if (!bate) return;
+    Object.keys(idx[k]).forEach(function(v) { if (v !== vn && idx[k][v] > pMelhor) { pMelhor = idx[k][v]; melhor = v; } });
+  });
+  if (!melhor) return null;
+  // na carteira dele, só perde a carta se o outro tiver pedido, ou se ele próprio não tiver nada além de negociação
+  if (c.vendedor === vn) {
+    var meu = 0; alvo.forEach(function(k) { if (idx[k] && idx[k][vn]) meu = Math.max(meu, idx[k][vn]); });
+    if (pMelhor < 3 && meu >= 2) return null;
+  }
+  return melhor;
+}
 function rcSortear(vn, qtd, jaTem) {
   var hoje = ckToday(), jog = ((RC.dados[vn] || {}).jogadas) || {};
   var ja = {}; (jaTem || []).forEach(function(x) { ja[x.chave] = 1; });
   // cliente com pedido lançado (por qualquer vendedor) nos últimos 30 dias não está "à solta"
   var recentes = {}, lim = new Date(); lim.setDate(lim.getDate() - 30); var limStr = ckDateToStr(lim);
   CK_EQUIPE.forEach(function(x) { (RT.ped[x] || []).forEach(function(p) { if (p && p.empresa && p.status !== 'cancelado' && p.data && p.data >= limStr) recentes[cliChavePedido(p)] = 1; }); });
+  var donos = rcIndiceDonos();
   var cand = rcBase(vn).filter(function(c) {
     if (ja[c.chave]) return false;
+    if (rcDonoOutro(vn, c, donos)) return false; // cliente de outro vendedor
     var j = jog[c.chave];
     if (j) {
       if (j.ultima === hoje) return false;
@@ -16462,7 +16511,24 @@ function rcSortear(vn, qtd, jaTem) {
 }
 function rcMaoDeHoje(vn) {
   var d = (((RC.dados[vn] || {}).dias) || {})[ckToday()];
-  if (d && d.cartas) return d;
+  if (d && d.cartas) {
+    if (!d._donoOk && (vn === currentUser || rtGestao()) && rcPronto(vn)) {
+      d._donoOk = true;
+      var donos = rcIndiceDonos(), base = rcBase(vn), jg = d.jog || {};
+      var fora = d.cartas.filter(function(ct) {
+        if (jg[ct.chave]) return false;
+        var c = base.find(function(x) { return x.chave === ct.chave; }) || { chave: ct.chave, vendedor: ct.vendOrig, qtdPedidos: 0 };
+        return !!rcDonoOutro(vn, c, donos);
+      });
+      if (fora.length) {
+        var ficam = d.cartas.filter(function(ct) { return fora.indexOf(ct) === -1; });
+        var novas = rcSortear(vn, fora.length, d.cartas);
+        d.cartas = ficam.concat(novas);
+        dbRef('caca/' + vn + '/dias/' + ckToday() + '/cartas').set(d.cartas);
+      }
+    }
+    return d;
+  }
   if ((vn !== currentUser && !rtGestao()) || !rcPronto(vn) || RC.gerando[vn]) return null;
   RC.gerando[vn] = true;
   var cartas = rcSortear(vn, 5);
