@@ -5726,8 +5726,7 @@ function caRender(){
   document.querySelectorAll('#ca-seg button').forEach(function(b){ b.classList.toggle('on', b.dataset.aba === CA.aba); });
   var segCad = document.getElementById('ca-seg-cad'); if (segCad) segCad.style.display = CA.unid ? 'none' : '';
   if (CA.unid && CA.aba === 'cad') CA.aba = 'nec';
-  var segP = document.getElementById('ca-seg-painel'); if (segP) segP.style.display = (CA.unid && !caEhDirecao()) ? 'none' : '';
-  if (CA.unid && !caEhDirecao() && CA.aba === 'painel') CA.aba = 'nec';
+  var segP = document.getElementById('ca-seg-painel'); if (segP){ segP.style.display = ''; segP.textContent = caEhDirecao() || caVeTudo() ? '📊 Painel da direção' : '📊 Painel de gaps'; }
   document.querySelectorAll('#tab-central .ca-acoes').forEach(function(x){ x.style.display = caEhDirecao() ? 'none' : ''; });
   var sub = document.getElementById('ca-sub');
   if (sub) sub.textContent = caEhDirecao() ? 'Direção — painel dos gaps de abastecimento de todas as operações. Acesso só de leitura.' : CA.unid ? CA.unid.nome + ' — lance os pedidos que precisam de material e acompanhe os chamados de abastecimento.' : 'Entram aqui os pedidos que o vendedor mandou para ABASTECER na aba Pedidos. O que falta aparece somado por DCS e código.';
@@ -6048,7 +6047,7 @@ function caViewPainel(vendas, m){
   parado.sort(function(a, b){ return b.kg - a.kg; });
   var pctCob = totKg ? Math.round(cobKg / totKg * 100) : 0, pctPronto = totKg ? Math.round(prontoKg / totKg * 100) : 0;
   var kpi = function(v, l, sub, cls){ return '<div class="ca-kpi ' + (cls || '') + '"><b>' + v + '</b><span>' + l + '</span>' + (sub ? '<div style="font-size:11.5px;color:#888;margin-top:2px;">' + sub + '</div>' : '') + '</div>'; };
-  var html = '<div style="font-size:12px;color:#888;margin-bottom:8px;">Atualizado em tempo real · ' + caDA(h) + (CA.fu ? ' · unidade: <b>' + caEsc(CA.fu) + '</b>' : ' · todas as unidades') + '. Pesos estimados pela Tabela de Produtos.</div>';
+  var html = '<div style="font-size:12px;color:#888;margin-bottom:8px;">Atualizado em tempo real · ' + caDA(h) + ((CA.unid && !caEhDirecao()) ? ' · unidade: <b>' + caEsc(CA.unid.unidade) + '</b> (pedidos da sua unidade; chamados de abastecimento de todas)' : CA.fu ? ' · unidade: <b>' + caEsc(CA.fu) + '</b>' : ' · todas as unidades') + '. Pesos estimados pela Tabela de Produtos.</div>';
   html += '<div class="ca-kpis">' +
     kpi(t(gapKg) + ' t', 'Sem chamado de abastecimento', gapPed + ' ' + (gapPed === 1 ? 'pedido' : 'pedidos') + ' com falta', gapKg ? 'ruim' : '') +
     kpi(riscoLista.length, 'Pedidos em risco de prazo', riscoLista.filter(function(r){ return r.grave; }).length + ' já vencidos', riscoLista.length ? 'ruim' : '') +
