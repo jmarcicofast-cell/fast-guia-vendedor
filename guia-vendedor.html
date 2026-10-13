@@ -5234,7 +5234,7 @@ td.p-tie { color:var(--sp-muted); }
       <button data-ca="aba" data-aba="nec" class="on">Necessidade <span class="n" id="ca-n-nec">0</span></button>
       <button data-ca="aba" data-aba="vendas">Pedidos de venda <span class="n" id="ca-n-ven">0</span></button>
       <button data-ca="aba" data-aba="abast">Chamados de abastecimento <span class="n" id="ca-n-ab">0</span></button>
-      <button data-ca="aba" data-aba="painel" id="ca-seg-painel">📊 Painel da direção</button>
+      <button data-ca="aba" data-aba="painel" id="ca-seg-painel">📊 Painel Geral</button>
       <button data-ca="aba" data-aba="cad" id="ca-seg-cad">Cadastros</button>
     </div>
     <div id="ca-main"><div class="ca-vazio"><b>Carregando…</b>Os pedidos e chamados aparecem aqui assim que a base responder.</div></div>
@@ -5726,7 +5726,7 @@ function caRender(){
   document.querySelectorAll('#ca-seg button').forEach(function(b){ b.classList.toggle('on', b.dataset.aba === CA.aba); });
   var segCad = document.getElementById('ca-seg-cad'); if (segCad) segCad.style.display = CA.unid ? 'none' : '';
   if (CA.unid && CA.aba === 'cad') CA.aba = 'nec';
-  var segP = document.getElementById('ca-seg-painel'); if (segP){ segP.style.display = ''; segP.textContent = caEhDirecao() || caVeTudo() ? '📊 Painel da direção' : '📊 Painel de gaps'; }
+  var segP = document.getElementById('ca-seg-painel'); if (segP){ segP.style.display = ''; segP.textContent = '📊 Painel Geral'; }
   document.querySelectorAll('#tab-central .ca-acoes').forEach(function(x){ x.style.display = caEhDirecao() ? 'none' : ''; });
   var sub = document.getElementById('ca-sub');
   if (sub) sub.textContent = caEhDirecao() ? 'Direção — painel dos gaps de abastecimento de todas as operações. Acesso só de leitura.' : CA.unid ? CA.unid.nome + ' — lance os pedidos que precisam de material e acompanhe os chamados de abastecimento.' : 'Entram aqui os pedidos que o vendedor mandou para ABASTECER na aba Pedidos. O que falta aparece somado por DCS e código.';
@@ -5999,7 +5999,7 @@ function caCardAbast(a, vmap, necMap){
   return h + '</div>';
 }
 
-/* Painel da direção: onde estão os gaps do abastecimento */
+/* Painel Geral: onde estão os gaps do abastecimento */
 function caViewPainel(vendas, m){
   var h = caHoje(), abertas = vendas.filter(function(v){ return v.status === 'aberto'; });
   var t = function(kg){ return caN(Math.round(kg / 100) / 10); };
