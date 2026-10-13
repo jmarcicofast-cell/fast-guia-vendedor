@@ -5279,7 +5279,7 @@ function caListaUnidades(){
 var CA_CONFIG_PADRAO = { dcs: ['DC FDS', 'DC MDC'], fabricantes: ['Max Steel', 'Nova Metálica', 'Placo FDS', 'Placo MDC'] };
 var CA_ST_V = { aberto:'Em aberto', atendido:'Atendido / faturado', cancelado:'Cancelado', semnec:'Sem necessidade' };
 var CA_ST_A = { solicitado:'Solicitado ao fabricante', confirmado:'Confirmado', transito:'Em trânsito', na_dc:'Chegou na DCS', cancelado:'Cancelado' };
-var CA_COB = { desc:'Sem cobertura', parcial:'Cobertura parcial', coberto:'Coberto (a caminho)', nadc:'Material na DCS', neutro:'Sem necessidade' };
+var CA_COB = { desc:'Sem cobertura', parcial:'Cobertura parcial', coberto:'Coberto (a caminho)', nadc:'Coberto (pronto para coletar)', neutro:'Sem necessidade' };
 var CA_PED_ABERTO = { '':1, agendamento:1, 'aguardando-dt':1 };
 
 var CA = { dados:{ vendas:{}, abast:{}, guia:{}, config:null }, carregado:false, ligado:false, ligadoFb:false,
@@ -5756,7 +5756,7 @@ function caCardVenda(v, cb){
     '<div class="ca-meta"><span>DCS <b>' + caEsc(v.dc || 'a definir') + '</b></span><span>Prazo <b class="' + (urg ? 'ca-atrasado' : '') + '">' + caDA(v.data) + '</b></span><span>' + v.itens.length + ' ' + (v.itens.length === 1 ? 'item' : 'itens') + '</span>' + (v.vendedor ? '<span>Vendedor <b>' + caEsc(v.vendedor) + '</b></span>' : '') + '</div></div>' +
     '<div class="ca-lado">' + (semDc ? '<span class="ca-sit desc">Definir DCS e prazo</span>' : '<span class="ca-sit ' + cb.estado + '">' + CA_COB[cb.estado] + (cb.atraso ? ' · atraso' : '') + '</span>') +
     '<div class="ca-barra"><i class="b1" style="width:' + p1 + '%"></i><i class="b2" style="width:' + p2 + '%"></i></div>' +
-    '<span style="font-size:11.5px;color:#888;">' + (cb.falta > 0 ? 'falta ' + caN(cb.falta) + ' un.' : cb.tot ? 'tudo com chamado' : 'nada a abastecer') + '</span></div></div>';
+    '<span style="font-size:11.5px;color:#888;">' + (cb.falta > 0 ? 'falta ' + caN(cb.falta) + ' un.' : !cb.tot ? 'nada a abastecer' : cb.estado === 'nadc' ? 'tudo na DCS' : 'aguardando chegar: ' + cb.chamados.filter(function(a){ return a.status !== 'na_dc'; }).map(function(a){ return caEsc(a.chamado); }).join(', ')) + '</span></div></div>';
   if (aberto){
     h += '<div class="ca-card-corpo"><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Código</th><th>Material</th><th class="r">Pedido</th><th class="r">Com chamado</th><th class="r">Falta</th><th>Chamados de abastecimento</th></tr></thead><tbody>' +
       cb.itens.map(function(it){
