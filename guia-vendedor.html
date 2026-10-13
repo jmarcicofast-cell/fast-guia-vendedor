@@ -5325,14 +5325,15 @@ function caNaBase(c){ return !!(c && caCat().map[c]); }
 function caLerLinha(tr){
   var ci = tr.querySelector('[data-f=c]'), qi = tr.querySelector('[data-f=q]'), ni = tr.querySelector('[data-f=n]');
   var c = ci ? ci.value.trim().toUpperCase() : '', n = ni ? ni.value.trim() : '';
-  if (!c && n) c = '?' + n.toUpperCase().replace(/\s+/g, ' ');
   return { c:c, q: qi ? qi.value : '', n:n };
 }
 function caDescCell(c, n){
   if (c && c.charAt(0) === '?'){ n = n || c.slice(1); c = ''; }
-  if (c && caNaBase(c)) return caEsc(caNome(c)) + ' ' + caFabs(c);
-  var nome = n || (c ? caNome(c) || '' : '');
-  return '<input type="text" data-f="n" value="' + caEsc(nome) + '" placeholder="' + (c ? 'Fora da base: escreva o nome do item' : 'Ou escreva o nome do item') + '" style="border:1.5px solid ' + (c ? '#F2C14E' : '#E2E0D8') + ';border-radius:5px;padding:5px 7px;font-size:12.5px;width:100%;box-sizing:border-box;font-family:inherit;">';
+  if (!c) return '<span style="color:#bbb;">Digite o código</span>';
+  if (caNaBase(c)) return caEsc(caNome(c)) + ' ' + caFabs(c);
+  /* código fora da base: o nome é só informativo; o cruzamento é sempre pelo código */
+  var nome = n || caNome(c) || '';
+  return '<input type="text" data-f="n" value="' + caEsc(nome) + '" placeholder="Fora da base: nome do item (informativo)" title="O cruzamento com o abastecimento é feito pelo código; o nome é só para identificar" style="border:1.5px solid #F2C14E;border-radius:5px;padding:5px 7px;font-size:12.5px;width:100%;box-sizing:border-box;font-family:inherit;">';
 }
 /* guarda o nome dos códigos fora da base para todo mundo ver */
 function caSalvarNomesExtras(itens){
@@ -5346,7 +5347,7 @@ function caSalvarNomesExtras(itens){
 function caPeso(c){ var p = caCat().map[c]; if (!p) return 0; var v = parseFloat(String(p.p).replace(/\./g, '').replace(',', '.')); return isFinite(v) ? v : 0; }
 function caPallet(c){ var p = caCat().map[c]; if (!p) return 0; var m = String(p.u || '').match(/(\d+)/); return m ? +m[1] : 0; }
 function caFabs(c){ var p = caCat().map[c]; return p ? p.f.map(function(f){ return '<span class="ca-fab">' + caEsc(f) + '</span>'; }).join('') : ''; }
-function caCodHtml(c){ return c && c.charAt(0) === '?' ? '<span class="ca-cod" style="color:#B36B00;" title="Item do pedido sem código">sem código</span>' : '<span class="ca-cod">' + caEsc(c) + '</span>'; }
+function caCodHtml(c){ return c && c.charAt(0) === '?' ? '<span class="ca-cod" style="color:#B36B00;" title="Item do pedido sem código: não cruza com abastecimento. Inclua o código no pedido.">sem código</span>' : '<span class="ca-cod">' + caEsc(c) + '</span>'; }
 
 /* ---------- quem está usando ---------- */
 function caUnid(){ return CA.unid; }
@@ -6048,8 +6049,7 @@ function caSalvarVenda(){
   for (var i = 0; i < d.itens.length; i++){
     var it = d.itens[i], q = caQ(it.q);
     if (!it.c && !q) continue;
-    if (!it.c || !(q > 0)){ erro.textContent = 'Cada item precisa de código (ou nome) e quantidade maior que zero.'; return; }
-    if (!caNaBase(it.c) && it.c.charAt(0) !== '?' && !it.n && !caNome(it.c)){ erro.textContent = 'O código ' + it.c + ' não está na base do guia: escreva o nome do item.'; return; }
+    if (!it.c || !(q > 0)){ erro.textContent = it.c ? 'Informe a quantidade de ' + it.c + '.' : 'Informe o código de cada item. O cruzamento com o abastecimento é feito pelo código.'; return; }
     if (vistos[it.c] != null) itens[vistos[it.c]].q += q; else { vistos[it.c] = itens.length; itens.push({ c:it.c, q:q }); }
   }
   if (!d.chamado){ erro.textContent = 'Informe o número do chamado do pedido.'; return; }
@@ -6191,8 +6191,7 @@ function caSalvarAbast(){
   for (var ii = 0; ii < d.itens.length; ii++){
     var it = d.itens[ii], qi = caQ(it.q);
     if (!it.c && !qi) continue;
-    if (!it.c || !(qi > 0)){ erro.textContent = 'Cada item do chamado precisa de código (ou nome) e quantidade maior que zero.'; return; }
-    if (!caNaBase(it.c) && it.c.charAt(0) !== '?' && !it.n && !caNome(it.c)){ erro.textContent = 'O código ' + it.c + ' não está na base do guia: escreva o nome do item.'; return; }
+    if (!it.c || !(qi > 0)){ erro.textContent = it.c ? 'Informe a quantidade de ' + it.c + '.' : 'Informe o código de cada item do chamado. O cruzamento com os pedidos é feito pelo código.'; return; }
     if (vis[it.c] != null) itens[vis[it.c]].q += qi; else { vis[it.c] = itens.length; itens.push({ c:it.c, q:qi }); }
   }
   if (!aloc.length && !itens.length){ erro.textContent = 'Inclua os itens do chamado ou indique quais pedidos ele atende.'; return; }
