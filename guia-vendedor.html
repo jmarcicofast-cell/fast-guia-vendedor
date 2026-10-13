@@ -2328,7 +2328,7 @@
             <option value="todos">Todos os vendedores</option>
           </select>
         </div>
-        <input type="text" id="cli-busca" placeholder="🔎 Buscar cliente..." oninput="cliBuscarInput(this.value)" style="padding:8px 12px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;min-width:180px;">
+        <input type="text" id="cli-busca" placeholder="🔎 Buscar cliente ou PN..." oninput="cliBuscarInput(this.value)" style="padding:8px 12px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12px;outline:none;min-width:180px;">
         <button id="cli-add-geral-btn" onclick="cliAbrirAddGeralModal()" style="display:none;padding:8px 14px;border-radius:7px;border:none;background:#1C1C1C;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Adicionar Cliente</button>
       </div>
     </div>
@@ -11998,6 +11998,7 @@ function renderPedidos(pedidosList, isGestora) {
   _pedTodosDoMes = filtrados;
   _pedIsGestora = isGestora;
   _pedTodosGeral = ativos.slice();
+  _cliPedFonte = _pedTodosGeral; cliPnInvalidar();
   renderPedidosFiltrados();
   renderBaseClientes();
   renderResumoClientesPedidos();
@@ -12974,9 +12975,98 @@ function cliChave(nome) {
   return chave;
 }
 
+// ── IDENTIDADE DO CLIENTE PELO CÓDIGO PN ──
+// O PN é o código do cliente; o nome da empresa muda de digitação de pedido
+// para pedido e duplicava o cliente na Base. Regra:
+//  • pedido com PN  -> o cliente é o PN (todos os nomes daquele PN viram um só);
+//  • pedido sem PN  -> se aquele nome só aparece com UM PN, entra nesse PN;
+//                      senão continua pelo nome.
+// A chave gravada (atendimentos, overrides) continua sendo uma chave de nome:
+// usamos o nome do PRIMEIRO pedido daquele PN, que não muda quando entram
+// pedidos novos. Se dois PNs diferentes têm o mesmo nome, cada um ganha
+// "NOME PN <código>" para não se misturarem.
+var _cliPnIdx = null, _cliPedFonte = [];
+function cliPnNorm(pn) { return String(pn == null ? '' : pn).replace(/[.#$\[\]\/\\\s]/g, '').toUpperCase(); }
+function cliPnInvalidar() { _cliPnIdx = null; }
+function cliPnIndice() {
+  if (_cliPnIdx) return _cliPnIdx;
+  var todos = (_cliPedFonte || []).slice();
+  if (typeof RT !== 'undefined' && RT && RT.ped) Object.keys(RT.ped).forEach(function(vn) { todos = todos.concat(RT.ped[vn] || []); });
+  var pnInfo = {}, nomePns = {};
+  todos.forEach(function(p) {
+    if (!p || !p.empresa) return;
+    var nk = cliChave(p.empresa), pn = cliPnNorm(p.pn);
+    if (!pn) return;
+    var d = p.data || '9999-99-99';
+    var inf = pnInfo[pn] || (pnInfo[pn] = { primData: null, primNk: null, ultData: null, nome: '', nomes: {} });
+    inf.nomes[nk] = 1;
+    if (!inf.primData || d < inf.primData) { inf.primData = d; inf.primNk = nk; }
+    if (!inf.ultData || d >= inf.ultData) { inf.ultData = d; inf.nome = p.empresa; }
+    (nomePns[nk] = nomePns[nk] || {})[pn] = 1;
+  });
+  // chave canônica de cada PN (sem colisão entre PNs diferentes)
+  var porNk = {};
+  Object.keys(pnInfo).forEach(function(pn) { (porNk[pnInfo[pn].primNk] = porNk[pnInfo[pn].primNk] || []).push(pn); });
+  var canon = {}, aliases = {};
+  Object.keys(pnInfo).forEach(function(pn) {
+    var nk = pnInfo[pn].primNk;
+    canon[pn] = porNk[nk].length > 1 ? nk + ' PN ' + pn : nk;
+  });
+  // nomes que só aparecem com um PN apontam para ele
+  var nomeUnico = {};
+  Object.keys(nomePns).forEach(function(nk) { var l = Object.keys(nomePns[nk]); if (l.length === 1) nomeUnico[nk] = l[0]; });
+  Object.keys(pnInfo).forEach(function(pn) {
+    var c = canon[pn], a = aliases[c] = aliases[c] || {};
+    Object.keys(pnInfo[pn].nomes).forEach(function(nk) { if (nomeUnico[nk] === pn || nk === c) a[nk] = 1; });
+  });
+  var pnDaChave = {};
+  Object.keys(canon).forEach(function(pn) { pnDaChave[canon[pn]] = pn; });
+  _cliPnIdx = { canon: canon, nomeUnico: nomeUnico, aliases: aliases, pnDaChave: pnDaChave, info: pnInfo };
+  return _cliPnIdx;
+}
+// Chave do cliente de um pedido/negociação (objeto com .empresa e, se tiver, .pn)
+function cliChavePedido(p) {
+  if (!p) return '';
+  var idx = cliPnIndice(), pn = cliPnNorm(p.pn);
+  if (pn && idx.canon[pn]) return idx.canon[pn];
+  var nk = cliChave(p.empresa);
+  var pnN = idx.nomeUnico[nk];
+  return pnN ? idx.canon[pnN] : nk;
+}
+function cliPnDaChave(chave) { return cliPnIndice().pnDaChave[chave] || ''; }
+function cliAliasesDaChave(chave) {
+  var a = cliPnIndice().aliases[chave];
+  return a ? Object.keys(a) : [chave];
+}
+// Atendimento do cliente: o da chave canônica; se ainda não existir, o mais
+// recente entre os nomes antigos daquele PN (para não perder o histórico).
+function cliAtendGet(vend, chave) {
+  var dados = (cliAtendState.porVendedor || {})[vend] || {};
+  if (dados[chave]) return dados[chave];
+  var melhor = null;
+  cliAliasesDaChave(chave).forEach(function(nk) {
+    var a = dados[nk]; if (!a) return;
+    if (!melhor || String(a.ultimoAtendimento || '') > String(melhor.ultimoAtendimento || '')) melhor = a;
+  });
+  return melhor;
+}
+// Usado ao gravar o primeiro atendimento na chave canônica: começa com uma
+// cópia do registro antigo, assim histórico e controle de compras vêm junto.
+function cliAtendSemente(vend, chave) {
+  var a = cliAtendGet(vend, chave);
+  return a ? JSON.parse(JSON.stringify(a)) : null;
+}
+function cliOverrideGet(chave) {
+  if (cliOverrideState[chave]) return cliOverrideState[chave];
+  var l = cliAliasesDaChave(chave);
+  for (var i = 0; i < l.length; i++) if (cliOverrideState[l[i]]) return cliOverrideState[l[i]];
+  return null;
+}
+
 function listenClientesAlias() {
   dbRef('clientesAlias').on('value', function(snap) {
     cliAliasState = snap.val() || {};
+    cliPnInvalidar();
     renderBaseClientes();
   });
 }
@@ -13161,7 +13251,7 @@ function cliAbrirEditarModal() {
   if (!cliDetalheAtual) return;
   var reg = cliIndexPorId[cliDetalheAtual.vend + '||' + cliDetalheAtual.chave];
   if (!reg) return;
-  var ov = cliOverrideState[cliDetalheAtual.chave] || {};
+  var ov = cliOverrideGet(cliDetalheAtual.chave) || {};
   document.getElementById('cli-editar-nome').value = ov.nome || reg.nome;
   document.getElementById('cli-editar-status').value = ov.statusManual || '';
   document.getElementById('cli-editar-overlay').style.display = 'flex';
@@ -13223,7 +13313,7 @@ function cliConstruirBase() {
     if (!p.empresa) return;
     var vn = p.vendedor || cliAtendState.currentVend;
     if (!vn) return;
-    var chave = cliChave(p.empresa);
+    var chave = cliChavePedido(p);
     var id = vn + '||' + chave;
     var vTotalPedido = 0;
     if (p.itens && p.itens.length) {
@@ -13254,7 +13344,7 @@ function cliConstruirBase() {
   Object.keys(negState.porVendedor || {}).forEach(function(vn) {
     (negState.porVendedor[vn] || []).forEach(function(n) {
       if (!n.empresa) return;
-      var chave = cliChave(n.empresa);
+      var chave = cliChavePedido(n);
       var id = vn + '||' + chave;
       if (!mapa[id]) {
         mapa[id] = { vendedor: vn, chave: chave, nome: n.empresa, ultimaCompra: null, primeiraCompra: null, tipoClientePrimeiro: 'novo', estadoRecente: n.estado || '', qtdPedidos: 0, totalComprado: 0 };
@@ -13265,7 +13355,10 @@ function cliConstruirBase() {
   // Chaves que já têm pedido/negociação registrado com ALGUM vendedor — pra essas,
   // o dado real do sistema manda, e a carteira geral não entra duplicada.
   var chavesJaRastreadas = {};
-  Object.keys(mapa).forEach(function(id) { chavesJaRastreadas[mapa[id].chave] = true; });
+  Object.keys(mapa).forEach(function(id) {
+    chavesJaRastreadas[mapa[id].chave] = true;
+    cliAliasesDaChave(mapa[id].chave).forEach(function(nk) { chavesJaRastreadas[nk] = true; });
+  });
 
   Object.keys(cliGeralState || {}).forEach(function(chave) {
     if (chavesJaRastreadas[chave]) return;
@@ -13282,7 +13375,7 @@ function cliConstruirBase() {
     return !cliOcultosState[mapa[id].chave]; // cliente excluído manualmente da Base de Clientes
   }).map(function(id) {
     var r = mapa[id];
-    var ov = cliOverrideState[r.chave] || null;
+    var ov = cliOverrideGet(r.chave);
     var nomeFinal = (ov && ov.nome) ? ov.nome : r.nome;
     var diasSemComprar = r.ultimaCompra ? cliDiasEntre(r.ultimaCompra, hojeIso) : null;
     var status;
@@ -13293,7 +13386,7 @@ function cliConstruirBase() {
     else if (diasSemComprar === null || diasSemComprar > CLI_META_INATIVO_DIAS) status = 'inativo';
     else status = 'ativo';
 
-    var atend = (cliAtendState.porVendedor[r.vendedor] || {})[r.chave] || null;
+    var atend = cliAtendGet(r.vendedor, r.chave);
     var ultimoAtendimento = atend ? atend.ultimoAtendimento : null;
     var diasSemAtendimento = ultimoAtendimento ? cliDiasEntre(ultimoAtendimento, hojeIso) : null;
     var atendidoEssaSemana = diasSemAtendimento !== null && diasSemAtendimento < CLI_META_ATENDIMENTO_DIAS;
@@ -13313,6 +13406,7 @@ function cliConstruirBase() {
 
     return {
       vendedor: r.vendedor, chave: r.chave, nome: nomeFinal, status: status,
+      pn: cliPnDaChave(r.chave),
       uf: r.estadoRecente || '',
       ultimaCompra: r.ultimaCompra, diasSemComprar: diasSemComprar,
       qtdPedidos: r.qtdPedidos, totalComprado: r.totalComprado,
@@ -13406,7 +13500,7 @@ function pedResumoConstruirBasePorPn() {
     if (!p.empresa) return;
     var vn = p.vendedor || cliAtendState.currentVend;
     if (!vn) return;
-    var chaveNome = cliChave(p.empresa);
+    var chaveNome = cliChavePedido(p);
     var idNome = vn + '||' + chaveNome;
     var pnNorm = String(p.pn == null ? '' : p.pn).trim().toUpperCase();
 
@@ -13489,7 +13583,7 @@ function pedResumoConstruirBasePorPn() {
     return !cliOcultosState[mapa[id].chave]; // cliente excluído manualmente da Base de Clientes (por nome)
   }).map(function(id) {
     var r = mapa[id];
-    var ov = cliOverrideState[r.chave] || null; // override é sempre por nome
+    var ov = cliOverrideGet(r.chave);
     var diasSemComprar = r.ultimaCompra ? cliDiasEntre(r.ultimaCompra, hojeIso) : null;
     var status;
     if (ov && ov.statusManual === 'ativo') status = 'ativo';
@@ -13531,13 +13625,13 @@ function cliLinhaHtml(c) {
   var estimativaTxt = c.estimativaMensal != null
     ? 'R$ ' + Number(c.estimativaMensal).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : '<span style="color:#bbb;">— defina a frequência</span>';
-  var atend = (cliAtendState.porVendedor[c.vendedor] || {})[c.chave] || null;
+  var atend = cliAtendGet(c.vendedor, c.chave);
   var freqTag = cliQtdTag(atend);
   var cargaTag = cliCargaTag(atend ? atend.tipoCarga : '');
   var chipsHtml = cliSemanaChipsRowHtml(atend);
   return '<tr style="' + (atrasado ? 'background:#FFF7F5;' : '') + 'border-top:1px solid #F0EEEA;">' +
     vendCol +
-    '<td style="padding:8px 10px;font-weight:700;color:#1C1C1C;font-size:12.5px;cursor:pointer;white-space:nowrap;" onclick="cliAbrirDetalhe(\'' + c.vendedor + '\',\'' + c.chave + '\')">' + negEsc(c.nome) + freqTag + cargaTag + '</td>' +
+    '<td style="padding:8px 10px;font-weight:700;color:#1C1C1C;font-size:12.5px;cursor:pointer;white-space:nowrap;" onclick="cliAbrirDetalhe(\'' + c.vendedor + '\',\'' + c.chave + '\')">' + negEsc(c.nome) + (c.pn ? ' <span style="font-family:monospace;font-size:10.5px;font-weight:600;color:#888;background:#F1EFE8;border-radius:4px;padding:1px 5px;">PN ' + negEsc(c.pn) + '</span>' : '') + freqTag + cargaTag + '</td>' +
     '<td style="padding:8px 10px;">' + cliStatusBadge(c.status) + '</td>' +
     '<td style="padding:8px 10px;font-size:11.5px;color:#666;white-space:nowrap;">' + compraTxt + '</td>' +
     '<td style="padding:8px 10px;font-size:11.5px;font-weight:700;color:#1B5E20;white-space:nowrap;">' + estimativaTxt + '</td>' +
@@ -13577,7 +13671,7 @@ function renderBaseClientes() {
   setTxt('cli-estimativa-qtd', comEstimativa.length + ' de ' + lista.length + ' cliente(s) com estimativa');
 
   if (cliFiltroStatus !== 'todos') lista = lista.filter(function(c) { return c.status === cliFiltroStatus; });
-  if (cliBusca) lista = lista.filter(function(c) { return c.nome.toLowerCase().indexOf(cliBusca) !== -1; });
+  if (cliBusca) lista = lista.filter(function(c) { return c.nome.toLowerCase().indexOf(cliBusca) !== -1 || (c.pn && c.pn.toLowerCase().indexOf(cliBusca) !== -1); });
 
   // Quem está atrasado no atendimento semanal aparece primeiro; dentro de cada grupo,
   // quem está há mais tempo sem atendimento vem antes.
@@ -13600,7 +13694,7 @@ function cliMarcarAtendido(vend, chave) {
   var nome = reg ? reg.nome : chave;
   var hoje = new Date().toISOString().split('T')[0];
   dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
-    var atual = snap.val() || { nome: nome, historico: [] };
+    var atual = snap.val() || cliAtendSemente(vend, chave) || { nome: nome, historico: [] };
     atual.nome = nome;
     atual.ultimoAtendimento = hoje;
     atual.historico = atual.historico || [];
@@ -13632,14 +13726,14 @@ function cliAbrirDetalhe(vend, chave) {
   var reg = cliIndexPorId[vend + '||' + chave];
   if (!reg) return;
   cliDetalheAtual = { vend: vend, chave: chave };
-  document.getElementById('cli-detalhe-titulo').textContent = reg.nome;
+  document.getElementById('cli-detalhe-titulo').textContent = reg.nome + (reg.pn ? ' · PN ' + reg.pn : '');
   document.getElementById('cli-detalhe-status').innerHTML = cliStatusBadge(reg.status);
   document.getElementById('cli-detalhe-compra').textContent = reg.ultimaCompra
     ? ('Última compra: ' + negFmtData(reg.ultimaCompra) + (reg.diasSemComprar < 0 ? ' (agendado — ainda não ocorreu)' : ' (' + reg.diasSemComprar + ' dia(s) atrás)'))
     : (vend === 'GERAL' ? 'Sem pedido registrado no sistema (carteira geral).' : 'Ainda não comprou — é uma negociação/lead.');
   document.getElementById('cli-detalhe-total').textContent = 'R$ ' + Number(reg.totalComprado).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   document.getElementById('cli-detalhe-qtd').textContent = reg.qtdPedidos + ' pedido(s)';
-  var atend = (cliAtendState.porVendedor[vend] || {})[chave];
+  var atend = cliAtendGet(vend, chave);
   cliRenderHistoricoAtendimento(atend ? (atend.historico || []) : []);
   document.getElementById('cli-detalhe-nota').value = '';
   var mesclarBtn = document.getElementById('cli-mesclar-btn');
@@ -13669,7 +13763,7 @@ function cliObterPedidosCliente(vend, chave) {
     if (p.status === 'cancelado') return false;
     if (!p.empresa) return false;
     var vn = p.vendedor || cliAtendState.currentVend;
-    return vn === vend && cliChave(p.empresa) === chave;
+    return vn === vend && cliChavePedido(p) === chave;
   }).sort(function(a, b) { return (b.data || '').localeCompare(a.data || ''); });
 }
 
@@ -13834,7 +13928,7 @@ function cliAbrirSemanasModal(vend, chave) {
   cliSemanasState = { vend: vend, chave: chave, mes: cliMesAtualStr() };
   var tituloEl = document.getElementById('cli-semanas-titulo');
   if (tituloEl) tituloEl.textContent = reg ? reg.nome : chave;
-  var atend = (cliAtendState.porVendedor[vend] || {})[chave] || {};
+  var atend = cliAtendGet(vend, chave) || {};
   var qtdEl = document.getElementById('cli-semanas-qtd');
   if (qtdEl) qtdEl.value = (atend.qtdMes != null && atend.qtdMes !== '') ? atend.qtdMes : '';
   var cargaEl = document.getElementById('cli-semanas-carga');
@@ -13860,7 +13954,7 @@ function cliRenderSemanasModal() {
   var lbl = document.getElementById('cli-semanas-mes-label');
   if (lbl) lbl.textContent = cliMesLabel(mes);
 
-  var atend = (cliAtendState.porVendedor[vend] || {})[chave] || {};
+  var atend = cliAtendGet(vend, chave) || {};
   var dadosMes = (atend.controleCompras || {})[mes] || {};
   var semanas = dadosMes.semanas || {};
   var numSemanas = cliNumSemanasMes(mes);
@@ -13892,7 +13986,7 @@ function cliMarcarSemana(n, status) {
   if (!vend || !chave) return;
   var reg = cliIndexPorId[vend + '||' + chave];
   dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
-    var atual = snap.val() || { nome: reg ? reg.nome : chave, historico: [] };
+    var atual = snap.val() || cliAtendSemente(vend, chave) || { nome: reg ? reg.nome : chave, historico: [] };
     atual.controleCompras = atual.controleCompras || {};
     atual.controleCompras[mes] = atual.controleCompras[mes] || { semanas: {} };
     atual.controleCompras[mes].semanas = atual.controleCompras[mes].semanas || {};
@@ -13909,7 +14003,7 @@ function cliSalvarMotivoSemana(n, motivo) {
   if (!vend || !chave) return;
   var reg = cliIndexPorId[vend + '||' + chave];
   dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
-    var atual = snap.val() || { nome: reg ? reg.nome : chave, historico: [] };
+    var atual = snap.val() || cliAtendSemente(vend, chave) || { nome: reg ? reg.nome : chave, historico: [] };
     atual.controleCompras = atual.controleCompras || {};
     atual.controleCompras[mes] = atual.controleCompras[mes] || { semanas: {} };
     atual.controleCompras[mes].semanas = atual.controleCompras[mes].semanas || {};
@@ -13929,7 +14023,7 @@ function cliSalvarCargaModal() {
   var cargaEl = document.getElementById('cli-semanas-carga');
   var tipoCarga = cargaEl ? cargaEl.value : '';
   dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
-    var atual = snap.val() || { nome: reg ? reg.nome : chave, historico: [] };
+    var atual = snap.val() || cliAtendSemente(vend, chave) || { nome: reg ? reg.nome : chave, historico: [] };
     atual.qtdMes = qtdMes;
     atual.tipoCarga = tipoCarga;
     dbRef('atendimentos/' + vend + '/' + chave).set(atual);
@@ -13944,7 +14038,7 @@ function cliSalvarNotaAtendimento() {
   var vend = cliDetalheAtual.vend, chave = cliDetalheAtual.chave;
   var reg = cliIndexPorId[vend + '||' + chave];
   dbRef('atendimentos/' + vend + '/' + chave).once('value').then(function(snap) {
-    var atual = snap.val() || { nome: reg ? reg.nome : chave, historico: [] };
+    var atual = snap.val() || cliAtendSemente(vend, chave) || { nome: reg ? reg.nome : chave, historico: [] };
     atual.historico = atual.historico || [];
     atual.historico.push({ data: new Date().toISOString(), texto: texto });
     dbRef('atendimentos/' + vend + '/' + chave).set(atual).then(function() {
@@ -15050,6 +15144,7 @@ function rtInit() {
       dbRef('pedidos/' + vn).on('value', function(snap) {
         var v = (snap && snap.val()) || {};
         RT.ped[vn] = Object.keys(v).map(function(k) { return v[k]; }).filter(function(p) { return p && !p.excluido; });
+        if (typeof cliPnInvalidar === 'function') cliPnInvalidar();
         RT.pedOk[vn] = true;
         rtRender();
       });
@@ -15113,7 +15208,7 @@ function rtCalc(vn) {
   // clientes reativados e novos (empresas diferentes no mês)
   function clientes(tipo, soHoje) {
     var vist = {};
-    peds.forEach(function(p) { if (p.tipoCliente === tipo && p.empresa && (!soHoje || p.data === hojeStr)) vist[cliChave(p.empresa)] = 1; });
+    peds.forEach(function(p) { if (p.tipoCliente === tipo && p.empresa && (!soHoje || p.data === hojeStr)) vist[cliChavePedido(p)] = 1; });
     return Object.keys(vist).length;
   }
   var mInat = porP('metaClientesInativosPorPessoa'), mNovo = porP('metaClientesNovosPorPessoa');
@@ -15655,7 +15750,7 @@ function premCalc(vn) {
     var m = String(p.data).slice(0, 7), conc = !!p.conciliado;
     if (C.la.meses.indexOf(m) >= 0) { var q = premQtd(p, premEhLa); if (conc) laOk += q; else laPend += q; }
     if (m !== mes) return;
-    var ch = typeof cliChave === 'function' ? cliChave(p.empresa) : premNorm(p.empresa);
+    var ch = typeof cliChavePedido === 'function' ? cliChavePedido(p) : premNorm(p.empresa);
     if (p.tipoCliente === 'novo' && ch) (conc ? novoOk : novoPend)[ch] = 1;
     if (p.tipoCliente === 'inativo' && ch) (conc ? inaOk : inaPend)[ch] = 1;
     var f = premQtd(p, premEhFita); if (conc) fitaOk += f; else fitaPend += f;
@@ -16306,7 +16401,7 @@ function rcHistorico(chave) {
   var mats = {}, total = 0, n = 0;
   CK_EQUIPE.forEach(function(vn) {
     (RT.ped[vn] || []).forEach(function(p) {
-      if (!p.empresa || p.status === 'cancelado' || cliChave(p.empresa) !== chave) return;
+      if (!p.empresa || p.status === 'cancelado' || cliChavePedido(p) !== chave) return;
       n++;
       itensDoPedido(p).forEach(function(it) {
         var v = numSafe(it.qtd) * numSafe(it.vUnit); total += v;
@@ -16327,7 +16422,7 @@ function rcSortear(vn, qtd, jaTem) {
   var ja = {}; (jaTem || []).forEach(function(x) { ja[x.chave] = 1; });
   // cliente com pedido lançado (por qualquer vendedor) nos últimos 30 dias não está "à solta"
   var recentes = {}, lim = new Date(); lim.setDate(lim.getDate() - 30); var limStr = ckDateToStr(lim);
-  CK_EQUIPE.forEach(function(x) { (RT.ped[x] || []).forEach(function(p) { if (p && p.empresa && p.status !== 'cancelado' && p.data && p.data >= limStr) recentes[cliChave(p.empresa)] = 1; }); });
+  CK_EQUIPE.forEach(function(x) { (RT.ped[x] || []).forEach(function(p) { if (p && p.empresa && p.status !== 'cancelado' && p.data && p.data >= limStr) recentes[cliChavePedido(p)] = 1; }); });
   var cand = rcBase(vn).filter(function(c) {
     if (ja[c.chave]) return false;
     var j = jog[c.chave];
@@ -16399,7 +16494,7 @@ function rcCaptura(vn, chave) {
   var peds = (RT.ped[vn] || []).filter(function(p) {
     if (!p || p.status === 'cancelado') return false;
     if (vincId && p.id === vincId) return true;
-    return p.empresa && cliChave(p.empresa) === chave && p.data && p.data >= j.desde;
+    return p.empresa && cliChavePedido(p) === chave && p.data && p.data >= j.desde;
   });
   if (!peds.length) return null;
   return { valor: peds.reduce(function(s, p) { return s + mmValorPedido(p); }, 0), faturado: peds.some(function(p) { return p.status === 'faturado'; }), data: peds.map(function(p) { return p.data; }).sort()[0] };
@@ -16452,7 +16547,7 @@ function rcJogar(chave, res, extra) {
   // conta como atendimento na Base de Clientes
   var ref = 'atendimentos/' + (carta.vendOrig || vn) + '/' + chave;
   dbRef(ref).once('value').then(function(snap) {
-    var a = (snap && snap.val()) || { nome: c.nome, historico: [] };
+    var a = (snap && snap.val()) || cliAtendSemente(carta.vendOrig || vn, chave) || { nome: c.nome, historico: [] };
     a.nome = a.nome || c.nome; a.ultimoAtendimento = hoje; a.historico = a.historico || [];
     a.historico.push({ data: new Date().toISOString(), texto: 'Caçada (' + rtNome(vn) + '): ' + RC_RES[res].desc + (retorno ? ' — tentar de novo em ' + negFmtData(retorno) : '') + '.' });
     dbRef(ref).set(a);
@@ -16485,7 +16580,7 @@ function rcEscolherFechamento(chave) {
   var c = rcCliente(vn, carta);
   var lim = new Date(); lim.setDate(lim.getDate() - 30); var limStr = ckDateToStr(lim);
   var lista = (RT.ped[vn] || []).filter(function(p) { return p && p.status !== 'cancelado' && p.data && p.data >= limStr; })
-    .map(function(p) { return { p: p, mesmo: p.empresa && cliChave(p.empresa) === chave }; })
+    .map(function(p) { return { p: p, mesmo: p.empresa && cliChavePedido(p) === chave }; })
     .sort(function(a, b) { return (b.mesmo - a.mesmo) || String(b.p.data).localeCompare(String(a.p.data)); });
   RC._fech = { chave: chave, lista: lista };
   var ov = document.createElement('div'); ov.id = 'rc-fech';
