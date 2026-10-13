@@ -5319,7 +5319,30 @@ function caCat(){
   _caCat = { map:map, porNome:porNome, lista:lista };
   return _caCat;
 }
-function caNome(c){ if (c && c.charAt(0) === '?') return c.slice(1); var p = caCat().map[c]; return p ? p.n : null; }
+function caNome(c){ if (c && c.charAt(0) === '?') return c.slice(1); var p = caCat().map[c]; if (p) return p.n; var x = (CA.dados.itensExtra || {})[c]; return (x && x.n) || null; }
+function caNaBase(c){ return !!(c && caCat().map[c]); }
+/* lê uma linha de item: código, quantidade e, para item fora da base, o nome escrito */
+function caLerLinha(tr){
+  var ci = tr.querySelector('[data-f=c]'), qi = tr.querySelector('[data-f=q]'), ni = tr.querySelector('[data-f=n]');
+  var c = ci ? ci.value.trim().toUpperCase() : '', n = ni ? ni.value.trim() : '';
+  if (!c && n) c = '?' + n.toUpperCase().replace(/\s+/g, ' ');
+  return { c:c, q: qi ? qi.value : '', n:n };
+}
+function caDescCell(c, n){
+  if (c && c.charAt(0) === '?'){ n = n || c.slice(1); c = ''; }
+  if (c && caNaBase(c)) return caEsc(caNome(c)) + ' ' + caFabs(c);
+  var nome = n || (c ? caNome(c) || '' : '');
+  return '<input type="text" data-f="n" value="' + caEsc(nome) + '" placeholder="' + (c ? 'Fora da base: escreva o nome do item' : 'Ou escreva o nome do item') + '" style="border:1.5px solid ' + (c ? '#F2C14E' : '#E2E0D8') + ';border-radius:5px;padding:5px 7px;font-size:12.5px;width:100%;box-sizing:border-box;font-family:inherit;">';
+}
+/* guarda o nome dos códigos fora da base para todo mundo ver */
+function caSalvarNomesExtras(itens){
+  (itens || []).forEach(function(i){
+    if (!i.c || i.c.charAt(0) === '?' || caNaBase(i.c) || !i.n || !/^[A-Z0-9_-]+$/.test(i.c)) return;
+    var atual = (CA.dados.itensExtra || {})[i.c]; if (atual && atual.n === i.n) return;
+    CA.dados.itensExtra = CA.dados.itensExtra || {}; CA.dados.itensExtra[i.c] = { n:i.n };
+    try { dbRef('centralAbast/itensExtra/' + i.c).set({ n:i.n, por:caAutor(), em:Date.now() }); } catch(e){}
+  });
+}
 function caPeso(c){ var p = caCat().map[c]; if (!p) return 0; var v = parseFloat(String(p.p).replace(/\./g, '').replace(',', '.')); return isFinite(v) ? v : 0; }
 function caPallet(c){ var p = caCat().map[c]; if (!p) return 0; var m = String(p.u || '').match(/(\d+)/); return m ? +m[1] : 0; }
 function caFabs(c){ var p = caCat().map[c]; return p ? p.f.map(function(f){ return '<span class="ca-fab">' + caEsc(f) + '</span>'; }).join('') : ''; }
@@ -5343,7 +5366,7 @@ function caLigar(){
   CA.ligado = true; CA.ligadoFb = !!firebaseOK;
   dbRef('centralAbast').on('value', function(snap){
     var v = snap.val() || {};
-    CA.dados = { vendas: v.vendas || {}, abast: v.abast || {}, guia: v.guia || {}, config: v.config || null, fabPorCod: v.fabPorCod || {} };
+    CA.dados = { vendas: v.vendas || {}, abast: v.abast || {}, guia: v.guia || {}, config: v.config || null, fabPorCod: v.fabPorCod || {}, itensExtra: v.itensExtra || {} };
     Object.keys(CA.dados.abast).forEach(function(id){ var a = CA.dados.abast[id]; if (a && a.fabricante) a.fabricante = caFabNorm(a.fabricante); });
     Object.keys(CA.dados.fabPorCod).forEach(function(c){ CA.dados.fabPorCod[c] = caFabNorm(CA.dados.fabPorCod[c]); });
     if (CA.dados.config && CA.dados.config.fabricantes){
@@ -5570,7 +5593,7 @@ function caListaVincVenda(){
   try {
     var md = CA.modal, dcSel = document.getElementById('ca-v-dc'), dc = (dcSel && dcSel.value) || md.d.dc || '';
     var cods = {};
-    Array.prototype.forEach.call(document.querySelectorAll('#ca-v-itens tr'), function(tr){ var ci = tr.querySelector('[data-f=c]'), qi = tr.querySelector('[data-f=q]'); var c = ci ? ci.value.trim().toUpperCase() : '', q = qi ? caQ(qi.value) : 0; if (c && q > 0) cods[c] = (cods[c] || 0) + q; });
+    Array.prototype.forEach.call(document.querySelectorAll('#ca-v-itens tr'), function(tr){ var ln = caLerLinha(tr), c = ln.c, q = caQ(ln.q); if (c && q > 0) cods[c] = (cods[c] || 0) + q; });
     var lst = [];
     Object.keys(CA.dados.abast || {}).forEach(function(id){
       var a = CA.dados.abast[id]; if (!a || a.status === 'cancelado') return;
@@ -5975,9 +5998,9 @@ function caModalVenda(key){
   caDesenharVenda();
 }
 function caLinhaItem(it, i, rmAct){
-  var n = it.c ? caNome(it.c) : '';
-  return '<tr data-i="' + i + '"><td><input type="text" class="cod" list="ca-dl-cat" data-f="c" value="' + caEsc(it.c) + '" autocomplete="off" placeholder="Código"></td>' +
-    '<td class="cm-desc' + (it.c && !n ? ' fora' : '') + '">' + (it.c ? caEsc(n || 'Código não está na base do guia') + (n ? ' ' + caFabs(it.c) : '') : '<span style="color:#bbb;">Digite o código</span>') + '</td>' +
+  var semCod = it.c && it.c.charAt(0) === '?';
+  return '<tr data-i="' + i + '"><td><input type="text" class="cod" list="ca-dl-cat" data-f="c" value="' + caEsc(semCod ? '' : it.c) + '" autocomplete="off" placeholder="Código"></td>' +
+    '<td class="cm-desc">' + caDescCell(it.c, it.n) + '</td>' +
     '<td><input type="number" class="qtd" min="0" step="any" inputmode="decimal" data-f="q" value="' + caEsc(it.q) + '"></td><td><button class="rm" data-ca="' + (rmAct || 'v-rm') + '" data-i="' + i + '" title="Remover">×</button></td></tr>';
 }
 function caDesenharVenda(){
@@ -6002,11 +6025,11 @@ function caDesenharVenda(){
 function caLerVenda(){
   var d = CA.modal.d, g = function(id){ return document.getElementById(id).value.trim(); };
   d.chamado = g('ca-v-ch'); d.cliente = g('ca-v-cli'); d.dc = g('ca-v-dc'); d.data = g('ca-v-data'); d.vendedor = g('ca-v-vend'); d.status = g('ca-v-st'); d.obs = g('ca-v-obs');
-  d.itens = Array.prototype.map.call(document.querySelectorAll('#ca-v-itens tr'), function(tr){ return { c: tr.querySelector('[data-f=c]').value.trim().toUpperCase(), q: tr.querySelector('[data-f=q]').value }; });
+  d.itens = Array.prototype.map.call(document.querySelectorAll('#ca-v-itens tr'), caLerLinha);
 }
 function caTotVenda(){
   var un = 0, kg = 0;
-  document.querySelectorAll('#ca-v-itens tr').forEach(function(tr){ var c = tr.querySelector('[data-f=c]').value.trim().toUpperCase(), q = caQ(tr.querySelector('[data-f=q]').value); un += q; kg += q * caPeso(c); });
+  document.querySelectorAll('#ca-v-itens tr').forEach(function(tr){ var ln = caLerLinha(tr), c = ln.c, q = caQ(ln.q); un += q; kg += q * caPeso(c); });
   var el = document.getElementById('ca-v-tot'); if (el) el.textContent = caN(un) + ' un. · ≈ ' + caN(kg / 1000) + ' t';
 }
 function caParseLista(txt){
@@ -6025,13 +6048,15 @@ function caSalvarVenda(){
   for (var i = 0; i < d.itens.length; i++){
     var it = d.itens[i], q = caQ(it.q);
     if (!it.c && !q) continue;
-    if (!it.c || !(q > 0)){ erro.textContent = 'Cada item precisa de código e quantidade maior que zero.'; return; }
+    if (!it.c || !(q > 0)){ erro.textContent = 'Cada item precisa de código (ou nome) e quantidade maior que zero.'; return; }
+    if (!caNaBase(it.c) && it.c.charAt(0) !== '?' && !it.n && !caNome(it.c)){ erro.textContent = 'O código ' + it.c + ' não está na base do guia: escreva o nome do item.'; return; }
     if (vistos[it.c] != null) itens[vistos[it.c]].q += q; else { vistos[it.c] = itens.length; itens.push({ c:it.c, q:q }); }
   }
   if (!d.chamado){ erro.textContent = 'Informe o número do chamado do pedido.'; return; }
   if (!d.dc){ erro.textContent = 'Escolha a DCS que vai atender o pedido.'; return; }
   if (!d.data){ erro.textContent = 'Informe até quando o material precisa estar na DCS.'; return; }
   if (!itens.length){ erro.textContent = 'Adicione pelo menos um material.'; return; }
+  caSalvarNomesExtras(d.itens);
   var dup = caVendas().some(function(v){ return v.chamado === d.chamado && v.id !== md.id; });
   if (dup && !md.dup){ md.dup = true; erro.textContent = 'Já existe um pedido com o chamado ' + d.chamado + '. Clique em Salvar de novo para gravar mesmo assim.'; return; }
   var raw = d.raw || {}, agora = Date.now(), id = md.id || caId();
@@ -6139,7 +6164,7 @@ function caTotAbast(){
   Object.keys(q).forEach(function(k){ var v = q[k]; if (!(v > 0)) return; var p = k.split('|'); porC[p[1]] = (porC[p[1]] || 0) + v; un += v; kg += v * caPeso(p[1]); peds[p[0]] = 1; });
   var el = document.getElementById('ca-a-tot'); if (!el) return;
   var itC = {}, itUn = 0, itKg = 0;
-  document.querySelectorAll('#ca-a-itens tr').forEach(function(tr){ var c = tr.querySelector('[data-f=c]').value.trim().toUpperCase(), qq = caQ(tr.querySelector('[data-f=q]').value); if (!c || !(qq > 0)) return; itC[c] = (itC[c] || 0) + qq; itUn += qq; itKg += qq * caPeso(c); });
+  document.querySelectorAll('#ca-a-itens tr').forEach(function(tr){ var ln = caLerLinha(tr), c = ln.c, qq = caQ(ln.q); if (!c || !(qq > 0)) return; itC[c] = (itC[c] || 0) + qq; itUn += qq; itKg += qq * caPeso(c); });
   if (itUn){
     var saldo = 0; Object.keys(itC).forEach(function(c){ saldo += Math.max(0, itC[c] - (porC[c] || 0)); });
     var nPd = Object.keys(peds).length;
@@ -6153,7 +6178,7 @@ function caTotAbast(){
 function caLerAbast(){
   var d = CA.modal.d, g = function(id){ return document.getElementById(id).value.trim(); };
   d.chamado = g('ca-a-ch'); d.fabricante = g('ca-a-fab'); d.dc = g('ca-a-dc'); d.carga = g('ca-a-carga'); d.solicitado = g('ca-a-sol'); d.previsao = g('ca-a-prev'); d.status = g('ca-a-st'); d.obs = g('ca-a-obs');
-  d.itens = Array.prototype.map.call(document.querySelectorAll('#ca-a-itens tr'), function(tr){ return { c: tr.querySelector('[data-f=c]').value.trim().toUpperCase(), q: tr.querySelector('[data-f=q]').value }; });
+  d.itens = Array.prototype.map.call(document.querySelectorAll('#ca-a-itens tr'), caLerLinha);
 }
 function caSalvarAbast(){
   caLerAbast();
@@ -6166,7 +6191,8 @@ function caSalvarAbast(){
   for (var ii = 0; ii < d.itens.length; ii++){
     var it = d.itens[ii], qi = caQ(it.q);
     if (!it.c && !qi) continue;
-    if (!it.c || !(qi > 0)){ erro.textContent = 'Cada item do chamado precisa de código e quantidade maior que zero.'; return; }
+    if (!it.c || !(qi > 0)){ erro.textContent = 'Cada item do chamado precisa de código (ou nome) e quantidade maior que zero.'; return; }
+    if (!caNaBase(it.c) && it.c.charAt(0) !== '?' && !it.n && !caNome(it.c)){ erro.textContent = 'O código ' + it.c + ' não está na base do guia: escreva o nome do item.'; return; }
     if (vis[it.c] != null) itens[vis[it.c]].q += qi; else { vis[it.c] = itens.length; itens.push({ c:it.c, q:qi }); }
   }
   if (!aloc.length && !itens.length){ erro.textContent = 'Inclua os itens do chamado ou indique quais pedidos ele atende.'; return; }
@@ -6176,6 +6202,7 @@ function caSalvarAbast(){
     if (exc){ erro.textContent = 'Vinculado mais ' + exc + ' do que o chamado tem (tem ' + caN(itens[vis[exc]].q) + ', vinculado ' + caN(usado[exc]) + ').'; return; }
     Object.keys(usado).forEach(function(c){ if (vis[c] == null){ vis[c] = itens.length; itens.push({ c:c, q:usado[c] }); } });
   }
+  caSalvarNomesExtras(d.itens);
   var dup = caAbasts().some(function(a){ return a.chamado === d.chamado && a.id !== md.id; });
   if (dup && !md.dup){ md.dup = true; erro.textContent = 'Já existe um abastecimento com o chamado ' + d.chamado + '. Clique em Salvar de novo para gravar mesmo assim.'; return; }
   var agora = Date.now(), id = md.id || caId();
@@ -6280,11 +6307,11 @@ document.addEventListener('input', function(ev){
     if (t.id === 'ca-fn-prod') CA.fn.prod = t.value; else (t.id === 'ca-fv-q' ? CA.fv : CA.fa).q = t.value;
     var id = t.id, pos = t.selectionStart; caRender(); var n = document.getElementById(id); if (n){ n.focus(); try { n.setSelectionRange(pos, pos); } catch(e){} }
   } else if (t.closest('#ca-a-itens')){
-    if (t.dataset.f === 'c'){ var ca2 = t.value.trim().toUpperCase(), td2 = t.closest('tr').querySelector('.cm-desc'), n3 = caNome(ca2); td2.className = 'cm-desc' + (ca2 && !n3 ? ' fora' : ''); td2.innerHTML = ca2 ? caEsc(n3 || 'Código não está na base do guia') + (n3 ? ' ' + caFabs(ca2) : '') : '<span style="color:#bbb;">Digite o código</span>'; }
+    if (t.dataset.f === 'c'){ var ca2 = t.value.trim().toUpperCase(), td2 = t.closest('tr').querySelector('.cm-desc'), nIn2 = td2.querySelector('[data-f=n]'); td2.className = 'cm-desc'; td2.innerHTML = caDescCell(ca2, nIn2 && !caNaBase(ca2) ? nIn2.value : ''); }
     caTotAbast();
   } else if (t.closest('#ca-v-itens') && CA.modal && CA.modal.vincAberto && (clearTimeout(CA.vincT), CA.vincT = setTimeout(function(){ var bx = document.getElementById('ca-v-vinc'); if (bx) bx.innerHTML = caListaVincVenda(); }, 250), false)){
   } else if (t.closest('#ca-v-itens')){
-    if (t.dataset.f === 'c'){ var c = t.value.trim().toUpperCase(), td = t.closest('tr').querySelector('.cm-desc'), n2 = caNome(c); td.className = 'cm-desc' + (c && !n2 ? ' fora' : ''); td.innerHTML = c ? caEsc(n2 || 'Código não está na base do guia') + (n2 ? ' ' + caFabs(c) : '') : '<span style="color:#bbb;">Digite o código</span>'; }
+    if (t.dataset.f === 'c'){ var c = t.value.trim().toUpperCase(), td = t.closest('tr').querySelector('.cm-desc'), nIn = td.querySelector('[data-f=n]'); td.className = 'cm-desc'; td.innerHTML = caDescCell(c, nIn && !caNaBase(c) ? nIn.value : ''); }
     caTotVenda();
   } else if (t.closest('#ca-a-aloc') && t.dataset.k){ CA.modal.q[t.dataset.k] = caQ(t.value); caTotAbast(); }
 });
