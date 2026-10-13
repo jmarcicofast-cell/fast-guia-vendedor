@@ -6074,14 +6074,17 @@ function caViewPainel(vendas, m){
   var itensL = Object.keys(porItem).map(function(c){ return porItem[c]; })
     .filter(function(I){ return !qi || caSemAcento(I.c + ' ' + (caNome(I.c) || '') + ' ' + caFabDe(I.c)).indexOf(qi) !== -1; })
     .sort(function(a, b){ return b.falta - a.falta || b.vend - a.vend; });
+  CA.pSel = CA.pSel || {};
+  var nSel = itensL.filter(function(I){ return CA.pSel[I.c]; }).length, soSel = nSel > 0;
   var T = { vend:0, sol:0, nadc:0, falta:0, livre:0, depois:0, kgV:0, kgF:0 };
   var linhasItens = itensL.map(function(I){
     /* o saldo só ajuda se estiver na mesma DCS do pedido */
     var lv = 0; Object.keys(I.faltaDc).forEach(function(dc){ lv += Math.min(I.faltaDc[dc], livre[dc + '|' + I.c] || 0); });
     var depois = Math.max(0, I.falta - lv), kg = caPeso(I.c);
-    T.vend += I.vend; T.sol += I.sol; T.nadc += I.nadc; T.falta += I.falta; T.livre += lv; T.depois += depois; T.kgV += I.vend * kg; T.kgF += I.falta * kg;
+    var on = !!CA.pSel[I.c];
+    if (!soSel || on){ T.vend += I.vend; T.sol += I.sol; T.nadc += I.nadc; T.falta += I.falta; T.livre += lv; T.depois += depois; T.kgV += I.vend * kg; T.kgF += I.falta * kg; }
     var pct = I.vend ? Math.round(I.sol / I.vend * 100) : 0;
-    return '<tr><td>' + caCodHtml(I.c) + '</td><td>' + caEsc(caNome(I.c) || 'Código fora da base') + '<span class="ca-sub">' + caEsc(caFabDe(I.c) || 'fabricante a definir') + ' · ' + Object.keys(I.peds).length + ' ped. · ' + caEsc(Object.keys(I.dcs).join(', ')) + '</span></td>' +
+    return '<tr' + (on ? ' class="sel"' : '') + '><td><input type="checkbox" data-ca="psel" data-c="' + caEsc(I.c) + '"' + (on ? ' checked' : '') + ' title="Somar só os selecionados"></td><td>' + caCodHtml(I.c) + '</td><td>' + caEsc(caNome(I.c) || 'Código fora da base') + '<span class="ca-sub">' + caEsc(caFabDe(I.c) || 'fabricante a definir') + ' · ' + Object.keys(I.peds).length + ' ped. · ' + caEsc(Object.keys(I.dcs).join(', ')) + '</span></td>' +
       '<td class="r">' + caN(I.vend) + '</td><td class="r">' + caN(I.sol) + '<span class="ca-sub">' + pct + '%</span></td><td class="r">' + caN(I.nadc) + '</td>' +
       '<td class="r">' + (I.falta ? '<b class="ca-atrasado">' + caN(I.falta) + '</b>' : '<span style="color:#1B5E20;">0</span>') + '</td>' +
       '<td class="r">' + (lv ? '<span style="color:#1B5E20;">' + caN(lv) + '</span>' : '—') + '</td>' +
@@ -6089,9 +6092,10 @@ function caViewPainel(vendas, m){
   }).join('');
   html += '<div class="ca-painel" style="margin-top:12px;"><div class="ca-painel-topo"><h3>Total por item — pedidos em aberto</h3><span style="font-size:12px;color:#888;">o que foi vendido, o que já tem chamado e o que falta para seguir</span>' +
     '<input type="search" id="ca-fp" placeholder="🔎 Código, item ou fabricante" value="' + caEsc(CA.fp || '') + '" style="margin-left:auto;padding:6px 10px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12.5px;min-width:0;flex:0 1 240px;"></div>' +
-    '<div class="ca-scroll"><table class="ca-t"><thead><tr><th>Código</th><th>Item</th><th class="r">Total vendido</th><th class="r">Total solicitado</th><th class="r">Já na DCS</th><th class="r">Total que falta</th><th class="r">Saldo livre na mesma DCS</th><th class="r">Falta pedir ao fabricante</th></tr></thead><tbody>' +
-    (linhasItens || '<tr><td colspan="8" style="color:#999;">' + (qi ? 'Nenhum item encontrado.' : 'Sem pedidos em aberto.') + '</td></tr>') +
-    (linhasItens ? '<tr style="background:#FAF9F6;font-weight:800;"><td colspan="2">Total' + (qi ? ' (filtrado)' : '') + ' · ' + itensL.length + ' itens<span class="ca-sub" style="font-weight:400;">≈ ' + t(T.kgV) + ' t vendidas · ≈ ' + t(T.kgF) + ' t faltando</span></td><td class="r">' + caN(T.vend) + '</td><td class="r">' + caN(T.sol) + '<span class="ca-sub">' + (T.vend ? Math.round(T.sol / T.vend * 100) : 0) + '%</span></td><td class="r">' + caN(T.nadc) + '</td><td class="r ca-atrasado">' + caN(T.falta) + '</td><td class="r">' + caN(T.livre) + '</td><td class="r ca-atrasado">' + caN(T.depois) + '</td></tr>' : '') +
+    (soSel ? '<div class="ca-alerta info" style="margin:8px 12px;"><div><b>' + nSel + ' ' + (nSel === 1 ? 'item selecionado' : 'itens selecionados') + ':</b> vendido ' + caN(T.vend) + ' · solicitado ' + caN(T.sol) + ' · já na DCS ' + caN(T.nadc) + ' · <b class="ca-atrasado">falta ' + caN(T.falta) + '</b> · falta pedir ao fabricante <b class="ca-atrasado">' + caN(T.depois) + '</b> · ≈ ' + t(T.kgF) + ' t faltando</div><button class="ca-btn sm" data-ca="psel-limpar">Limpar seleção</button></div>' : '') +
+    '<div class="ca-scroll"><table class="ca-t"><thead><tr><th><input type="checkbox" data-ca="psel-todos"' + (soSel && nSel === itensL.length ? ' checked' : '') + ' title="Selecionar todos"></th><th>Código</th><th>Item</th><th class="r">Total vendido</th><th class="r">Total solicitado</th><th class="r">Já na DCS</th><th class="r">Total que falta</th><th class="r">Saldo livre na mesma DCS</th><th class="r">Falta pedir ao fabricante</th></tr></thead><tbody>' +
+    (linhasItens || '<tr><td colspan="9" style="color:#999;">' + (qi ? 'Nenhum item encontrado.' : 'Sem pedidos em aberto.') + '</td></tr>') +
+    (linhasItens ? '<tr style="background:' + (soSel ? '#FFF4F4' : '#FAF9F6') + ';font-weight:800;"><td colspan="3">' + (soSel ? 'Total dos selecionados · ' + nSel + ' de ' + itensL.length + ' itens' : 'Total' + (qi ? ' (filtrado)' : '') + ' · ' + itensL.length + ' itens') + '<span class="ca-sub" style="font-weight:400;">≈ ' + t(T.kgV) + ' t vendidas · ≈ ' + t(T.kgF) + ' t faltando</span></td><td class="r">' + caN(T.vend) + '</td><td class="r">' + caN(T.sol) + '<span class="ca-sub">' + (T.vend ? Math.round(T.sol / T.vend * 100) : 0) + '%</span></td><td class="r">' + caN(T.nadc) + '</td><td class="r ca-atrasado">' + caN(T.falta) + '</td><td class="r">' + caN(T.livre) + '</td><td class="r ca-atrasado">' + caN(T.depois) + '</td></tr>' : '') +
     '</tbody></table></div><div style="padding:6px 12px 10px;font-size:11.5px;color:#888;">Quantidades em unidades de cada item. "Total solicitado" é o que já está vinculado a chamado de abastecimento; "Saldo livre" é o que existe em chamados da mesma DCS e ainda não foi vinculado; "Falta pedir ao fabricante" é o que sobra mesmo usando esse saldo.</div></div>';
   // pedidos em risco
   html += '<div class="ca-painel" style="margin-top:12px;"><div class="ca-painel-topo"><h3>Pedidos em risco de prazo</h3><span style="font-size:12px;color:#888;">sem abastecimento perto do prazo ou com chegada prevista depois dele</span></div><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Pedido</th><th>Unidade</th><th>Cliente</th><th>DCS</th><th>Prazo</th><th class="r">Falta</th><th>Situação</th></tr></thead><tbody>' +
@@ -6377,7 +6381,7 @@ document.addEventListener('click', function(ev){
   if (!t || !t.closest('#tab-central, #ca-modal-ov')) return;
   var act = t.dataset.ca;
   if (caEhDirecao() && CA_ACOES_GRAVAM[act]){ ev.preventDefault(); caToast('Acesso da direção é só de leitura.'); return; }
-  if (t.tagName === 'INPUT' && act !== 'sel' && act !== 'g-item' && act !== 'v-vinc-sel') return;
+  if (t.tagName === 'INPUT' && act !== 'sel' && act !== 'g-item' && act !== 'v-vinc-sel' && act !== 'psel' && act !== 'psel-todos') return;
   if (act === 'aba'){ CA.aba = t.dataset.aba; try { localStorage.setItem('fgv_ca_aba', CA.aba); } catch(e){} caRender(); }
   else if (act === 'toggle'){ var k = t.dataset.k; CA.aberto[k] = !CA.aberto[k]; caRender(); }
   else if (act === 'nova-venda') caModalVenda();
@@ -6428,6 +6432,9 @@ document.addEventListener('click', function(ev){
   }
   else if (act === 'vc-abrir'){ ev.stopPropagation(); caModalVincular(t.dataset.id); }
   else if (act === 'vc-vincular'){ var vk = t.dataset.v, pares = []; document.querySelectorAll('#ca-modal input[data-vk]').forEach(function(inp){ if (inp.dataset.vk !== vk) return; var qv = caQ(inp.value); if (qv > 0) pares.push({ v:vk, c:inp.dataset.c, q:qv }); }); if (!pares.length){ document.getElementById('ca-vc-erro').textContent = 'Informe a quantidade a vincular.'; return; } t.disabled = true; caVincular(CA.modal.id, pares); }
+  else if (act === 'psel'){ CA.pSel = CA.pSel || {}; CA.pSel[t.dataset.c] = t.checked; caRender(); }
+  else if (act === 'psel-todos'){ CA.pSel = {}; if (t.checked) document.querySelectorAll('#ca-main [data-ca="psel"]').forEach(function(x){ CA.pSel[x.dataset.c] = true; }); caRender(); }
+  else if (act === 'psel-limpar'){ CA.pSel = {}; caRender(); }
   else if (act === 'vincular'){ ev.stopPropagation(); caVincular(t.dataset.a, [{ v:t.dataset.v, c:t.dataset.c, q:+t.dataset.q }]); }
   else if (act === 'v-del'){ var md = CA.modal; if (!md.del){ caLerVenda(); md.del = true; t.textContent = 'Confirmar exclusão'; document.getElementById('ca-v-erro').textContent = 'Os chamados de abastecimento ligados a este pedido continuam existindo.'; return; } t.disabled = true; dbRef('centralAbast/vendas/' + md.id).remove().then(function(){ caFecharModal(); caToast('Pedido excluído'); if (!firebaseOK) caLocal('vendas', md.id, null); }).catch(function(e){ t.disabled = false; document.getElementById('ca-v-erro').textContent = caErro(e); }); }
   else if (act === 'g-salvar') caSalvarGuia();
