@@ -4611,6 +4611,19 @@
 #tab-rota .rt-mis.feito { color:#1B5E20; text-decoration:line-through; }
 #tab-rota .rt-check { width:18px; height:18px; border:3px solid #1C1C1C; background:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; }
 #tab-rota .rt-mis.feito .rt-check { background:#2E7D32; color:#fff; border-color:#1B5E20; }
+#tab-rota .rt-lig { background:#E8F1FB; }
+#tab-rota .rt-lig-lin { display:grid; grid-template-columns:22px 1fr 92px; gap:8px; align-items:center; padding:6px 0; border-bottom:1px dashed #B9CDE4; }
+#tab-rota .rt-lig-lin.feito { color:#1B5E20; }
+#tab-rota .rt-lig-lin.feito .rt-check { background:#2E7D32; color:#fff; border-color:#1B5E20; }
+#tab-rota .rt-lig-lin.pend .rt-check { background:#FFD23F; }
+#tab-rota .rt-lig-lin input { width:100%; font-size:17px; font-weight:700; text-align:right; padding:8px; border:3px solid #1C1C1C; background:#fff; min-height:44px; box-sizing:border-box; }
+#tab-rota .rt-lig-lin input:disabled { background:#F1EFE8; color:#888; border-color:#BBB; }
+#tab-rota .rt-lig-st { font-size:12.5px; font-weight:400; color:#555; }
+#tab-rota .rt-lig-tot { display:flex; justify-content:space-between; align-items:center; font-size:15px; padding-top:2px; }
+#tab-rota .rt-lig-btn { font-size:15px; font-weight:700; padding:10px; border:3px solid #1C1C1C; background:#185FA5; color:#fff; cursor:pointer; min-height:44px; box-shadow:4px 4px 0 #0B1828; }
+#tab-rota .rt-lig-btn:active { transform:translate(2px,2px); box-shadow:2px 2px 0 #0B1828; }
+#tab-rota .rt-lig-msg { font-size:13px; min-height:16px; }
+.rt-lembrete input.rt-lembrete-in { width:100%; box-sizing:border-box; font-size:18px; font-weight:700; padding:9px; border:3px solid #FFD23F; background:#fff; color:#1C1C1C; margin-top:6px; min-height:44px; }
 #tab-rota .rt-galeria { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:6px; }
 #tab-rota .rt-galeria button { height:48px; border:3px solid #D8D6CF; background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
 #tab-rota .rt-galeria button.on { border-color:#C41E1E; background:#FFF6D6; }
@@ -13145,7 +13158,7 @@ function entrarComoUsuario(user) {
   document.getElementById('vb-nome-text').textContent = v.nome;
   checkAdminAccess(v.nome);
   if (typeof spOnLogin === 'function') spOnLogin();
-  try { if (rtJoga(user)) { rtInit(); setTimeout(rtLembreteDiario, 3000); } } catch(e) {}
+  try { if (rtJoga(user)) { rtInit(); setTimeout(rtLembreteDiario, 3000); if (!RT.ligTimer) RT.ligTimer = setInterval(function() { try { rtLembreteLigacoes(); } catch (e) {} }, 60000); setTimeout(rtLembreteLigacoes, 8000); } } catch(e) {}
   if (typeof pedColRecarregarUsuario === 'function') pedColRecarregarUsuario();
   navAplicarOrdemSalva();
   navSetupDragDrop();
@@ -13606,8 +13619,9 @@ function rtInit() {
       });
       dbRef('ligacoes/' + vn).on('value', function(snap) {
         var dados = (snap && snap.val()) || {}, mapa = {};
-        Object.keys(dados).forEach(function(k) { var l = dados[k]; if (l && l.data) mapa[l.data] = (mapa[l.data] || 0) + ckNum(l.qtd); });
-        RT.lig[vn] = mapa; rtRender();
+        var det = {};
+        Object.keys(dados).forEach(function(k) { var l = dados[k]; if (l && l.data) { mapa[l.data] = (mapa[l.data] || 0) + ckNum(l.qtd); if (l.c12 != null || l.c18 != null) det[l.data] = l; } });
+        RT.lig[vn] = mapa; RT.ligDet = RT.ligDet || {}; RT.ligDet[vn] = det; RT.ligOk = RT.ligOk || {}; RT.ligOk[vn] = true; rtRender();
       });
     });
     dbRef('rotaMeta/avatares').on('value', function(snap) { RT.avatares = (snap && snap.val()) || {}; rtRender(); });
@@ -14373,6 +14387,7 @@ function rtRenderInner() {
   }
   html += '</div>';
   root.innerHTML = html;
+  if (RT.ligFoco) { var fe = document.getElementById(RT.ligFoco); if (fe && !fe.disabled) { fe.focus(); try { var n = fe.value.length; fe.setSelectionRange(n, n); } catch (e) {} } }
 }
 function rtVer(v) { RT.ver = v; rtRender(); }
 // Lembrete do déficit de produtos: aparece uma vez por dia quando o vendedor entra no guia
@@ -14503,6 +14518,7 @@ function rtPainelVendedor(c) {
   }
   var mv = c.met.find(function(x) { return x.key === 'valor'; });
   if (mv && mv.alvoHoje > 0) mis.push({ txt: 'Vender ' + rtFmt(mv, mv.alvoHoje) + ' hoje (feito: ' + rtFmt(mv, mv.hoje) + ')', ok: mv.hoje >= mv.alvoHoje });
+  h += rtCardLigacoes(c, eu, alvoLig);
   h += premCardHtml(c.vn, eu);
   h += comCardHtml(c.vn, eu);
   h += '<div class="rt-card rt-missao"><div class="rt-pix">MISSÃO DO DIA</div>' + mis.map(function(m) {
@@ -14518,6 +14534,119 @@ function rtPainelVendedor(c) {
       }).join('') + '</div>' : '') + '</div>';
   }
   return h;
+}
+// ── CHECKS DE LIGAÇÕES (12h e 18h) ──
+// O vendedor lança as ligações da manhã no check das 12h e as da tarde no check das 18h.
+// Grava em ligacoes/<vendedor>/<AAAA_MM_DD> com qtd = manhã + tarde, então comissão, selos e mapa continuam lendo o mesmo campo.
+var RT_CHECKS = [
+  { k: 'c12', hora: 12, rot: 'Check 12h', desc: 'ligações da manhã (até 12h)', ico: '☀️' },
+  { k: 'c18', hora: 18, rot: 'Check 18h', desc: 'ligações da tarde (12h às 18h)', ico: '🌙' }
+];
+function rtLigHojeDet(vn) { return ((RT.ligDet || {})[vn] || {})[ckToday()] || {}; }
+function rtDiaUtilHoje() { var w = new Date().getDay(); return w !== 0 && w !== 6; }
+function rtHoraAgora() { var d = new Date(); return d.getHours() + d.getMinutes() / 60; }
+function rtHoraFmt(ts) { if (!ts) return ''; var d = new Date(ts); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function rtLigPodeEditar(vn) { return vn === currentUser || currentUser === 'JULIANA'; }
+function rtCardLigacoes(c, eu, alvoLig) {
+  var det = rtLigHojeDet(c.vn), pode = rtLigPodeEditar(c.vn), agora = rtHoraAgora(), util = rtDiaUtilHoje();
+  RT.ligDraft = RT.ligDraft || {};
+  var h = '<div class="rt-card rt-lig"><div class="rt-pix">📞 ' + (eu ? 'MINHAS LIGAÇÕES DE HOJE' : 'LIGAÇÕES DE HOJE') + '</div>' +
+    '<div class="rt-sub">' + (eu ? 'Lance quantas ligações você fez em cada período.' : 'Checks lançados pelo vendedor hoje.') + '</div>';
+  var soma = 0;
+  RT_CHECKS.forEach(function(ck) {
+    var id = 'rt-lig-' + ck.k, salvo = det[ck.k], tem = salvo != null && salvo !== '';
+    var dk = c.vn + '|' + ck.k, val = RT.ligDraft[dk] != null ? RT.ligDraft[dk] : (tem ? salvo : '');
+    if (tem) soma += ckNum(salvo);
+    var atrasado = !tem && util && agora >= ck.hora;
+    var st = tem ? '✓ lançado às ' + rtHoraFmt(det[ck.k + 'em']) + (det[ck.k + 'por'] && det[ck.k + 'por'] !== c.vn ? ' (pela gestão)' : '')
+      : atrasado ? '<span class="rt-atras">⏰ pendente — já passou das ' + ck.hora + 'h</span>'
+      : 'lance às ' + ck.hora + 'h';
+    h += '<div class="rt-lig-lin' + (tem ? ' feito' : atrasado ? ' pend' : '') + '"><span class="rt-check">' + (tem ? '✓' : atrasado ? '!' : '') + '</span>' +
+      '<label for="' + id + '"><span class="rt-forte">' + ck.ico + ' ' + ck.rot + '</span><div class="rt-lig-st">' + ck.desc + ' · ' + st + '</div></label>' +
+      '<input id="' + id + '" type="number" inputmode="numeric" min="0" max="999" step="1" placeholder="0" value="' + rtEsc(val) + '"' + (pode ? '' : ' disabled') +
+      ' oninput="rtLigDraft(\'' + c.vn + '\',\'' + ck.k + '\',this.value)" onfocus="RT.ligFoco=this.id" onblur="RT.ligFoco=null" onkeydown="if(event.key===\'Enter\'){this.blur();rtLigSalvar(\'' + c.vn + '\');}"></div>';
+  });
+  var bate = alvoLig > 0 && soma >= alvoLig;
+  h += '<div class="rt-lig-tot"><span>Total do dia: <b>' + soma + '</b>' + (alvoLig > 0 ? ' de ' + alvoLig : '') + '</span>' +
+    (alvoLig > 0 ? (bate ? '<span class="rt-ok">meta de hoje ✓</span>' : '<span class="rt-cinza">faltam ' + Math.max(0, alvoLig - soma) + '</span>') : '') + '</div>';
+  if (pode) h += '<button type="button" class="rt-lig-btn" onclick="rtLigSalvar(\'' + c.vn + '\')">Salvar ligações</button><div class="rt-lig-msg" id="rt-lig-msg"></div>';
+  return h + '</div>';
+}
+function rtLigDraft(vn, k, v) { RT.ligDraft = RT.ligDraft || {}; RT.ligDraft[vn + '|' + k] = v; }
+function rtLigGravar(vn, valores) {
+  // valores: { c12: n, c18: n } — só os checks que mudaram
+  var data = ckToday(), det = rtLigHojeDet(vn), agora = Date.now(), upd = { data: data };
+  var c12 = valores.c12 != null ? valores.c12 : (det.c12 != null ? ckNum(det.c12) : null);
+  var c18 = valores.c18 != null ? valores.c18 : (det.c18 != null ? ckNum(det.c18) : null);
+  Object.keys(valores).forEach(function(k) { upd[k] = valores[k]; upd[k + 'em'] = agora; upd[k + 'por'] = currentUser; });
+  upd.qtd = ckNum(c12) + ckNum(c18);
+  return dbRef('ligacoes/' + vn + '/' + data.replace(/-/g, '_')).update(upd);
+}
+function rtLigSalvar(vn) {
+  if (!rtLigPodeEditar(vn)) return;
+  var det = rtLigHojeDet(vn), mud = {}, erro = '';
+  RT.ligDraft = RT.ligDraft || {};
+  RT_CHECKS.forEach(function(ck) {
+    var dk = vn + '|' + ck.k; if (RT.ligDraft[dk] == null) return;
+    var s = String(RT.ligDraft[dk]).trim();
+    if (s === '') return;
+    var n = Number(s);
+    if (!isFinite(n) || n < 0 || n > 999 || Math.floor(n) !== n) { erro = 'Use um número inteiro entre 0 e 999 no ' + ck.rot + '.'; return; }
+    if (det[ck.k] == null || ckNum(det[ck.k]) !== n) mud[ck.k] = n;
+  });
+  var msg = document.getElementById('rt-lig-msg');
+  if (erro) { if (msg) msg.innerHTML = '<span class="rt-atras">' + erro + '</span>'; return; }
+  if (!Object.keys(mud).length) { if (msg) msg.innerHTML = '<span class="rt-cinza">Nada novo para salvar.</span>'; return; }
+  if (msg) msg.textContent = 'Salvando…';
+  rtLigGravar(vn, mud).then(function() {
+    RT_CHECKS.forEach(function(ck) { delete RT.ligDraft[vn + '|' + ck.k]; });
+    rtRender();
+    var m2 = document.getElementById('rt-lig-msg'); if (m2) m2.innerHTML = '<span class="rt-ok">✓ Ligações salvas</span>';
+  }).catch(function(e) {
+    var m2 = document.getElementById('rt-lig-msg'); if (m2) m2.innerHTML = '<span class="rt-atras">Não salvou (' + rtEsc(e && e.message) + '). Tente de novo.</span>';
+  });
+}
+// Visão da gestão: quem já lançou cada check hoje
+function rtChecksEquipe() {
+  var agora = rtHoraAgora(), util = rtDiaUtilHoje();
+  var cel = function(det, ck) {
+    var v = det[ck.k];
+    if (v != null && v !== '') return '<td class="rt-forte" style="white-space:nowrap">' + ckNum(v) + ' <span class="rt-cinza" style="font-size:11.5px">' + rtHoraFmt(det[ck.k + 'em']) + '</span></td>';
+    return '<td style="white-space:nowrap"' + (util && agora >= ck.hora ? ' class="rt-atras">⏰ pendente' : ' class="rt-cinza">—') + '</td>';
+  };
+  return '<div class="rt-card rt-lig"><div class="rt-pix">📞 CHECKS DE LIGAÇÕES · HOJE</div>' +
+    '<table class="rt-tab"><thead><tr><th>Vendedor</th><th>12h</th><th>18h</th><th>Total</th></tr></thead><tbody>' +
+    CK_EQUIPE.map(function(vn) {
+      var det = rtLigHojeDet(vn), tot = ckNum(det.c12) + ckNum(det.c18);
+      return '<tr onclick="rtVer(\'' + vn + '\')"><td class="rt-forte">' + rtEsc(rtNome(vn)) + '</td>' + cel(det, RT_CHECKS[0]) + cel(det, RT_CHECKS[1]) + '<td class="rt-forte">' + (det.c12 != null || det.c18 != null ? tot : '—') + '</td></tr>';
+    }).join('') + '</tbody></table><div class="rt-sub">⏰ = já passou do horário e o vendedor ainda não lançou. Clique no nome para corrigir o lançamento.</div></div>';
+}
+// Lembrete: às 12h e às 18h (dias úteis), se o check ainda não foi lançado, abre um aviso com o campo
+function rtLembreteLigacoes() {
+  if (!currentUser || !rtJoga(currentUser) || !rtDiaUtilHoje()) return;
+  if (!(RT.ligOk && RT.ligOk[currentUser])) return;
+  if (document.querySelector('.rt-lembrete')) return;
+  var det = rtLigHojeDet(currentUser), agora = rtHoraAgora();
+  var ck = RT_CHECKS.slice().reverse().find(function(x) { return agora >= x.hora && (det[x.k] == null || det[x.k] === ''); });
+  if (!ck) return;
+  var chave = 'rt_lig_lembrete_' + currentUser + '_' + ckToday() + '_' + ck.k;
+  try { if (localStorage.getItem(chave)) return; localStorage.setItem(chave, '1'); } catch (e) {}
+  var box = document.createElement('div'); box.className = 'rt-lembrete';
+  box.innerHTML = '<div class="rt-lembrete-tit">⏰ ' + ck.rot.toUpperCase() + '</div><div>Quantas ' + ck.desc + ' você fez?</div>' +
+    '<input class="rt-lembrete-in" type="number" inputmode="numeric" min="0" max="999" step="1" placeholder="0" aria-label="Ligações ' + ck.rot + '">' +
+    '<div class="rt-lembrete-err" style="color:#FFB4B4;font-size:13px;min-height:16px;margin-top:4px;"></div>' +
+    '<div style="display:flex;gap:8px;margin-top:6px;"><button type="button" class="rt-lembrete-ver">Depois</button><button type="button" class="rt-lembrete-ok">Lançar</button></div>';
+  document.body.appendChild(box);
+  var inp = box.querySelector('input'); setTimeout(function() { inp.focus(); }, 50);
+  var enviar = function() {
+    var n = Number(String(inp.value).trim());
+    if (String(inp.value).trim() === '' || !isFinite(n) || n < 0 || n > 999 || Math.floor(n) !== n) { box.querySelector('.rt-lembrete-err').textContent = 'Digite um número inteiro entre 0 e 999.'; return; }
+    var v = {}; v[ck.k] = n;
+    rtLigGravar(currentUser, v).then(function() { box.remove(); }).catch(function(e) { box.querySelector('.rt-lembrete-err').textContent = 'Não salvou, tente de novo.'; });
+  };
+  box.querySelector('.rt-lembrete-ok').onclick = enviar;
+  inp.onkeydown = function(e) { if (e.key === 'Enter') enviar(); };
+  box.querySelector('.rt-lembrete-ver').onclick = function() { box.remove(); };
 }
 // Quadro de produtos (atingido x meta), em largura total abaixo do mapa
 function rtQuadroProdutos(c) {
@@ -14590,7 +14719,7 @@ function rtPainelEquipe(calcs) {
     '<div class="rt-sub">Comissão garantida (conciliada). Prêmios aparecem por vendedor e não somam no total da equipe · clique num vendedor para ver o detalhe</div><table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Prêmios</th><th>Comissão</th></tr></thead><tbody>' +
     pr.map(function(x, i) { return '<tr onclick="rtVer(\'' + x.vn + '\')"><td>' + rtAvatarSvg(RT.avatares[x.vn], 28) + '</td><td class="rt-forte">' + (i < 3 && x.g ? ['🥇', '🥈', '🥉'][i] + ' ' : '') + rtEsc(rtNome(x.vn)) + (x.p ? '<div class="rt-cinza" style="font-size:11.5px;font-weight:400;white-space:nowrap">+' + premRS(Math.round(x.p)) + ' previsto</div>' : '') + '</td><td class="rt-forte" style="white-space:nowrap">' + premRS(x.t) + '</td><td class="rt-forte" style="color:#185FA5;white-space:nowrap">' + premRS(Math.round(x.c)) + '</td></tr>'; }).join('') +
     '</tbody></table></div>';
-  return premHtml + '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase pelo valor <b>entregue</b>, estrelas das outras metas e a mais atrasada.</div>' +
+  return premHtml + rtChecksEquipe() + '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase pelo valor <b>entregue</b>, estrelas das outras metas e a mais atrasada.</div>' +
     '<table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Fase</th><th>Entregue</th><th title="Dias úteis na mesma fase">Dias</th><th>⭐</th><th>Mais atrasada</th></tr></thead><tbody>' +
     ord.map(function(c) {
       var tr = c.menor ? rtEsc(c.menor.label) + ' <span class="rt-cinza" style="white-space:nowrap">· ' + Math.floor(c.menor.pct) + '%</span>' : '—';
