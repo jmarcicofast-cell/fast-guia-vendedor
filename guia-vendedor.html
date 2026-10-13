@@ -5445,16 +5445,18 @@ function caGruposAbastecer(){
   });
   return g;
 }
+/* pedido ainda existente na aba Pedidos (excluídos ficam de fora: a lista carregada já os descarta) */
 function caPedidoDoGuia(vn, pid){
   var achou = null;
-  (CA.ped[vn] || []).forEach(function(p){ if (p.id === pid) achou = p; });
-  if (!achou) ((typeof _pedTodosGeral !== 'undefined' && _pedTodosGeral) || []).forEach(function(p){ if (p.id === pid && p.vendedor === vn) achou = p; });
+  if (CA.ped[vn]){ CA.ped[vn].forEach(function(p){ if (p.id === pid && !p.excluido) achou = p; }); return achou; }
+  ((typeof _pedTodosGeral !== 'undefined' && _pedTodosGeral) || []).forEach(function(p){ if (p.id === pid && p.vendedor === vn && !p.excluido) achou = p; });
   return achou;
 }
 function caVendaGuia(vn, pid, g){
   if (!g) g = caGruposAbastecer()[vn + '__' + pid];
   if (!g) return null;
   var p = caPedidoDoGuia(vn, pid), r0 = g.regs[0] || {};
+  if (!p) return null; /* pedido excluído na aba Pedidos (ou ainda carregando): sai da Central */
   var cat = caCat(), okey = vn + '__' + pid, o = CA.dados.guia[okey] || null, classificado = !!o;
   o = o || {};
   var dcAb = '', prazoAb = '';
@@ -5783,7 +5785,7 @@ function caCardAbast(a, vmap){
       (nV ? '<div class="ca-scroll"><table class="ca-t"><thead><tr><th>Pedido de venda</th><th>Cliente</th><th>Prazo</th><th>Itens neste chamado</th></tr></thead><tbody>' : '<div style="padding:8px 12px;font-size:12px;color:#888;">Ainda sem pedido de venda vinculado. Na Necessidade e nos pedidos, o saldo deste chamado aparece para vincular.</div><div style="display:none;"><table><tbody>') +
       Object.keys(porV).map(function(vk){
         var v = vmap[vk], xs = porV[vk], late = v && a.previsao && v.data && a.previsao > v.data && a.status !== 'na_dc';
-        return '<tr><td>' + (v ? '<button class="ca-chip" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + caEsc(v.chamado) + '</button>' : '<span style="color:#999;">pedido de outra pessoa ou excluído</span>') + '</td><td>' + caEsc(v ? v.cliente : '') + '</td><td class="' + (late ? 'ca-atrasado' : '') + '">' + caDA(v && v.data) + '</td>' +
+        return '<tr><td>' + (v ? '<button class="ca-chip" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + caEsc(v.chamado) + '</button>' : '<span style="color:#999;">pedido excluído ou de outra pessoa</span>' + (caVeTudo() || CA.unid ? ' <button class="ca-btn link sm" data-ca="desvincular" data-id="' + caEsc(a.id) + '" data-v="' + caEsc(vk) + '" title="Tira este pedido do chamado e devolve a quantidade para o saldo">Liberar saldo</button>' : '')) + '</td><td>' + caEsc(v ? v.cliente : '') + '</td><td class="' + (late ? 'ca-atrasado' : '') + '">' + caDA(v && v.data) + '</td>' +
           '<td>' + xs.map(function(x){ return caCodHtml(x.c) + ' × ' + caN(x.q); }).join(' &nbsp;') + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
       (a.obs ? '<div style="padding:6px 12px 0;font-size:12px;"><span style="color:#999;">Obs.:</span> ' + caEsc(a.obs) + '</div>' : '') +
@@ -6094,6 +6096,8 @@ document.addEventListener('click', function(ev){
     caDesenharAbast(); caToast('Itens do chamado atualizados');
   }
   else if (act === 'usar-saldo'){ ev.stopPropagation(); var lin = null; caNecessidade(caVendas().filter(function(v){ return v.status === 'aberto'; }), caAlocMap()).forEach(function(l){ if (l.k === t.dataset.k) lin = l; }); if (!lin) return; var cod = lin.c; caVincular(t.dataset.a, lin.peds.slice().sort(function(a, b){ return (a.v.data || '9999').localeCompare(b.v.data || '9999'); }).map(function(p){ return { v:p.v.key, c:cod, q:p.falta }; })); }
+  else if (act === 'desvincular'){ ev.stopPropagation(); var ad = CA.dados.abast[t.dataset.id]; if (!ad) return; var nova = caArr(ad.aloc).filter(function(x){ return x.v !== t.dataset.v; }); t.disabled = true;
+    dbRef('centralAbast/abast/' + t.dataset.id + '/aloc').set(nova).then(function(){ if (!firebaseOK){ ad.aloc = nova; caRender(); } caToast('Saldo liberado no chamado ' + ad.chamado); }).catch(function(e){ t.disabled = false; caToast(caErro(e)); }); }
   else if (act === 'vincular'){ ev.stopPropagation(); caVincular(t.dataset.a, [{ v:t.dataset.v, c:t.dataset.c, q:+t.dataset.q }]); }
   else if (act === 'v-del'){ var md = CA.modal; if (!md.del){ caLerVenda(); md.del = true; t.textContent = 'Confirmar exclusão'; document.getElementById('ca-v-erro').textContent = 'Os chamados de abastecimento ligados a este pedido continuam existindo.'; return; } t.disabled = true; dbRef('centralAbast/vendas/' + md.id).remove().then(function(){ caFecharModal(); caToast('Pedido excluído'); if (!firebaseOK) caLocal('vendas', md.id, null); }).catch(function(e){ t.disabled = false; document.getElementById('ca-v-erro').textContent = caErro(e); }); }
   else if (act === 'g-salvar') caSalvarGuia();
