@@ -5539,15 +5539,22 @@ function caVincular(aId, pares){
 }
 function caEhPlaca(c){ var p = caCat().map[c]; return !!p && p.k === 'PLACA'; }
 function caTxtSemNec(c){ return caEhPlaca(c) ? 'Placa — coleta direto na fábrica' : 'Tem na DCS — não precisa abastecer'; }
+/* o pedido ainda existe? (pedidos de outras operações existem mesmo quando este login não os vê) */
+function caVendaExiste(vk){
+  if (vk.indexOf('m:') === 0) return !!(CA.dados.vendas || {})[vk.slice(2)];
+  if (CA.unid) return true;
+  var okey = vk.slice(2), i = okey.lastIndexOf('__'), vn = okey.slice(0, i), pid = okey.slice(i + 2);
+  if (!CA.ped[vn]) return !caVeTudo() ? true : false;
+  return !!caPedidoDoGuia(vn, pid);
+}
 function caTemAloc(vkey){ return Object.keys(CA.dados.abast || {}).some(function(id){ var a = CA.dados.abast[id]; return a && a.status !== 'cancelado' && caArr(a.aloc).some(function(x){ return x.v === vkey; }); }); }
-function caAbasts(todas){
-  var out = [], u = CA.unid, vis = null, fu = (!u && CA.fu && !todas) ? CA.fu : '';
-  if (u || fu){ vis = {}; caVendas().forEach(function(v){ vis[v.key] = 1; }); }
+/* os estoques das DCS são compartilhados: todo chamado de abastecimento aparece para todas as
+   operações (Televendas, Lojas do Rio, Atacado SP), e o saldo pode ser vinculado por qualquer uma */
+function caAbasts(){
+  var out = [];
   Object.keys(CA.dados.abast || {}).forEach(function(id){
     var a = CA.dados.abast[id]; if (!a) return;
     var r = Object.assign({ id:id }, a); r.aloc = caArr(a.aloc);
-    if (u && r.unidade !== u.unidade && !r.aloc.some(function(x){ return vis[x.v]; })) return;
-    if (fu && caUnidNome(r.unidade) !== fu && !r.aloc.some(function(x){ return vis[x.v]; })) return;
     out.push(r);
   });
   return out;
@@ -5801,7 +5808,7 @@ function caCardAbast(a, vmap){
       (nV ? '<div class="ca-scroll"><table class="ca-t"><thead><tr><th>Pedido de venda</th><th>Cliente</th><th>Prazo</th><th>Itens neste chamado</th></tr></thead><tbody>' : '<div style="padding:8px 12px;font-size:12px;color:#888;">Ainda sem pedido de venda vinculado. Na Necessidade e nos pedidos, o saldo deste chamado aparece para vincular.</div><div style="display:none;"><table><tbody>') +
       Object.keys(porV).map(function(vk){
         var v = vmap[vk], xs = porV[vk], late = v && a.previsao && v.data && a.previsao > v.data && a.status !== 'na_dc';
-        return '<tr><td>' + (v ? '<button class="ca-chip" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + caEsc(v.chamado) + '</button>' : '<span style="color:#999;">pedido excluído ou de outra pessoa</span>' + (caVeTudo() || CA.unid ? ' <button class="ca-btn link sm" data-ca="desvincular" data-id="' + caEsc(a.id) + '" data-v="' + caEsc(vk) + '" title="Tira este pedido do chamado e devolve a quantidade para o saldo">Liberar saldo</button>' : '')) + '</td><td>' + caEsc(v ? v.cliente : '') + '</td><td class="' + (late ? 'ca-atrasado' : '') + '">' + caDA(v && v.data) + '</td>' +
+        return '<tr><td>' + (v ? '<button class="ca-chip" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + caEsc(v.chamado) + '</button>' : (caVendaExiste(vk) ? '<span style="color:#999;">pedido de outra operação</span>' : '<span style="color:#999;">pedido excluído</span>' + (caVeTudo() ? ' <button class="ca-btn link sm" data-ca="desvincular" data-id="' + caEsc(a.id) + '" data-v="' + caEsc(vk) + '" title="Tira este pedido do chamado e devolve a quantidade para o saldo">Liberar saldo</button>' : ''))) + '</td><td>' + caEsc(v ? v.cliente : '') + '</td><td class="' + (late ? 'ca-atrasado' : '') + '">' + caDA(v && v.data) + '</td>' +
           '<td>' + xs.map(function(x){ return caCodHtml(x.c) + ' × ' + caN(x.q); }).join(' &nbsp;') + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
       (a.obs ? '<div style="padding:6px 12px 0;font-size:12px;"><span style="color:#999;">Obs.:</span> ' + caEsc(a.obs) + '</div>' : '') +
