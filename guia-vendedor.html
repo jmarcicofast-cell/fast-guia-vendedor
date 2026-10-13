@@ -5464,7 +5464,7 @@ function caVendas(todas){
     if (u && !u.direcao){ if (v.unidade !== u.unidade) return; }
     else if (!u && !caVeTudo() && v.criadoPor !== currentUser) return;
     out.push({ key:'m:' + id, id:id, origem:'manual', chamado:v.chamado || '', cliente:v.cliente || '', vendedor:v.vendedor || '', unidade:v.unidade || '',
-      dc:v.dc || '', data:v.data || '', status:v.status || 'aberto', obs:v.obs || '', criadoPor:v.criadoPor,
+      dc:v.dc || '', data:v.data || '', status:v.status || 'aberto', obs:v.obs || '', criadoPor:v.criadoPor, criadoEm:v.criadoEm,
       itens: caArr(v.itens).map(function(i){ return { c:i.c, q:+i.q || 0, semNec:false }; }), raw:v });
   });
   if (!u || u.direcao){
@@ -5528,7 +5528,8 @@ function caVendaGuia(vn, pid, g){
   });
   return { key:'g:' + okey, okey:okey, origem:'guia', chamado:String((p && p.chamado) || r0.chamado || ''), cliente:(p && (p.empresa || p.cliente)) || r0.cliente || '',
     vendedor:(typeof abNomeVend === 'function' ? abNomeVend(vn) : vn), vendKey:vn, unidade:CA_UNIDADE_RIO,
-    dc:o.dc || dcAb, data:o.data || prazoAb, status:st, pedStatus:pst, obs:o.obs || '', itens:itens, raw:p || r0, over:o, classificado:classificado };
+    dc:o.dc || dcAb, data:o.data || prazoAb, status:st, pedStatus:pst, obs:o.obs || '', itens:itens, raw:p || r0, over:o, classificado:classificado,
+    criadoEm: g.regs.reduce(function(mn, r){ var t = caTs(r.criadoEm); return t && (!mn || t < mn) ? t : mn; }, 0) || caTs(p && p.criadoEm), criadoPor: r0.criadoPor || r0.vendedor || '' };
 }
 /* fabricante de cada código: o que alguém escolheu na Necessidade (fica gravado para
    as próximas vezes) ou, para placas e aço Placo de uma fábrica só, a sugestão Placo MDC/FDS */
@@ -5657,6 +5658,9 @@ function caVincular(aId, pares){
     if (CA.modal && CA.modal.tipo === 'vinc') setTimeout(function(){ if (CA.modal && CA.modal.tipo === 'vinc') caDesenharVincular(); }, 150);
   }).catch(function(e){ caToast(caErro(e)); });
 }
+/* data e hora em que o registro foi gravado (o guia preenche sozinho ao salvar) */
+function caTs(x){ if (!x) return 0; if (typeof x === 'number') return x; var t = Date.parse(x); return isNaN(t) ? 0 : t; }
+function caDH(x){ var t = caTs(x); if (!t) return ''; var d = new Date(t), p = function(n){ return (n < 10 ? '0' : '') + n; }; return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + String(d.getFullYear()).slice(2) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); }
 function caEhPlaca(c){ var p = caCat().map[c]; return !!p && p.k === 'PLACA'; }
 function caTxtSemNec(c){ return caEhPlaca(c) ? 'Placa — coleta direto na fábrica' : 'Tem na DCS — não precisa abastecer'; }
 /* o pedido ainda existe? (pedidos de outras operações existem mesmo quando este login não os vê) */
@@ -5908,7 +5912,7 @@ function caCardVenda(v, cb){
     '<div style="min-width:0;"><div class="ca-card-tit"><span class="ch">' + caEsc(v.chamado) + '</span><span class="cl">' + caEsc(v.cliente || 'Cliente não informado') + '</span>' +
     (caMostraUnid() ? '<span class="ca-sit ' + (caUnidNome(v.unidade) === CA_UNIDADE_RIO ? 'neutro' : 'manual') + '">' + caEsc(caUnidNome(v.unidade)) + '</span>' : '') + (v.origem === 'guia' ? '<span class="ca-sit guia">via ABASTECER</span>' : '<span class="ca-sit neutro">manual</span>') +
     (v.status !== 'aberto' ? '<span class="ca-sit neutro">' + CA_ST_V[v.status] + '</span>' : '') + '</div>' +
-    '<div class="ca-meta"><span>DCS <b>' + caEsc(v.dc || 'a definir') + '</b></span><span>Prazo <b class="' + (urg ? 'ca-atrasado' : '') + '">' + caDA(v.data) + '</b></span><span>' + v.itens.length + ' ' + (v.itens.length === 1 ? 'item' : 'itens') + '</span>' + (v.vendedor ? '<span>Vendedor <b>' + caEsc(v.vendedor) + '</b></span>' : '') + '</div></div>' +
+    '<div class="ca-meta">' + (caDH(v.criadoEm) ? '<span title="' + (v.origem === 'guia' ? 'Quando o vendedor mandou para ABASTECER' : 'Quando o pedido foi lançado na Central') + '">Registrado <b>' + caDH(v.criadoEm) + '</b></span>' : '') + '<span>DCS <b>' + caEsc(v.dc || 'a definir') + '</b></span><span>Prazo <b class="' + (urg ? 'ca-atrasado' : '') + '">' + caDA(v.data) + '</b></span><span>' + v.itens.length + ' ' + (v.itens.length === 1 ? 'item' : 'itens') + '</span>' + (v.vendedor ? '<span>Vendedor <b>' + caEsc(v.vendedor) + '</b></span>' : '') + '</div></div>' +
     '<div class="ca-lado">' + (semDc ? '<span class="ca-sit desc">Definir DCS e prazo</span>' : '<span class="ca-sit ' + cb.estado + '">' + caRotuloCob(cb) + (cb.atraso ? ' · atraso' : '') + '</span>') +
     '<div class="ca-barra"><i class="b1" style="width:' + p1 + '%"></i><i class="b2" style="width:' + p2 + '%"></i></div>' +
     '<span style="font-size:11.5px;color:#888;">' + (cb.falta > 0 ? 'falta ' + caN(cb.falta) + ' un.' : !cb.tot ? 'nada a abastecer' : cb.estado === 'nadc' ? 'tudo na DCS' : 'aguardando chegar: ' + cb.chamados.filter(function(a){ return a.status !== 'na_dc'; }).map(function(a){ return caEsc(a.chamado); }).join(', ')) + '</span></div></div>';
@@ -5923,7 +5927,7 @@ function caCardVenda(v, cb){
       (v.obs ? '<div style="padding:6px 12px 0;font-size:12px;"><span style="color:#999;">Obs.:</span> ' + caEsc(v.obs) + '</div>' : '') +
       '<div class="ca-card-acoes"><button class="ca-btn sm" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + (v.origem === 'guia' ? 'DCS, prazo e itens' : 'Editar pedido') + '</button>' +
       (v.status === 'aberto' && v.dc && cb.falta > 0 ? '<button class="ca-btn sm" data-ca="abast-da-venda" data-k="' + caEsc(v.key) + '">Abrir chamado para o que falta</button>' : '') +
-      (v.criadoPor ? '<span style="font-size:11.5px;color:#999;margin-left:auto;">Lançado por ' + caEsc(caNomeAutor(v.criadoPor)) + '</span>' : '') + '</div></div>';
+      (v.criadoPor ? '<span style="font-size:11.5px;color:#999;margin-left:auto;">' + (v.origem === 'guia' ? 'Mandado para ABASTECER por ' : 'Lançado por ') + caEsc(caNomeAutor(v.criadoPor)) + (caDH(v.criadoEm) ? ' em ' + caDH(v.criadoEm) : '') + '</span>' : '') + '</div></div>';
   }
   return h + '</div>';
 }
@@ -5959,7 +5963,7 @@ function caCardAbast(a, vmap, necMap){
   var nV = Object.keys(porV).length, nC = temItens ? Object.keys(itA).length : Object.keys(porC).length;
   var h = '<div class="ca-card"><div class="ca-card-topo" data-ca="toggle" data-k="a:' + caEsc(a.id) + '">' +
     '<div style="min-width:0;"><div class="ca-card-tit"><span class="ch">' + caEsc(a.chamado) + '</span><span class="cl">' + caEsc(a.fabricante || '—') + ' → ' + caEsc(a.dc || '—') + '</span>' + (a.carga ? '<span class="ca-sit neutro">' + caEsc(a.carga) + '</span>' : '') + (caMostraUnid() ? '<span class="ca-sit ' + (caUnidNome(a.unidade) === CA_UNIDADE_RIO ? 'neutro' : 'manual') + '">' + caEsc(caUnidNome(a.unidade)) + '</span>' : '') + '</div>' +
-    '<div class="ca-meta"><span>Previsão na DCS <b class="' + (venc ? 'ca-atrasado' : '') + '">' + caDA(a.previsao) + '</b></span><span>' + nV + ' ' + (nV === 1 ? 'pedido' : 'pedidos') + ' · ' + nC + ' ' + (nC === 1 ? 'código' : 'códigos') + ' · ' + caN(tot) + ' un.</span><span>≈ <b>' + caN(peso / 1000) + ' t</b></span></div></div>' +
+    '<div class="ca-meta">' + (caDH(a.criadoEm) ? '<span title="Quando o chamado de abastecimento foi lançado na Central">Registrado <b>' + caDH(a.criadoEm) + '</b></span>' : '') + '<span>Previsão na DCS <b class="' + (venc ? 'ca-atrasado' : '') + '">' + caDA(a.previsao) + '</b></span><span>' + nV + ' ' + (nV === 1 ? 'pedido' : 'pedidos') + ' · ' + nC + ' ' + (nC === 1 ? 'código' : 'códigos') + ' · ' + caN(tot) + ' un.</span><span>≈ <b>' + caN(peso / 1000) + ' t</b></span></div></div>' +
     '<div class="ca-lado"><span class="ca-sit ' + cls + '">' + (CA_ST_A[a.status] || a.status || '—') + '</span>' + (venc ? '<span class="ca-atrasado" style="font-size:11.5px;">previsão vencida</span>' : '') + (saldoT > 0 && a.status !== 'cancelado' ? '<span class="ca-sit nadc">saldo ' + caN(saldoT) + ' un. para vincular</span>' : '') + '</div></div>';
   if (aberto){
     var chipPed = function(x){
@@ -5990,7 +5994,7 @@ function caCardAbast(a, vmap, necMap){
       '<div class="ca-card-acoes"><button class="ca-btn sm" data-ca="abrir-abast" data-id="' + caEsc(a.id) + '">Editar chamado</button>' +
       (a.status !== 'cancelado' ? '<button class="ca-btn sm pri" data-ca="vc-abrir" data-id="' + caEsc(a.id) + '">Vincular chamado</button>' : '') +
       (a.status !== 'na_dc' && a.status !== 'cancelado' ? '<button class="ca-btn sm" data-ca="chegou" data-id="' + caEsc(a.id) + '">Marcar como chegou na DCS</button>' : '') +
-      (a.criadoPor ? '<span style="font-size:11.5px;color:#999;margin-left:auto;">Lançado por ' + caEsc(caNomeAutor(a.criadoPor)) + (a.solicitado ? ' · solicitado em ' + caDA(a.solicitado) : '') + '</span>' : '') + '</div></div>';
+      (a.criadoPor ? '<span style="font-size:11.5px;color:#999;margin-left:auto;">Lançado por ' + caEsc(caNomeAutor(a.criadoPor)) + (caDH(a.criadoEm) ? ' em ' + caDH(a.criadoEm) : '') + (a.solicitado ? ' · solicitado ao fabricante em ' + caDA(a.solicitado) : '') + (caDH(a.atualizadoEm) && a.atualizadoEm !== a.criadoEm ? ' · atualizado em ' + caDH(a.atualizadoEm) : '') + '</span>' : '') + '</div></div>';
   }
   return h + '</div>';
 }
@@ -6114,7 +6118,7 @@ function caLinhaItem(it, i, rmAct){
 }
 function caDesenharVenda(){
   var md = CA.modal, d = md.d;
-  caAbrirModal('<div class="cm-topo"><h3>' + (md.id ? 'Pedido ' + caEsc(d.chamado) : 'Novo pedido de venda') + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
+  caAbrirModal('<div class="cm-topo"><h3>' + (md.id ? 'Pedido ' + caEsc(d.chamado) : 'Novo pedido de venda') + (md.id && d.raw && caDH(d.raw.criadoEm) ? '<span style="display:block;font-size:11.5px;font-weight:400;color:#888;">Registrado em ' + caDH(d.raw.criadoEm) + ' por ' + caEsc(caNomeAutor(d.raw.criadoPor)) + '</span>' : (md.id ? '' : '<span style="display:block;font-size:11.5px;font-weight:400;color:#888;">Data e hora do registro são gravadas ao salvar</span>')) + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
     (!CA.unid ? '<div class="cm-aviso">Pedidos que o vendedor mandou para ABASTECER na aba Pedidos já entram sozinhos. Use este formulário só para um pedido que não está no guia.</div>' : '') +
     '<div class="cm-grid"><div class="cm-f"><label>Chamado do pedido</label><input id="ca-v-ch" value="' + caEsc(d.chamado) + '" autocomplete="off"></div>' +
     '<div class="cm-f" style="grid-column:span 2;"><label>Cliente / carga</label><input id="ca-v-cli" value="' + caEsc(d.cliente) + '"></div></div>' +
@@ -6187,7 +6191,7 @@ function caModalGuia(v){
   CA.modal = { tipo:'guia', v:v, semNec: caArr(o.semNec).slice() };
   var md = CA.modal;
   var dcs = caDcsUsuario();
-  caAbrirModal('<div class="cm-topo"><h3>Pedido ' + caEsc(v.chamado) + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
+  caAbrirModal('<div class="cm-topo"><h3>Pedido ' + caEsc(v.chamado) + (caDH(v.criadoEm) ? '<span style="display:block;font-size:11.5px;font-weight:400;color:#888;">Mandado para ABASTECER em ' + caDH(v.criadoEm) + '</span>' : '') + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
     '<div style="font-size:12.5px;"><b>' + caEsc(v.cliente) + '</b><div style="color:#888;">Mandado para ABASTECER na aba Pedidos · vendedor ' + caEsc(v.vendedor) + ' · status no guia: ' + caEsc(v.pedStatus || '—') + '</div></div>' +
     '<div class="cm-grid"><div class="cm-f"><label>DCS que atende</label><select id="ca-g-dc">' + caOpts(dcs, v.dc || (dcs.length === 1 ? dcs[0] : '')) + '</select></div>' +
     '<div class="cm-f"><label>Material na DCS até</label><input id="ca-g-data" type="date" value="' + caEsc(v.data) + '"></div>' +
@@ -6227,7 +6231,7 @@ function caModalAbast(id, pre){
 function caDesenharAbast(fabs){
   var md = CA.modal, d = md.d;
   fabs = fabs || caConfig().fabricantes;
-  caAbrirModal('<div class="cm-topo"><h3>' + (md.id ? 'Abastecimento ' + caEsc(d.chamado) : 'Novo chamado de abastecimento') + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
+  caAbrirModal('<div class="cm-topo"><h3>' + (md.id ? 'Abastecimento ' + caEsc(d.chamado) : 'Novo chamado de abastecimento') + (md.id && caDH(d.criadoEm) ? '<span style="display:block;font-size:11.5px;font-weight:400;color:#888;">Registrado em ' + caDH(d.criadoEm) + ' por ' + caEsc(caNomeAutor(d.criadoPor)) + '</span>' : (md.id ? '' : '<span style="display:block;font-size:11.5px;font-weight:400;color:#888;">Data e hora do registro são gravadas ao salvar</span>')) + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
     '<div class="cm-grid"><div class="cm-f"><label>Nº do chamado</label><input id="ca-a-ch" value="' + caEsc(d.chamado) + '" autocomplete="off"></div>' +
     '<div class="cm-f"><label>Fabricante</label><select id="ca-a-fab">' + caOpts(fabs, d.fabricante) + '</select></div>' +
     '<div class="cm-f"><label>DCS de destino</label><select id="ca-a-dc">' + caOpts(caDcsUsuario(), d.dc) + '</select></div></div>' +
