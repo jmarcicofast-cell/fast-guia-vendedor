@@ -5556,24 +5556,33 @@ function caDesenharVincular(){
 }
 /* pedido manual: chamados de abastecimento da mesma DCS com saldo dos itens do pedido */
 function caListaVincVenda(){
-  var md = CA.modal, dc = (document.getElementById('ca-v-dc') || {}).value || md.d.dc;
-  var cods = {}; Array.prototype.forEach.call(document.querySelectorAll('#ca-v-itens tr'), function(tr){ var c = tr.querySelector('[data-f=c]').value.trim().toUpperCase(), q = caQ(tr.querySelector('[data-f=q]').value); if (c && q > 0) cods[c] = (cods[c] || 0) + q; });
-  if (!Object.keys(cods).length) md.d.itens.forEach(function(i){ if (i.c && caQ(i.q) > 0) cods[i.c] = (cods[i.c] || 0) + caQ(i.q); });
-  if (!dc) return '<div class="ca-vazio" style="padding:12px;">Escolha a DCS que atende o pedido para ver os chamados disponíveis.</div>';
-  if (!Object.keys(cods).length) return '<div class="ca-vazio" style="padding:12px;">Inclua os materiais do pedido para ver quais chamados têm saldo.</div>';
-  var lst = [];
-  Object.keys(CA.dados.abast || {}).forEach(function(id){
-    var a = CA.dados.abast[id]; if (!a || a.status === 'cancelado' || a.dc !== dc) return;
-    var it = caItensAbast(a), us = caUsadoAbast(a);
-    var comuns = Object.keys(cods).filter(function(c){ return (it[c] || 0) - (us[c] || 0) > 0; });
-    if (comuns.length || md.vinc[id]) lst.push({ id:id, a:a, txt: comuns.map(function(c){ return caCodHtml(c) + ' ' + caN((it[c] || 0) - (us[c] || 0)); }).join(' &nbsp; ') });
-  });
-  if (!lst.length) return '<div class="ca-vazio" style="padding:12px;">Nenhum chamado de abastecimento da ' + caEsc(dc) + ' tem saldo desses itens.</div>';
-  return lst.map(function(x){
-    return '<label style="display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-top:1px solid #F1EFE8;cursor:pointer;font-size:12.5px;"><input type="checkbox" data-ca="v-vinc-sel" data-a="' + caEsc(x.id) + '"' + (md.vinc[x.id] ? ' checked' : '') + ' style="margin-top:3px;">' +
-      '<span><b class="ca-cod">' + caEsc(x.a.chamado) + '</b> ' + caEsc(x.a.fabricante || '') + ' · <span class="ca-sit ' + (x.a.status === 'na_dc' ? 'nadc' : 'coberto') + '">' + caEsc(CA_ST_A[x.a.status] || '') + '</span>' + (x.a.previsao && x.a.status !== 'na_dc' ? ' · previsão ' + caDA(x.a.previsao) : '') +
-      '<span class="ca-sub">Disponível: ' + (x.txt || '—') + '</span></span></label>';
-  }).join('') + '<div style="padding:6px 12px 10px;font-size:11.5px;color:#999;">Ao salvar, cada item do pedido é vinculado até onde o chamado marcado tiver saldo.</div>';
+  try {
+    var md = CA.modal, dcSel = document.getElementById('ca-v-dc'), dc = (dcSel && dcSel.value) || md.d.dc || '';
+    var cods = {};
+    Array.prototype.forEach.call(document.querySelectorAll('#ca-v-itens tr'), function(tr){ var ci = tr.querySelector('[data-f=c]'), qi = tr.querySelector('[data-f=q]'); var c = ci ? ci.value.trim().toUpperCase() : '', q = qi ? caQ(qi.value) : 0; if (c && q > 0) cods[c] = (cods[c] || 0) + q; });
+    var lst = [];
+    Object.keys(CA.dados.abast || {}).forEach(function(id){
+      var a = CA.dados.abast[id]; if (!a || a.status === 'cancelado') return;
+      if (dc && a.dc !== dc && !md.vinc[id]) return;
+      var it = caItensAbast(a), us = caUsadoAbast(a), temIt = Object.keys(it).length > 0;
+      var disp = Object.keys(it).filter(function(c){ return it[c] - (us[c] || 0) > 0.0001; });
+      if (temIt && !disp.length && !md.vinc[id]) return;
+      var serve = disp.filter(function(c){ return cods[c]; }).length;
+      lst.push({ id:id, a:a, serve:serve, txt: temIt ? disp.map(function(c){ var x = caCodHtml(c) + ' ' + caN(it[c] - (us[c] || 0)); return cods[c] ? '<b>' + x + '</b>' : x; }).join(' &nbsp; ') : 'sem itens lançados (sem limite)' });
+    });
+    lst.sort(function(x, y){ return y.serve - x.serve || (x.a.chamado || '').localeCompare(y.a.chamado || ''); });
+    var topo = '<div style="padding:8px 12px;font-size:12px;color:#555;background:#FAF9F6;border-top:1px solid #EFEDE7;">' + (dc ? 'Chamados de abastecimento da <b>' + caEsc(dc) + '</b> com material disponível' : 'Chamados de abastecimento com material disponível (escolha a DCS para filtrar)') + ' — ' + lst.length + '</div>';
+    if (!lst.length) return topo + '<div class="ca-vazio" style="padding:12px;">Nenhum chamado de abastecimento com saldo' + (dc ? ' na ' + caEsc(dc) : '') + '. Lance o chamado na aba Chamados de abastecimento.</div>';
+    return topo + lst.map(function(x){
+      return '<label style="display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-top:1px solid #F1EFE8;cursor:pointer;font-size:12.5px;' + (md.vinc[x.id] ? 'background:#E8F5E9;' : '') + '"><input type="checkbox" data-ca="v-vinc-sel" data-a="' + caEsc(x.id) + '" data-dc="' + caEsc(x.a.dc || '') + '"' + (md.vinc[x.id] ? ' checked' : '') + ' style="margin-top:3px;">' +
+        '<span style="min-width:0;"><b class="ca-cod">' + caEsc(x.a.chamado) + '</b> ' + caEsc(x.a.fabricante || '') + ' → ' + caEsc(x.a.dc || '') + ' · <span class="ca-sit ' + (x.a.status === 'na_dc' ? 'nadc' : 'coberto') + '">' + caEsc(CA_ST_A[x.a.status] || '') + '</span>' + (x.a.previsao && x.a.status !== 'na_dc' ? ' · previsão ' + caDA(x.a.previsao) : '') +
+        (x.serve ? ' <span class="ca-sit nadc">tem ' + x.serve + ' ' + (x.serve === 1 ? 'item' : 'itens') + ' deste pedido</span>' : '') +
+        '<span class="ca-sub">Disponível: ' + x.txt + '</span></span></label>';
+    }).join('') + '<div style="padding:6px 12px 10px;font-size:11.5px;color:#999;">Marque o chamado e clique em Salvar pedido: cada item do pedido é vinculado até onde o chamado tiver saldo.</div>';
+  } catch(e){
+    console.error('Vincular abastecimento', e);
+    return '<div class="ca-vazio" style="padding:12px;color:#C41E1E;">Não consegui montar a lista de chamados. Recarregue a página e tente de novo.</div>';
+  }
 }
 function caVincularPedidoAChamados(vkey, itens, ids){
   var m = caAlocMap(), rest = {};
@@ -6225,8 +6234,13 @@ document.addEventListener('click', function(ev){
     dbRef('centralAbast/abast/' + t.dataset.id + '/aloc').set(nova).then(function(){ if (!firebaseOK){ ad.aloc = nova; caRender(); } caToast('Saldo liberado no chamado ' + ad.chamado); }).catch(function(e){ t.disabled = false; caToast(caErro(e)); }); }
   else if (act === 'fu'){ CA.fu = t.dataset.u || ''; CA.sel = {}; try { localStorage.setItem('fgv_ca_fu', CA.fu); } catch(e){} caRender(); }
   else if (act === 'tarja-vinc'){ ev.stopPropagation(); var vv = caAchaVenda(t.dataset.k); if (!vv) return; t.disabled = true; caVincular(t.dataset.a, caCob(vv, caAlocMap()).itens.filter(function(i){ return i.falta > 0; }).map(function(i){ return { v:vv.key, c:i.c, q:i.falta }; })); }
-  else if (act === 'v-vinc-abrir'){ var bxv = document.getElementById('ca-v-vinc'); CA.modal.vincAberto = true; bxv.style.display = ''; bxv.innerHTML = caListaVincVenda(); }
-  else if (act === 'v-vinc-sel'){ CA.modal.vinc[t.dataset.a] = t.checked; }
+  else if (act === 'v-vinc-abrir'){ var bxv = document.getElementById('ca-v-vinc'); if (!bxv) return; CA.modal.vincAberto = true; bxv.style.display = 'block'; bxv.innerHTML = caListaVincVenda(); try { bxv.scrollIntoView({ behavior:'smooth', block:'nearest' }); } catch(e){} }
+  else if (act === 'v-vinc-sel'){
+    CA.modal.vinc[t.dataset.a] = t.checked;
+    var dcs = document.getElementById('ca-v-dc');
+    if (t.checked && dcs && !dcs.value && t.dataset.dc){ if (!Array.prototype.some.call(dcs.options, function(o){ return o.value === t.dataset.dc; })) dcs.insertAdjacentHTML('beforeend', '<option>' + caEsc(t.dataset.dc) + '</option>'); dcs.value = t.dataset.dc; }
+    var lbl = t.closest('label'); if (lbl) lbl.style.background = t.checked ? '#E8F5E9' : '';
+  }
   else if (act === 'vc-abrir'){ ev.stopPropagation(); caModalVincular(t.dataset.id); }
   else if (act === 'vc-vincular'){ var vk = t.dataset.v, pares = []; document.querySelectorAll('#ca-modal input[data-vk]').forEach(function(inp){ if (inp.dataset.vk !== vk) return; var qv = caQ(inp.value); if (qv > 0) pares.push({ v:vk, c:inp.dataset.c, q:qv }); }); if (!pares.length){ document.getElementById('ca-vc-erro').textContent = 'Informe a quantidade a vincular.'; return; } t.disabled = true; caVincular(CA.modal.id, pares); }
   else if (act === 'vincular'){ ev.stopPropagation(); caVincular(t.dataset.a, [{ v:t.dataset.v, c:t.dataset.c, q:+t.dataset.q }]); }
