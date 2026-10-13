@@ -5324,6 +5324,7 @@ function caDcsUsuario(){ var dcs = caConfig().dcs; if (CA.unid && CA.unid.dcs &&
 
 /* ---------- dados ---------- */
 function caLigar(){
+  if (typeof abGarantirListener === 'function' && !CA.unid) abGarantirListener();
   if (CA.ligado && (CA.ligadoFb || !firebaseOK)) return;
   CA.ligado = true; CA.ligadoFb = !!firebaseOK;
   dbRef('centralAbast').on('value', function(snap){
@@ -5339,7 +5340,7 @@ function caLigar(){
 function caSituacaoPedido(p){
   if (!p || !CA.carregado || CA.unid) return null;
   if (!CA_PED_ABERTO[p.status || '']) return null;
-  var v = caVendaGuia(p.vendedor, p); if (!v) return null;
+  var v = caVendaGuia(p.vendedor, p.id); if (!v) return null;
   var placas = v.itens.some(function(i){ return i.semNec && caEhPlaca(i.c); });
   var obsPlaca = placas ? ' Placas: coleta direto na fábrica.' : '';
   if (v.status === 'semnec') return { k:'ok', txt:'✅ Material liberado — pode pedir DT', tit:'Marcado como sem necessidade de abastecimento.' + obsPlaca, key:v.key };
@@ -5412,35 +5413,64 @@ function caVendas(){
       itens: caArr(v.itens).map(function(i){ return { c:i.c, q:+i.q || 0, semNec:false }; }), raw:v });
   });
   if (!u){
-    Object.keys(CA.ped).forEach(function(vn){
-      (CA.ped[vn] || []).forEach(function(p){
-        var v = caVendaGuia(vn, p); if (!v) return;
-        if (v.status !== 'aberto' && v.status !== 'semnec' && !caTemAloc(v.key)) return;
-        out.push(v);
-      });
+    var grupos = caGruposAbastecer();
+    Object.keys(grupos).forEach(function(okey){
+      var g = grupos[okey];
+      if (!caVeTudo() && g.vn !== currentUser) return;
+      var v = caVendaGuia(g.vn, g.pid, g); if (!v) return;
+      if (v.status !== 'aberto' && v.status !== 'semnec' && !caTemAloc(v.key)) return;
+      out.push(v);
     });
   }
   return out;
 }
-/* um pedido da aba Pedidos no formato da Central.
-   Placas são coletadas direto na fábrica: enquanto o pedido não foi classificado,
-   elas já vêm marcadas como "não passa pela DCS". */
-function caVendaGuia(vn, p){
-  if (!p || !p.chamado) return null;
-  var cat = caCat(), okey = vn + '__' + p.id, o = CA.dados.guia[okey] || null, classificado = !!o;
+/* Só entram na Central os pedidos que o vendedor mandou para o abastecimento
+   clicando em ABASTECER na aba Pedidos (registros em abastecimento/). Itens marcados
+   como RESERVAR ficam de fora. DCS e prazo vêm do que foi preenchido lá; a Central
+   pode ajustar. Placas são coletadas direto na fábrica: enquanto o pedido não foi
+   classificado na Central, elas já vêm marcadas como "não passa pela DCS". */
+function caGruposAbastecer(){
+  var g = {};
+  if (typeof AB === 'undefined' || !AB.itens) return g;
+  Object.keys(AB.itens).forEach(function(id){
+    var r = AB.itens[id]; if (!r || !r.itens || !r.pedidoId || !r.vendedor) return;
+    r.id = id;
+    var its = abItensDe(r).filter(function(it){ return it.tipo === 'abastecer'; });
+    if (!its.length) return;
+    var okey = r.vendedor + '__' + r.pedidoId;
+    var x = g[okey] || (g[okey] = { vn:r.vendedor, pid:r.pedidoId, regs:[], itens:[] });
+    x.regs.push(r); x.itens = x.itens.concat(its);
+  });
+  return g;
+}
+function caPedidoDoGuia(vn, pid){
+  var achou = null;
+  (CA.ped[vn] || []).forEach(function(p){ if (p.id === pid) achou = p; });
+  if (!achou) ((typeof _pedTodosGeral !== 'undefined' && _pedTodosGeral) || []).forEach(function(p){ if (p.id === pid && p.vendedor === vn) achou = p; });
+  return achou;
+}
+function caVendaGuia(vn, pid, g){
+  if (!g) g = caGruposAbastecer()[vn + '__' + pid];
+  if (!g) return null;
+  var p = caPedidoDoGuia(vn, pid), r0 = g.regs[0] || {};
+  var cat = caCat(), okey = vn + '__' + pid, o = CA.dados.guia[okey] || null, classificado = !!o;
   o = o || {};
-  var st = p.status === 'cancelado' ? 'cancelado' : (CA_PED_ABERTO[p.status || ''] ? 'aberto' : 'atendido');
+  var dcAb = '', prazoAb = '';
+  g.itens.forEach(function(it){ if (!dcAb && it.dc) dcAb = it.dc; if (it.prazo && (!prazoAb || it.prazo < prazoAb)) prazoAb = it.prazo; });
+  var pst = p ? (p.status || '') : '';
+  var todosNoCliente = g.itens.every(function(it){ return it.etapa === 'cliente'; });
+  var st = pst === 'cancelado' ? 'cancelado' : ((p && !CA_PED_ABERTO[pst]) || todosNoCliente) ? 'atendido' : 'aberto';
   if (st === 'aberto' && o.ignorar) st = 'semnec';
   var semNec = caArr(o.semNec), por = {}, itens = [];
-  (p.itens && p.itens.length ? p.itens : (p.material ? [{ material:p.material, qtd:p.qtd }] : [])).forEach(function(it){
-    if (!it) return;
+  g.itens.forEach(function(it){
     var c = String(it.codigo || '').trim().toUpperCase() || cat.porNome[caSemAcento(it.material)] || ('?' + String(it.material || 'Item').trim());
     var q = caQ(it.qtd); if (!(q > 0)) return;
     var sn = classificado ? semNec.indexOf(c) !== -1 : caEhPlaca(c);
     if (por[c] != null) itens[por[c]].q += q; else { por[c] = itens.length; itens.push({ c:c, q:q, semNec:sn }); }
   });
-  return { key:'g:' + okey, okey:okey, origem:'guia', chamado:String(p.chamado), cliente:p.empresa || p.cliente || '', vendedor:(typeof abNomeVend === 'function' ? abNomeVend(vn) : vn),
-    vendKey:vn, unidade:CA_UNIDADE_RIO, dc:o.dc || '', data:o.data || '', status:st, pedStatus:p.status || '', obs:o.obs || '', itens:itens, raw:p, over:o, classificado:classificado };
+  return { key:'g:' + okey, okey:okey, origem:'guia', chamado:String((p && p.chamado) || r0.chamado || ''), cliente:(p && (p.empresa || p.cliente)) || r0.cliente || '',
+    vendedor:(typeof abNomeVend === 'function' ? abNomeVend(vn) : vn), vendKey:vn, unidade:CA_UNIDADE_RIO,
+    dc:o.dc || dcAb, data:o.data || prazoAb, status:st, pedStatus:pst, obs:o.obs || '', itens:itens, raw:p || r0, over:o, classificado:classificado };
 }
 function caEhPlaca(c){ var p = caCat().map[c]; return !!p && p.k === 'PLACA'; }
 function caTxtSemNec(c){ return caEhPlaca(c) ? 'Placa — coleta direto na fábrica' : 'Tem na DCS — não precisa abastecer'; }
@@ -5490,7 +5520,7 @@ function caRender(){
   var segCad = document.getElementById('ca-seg-cad'); if (segCad) segCad.style.display = CA.unid ? 'none' : '';
   if (CA.unid && CA.aba === 'cad') CA.aba = 'nec';
   var sub = document.getElementById('ca-sub');
-  if (sub) sub.textContent = CA.unid ? CA.unid.nome + ' — lance os pedidos que precisam de material e acompanhe os chamados de abastecimento.' : 'Os pedidos em andamento da aba Pedidos entram sozinhos. Defina a DCS e o prazo, e o que falta aparece somado por código.';
+  if (sub) sub.textContent = CA.unid ? CA.unid.nome + ' — lance os pedidos que precisam de material e acompanhe os chamados de abastecimento.' : 'Entram aqui os pedidos que o vendedor mandou para ABASTECER na aba Pedidos. O que falta aparece somado por DCS e código.';
   if (!caLogado()){ main.innerHTML = '<div class="ca-vazio"><b>Entre com seu usuário</b>A Central aparece depois do login.</div>'; return; }
   if (!CA.carregado){ main.innerHTML = '<div class="ca-vazio"><b>Carregando…</b>Os pedidos e chamados aparecem aqui assim que a base responder.</div>'; return; }
   var m = caAlocMap(), vendas = caVendas(), abertas = vendas.filter(function(v){ return v.status === 'aberto'; });
@@ -5548,7 +5578,7 @@ function caAlertas(abertas, m){
   });
   out.sort(function(x, y){ return (x.cls === y.cls ? 0 : x.cls === 'ruim' ? -1 : 1) || (x.o || '').localeCompare(y.o || ''); });
   var html = '';
-  if (semDc.length) html += '<div class="ca-alerta info"><div><b>' + semDc.length + ' ' + (semDc.length === 1 ? 'pedido da aba Pedidos ainda sem' : 'pedidos da aba Pedidos ainda sem') + ' DCS e prazo.</b> Enquanto não forem classificados, não entram na soma do que falta.</div><button class="ca-btn sm" data-ca="ver-classificar">Classificar</button></div>';
+  if (semDc.length) html += '<div class="ca-alerta info"><div><b>' + semDc.length + ' ' + (semDc.length === 1 ? 'pedido mandado para ABASTECER ainda sem' : 'pedidos mandados para ABASTECER ainda sem') + ' DCS e prazo.</b> Enquanto não forem classificados, não entram na soma do que falta.</div><button class="ca-btn sm" data-ca="ver-classificar">Classificar</button></div>';
   html += out.slice(0, 10).map(function(a){ return '<div class="ca-alerta ' + a.cls + '"><div>' + a.html + '</div>' + (a.v ? '<button class="ca-btn sm" data-ca="abrir-venda" data-k="' + caEsc(a.v) + '">Abrir pedido</button>' : '<button class="ca-btn sm" data-ca="abrir-abast" data-id="' + caEsc(a.a) + '">Abrir chamado</button>') + '</div>'; }).join('');
   if (out.length > 10) html += '<div style="font-size:12px;color:#999;">+ ' + (out.length - 10) + ' alertas</div>';
   return html ? '<div class="ca-alertas">' + html + '</div>' : '';
@@ -5557,10 +5587,10 @@ function caAlertas(abertas, m){
 function caViewNec(nec, abertas, vendas, m){
   if (!vendas.length && !caAbasts().length){
     return '<div class="ca-fluxo">' +
-      '<div><b>1. O pedido entra</b>' + (CA.unid ? 'Lance o pedido de venda com os itens pelo código, a DCS e até quando o material precisa estar lá.' : 'Os pedidos em andamento da aba Pedidos aparecem aqui. Você só diz a DCS e o prazo.') + '</div>' +
+      '<div><b>1. O pedido entra</b>' + (CA.unid ? 'Lance o pedido de venda com os itens pelo código, a DCS e até quando o material precisa estar lá.' : 'O vendedor clica em ABASTECER na aba Pedidos e o pedido aparece aqui, com os itens que ele marcou.') + '</div>' +
       '<div><b>2. O abastecimento vê a falta</b>Esta aba soma o que falta por DCS e por código, com o prazo mais curto primeiro.</div>' +
       '<div><b>3. Um chamado atende vários pedidos</b>Marque os itens, abra o chamado no fabricante e a cobertura de cada pedido se atualiza para todos.</div></div>' +
-      '<div class="ca-painel"><div class="ca-vazio"><b>Nenhum pedido aguardando material</b>' + (CA.unid ? 'Comece lançando o primeiro pedido de venda.' : 'Assim que houver pedidos em andamento na aba Pedidos, eles aparecem aqui.') + '<div style="margin-top:10px;"><button class="ca-btn pri" data-ca="nova-venda">+ Pedido manual</button></div></div></div>';
+      '<div class="ca-painel"><div class="ca-vazio"><b>Nenhum pedido aguardando material</b>' + (CA.unid ? 'Comece lançando o primeiro pedido de venda.' : 'Assim que um vendedor clicar em ABASTECER num pedido, ele aparece aqui.') + '<div style="margin-top:10px;"><button class="ca-btn pri" data-ca="nova-venda">+ Pedido manual</button></div></div></div>';
   }
   var dcs = []; nec.forEach(function(l){ if (dcs.indexOf(l.dc) === -1) dcs.push(l.dc); }); dcs.sort();
   var linhas = nec.filter(function(l){ return !CA.fn.dc || l.dc === CA.fn.dc; });
@@ -5570,7 +5600,7 @@ function caViewNec(nec, abertas, vendas, m){
   var html = caKpis(abertas, m) + caAlertas(abertas, m);
   var semDc = abertas.filter(caPrecisaClassificar);
   if (CA.verClassificar && semDc.length){
-    html += '<div class="ca-painel" id="ca-classificar"><div class="ca-painel-topo"><h3>Pedidos da aba Pedidos sem DCS</h3><span style="font-size:12px;color:#888;">Defina a DCS e o prazo, ou marque que não precisam de abastecimento.</span><button class="ca-btn link sm" data-ca="fechar-classificar" style="margin-left:auto;">Esconder</button></div><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Chamado</th><th>Cliente</th><th>Vendedor</th><th>Status no guia</th><th class="r">Itens</th><th></th></tr></thead><tbody>' +
+    html += '<div class="ca-painel" id="ca-classificar"><div class="ca-painel-topo"><h3>Pedidos mandados para ABASTECER sem DCS</h3><span style="font-size:12px;color:#888;">Defina a DCS e o prazo, ou marque que não precisam de abastecimento.</span><button class="ca-btn link sm" data-ca="fechar-classificar" style="margin-left:auto;">Esconder</button></div><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Chamado</th><th>Cliente</th><th>Vendedor</th><th>Status no guia</th><th class="r">Itens</th><th></th></tr></thead><tbody>' +
       semDc.map(function(v){ return '<tr><td><span class="ca-cod">' + caEsc(v.chamado) + '</span></td><td>' + caEsc(v.cliente) + '</td><td>' + caEsc(v.vendedor) + '</td><td>' + caEsc(v.pedStatus || '—') + '</td><td class="r">' + v.itens.length + '</td><td><button class="ca-btn sm" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">Classificar</button></td></tr>'; }).join('') +
       '</tbody></table></div></div>';
   }
@@ -5611,7 +5641,7 @@ function caViewVendas(vendas, m){
     '<select id="ca-fv-st"><option value="">Todas as situações</option>' + Object.keys(CA_ST_V).map(function(k){ return '<option value="' + k + '"' + (k === f.st ? ' selected' : '') + '>' + CA_ST_V[k] + '</option>'; }).join('') + '</select>' +
     '<select id="ca-fv-cob"><option value="">Qualquer cobertura</option>' + Object.keys(CA_COB).map(function(k){ return '<option value="' + k + '"' + (k === f.cob ? ' selected' : '') + '>' + CA_COB[k] + '</option>'; }).join('') + '</select>' +
     '<select id="ca-fv-dc"><option value="">Todas as DCS</option>' + dcs.map(function(d){ return '<option' + (d === f.dc ? ' selected' : '') + '>' + caEsc(d) + '</option>'; }).join('') + '</select>' +
-    (CA.unid ? '' : '<select id="ca-fv-origem"><option value="">Guia e manuais</option><option value="guia"' + (f.origem === 'guia' ? ' selected' : '') + '>Só da aba Pedidos</option><option value="manual"' + (f.origem === 'manual' ? ' selected' : '') + '>Só manuais</option></select>') + '</div>';
+    (CA.unid ? '' : '<select id="ca-fv-origem"><option value="">Guia e manuais</option><option value="guia"' + (f.origem === 'guia' ? ' selected' : '') + '>Só os do guia (ABASTECER)</option><option value="manual"' + (f.origem === 'manual' ? ' selected' : '') + '>Só manuais</option></select>') + '</div>';
   if (!lista.length) return html + '<div class="ca-painel"><div class="ca-vazio"><b>' + (vendas.length ? 'Nenhum pedido com esses filtros' : 'Nenhum pedido ainda') + '</b>' + (vendas.length ? 'Limpe a busca ou mude a situação.' : 'Lance o primeiro pedido que precisa de material.') + '</div></div>';
   return html + '<div class="ca-cards">' + lista.map(function(x){ return caCardVenda(x.v, x.cb); }).join('') + '</div>';
 }
@@ -5623,7 +5653,7 @@ function caCardVenda(v, cb){
   var semDc = caPrecisaClassificar(v);
   var h = '<div class="ca-card"><div class="ca-card-topo" data-ca="toggle" data-k="' + caEsc(v.key) + '">' +
     '<div style="min-width:0;"><div class="ca-card-tit"><span class="ch">' + caEsc(v.chamado) + '</span><span class="cl">' + caEsc(v.cliente || 'Cliente não informado') + '</span>' +
-    (v.origem === 'guia' ? '<span class="ca-sit guia">aba Pedidos</span>' : '<span class="ca-sit manual">manual' + (v.unidade && v.unidade !== CA_UNIDADE_RIO && !CA.unid ? ' · ' + caEsc(v.unidade) : '') + '</span>') +
+    (v.origem === 'guia' ? '<span class="ca-sit guia">via ABASTECER</span>' : '<span class="ca-sit manual">manual' + (v.unidade && v.unidade !== CA_UNIDADE_RIO && !CA.unid ? ' · ' + caEsc(v.unidade) : '') + '</span>') +
     (v.status !== 'aberto' ? '<span class="ca-sit neutro">' + CA_ST_V[v.status] + '</span>' : '') + '</div>' +
     '<div class="ca-meta"><span>DCS <b>' + caEsc(v.dc || 'a definir') + '</b></span><span>Prazo <b class="' + (urg ? 'ca-atrasado' : '') + '">' + caDA(v.data) + '</b></span><span>' + v.itens.length + ' ' + (v.itens.length === 1 ? 'item' : 'itens') + '</span>' + (v.vendedor ? '<span>Vendedor <b>' + caEsc(v.vendedor) + '</b></span>' : '') + '</div></div>' +
     '<div class="ca-lado">' + (semDc ? '<span class="ca-sit desc">Definir DCS e prazo</span>' : '<span class="ca-sit ' + cb.estado + '">' + CA_COB[cb.estado] + (cb.atraso ? ' · atraso' : '') + '</span>') +
@@ -5729,7 +5759,7 @@ function caLinhaItem(it, i){
 function caDesenharVenda(){
   var md = CA.modal, d = md.d;
   caAbrirModal('<div class="cm-topo"><h3>' + (md.id ? 'Pedido ' + caEsc(d.chamado) : 'Novo pedido de venda') + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
-    (!CA.unid ? '<div class="cm-aviso">Os pedidos da aba Pedidos já entram sozinhos. Use este formulário só para um pedido que não está lá.</div>' : '') +
+    (!CA.unid ? '<div class="cm-aviso">Pedidos que o vendedor mandou para ABASTECER na aba Pedidos já entram sozinhos. Use este formulário só para um pedido que não está no guia.</div>' : '') +
     '<div class="cm-grid"><div class="cm-f"><label>Chamado do pedido</label><input id="ca-v-ch" value="' + caEsc(d.chamado) + '" autocomplete="off"></div>' +
     '<div class="cm-f" style="grid-column:span 2;"><label>Cliente / carga</label><input id="ca-v-cli" value="' + caEsc(d.cliente) + '"></div></div>' +
     '<div class="cm-grid"><div class="cm-f"><label>DCS que atende</label><select id="ca-v-dc">' + caOpts(caDcsUsuario(), d.dc) + '</select></div>' +
@@ -5796,7 +5826,7 @@ function caModalGuia(v){
   var md = CA.modal;
   var dcs = caDcsUsuario();
   caAbrirModal('<div class="cm-topo"><h3>Pedido ' + caEsc(v.chamado) + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
-    '<div style="font-size:12.5px;"><b>' + caEsc(v.cliente) + '</b><div style="color:#888;">Vem da aba Pedidos · vendedor ' + caEsc(v.vendedor) + ' · status no guia: ' + caEsc(v.pedStatus || '—') + '</div></div>' +
+    '<div style="font-size:12.5px;"><b>' + caEsc(v.cliente) + '</b><div style="color:#888;">Mandado para ABASTECER na aba Pedidos · vendedor ' + caEsc(v.vendedor) + ' · status no guia: ' + caEsc(v.pedStatus || '—') + '</div></div>' +
     '<div class="cm-grid"><div class="cm-f"><label>DCS que atende</label><select id="ca-g-dc">' + caOpts(dcs, v.dc || (dcs.length === 1 ? dcs[0] : '')) + '</select></div>' +
     '<div class="cm-f"><label>Material na DCS até</label><input id="ca-g-data" type="date" value="' + caEsc(v.data) + '"></div>' +
     '<div class="cm-f"><label>Observação</label><input id="ca-g-obs" value="' + caEsc(v.obs) + '"></div></div>' +
@@ -5805,7 +5835,7 @@ function caModalGuia(v){
     v.itens.map(function(it){ return '<tr><td><input type="checkbox" data-ca="g-item" data-c="' + caEsc(it.c) + '"' + (!it.semNec ? ' checked' : '') + '></td><td>' + caCodHtml(it.c) + '</td><td class="cm-desc">' + caEsc(caNome(it.c) || 'Código fora da base') + (caEhPlaca(it.c) ? '<span class="ca-sub">Placa — coleta na fábrica</span>' : '') + '</td><td class="r">' + caN(it.q) + '</td></tr>'; }).join('') +
     '</tbody></table></div></div>' +
     '<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;"><input type="checkbox" id="ca-g-ign"' + (o.ignorar ? ' checked' : '') + '> Este pedido não precisa de abastecimento (tudo já está na DCS)</label>' +
-    '<div style="font-size:11.5px;color:#999;">Itens, quantidades e cliente vêm da aba Pedidos. Para mudar, edite o pedido lá.</div></div>' +
+    '<div style="font-size:11.5px;color:#999;">Itens e quantidades são os que o vendedor marcou em ABASTECER. Para incluir ou tirar um item, ajuste na aba Abastecimento.</div></div>' +
     '<div class="cm-rodape"><span class="cm-erro" id="ca-g-erro"></span><button class="ca-btn" data-ca="fechar">Cancelar</button><button class="ca-btn pri" data-ca="g-salvar">Salvar</button></div>');
 }
 function caSalvarGuia(){
@@ -20096,6 +20126,7 @@ function abGarantirListener(){
     abMigrarLegado();
     abRequestRender();
     abAtualizarCelulasPedidos();
+    if (typeof caPedirRender === 'function'){ caPedirRender(); caAtualizarCelulasPedidos(); }
   });
 }
 
