@@ -5276,7 +5276,10 @@ function caListaUnidades(){
   Object.keys(CA.dados.vendas || {}).forEach(function(id){ var v = CA.dados.vendas[id]; var u = v && caUnidNome(v.unidade); if (u && l.indexOf(u) === -1) l.push(u); });
   return l;
 }
-var CA_CONFIG_PADRAO = { dcs: ['DC FDS', 'DC MDC'], fabricantes: ['Max Steel', 'Nova Metálica', 'Placo FDS', 'Placo MDC'] };
+var CA_CONFIG_PADRAO = { dcs: ['DC FDS', 'DC MDC'], fabricantes: ['Max Steel (Comercial)', 'Nova Metálica (Normatizado)', 'Placo FDS', 'Placo MDC'] };
+/* nomes de fabricante mais fáceis para os usuários: Max Steel = perfil comercial, Nova Metálica = normatizado */
+var CA_FAB_NOMES = { 'max steel':'Max Steel (Comercial)', 'nova metalica':'Nova Metálica (Normatizado)' };
+function caFabNorm(n){ if (!n) return n; return CA_FAB_NOMES[caSemAcento(n)] || n; }
 var CA_ST_V = { aberto:'Em aberto', atendido:'Atendido / faturado', cancelado:'Cancelado', semnec:'Sem necessidade' };
 var CA_ST_A = { solicitado:'Solicitado ao fabricante', confirmado:'Confirmado', transito:'Em trânsito', na_dc:'Chegou na DCS', cancelado:'Cancelado' };
 var CA_COB = { desc:'Sem cobertura', parcial:'Cobertura parcial', coberto:'Coberto (a caminho)', nadc:'Coberto (pronto para coletar)', neutro:'Sem necessidade' };
@@ -5341,6 +5344,14 @@ function caLigar(){
   dbRef('centralAbast').on('value', function(snap){
     var v = snap.val() || {};
     CA.dados = { vendas: v.vendas || {}, abast: v.abast || {}, guia: v.guia || {}, config: v.config || null, fabPorCod: v.fabPorCod || {} };
+    Object.keys(CA.dados.abast).forEach(function(id){ var a = CA.dados.abast[id]; if (a && a.fabricante) a.fabricante = caFabNorm(a.fabricante); });
+    Object.keys(CA.dados.fabPorCod).forEach(function(c){ CA.dados.fabPorCod[c] = caFabNorm(CA.dados.fabPorCod[c]); });
+    if (CA.dados.config && CA.dados.config.fabricantes){
+      var antes = caArr(CA.dados.config.fabricantes), depois = [];
+      antes.forEach(function(n){ var x = caFabNorm(n); if (depois.indexOf(x) === -1) depois.push(x); });
+      CA.dados.config.fabricantes = depois;
+      if (depois.join('|') !== antes.join('|') && typeof caPodeCadastro === 'function' && caPodeCadastro() && firebaseOK && !CA.migFab){ CA.migFab = true; dbRef('centralAbast/config/fabricantes').set(depois); }
+    }
     CA.carregado = true;
     caPedirRender();
     caAtualizarCelulasPedidos();
