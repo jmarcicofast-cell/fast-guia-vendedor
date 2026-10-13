@@ -6003,9 +6003,15 @@ function caCardAbast(a, vmap, necMap){
 function caViewPainel(vendas, m){
   var h = caHoje(), abertas = vendas.filter(function(v){ return v.status === 'aberto'; });
   var t = function(kg){ return caN(Math.round(kg / 100) / 10); };
+  var porItem = {};
   var gapKg = 0, gapPed = 0, semDcPed = 0, riscoLista = [], porFab = {}, porUni = {}, porDc = {}, cobKg = 0, prontoKg = 0, totKg = 0;
   abertas.forEach(function(v){
     var cb = caCob(v, m), u = caUnidNome(v.unidade);
+    cb.itens.forEach(function(it){
+      if (it.semNec) return;
+      var I = porItem[it.c] || (porItem[it.c] = { c:it.c, vend:0, sol:0, nadc:0, falta:0, peds:{}, dcs:{}, faltaDc:{} });
+      I.vend += it.q; I.sol += Math.min(it.cob, it.q); I.nadc += Math.min(it.nadc, it.q); I.falta += it.falta; I.peds[v.key] = 1; if (v.dc){ I.dcs[v.dc] = 1; if (it.falta) I.faltaDc[v.dc] = (I.faltaDc[v.dc] || 0) + it.falta; }
+    });
     var U = porUni[u] || (porUni[u] = { ped:0, desc:0, kg:0, falta:0, pronto:0 }); U.ped++;
     if (caPrecisaClassificar(v)){ semDcPed++; return; }
     var kgFalta = 0;
@@ -6061,6 +6067,32 @@ function caViewPainel(vendas, m){
     (unis.length ? unis.map(function(u){ var U = porUni[u]; return '<tr><td><b>' + caEsc(u) + '</b></td><td class="r">' + U.ped + '</td><td class="r' + (U.desc ? ' ca-atrasado' : '') + '">' + U.desc + '</td><td class="r">' + U.pronto + '</td><td class="r">' + t(U.kg) + '</td></tr>'; }).join('') : '<tr><td colspan="5" style="color:#999;">Sem pedidos em aberto.</td></tr>') +
     '</tbody></table></div>' + (dcsL.length ? '<div class="ca-scroll"><table class="ca-t"><thead><tr><th>DCS</th><th class="r">Pedidos com falta</th><th class="r">Gap (t)</th></tr></thead><tbody>' + dcsL.map(function(dc){ return '<tr><td>' + caEsc(dc) + '</td><td class="r">' + Object.keys(porDc[dc].peds).length + '</td><td class="r">' + t(porDc[dc].kg) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '') + '</div>';
   html += '</div>';
+  // total por item: vendido, solicitado, na DCS, falta
+  var livre = {};
+  caAbasts().forEach(function(a){ if (a.status === 'cancelado') return; var it = caItensAbast(a), us = caUsadoAbast(a); Object.keys(it).forEach(function(c){ var sd = it[c] - (us[c] || 0); if (sd > 0){ var k = (a.dc || '') + '|' + c; livre[k] = (livre[k] || 0) + sd; } }); });
+  var qi = caSemAcento(CA.fp || '');
+  var itensL = Object.keys(porItem).map(function(c){ return porItem[c]; })
+    .filter(function(I){ return !qi || caSemAcento(I.c + ' ' + (caNome(I.c) || '') + ' ' + caFabDe(I.c)).indexOf(qi) !== -1; })
+    .sort(function(a, b){ return b.falta - a.falta || b.vend - a.vend; });
+  var T = { vend:0, sol:0, nadc:0, falta:0, livre:0, depois:0, kgV:0, kgF:0 };
+  var linhasItens = itensL.map(function(I){
+    /* o saldo só ajuda se estiver na mesma DCS do pedido */
+    var lv = 0; Object.keys(I.faltaDc).forEach(function(dc){ lv += Math.min(I.faltaDc[dc], livre[dc + '|' + I.c] || 0); });
+    var depois = Math.max(0, I.falta - lv), kg = caPeso(I.c);
+    T.vend += I.vend; T.sol += I.sol; T.nadc += I.nadc; T.falta += I.falta; T.livre += lv; T.depois += depois; T.kgV += I.vend * kg; T.kgF += I.falta * kg;
+    var pct = I.vend ? Math.round(I.sol / I.vend * 100) : 0;
+    return '<tr><td>' + caCodHtml(I.c) + '</td><td>' + caEsc(caNome(I.c) || 'Código fora da base') + '<span class="ca-sub">' + caEsc(caFabDe(I.c) || 'fabricante a definir') + ' · ' + Object.keys(I.peds).length + ' ped. · ' + caEsc(Object.keys(I.dcs).join(', ')) + '</span></td>' +
+      '<td class="r">' + caN(I.vend) + '</td><td class="r">' + caN(I.sol) + '<span class="ca-sub">' + pct + '%</span></td><td class="r">' + caN(I.nadc) + '</td>' +
+      '<td class="r">' + (I.falta ? '<b class="ca-atrasado">' + caN(I.falta) + '</b>' : '<span style="color:#1B5E20;">0</span>') + '</td>' +
+      '<td class="r">' + (lv ? '<span style="color:#1B5E20;">' + caN(lv) + '</span>' : '—') + '</td>' +
+      '<td class="r">' + (depois ? '<b class="ca-atrasado">' + caN(depois) + '</b>' : (I.falta ? '<span style="color:#1B5E20;">coberto pelo saldo</span>' : '—')) + '</td></tr>';
+  }).join('');
+  html += '<div class="ca-painel" style="margin-top:12px;"><div class="ca-painel-topo"><h3>Total por item — pedidos em aberto</h3><span style="font-size:12px;color:#888;">o que foi vendido, o que já tem chamado e o que falta para seguir</span>' +
+    '<input type="search" id="ca-fp" placeholder="🔎 Código, item ou fabricante" value="' + caEsc(CA.fp || '') + '" style="margin-left:auto;padding:6px 10px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12.5px;min-width:0;flex:0 1 240px;"></div>' +
+    '<div class="ca-scroll"><table class="ca-t"><thead><tr><th>Código</th><th>Item</th><th class="r">Total vendido</th><th class="r">Total solicitado</th><th class="r">Já na DCS</th><th class="r">Total que falta</th><th class="r">Saldo livre na mesma DCS</th><th class="r">Falta pedir ao fabricante</th></tr></thead><tbody>' +
+    (linhasItens || '<tr><td colspan="8" style="color:#999;">' + (qi ? 'Nenhum item encontrado.' : 'Sem pedidos em aberto.') + '</td></tr>') +
+    (linhasItens ? '<tr style="background:#FAF9F6;font-weight:800;"><td colspan="2">Total' + (qi ? ' (filtrado)' : '') + ' · ' + itensL.length + ' itens<span class="ca-sub" style="font-weight:400;">≈ ' + t(T.kgV) + ' t vendidas · ≈ ' + t(T.kgF) + ' t faltando</span></td><td class="r">' + caN(T.vend) + '</td><td class="r">' + caN(T.sol) + '<span class="ca-sub">' + (T.vend ? Math.round(T.sol / T.vend * 100) : 0) + '%</span></td><td class="r">' + caN(T.nadc) + '</td><td class="r ca-atrasado">' + caN(T.falta) + '</td><td class="r">' + caN(T.livre) + '</td><td class="r ca-atrasado">' + caN(T.depois) + '</td></tr>' : '') +
+    '</tbody></table></div><div style="padding:6px 12px 10px;font-size:11.5px;color:#888;">Quantidades em unidades de cada item. "Total solicitado" é o que já está vinculado a chamado de abastecimento; "Saldo livre" é o que existe em chamados da mesma DCS e ainda não foi vinculado; "Falta pedir ao fabricante" é o que sobra mesmo usando esse saldo.</div></div>';
   // pedidos em risco
   html += '<div class="ca-painel" style="margin-top:12px;"><div class="ca-painel-topo"><h3>Pedidos em risco de prazo</h3><span style="font-size:12px;color:#888;">sem abastecimento perto do prazo ou com chegada prevista depois dele</span></div><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Pedido</th><th>Unidade</th><th>Cliente</th><th>DCS</th><th>Prazo</th><th class="r">Falta</th><th>Situação</th></tr></thead><tbody>' +
     (riscoLista.length ? riscoLista.slice(0, 30).map(function(r){ var v = r.v; return '<tr><td><button class="ca-chip' + (r.grave ? ' atraso' : '') + '" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + caEsc(v.chamado) + '</button></td><td>' + caEsc(caUnidNome(v.unidade)) + '</td><td>' + caEsc(v.cliente) + '</td><td>' + caEsc(v.dc) + '</td><td class="' + (r.grave ? 'ca-atrasado' : '') + '">' + caDA(v.data) + '</td><td class="r">' + (r.cb.falta ? caN(r.cb.falta) + ' un.' : '—') + '</td><td>' + caEsc(r.motivo) + '</td></tr>'; }).join('') : '<tr><td colspan="7" style="color:#1B5E20;">Nenhum pedido em risco.</td></tr>') +
@@ -6415,8 +6447,8 @@ document.addEventListener('submit', function(ev){
 document.addEventListener('input', function(ev){
   var t = ev.target; if (!t.closest || !t.closest('#tab-central, #ca-modal-ov')) return;
   if (t.id === 'ca-vc-busca'){ CA.modal.busca = t.value; var p2 = t.selectionStart; caDesenharVincular(); var nb = document.getElementById('ca-vc-busca'); if (nb){ nb.focus(); try { nb.setSelectionRange(p2, p2); } catch(e){} } return; }
-  if (t.id === 'ca-fv-q' || t.id === 'ca-fa-q' || t.id === 'ca-fn-prod'){
-    if (t.id === 'ca-fn-prod') CA.fn.prod = t.value; else (t.id === 'ca-fv-q' ? CA.fv : CA.fa).q = t.value;
+  if (t.id === 'ca-fv-q' || t.id === 'ca-fa-q' || t.id === 'ca-fn-prod' || t.id === 'ca-fp'){
+    if (t.id === 'ca-fp') CA.fp = t.value; else if (t.id === 'ca-fn-prod') CA.fn.prod = t.value; else (t.id === 'ca-fv-q' ? CA.fv : CA.fa).q = t.value;
     var id = t.id, pos = t.selectionStart; caRender(); var n = document.getElementById(id); if (n){ n.focus(); try { n.setSelectionRange(pos, pos); } catch(e){} }
   } else if (t.closest('#ca-a-itens')){
     if (t.dataset.f === 'c'){ var ca2 = t.value.trim().toUpperCase(), td2 = t.closest('tr').querySelector('.cm-desc'), nIn2 = td2.querySelector('[data-f=n]'); td2.className = 'cm-desc'; td2.innerHTML = caDescCell(ca2, nIn2 && !caNaBase(ca2) ? nIn2.value : ''); }
