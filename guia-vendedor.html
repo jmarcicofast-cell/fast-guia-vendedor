@@ -5234,6 +5234,7 @@ td.p-tie { color:var(--sp-muted); }
       <button data-ca="aba" data-aba="nec" class="on">Necessidade <span class="n" id="ca-n-nec">0</span></button>
       <button data-ca="aba" data-aba="vendas">Pedidos de venda <span class="n" id="ca-n-ven">0</span></button>
       <button data-ca="aba" data-aba="abast">Chamados de abastecimento <span class="n" id="ca-n-ab">0</span></button>
+      <button data-ca="aba" data-aba="painel" id="ca-seg-painel">📊 Painel da direção</button>
       <button data-ca="aba" data-aba="cad" id="ca-seg-cad">Cadastros</button>
     </div>
     <div id="ca-main"><div class="ca-vazio"><b>Carregando…</b>Os pedidos e chamados aparecem aqui assim que a base responder.</div></div>
@@ -5266,6 +5267,8 @@ var CA_UNIDADES = {
   'NIDIA': { senha: 'NIDIA1234', nome: 'Nidia Fujihara — Atacado SP', unidade: 'Atacado SP' },
   'POLIANA': { senha: 'POLIANA1234', nome: 'Poliana — Atacado SP', unidade: 'Atacado SP' },
   'FRANCIANNE': { senha: 'FRANCIANNE1234', nome: 'Francianne Lagos — Lojas do Rio', unidade: 'Lojas do Rio' },
+  /* direção: vê todas as operações e o Painel, sem alterar nada */
+  'DIRECAO': { senha: 'DIRECAO1234', nome: 'Direção FAST', unidade: '', direcao: true },
 };
 var CA_UNIDADE_RIO = 'Televendas';
 /* registros antigos da equipe do guia foram gravados como 'Rio de Janeiro' */
@@ -5352,7 +5355,11 @@ function caCodHtml(c){ return c && c.charAt(0) === '?' ? '<span class="ca-cod" s
 /* ---------- quem está usando ---------- */
 function caUnid(){ return CA.unid; }
 function caLogado(){ return !!CA.unid || !!(currentUser && vendedores[currentUser]); }
-function caVeTudo(){ return !CA.unid && typeof abVeTudo === 'function' && abVeTudo(); }
+function caEhDirecao(){ return !!(CA.unid && CA.unid.direcao); }
+var CA_ACOES_GRAVAM = { 'nova-venda':1, 'novo-abast':1, 'chegou':1, 'v-salvar':1, 'a-salvar':1, 'g-salvar':1, 'v-del':1, 'a-del':1, 'vincular':1, 'usar-saldo':1, 'tarja-vinc':1,
+  'vc-abrir':1, 'vc-vincular':1, 'desvincular':1, 'cad-del':1, 'abast-da-selecao':1, 'abast-da-venda':1, 'sel':1, 'sel-dc':1 };
+function caVeTudo(){ return caEhDirecao() || (!CA.unid && typeof abVeTudo === 'function' && abVeTudo()); }
+function caMostraUnid(){ return !CA.unid || caEhDirecao(); }
 function caPodeCadastro(){ return !CA.unid && (currentUser === 'JULIANA' || (typeof abEhAdm === 'function' && abEhAdm())); }
 function caAutor(){ return CA.unid ? 'unid:' + CA.unid.key : (currentUser || ''); }
 function caMinhaUnidade(){ return CA.unid ? CA.unid.unidade : CA_UNIDADE_RIO; }
@@ -5362,7 +5369,7 @@ function caDcsUsuario(){ var dcs = caConfig().dcs; if (CA.unid && CA.unid.dcs &&
 
 /* ---------- dados ---------- */
 function caLigar(){
-  if (typeof abGarantirListener === 'function' && !CA.unid) abGarantirListener();
+  if (typeof abGarantirListener === 'function' && (!CA.unid || caEhDirecao())) abGarantirListener();
   if (CA.ligado && (CA.ligadoFb || !firebaseOK)) return;
   CA.ligado = true; CA.ligadoFb = !!firebaseOK;
   dbRef('centralAbast').on('value', function(snap){
@@ -5424,8 +5431,9 @@ function caAbrirDoPedido(key){
   (function tentar(){ if (caAchaVenda(key)) return caModalVenda(key); if (++n < 25) setTimeout(tentar, 150); else caToast('Não encontrei esse pedido na Central.'); })();
 }
 function caLigarPedidos(){
-  if (CA.unid || !currentUser) return;
-  var chave = currentUser + (caVeTudo() ? '*' : '');
+  if (CA.unid && !caEhDirecao()) return;
+  if (!CA.unid && !currentUser) return;
+  var chave = (caEhDirecao() ? 'direcao' : currentUser) + (caVeTudo() ? '*' : '');
   if (CA.pedPara === chave) return;
   CA.pedPara = chave; CA.ped = {};
   var lista = caVeTudo() ? Object.keys(vendedores).filter(function(vn){ var t = vendedores[vn].tipo; return t !== 'administrativo'; }) : [currentUser];
@@ -5453,13 +5461,13 @@ function caVendas(todas){
   var out = [], u = CA.unid;
   Object.keys(CA.dados.vendas || {}).forEach(function(id){
     var v = CA.dados.vendas[id]; if (!v) return;
-    if (u){ if (v.unidade !== u.unidade) return; }
-    else if (!caVeTudo() && v.criadoPor !== currentUser) return;
+    if (u && !u.direcao){ if (v.unidade !== u.unidade) return; }
+    else if (!u && !caVeTudo() && v.criadoPor !== currentUser) return;
     out.push({ key:'m:' + id, id:id, origem:'manual', chamado:v.chamado || '', cliente:v.cliente || '', vendedor:v.vendedor || '', unidade:v.unidade || '',
       dc:v.dc || '', data:v.data || '', status:v.status || 'aberto', obs:v.obs || '', criadoPor:v.criadoPor,
       itens: caArr(v.itens).map(function(i){ return { c:i.c, q:+i.q || 0, semNec:false }; }), raw:v });
   });
-  if (!u){
+  if (!u || u.direcao){
     var grupos = caGruposAbastecer();
     Object.keys(grupos).forEach(function(okey){
       var g = grupos[okey];
@@ -5469,7 +5477,7 @@ function caVendas(todas){
       out.push(v);
     });
   }
-  if (!u && CA.fu && !todas) out = out.filter(function(v){ return caUnidNome(v.unidade) === CA.fu; });
+  if ((!u || u.direcao) && CA.fu && !todas) out = out.filter(function(v){ return caUnidNome(v.unidade) === CA.fu; });
   return out;
 }
 /* Só entram na Central os pedidos que o vendedor mandou para o abastecimento
@@ -5704,8 +5712,11 @@ function caRender(){
   document.querySelectorAll('#ca-seg button').forEach(function(b){ b.classList.toggle('on', b.dataset.aba === CA.aba); });
   var segCad = document.getElementById('ca-seg-cad'); if (segCad) segCad.style.display = CA.unid ? 'none' : '';
   if (CA.unid && CA.aba === 'cad') CA.aba = 'nec';
+  var segP = document.getElementById('ca-seg-painel'); if (segP) segP.style.display = (CA.unid && !caEhDirecao()) ? 'none' : '';
+  if (CA.unid && !caEhDirecao() && CA.aba === 'painel') CA.aba = 'nec';
+  document.querySelectorAll('#tab-central .ca-acoes').forEach(function(x){ x.style.display = caEhDirecao() ? 'none' : ''; });
   var sub = document.getElementById('ca-sub');
-  if (sub) sub.textContent = CA.unid ? CA.unid.nome + ' — lance os pedidos que precisam de material e acompanhe os chamados de abastecimento.' : 'Entram aqui os pedidos que o vendedor mandou para ABASTECER na aba Pedidos. O que falta aparece somado por DCS e código.';
+  if (sub) sub.textContent = caEhDirecao() ? 'Direção — painel dos gaps de abastecimento de todas as operações. Acesso só de leitura.' : CA.unid ? CA.unid.nome + ' — lance os pedidos que precisam de material e acompanhe os chamados de abastecimento.' : 'Entram aqui os pedidos que o vendedor mandou para ABASTECER na aba Pedidos. O que falta aparece somado por DCS e código.';
   if (!caLogado()){ main.innerHTML = '<div class="ca-vazio"><b>Entre com seu usuário</b>A Central aparece depois do login.</div>'; return; }
   if (!CA.carregado){ main.innerHTML = '<div class="ca-vazio"><b>Carregando…</b>Os pedidos e chamados aparecem aqui assim que a base responder.</div>'; return; }
   var m = caAlocMap(), vendas = caVendas(), abertas = vendas.filter(function(v){ return v.status === 'aberto'; });
@@ -5714,7 +5725,7 @@ function caRender(){
   document.getElementById('ca-n-ven').textContent = abertas.length;
   document.getElementById('ca-n-ab').textContent = caAbasts().filter(function(a){ return a.status !== 'na_dc' && a.status !== 'cancelado'; }).length;
   var html = '';
-  if (!CA.unid && CA.aba !== 'cad'){
+  if (caMostraUnid() && CA.aba !== 'cad'){
     var us = caListaUnidades();
     html += '<div class="ca-filtros" style="margin-bottom:10px;"><span style="font-size:12px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:.05em;">Unidade</span>' +
       ['', ].concat(us).map(function(u){ var on = (CA.fu || '') === u; return '<button class="ca-btn sm' + (on ? ' pri' : '') + '" data-ca="fu" data-u="' + caEsc(u) + '">' + (u ? caEsc(u) : 'Todas') + '</button>'; }).join('') + '</div>';
@@ -5723,6 +5734,7 @@ function caRender(){
   if (CA.aba === 'nec') html += caViewNec(nec, abertas, vendas, m);
   else if (CA.aba === 'vendas') html += caViewVendas(vendas, m);
   else if (CA.aba === 'abast') html += caViewAbast(vendas);
+  else if (CA.aba === 'painel') html += caViewPainel(vendas, m);
   else html += caViewCad();
   main.innerHTML = html;
 }
@@ -5820,7 +5832,7 @@ function caViewNec(nec, abertas, vendas, m){
         return '<tr' + (on ? ' class="sel"' : '') + '><td><input type="checkbox" data-ca="sel" data-k="' + caEsc(l.k) + '"' + (on ? ' checked' : '') + '></td><td>' + caCodHtml(l.c) + '</td><td>' + caEsc(caNome(l.c) || 'Código fora da base') + '<span class="ca-sub">' + caFabs(l.c) + '</span></td>' +
           '<td>' + caSelFab(l.c) + '</td>' +
           '<td class="r"><b>' + caN(l.falta) + '</b></td><td class="r" style="color:#888;">' + (pu ? caN(l.falta / pu) : '—') + '</td>' +
-          '<td>' + l.peds.map(function(p){ return '<button class="ca-chip" data-ca="abrir-venda" data-k="' + caEsc(p.v.key) + '" title="' + caEsc(caUnidNome(p.v.unidade) + ' · ' + p.v.cliente) + '">' + (!CA.unid && !CA.fu && caUnidNome(p.v.unidade) !== CA_UNIDADE_RIO ? caEsc(caUnidNome(p.v.unidade)) + ' · ' : '') + caEsc(p.v.chamado) + ' · ' + caN(p.falta) + '</button>'; }).join('') + '</td>' +
+          '<td>' + l.peds.map(function(p){ return '<button class="ca-chip" data-ca="abrir-venda" data-k="' + caEsc(p.v.key) + '" title="' + caEsc(caUnidNome(p.v.unidade) + ' · ' + p.v.cliente) + '">' + (caMostraUnid() && !CA.fu && caUnidNome(p.v.unidade) !== CA_UNIDADE_RIO ? caEsc(caUnidNome(p.v.unidade)) + ' · ' : '') + caEsc(p.v.chamado) + ' · ' + caN(p.falta) + '</button>'; }).join('') + '</td>' +
           '<td class="' + (d != null && d <= 2 ? 'ca-atrasado' : '') + '">' + caDA(l.data) + '</td>' +
           '<td>' + (caSaldoChips(l.dc, l.c, 'usar-saldo', ' data-k="' + caEsc(l.k) + '"') || '<span style="color:#ccc;">—</span>') + '</td></tr>';
       }).join('') + '</tbody></table></div></div>';
@@ -5885,7 +5897,7 @@ function caCardVenda(v, cb){
   var semDc = caPrecisaClassificar(v);
   var h = '<div class="ca-card"><div class="ca-card-topo" data-ca="toggle" data-k="' + caEsc(v.key) + '">' +
     '<div style="min-width:0;"><div class="ca-card-tit"><span class="ch">' + caEsc(v.chamado) + '</span><span class="cl">' + caEsc(v.cliente || 'Cliente não informado') + '</span>' +
-    (!CA.unid ? '<span class="ca-sit ' + (caUnidNome(v.unidade) === CA_UNIDADE_RIO ? 'neutro' : 'manual') + '">' + caEsc(caUnidNome(v.unidade)) + '</span>' : '') + (v.origem === 'guia' ? '<span class="ca-sit guia">via ABASTECER</span>' : '<span class="ca-sit neutro">manual</span>') +
+    (caMostraUnid() ? '<span class="ca-sit ' + (caUnidNome(v.unidade) === CA_UNIDADE_RIO ? 'neutro' : 'manual') + '">' + caEsc(caUnidNome(v.unidade)) + '</span>' : '') + (v.origem === 'guia' ? '<span class="ca-sit guia">via ABASTECER</span>' : '<span class="ca-sit neutro">manual</span>') +
     (v.status !== 'aberto' ? '<span class="ca-sit neutro">' + CA_ST_V[v.status] + '</span>' : '') + '</div>' +
     '<div class="ca-meta"><span>DCS <b>' + caEsc(v.dc || 'a definir') + '</b></span><span>Prazo <b class="' + (urg ? 'ca-atrasado' : '') + '">' + caDA(v.data) + '</b></span><span>' + v.itens.length + ' ' + (v.itens.length === 1 ? 'item' : 'itens') + '</span>' + (v.vendedor ? '<span>Vendedor <b>' + caEsc(v.vendedor) + '</b></span>' : '') + '</div></div>' +
     '<div class="ca-lado">' + (semDc ? '<span class="ca-sit desc">Definir DCS e prazo</span>' : '<span class="ca-sit ' + cb.estado + '">' + caRotuloCob(cb) + (cb.atraso ? ' · atraso' : '') + '</span>') +
@@ -5935,13 +5947,13 @@ function caCardAbast(a, vmap, necMap){
   if (temItens){ Object.keys(itA).forEach(function(c){ itUn += itA[c]; itKg += itA[c] * caPeso(c); saldoT += Math.max(0, itA[c] - (porC[c] || 0)); }); tot = itUn; peso = itKg; }
   var nV = Object.keys(porV).length, nC = temItens ? Object.keys(itA).length : Object.keys(porC).length;
   var h = '<div class="ca-card"><div class="ca-card-topo" data-ca="toggle" data-k="a:' + caEsc(a.id) + '">' +
-    '<div style="min-width:0;"><div class="ca-card-tit"><span class="ch">' + caEsc(a.chamado) + '</span><span class="cl">' + caEsc(a.fabricante || '—') + ' → ' + caEsc(a.dc || '—') + '</span>' + (a.carga ? '<span class="ca-sit neutro">' + caEsc(a.carga) + '</span>' : '') + (!CA.unid ? '<span class="ca-sit ' + (caUnidNome(a.unidade) === CA_UNIDADE_RIO ? 'neutro' : 'manual') + '">' + caEsc(caUnidNome(a.unidade)) + '</span>' : '') + '</div>' +
+    '<div style="min-width:0;"><div class="ca-card-tit"><span class="ch">' + caEsc(a.chamado) + '</span><span class="cl">' + caEsc(a.fabricante || '—') + ' → ' + caEsc(a.dc || '—') + '</span>' + (a.carga ? '<span class="ca-sit neutro">' + caEsc(a.carga) + '</span>' : '') + (caMostraUnid() ? '<span class="ca-sit ' + (caUnidNome(a.unidade) === CA_UNIDADE_RIO ? 'neutro' : 'manual') + '">' + caEsc(caUnidNome(a.unidade)) + '</span>' : '') + '</div>' +
     '<div class="ca-meta"><span>Previsão na DCS <b class="' + (venc ? 'ca-atrasado' : '') + '">' + caDA(a.previsao) + '</b></span><span>' + nV + ' ' + (nV === 1 ? 'pedido' : 'pedidos') + ' · ' + nC + ' ' + (nC === 1 ? 'código' : 'códigos') + ' · ' + caN(tot) + ' un.</span><span>≈ <b>' + caN(peso / 1000) + ' t</b></span></div></div>' +
     '<div class="ca-lado"><span class="ca-sit ' + cls + '">' + (CA_ST_A[a.status] || a.status || '—') + '</span>' + (venc ? '<span class="ca-atrasado" style="font-size:11.5px;">previsão vencida</span>' : '') + (saldoT > 0 && a.status !== 'cancelado' ? '<span class="ca-sit nadc">saldo ' + caN(saldoT) + ' un. para vincular</span>' : '') + '</div></div>';
   if (aberto){
     var chipPed = function(x){
       var v = vmap[x.v], late = v && a.previsao && v.data && a.previsao > v.data && a.status !== 'na_dc';
-      if (v) return '<button class="ca-chip' + (late ? ' atraso' : '') + '" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '" title="' + caEsc(caUnidNome(v.unidade) + ' · ' + v.cliente + ' · prazo ' + caDA(v.data)) + '">' + (!CA.unid && caUnidNome(v.unidade) !== CA_UNIDADE_RIO ? caEsc(caUnidNome(v.unidade)) + ' · ' : '') + caEsc(v.chamado) + ' · ' + caN(x.q) + '</button>';
+      if (v) return '<button class="ca-chip' + (late ? ' atraso' : '') + '" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '" title="' + caEsc(caUnidNome(v.unidade) + ' · ' + v.cliente + ' · prazo ' + caDA(v.data)) + '">' + (caMostraUnid() && caUnidNome(v.unidade) !== CA_UNIDADE_RIO ? caEsc(caUnidNome(v.unidade)) + ' · ' : '') + caEsc(v.chamado) + ' · ' + caN(x.q) + '</button>';
       if (caVendaExiste(x.v)) return '<span class="ca-chip" style="cursor:default;color:#888;">outra operação · ' + caN(x.q) + '</span>';
       return '<span class="ca-chip" style="cursor:default;color:#888;">pedido excluído · ' + caN(x.q) + '</span>' + (caVeTudo() ? '<button class="ca-btn link sm" data-ca="desvincular" data-id="' + caEsc(a.id) + '" data-v="' + caEsc(x.v) + '">Liberar</button>' : '');
     };
@@ -5972,6 +5984,82 @@ function caCardAbast(a, vmap, necMap){
   return h + '</div>';
 }
 
+/* Painel da direção: onde estão os gaps do abastecimento */
+function caViewPainel(vendas, m){
+  var h = caHoje(), abertas = vendas.filter(function(v){ return v.status === 'aberto'; });
+  var t = function(kg){ return caN(Math.round(kg / 100) / 10); };
+  var gapKg = 0, gapPed = 0, semDcPed = 0, riscoLista = [], porFab = {}, porUni = {}, porDc = {}, cobKg = 0, prontoKg = 0, totKg = 0;
+  abertas.forEach(function(v){
+    var cb = caCob(v, m), u = caUnidNome(v.unidade);
+    var U = porUni[u] || (porUni[u] = { ped:0, desc:0, kg:0, falta:0, pronto:0 }); U.ped++;
+    if (caPrecisaClassificar(v)){ semDcPed++; return; }
+    var kgFalta = 0;
+    cb.itens.forEach(function(it){
+      var kgIt = caPeso(it.c), q = it.semNec ? 0 : it.q;
+      totKg += q * kgIt; cobKg += Math.min(it.cob, q) * kgIt; prontoKg += Math.min(it.nadc, q) * kgIt;
+      if (it.falta > 0){
+        kgFalta += it.falta * kgIt;
+        var fb = caFabDe(it.c) || 'Fabricante a definir', F = porFab[fb] || (porFab[fb] = { kg:0, cods:{}, peds:{} }); F.kg += it.falta * kgIt; F.cods[it.c] = 1; F.peds[v.key] = 1;
+        var D = porDc[v.dc] || (porDc[v.dc] = { kg:0, peds:{} }); D.kg += it.falta * kgIt; D.peds[v.key] = 1;
+      }
+    });
+    if (cb.falta > 0){ gapPed++; U.desc++; U.kg += kgFalta; U.falta += cb.falta; }
+    if (cb.estado === 'nadc') U.pronto++;
+    gapKg += kgFalta;
+    var d = caDias(v.data), motivo = '';
+    if (cb.falta > 0 && v.data && v.data < h) motivo = 'Prazo vencido sem abastecimento';
+    else if (cb.falta > 0 && d != null && d <= 2) motivo = 'Prazo em ' + d + ' dia' + (d === 1 ? '' : 's') + ' sem abastecimento';
+    else if (cb.atraso) motivo = 'Chegada prevista depois do prazo';
+    if (motivo) riscoLista.push({ v:v, cb:cb, motivo:motivo, grave: motivo.indexOf('vencido') !== -1 || (d != null && d <= 0) });
+  });
+  riscoLista.sort(function(a, b){ return (b.grave - a.grave) || (a.v.data || '').localeCompare(b.v.data || ''); });
+  var abs = caAbasts(), atrasados = abs.filter(function(a){ return a.status !== 'na_dc' && a.status !== 'cancelado' && a.previsao && a.previsao < h; })
+    .sort(function(a, b){ return a.previsao.localeCompare(b.previsao); });
+  var semPrev = abs.filter(function(a){ return a.status !== 'na_dc' && a.status !== 'cancelado' && !a.previsao; });
+  var parado = [], paradoKg = 0;
+  abs.forEach(function(a){
+    if (a.status !== 'na_dc') return;
+    var it = caItensAbast(a), us = caUsadoAbast(a), kg = 0, cods = [];
+    Object.keys(it).forEach(function(c){ var sd = it[c] - (us[c] || 0); if (sd > 0.0001){ kg += sd * caPeso(c); cods.push(caCodHtml(c) + ' ' + caN(sd)); } });
+    if (cods.length){ parado.push({ a:a, kg:kg, cods:cods }); paradoKg += kg; }
+  });
+  parado.sort(function(a, b){ return b.kg - a.kg; });
+  var pctCob = totKg ? Math.round(cobKg / totKg * 100) : 0, pctPronto = totKg ? Math.round(prontoKg / totKg * 100) : 0;
+  var kpi = function(v, l, sub, cls){ return '<div class="ca-kpi ' + (cls || '') + '"><b>' + v + '</b><span>' + l + '</span>' + (sub ? '<div style="font-size:11.5px;color:#888;margin-top:2px;">' + sub + '</div>' : '') + '</div>'; };
+  var html = '<div style="font-size:12px;color:#888;margin-bottom:8px;">Atualizado em tempo real · ' + caDA(h) + (CA.fu ? ' · unidade: <b>' + caEsc(CA.fu) + '</b>' : ' · todas as unidades') + '. Pesos estimados pela Tabela de Produtos.</div>';
+  html += '<div class="ca-kpis">' +
+    kpi(t(gapKg) + ' t', 'Sem chamado de abastecimento', gapPed + ' ' + (gapPed === 1 ? 'pedido' : 'pedidos') + ' com falta', gapKg ? 'ruim' : '') +
+    kpi(riscoLista.length, 'Pedidos em risco de prazo', riscoLista.filter(function(r){ return r.grave; }).length + ' já vencidos', riscoLista.length ? 'ruim' : '') +
+    kpi(atrasados.length, 'Chamados com previsão vencida', semPrev.length ? semPrev.length + ' sem previsão informada' : 'todos com previsão', atrasados.length ? 'aten' : '') +
+    kpi(t(paradoKg) + ' t', 'Saldo parado na DCS', parado.length + ' ' + (parado.length === 1 ? 'chamado chegou' : 'chamados chegaram') + ' sem pedido vinculado', paradoKg ? 'aten' : '') + '</div>';
+  html += '<div class="ca-painel" style="padding:12px;"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:12.5px;margin-bottom:6px;"><b>Material dos pedidos em aberto (' + t(totKg) + ' t)</b><span style="color:#888;">' + abertas.length + ' pedidos · ' + semDcPed + ' aguardando DCS e prazo</span></div>' +
+    '<div class="ca-barra" style="width:100%;height:14px;border-radius:7px;"><i class="b1" style="width:' + pctPronto + '%"></i><i class="b2" style="width:' + Math.max(0, pctCob - pctPronto) + '%"></i></div>' +
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin-top:6px;color:#555;"><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#2E7D32;"></i> Na DCS, pronto para coletar ' + pctPronto + '%</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#185FA5;"></i> Com chamado, aguardando chegar ' + Math.max(0, pctCob - pctPronto) + '%</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#EFEDE7;border:1px solid #ddd;"></i> Sem chamado (gap) ' + (100 - pctCob) + '%</span></div></div>';
+  // gap por fabricante e por DCS
+  var fabs = Object.keys(porFab).sort(function(a, b){ return porFab[b].kg - porFab[a].kg; }), maxF = fabs.length ? porFab[fabs[0]].kg : 0;
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;">';
+  html += '<div class="ca-painel"><div class="ca-painel-topo"><h3>Gap por fabricante</h3><span style="font-size:12px;color:#888;">o que falta pedir</span></div><div style="padding:10px 12px;display:grid;gap:8px;">' +
+    (fabs.length ? fabs.map(function(fb){ var F = porFab[fb], w = maxF ? Math.max(3, F.kg / maxF * 100) : 0; return '<div style="font-size:12.5px;"><div style="display:flex;justify-content:space-between;gap:8px;"><b>' + caEsc(fb) + '</b><span>' + t(F.kg) + ' t · ' + Object.keys(F.cods).length + ' cód. · ' + Object.keys(F.peds).length + ' ped.</span></div><div style="height:8px;background:#F1EFE8;border-radius:4px;margin-top:3px;"><div style="height:100%;width:' + w + '%;background:' + (fb === 'Fabricante a definir' ? '#C9C5BA' : '#C41E1E') + ';border-radius:4px;"></div></div></div>'; }).join('') : '<div class="ca-vazio" style="padding:10px;">Nenhum gap: tudo com chamado.</div>') + '</div></div>';
+  var dcsL = Object.keys(porDc).sort(function(a, b){ return porDc[b].kg - porDc[a].kg; });
+  var unis = Object.keys(porUni).sort();
+  html += '<div class="ca-painel"><div class="ca-painel-topo"><h3>Por unidade e DCS</h3></div><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Unidade</th><th class="r">Pedidos abertos</th><th class="r">Com falta</th><th class="r">Prontos p/ coletar</th><th class="r">Gap (t)</th></tr></thead><tbody>' +
+    (unis.length ? unis.map(function(u){ var U = porUni[u]; return '<tr><td><b>' + caEsc(u) + '</b></td><td class="r">' + U.ped + '</td><td class="r' + (U.desc ? ' ca-atrasado' : '') + '">' + U.desc + '</td><td class="r">' + U.pronto + '</td><td class="r">' + t(U.kg) + '</td></tr>'; }).join('') : '<tr><td colspan="5" style="color:#999;">Sem pedidos em aberto.</td></tr>') +
+    '</tbody></table></div>' + (dcsL.length ? '<div class="ca-scroll"><table class="ca-t"><thead><tr><th>DCS</th><th class="r">Pedidos com falta</th><th class="r">Gap (t)</th></tr></thead><tbody>' + dcsL.map(function(dc){ return '<tr><td>' + caEsc(dc) + '</td><td class="r">' + Object.keys(porDc[dc].peds).length + '</td><td class="r">' + t(porDc[dc].kg) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '') + '</div>';
+  html += '</div>';
+  // pedidos em risco
+  html += '<div class="ca-painel" style="margin-top:12px;"><div class="ca-painel-topo"><h3>Pedidos em risco de prazo</h3><span style="font-size:12px;color:#888;">sem abastecimento perto do prazo ou com chegada prevista depois dele</span></div><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Pedido</th><th>Unidade</th><th>Cliente</th><th>DCS</th><th>Prazo</th><th class="r">Falta</th><th>Situação</th></tr></thead><tbody>' +
+    (riscoLista.length ? riscoLista.slice(0, 30).map(function(r){ var v = r.v; return '<tr><td><button class="ca-chip' + (r.grave ? ' atraso' : '') + '" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + caEsc(v.chamado) + '</button></td><td>' + caEsc(caUnidNome(v.unidade)) + '</td><td>' + caEsc(v.cliente) + '</td><td>' + caEsc(v.dc) + '</td><td class="' + (r.grave ? 'ca-atrasado' : '') + '">' + caDA(v.data) + '</td><td class="r">' + (r.cb.falta ? caN(r.cb.falta) + ' un.' : '—') + '</td><td>' + caEsc(r.motivo) + '</td></tr>'; }).join('') : '<tr><td colspan="7" style="color:#1B5E20;">Nenhum pedido em risco.</td></tr>') +
+    '</tbody></table></div>' + (riscoLista.length > 30 ? '<div style="padding:6px 12px;font-size:12px;color:#888;">+ ' + (riscoLista.length - 30) + ' pedidos</div>' : '') + '</div>';
+  // chamados atrasados
+  html += '<div class="ca-painel"><div class="ca-painel-topo"><h3>Chamados de abastecimento com previsão vencida</h3></div><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Chamado</th><th>Fabricante</th><th>DCS</th><th>Situação</th><th>Previsão</th><th class="r">Dias de atraso</th><th class="r">Pedidos afetados</th></tr></thead><tbody>' +
+    (atrasados.length ? atrasados.map(function(a){ var nP = {}; a.aloc.forEach(function(x){ nP[x.v] = 1; }); return '<tr><td><button class="ca-chip atraso" data-ca="abrir-abast" data-id="' + caEsc(a.id) + '">' + caEsc(a.chamado) + '</button></td><td>' + caEsc(a.fabricante || '') + '</td><td>' + caEsc(a.dc || '') + '</td><td>' + caEsc(CA_ST_A[a.status] || '') + '</td><td>' + caDA(a.previsao) + '</td><td class="r ca-atrasado">' + (-caDias(a.previsao)) + '</td><td class="r">' + Object.keys(nP).length + '</td></tr>'; }).join('') : '<tr><td colspan="7" style="color:#1B5E20;">Nenhum chamado atrasado.</td></tr>') +
+    '</tbody></table></div></div>';
+  // saldo parado
+  html += '<div class="ca-painel"><div class="ca-painel-topo"><h3>Saldo parado na DCS</h3><span style="font-size:12px;color:#888;">chegou e ainda não tem pedido vinculado</span></div><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Chamado</th><th>Fabricante</th><th>DCS</th><th class="r">Peso (t)</th><th>Itens disponíveis</th></tr></thead><tbody>' +
+    (parado.length ? parado.map(function(x){ return '<tr><td><button class="ca-chip" data-ca="abrir-abast" data-id="' + caEsc(x.a.id) + '">' + caEsc(x.a.chamado) + '</button></td><td>' + caEsc(x.a.fabricante || '') + '</td><td>' + caEsc(x.a.dc || '') + '</td><td class="r">' + t(x.kg) + '</td><td>' + x.cods.join(' &nbsp; ') + '</td></tr>'; }).join('') : '<tr><td colspan="5" style="color:#1B5E20;">Nenhum saldo parado.</td></tr>') +
+    '</tbody></table></div></div>';
+  return html;
+}
 function caViewCad(){
   var cfg = caConfig(), pode = caPodeCadastro();
   var box = function(key, tit, desc, ph){
@@ -6241,6 +6329,7 @@ document.addEventListener('click', function(ev){
   var t = ev.target.closest ? ev.target.closest('[data-ca]') : null;
   if (!t || !t.closest('#tab-central, #ca-modal-ov')) return;
   var act = t.dataset.ca;
+  if (caEhDirecao() && CA_ACOES_GRAVAM[act]){ ev.preventDefault(); caToast('Acesso da direção é só de leitura.'); return; }
   if (t.tagName === 'INPUT' && act !== 'sel' && act !== 'g-item' && act !== 'v-vinc-sel') return;
   if (act === 'aba'){ CA.aba = t.dataset.aba; try { localStorage.setItem('fgv_ca_aba', CA.aba); } catch(e){} caRender(); }
   else if (act === 'toggle'){ var k = t.dataset.k; CA.aberto[k] = !CA.aberto[k]; caRender(); }
@@ -6327,6 +6416,7 @@ document.addEventListener('change', function(ev){
   var t = ev.target; if (!t.closest || !t.closest('#tab-central, #ca-modal-ov')) return;
   var mapa = { 'ca-fv-st':['fv','st'], 'ca-fv-cob':['fv','cob'], 'ca-fv-dc':['fv','dc'], 'ca-fv-origem':['fv','origem'], 'ca-fa-st':['fa','st'], 'ca-fa-dc':['fa','dc'], 'ca-fn-dc':['fn','dc'], 'ca-fn-fab':['fn','fab'], 'ca-fn-cat':['fn','cat'] };
   if (mapa[t.id]){ CA[mapa[t.id][0]][mapa[t.id][1]] = t.value; caRender(); return; }
+  if (t.dataset.caFab && caEhDirecao()){ caToast('Acesso da direção é só de leitura.'); caRender(); return; }
   if (t.dataset.caFab){
     var cod = t.dataset.caFab, val = t.value, ref = dbRef('centralAbast/fabPorCod/' + cod);
     (val ? ref.set(val) : ref.remove()).then(function(){
@@ -6360,6 +6450,7 @@ function caEntrarUnidade(key){
   document.querySelectorAll('#main-nav .nav-btn[data-nav-id]').forEach(function(b){
     if (b.dataset.navId !== 'central' && b.style.display !== 'none'){ b.style.display = 'none'; b.setAttribute('data-ca-oculto', '1'); }
   });
+  if (CA.unid.direcao){ CA.aba = 'painel'; CA.pedPara = null; }
   var btn = document.getElementById('nav-central');
   if (btn){ btn.style.display = ''; showTab('central', btn); }
 }
