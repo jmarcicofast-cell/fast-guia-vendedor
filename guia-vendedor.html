@@ -5282,7 +5282,7 @@ var CA_FAB_NOMES = { 'max steel':'Max Steel (Comercial)', 'nova metalica':'Nova 
 function caFabNorm(n){ if (!n) return n; return CA_FAB_NOMES[caSemAcento(n)] || n; }
 var CA_ST_V = { aberto:'Em aberto', atendido:'Atendido / faturado', cancelado:'Cancelado', semnec:'Sem necessidade' };
 var CA_ST_A = { solicitado:'Solicitado ao fabricante', confirmado:'Confirmado', transito:'Em trânsito', na_dc:'Chegou na DCS', cancelado:'Cancelado' };
-var CA_COB = { desc:'Sem cobertura', parcial:'Cobertura parcial', coberto:'Coberto (a caminho)', nadc:'Coberto (pronto para coletar)', neutro:'Sem necessidade' };
+var CA_COB = { desc:'Sem cobertura', parcial:'Cobertura parcial', coberto:'Coberto (aguardando chegar na DCS)', nadc:'Coberto (pronto para coletar)', neutro:'Sem necessidade' };
 var CA_PED_ABERTO = { '':1, agendamento:1, 'aguardando-dt':1 };
 
 var CA = { dados:{ vendas:{}, abast:{}, guia:{}, config:null }, carregado:false, ligado:false, ligadoFb:false,
@@ -5396,7 +5396,8 @@ function caSituacaoPedido(p){
   if (cb.estado === 'nadc') return { k:'ok', txt:'✅ Material na ' + v.dc + ' — pode pedir DT', tit:'Todos os itens que passam pela DCS já chegaram.' + obsPlaca, key:v.key };
   if (cb.falta > 0) return { k:'ruim', txt:'⛔ Aguardando abastecimento — não pedir DT', tit:caN(cb.falta) + ' un. ainda sem chamado de abastecimento para a ' + v.dc + '.', key:v.key };
   var prev = ''; cb.chamados.forEach(function(a){ if (a.status !== 'na_dc' && a.previsao && a.previsao > prev) prev = a.previsao; });
-  return { k:'aten', txt:'🚚 Material a caminho da ' + v.dc + (prev ? ' — previsão ' + caD(prev) : '') + ' — aguarde para pedir DT', tit:'Chamado(s) ' + cb.chamados.map(function(a){ return a.chamado; }).join(', ') + '.' + obsPlaca, key:v.key };
+  var rot = caRotuloCob(cb).replace(/^Coberto \(|\)$/g, '');
+  return { k:'aten', txt:'⏳ Aguardando chegar na ' + v.dc + ' (' + rot + ')' + (prev ? ' — previsão ' + caD(prev) : '') + ' — ainda não pedir DT', tit:'Chamado(s) ' + cb.chamados.map(function(a){ return a.chamado; }).join(', ') + '.' + obsPlaca, key:v.key };
 }
 var CA_COR_CEL = { ok:['#1B5E20','#E8F5E9'], aten:['#7A4A00','#FFF3E0'], ruim:['#C41E1E','#FBE9E9'], cinza:['#666','#F1EFE8'] };
 function caCelulaPedidoInner(p){
@@ -5869,6 +5870,14 @@ function caTarjaVincular(v, cb){
     (chs.length ? '<span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center;"><span style="color:#1B5E20;">Tem disponível em:</span>' + chs.map(function(x){ return '<button class="ca-btn sm" style="border-color:#A5D6A7;color:#1B5E20;" data-ca="tarja-vinc" data-a="' + caEsc(x.a.id) + '" data-k="' + caEsc(v.key) + '">' + caEsc(x.a.chamado) + ' · vincular ' + caN(x.n) + '</button>'; }).join('') + '</span>'
       : '<span style="margin-left:auto;color:#999;">Nenhum chamado com disponível na ' + caEsc(v.dc) + '</span>') + '</div>';
 }
+/* rótulo do pedido coberto conforme o chamado mais atrasado: solicitado, confirmado ou em trânsito */
+var CA_ORD_A = { solicitado:0, confirmado:1, transito:2 };
+var CA_COB_ST = { solicitado:'Coberto (solicitado ao fabricante)', confirmado:'Coberto (confirmado, aguardando chegar na DCS)', transito:'Coberto (em trânsito para a DCS)' };
+function caRotuloCob(cb){
+  if (cb.estado !== 'coberto') return CA_COB[cb.estado];
+  var pior = null; cb.chamados.forEach(function(a){ if (a.status === 'na_dc' || a.status === 'cancelado') return; var o = CA_ORD_A[a.status]; if (o == null) o = 0; if (pior == null || o < CA_ORD_A[pior]) pior = (a.status in CA_ORD_A) ? a.status : 'solicitado'; });
+  return CA_COB_ST[pior] || CA_COB.coberto;
+}
 function caCardVenda(v, cb){
   var aberto = !!CA.aberto[v.key];
   var p1 = cb.tot ? cb.nadc / cb.tot * 100 : 0, p2 = cb.tot ? (cb.cob - cb.nadc) / cb.tot * 100 : 0;
@@ -5879,7 +5888,7 @@ function caCardVenda(v, cb){
     (!CA.unid ? '<span class="ca-sit ' + (caUnidNome(v.unidade) === CA_UNIDADE_RIO ? 'neutro' : 'manual') + '">' + caEsc(caUnidNome(v.unidade)) + '</span>' : '') + (v.origem === 'guia' ? '<span class="ca-sit guia">via ABASTECER</span>' : '<span class="ca-sit neutro">manual</span>') +
     (v.status !== 'aberto' ? '<span class="ca-sit neutro">' + CA_ST_V[v.status] + '</span>' : '') + '</div>' +
     '<div class="ca-meta"><span>DCS <b>' + caEsc(v.dc || 'a definir') + '</b></span><span>Prazo <b class="' + (urg ? 'ca-atrasado' : '') + '">' + caDA(v.data) + '</b></span><span>' + v.itens.length + ' ' + (v.itens.length === 1 ? 'item' : 'itens') + '</span>' + (v.vendedor ? '<span>Vendedor <b>' + caEsc(v.vendedor) + '</b></span>' : '') + '</div></div>' +
-    '<div class="ca-lado">' + (semDc ? '<span class="ca-sit desc">Definir DCS e prazo</span>' : '<span class="ca-sit ' + cb.estado + '">' + CA_COB[cb.estado] + (cb.atraso ? ' · atraso' : '') + '</span>') +
+    '<div class="ca-lado">' + (semDc ? '<span class="ca-sit desc">Definir DCS e prazo</span>' : '<span class="ca-sit ' + cb.estado + '">' + caRotuloCob(cb) + (cb.atraso ? ' · atraso' : '') + '</span>') +
     '<div class="ca-barra"><i class="b1" style="width:' + p1 + '%"></i><i class="b2" style="width:' + p2 + '%"></i></div>' +
     '<span style="font-size:11.5px;color:#888;">' + (cb.falta > 0 ? 'falta ' + caN(cb.falta) + ' un.' : !cb.tot ? 'nada a abastecer' : cb.estado === 'nadc' ? 'tudo na DCS' : 'aguardando chegar: ' + cb.chamados.filter(function(a){ return a.status !== 'na_dc'; }).map(function(a){ return caEsc(a.chamado); }).join(', ')) + '</span></div></div>';
   h += caTarjaVincular(v, cb);
