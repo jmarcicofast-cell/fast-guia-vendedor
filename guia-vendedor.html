@@ -5267,7 +5267,7 @@ var CA_UNIDADES = {
   'NIDIA': { senha: 'NIDIA1234', nome: 'Nidia Fujihara — Atacado SP', unidade: 'Atacado SP' },
   'POLIANA': { senha: 'POLIANA1234', nome: 'Poliana — Atacado SP', unidade: 'Atacado SP' },
   'FRANCIANNE': { senha: 'FRANCIANNE1234', nome: 'Francianne Lagos — Lojas do Rio', unidade: 'Lojas do Rio' },
-  'LIDIANE': { senha: 'LIDIANE1234', nome: 'Lidiane — Atacado B2B', unidade: 'Atacado B2B' },
+  'LIDIANE': { senha: 'LIDIANE1234', nome: 'Lidiane — Atacado B2B', unidade: 'Atacado B2B', veTudo: true },
   /* direção: vê todas as operações e o Painel, sem alterar nada */
   'DIRECAO': { senha: 'DIRECAO1234', nome: 'Direção FAST', unidade: '', direcao: true },
 };
@@ -5357,10 +5357,14 @@ function caCodHtml(c){ return c && c.charAt(0) === '?' ? '<span class="ca-cod" s
 function caUnid(){ return CA.unid; }
 function caLogado(){ return !!CA.unid || !!(currentUser && vendedores[currentUser]); }
 function caEhDirecao(){ return !!(CA.unid && CA.unid.direcao); }
+/* logins de unidade que enxergam todas as operações: direção (só leitura) e quem tem veTudo (lança pela própria unidade) */
+function caUnidGeral(){ return !!(CA.unid && (CA.unid.direcao || CA.unid.veTudo)); }
 var CA_ACOES_GRAVAM = { 'nova-venda':1, 'novo-abast':1, 'chegou':1, 'v-salvar':1, 'a-salvar':1, 'g-salvar':1, 'v-del':1, 'a-del':1, 'vincular':1, 'usar-saldo':1, 'tarja-vinc':1,
   'vc-abrir':1, 'vc-vincular':1, 'desvincular':1, 'cad-del':1, 'abast-da-selecao':1, 'abast-da-venda':1, 'sel':1, 'sel-dc':1 };
-function caVeTudo(){ return caEhDirecao() || (!CA.unid && typeof abVeTudo === 'function' && abVeTudo()); }
-function caMostraUnid(){ return !CA.unid || caEhDirecao(); }
+function caVeTudo(){ return caUnidGeral() || (!CA.unid && typeof abVeTudo === 'function' && abVeTudo()); }
+/* equipe do Televendas (vendedores, inclusive a líder) vê só o Televendas na Central; gestão e administrativo veem tudo */
+function caSoTelevendas(){ return !CA.unid && !!currentUser && currentUser !== 'JULIANA' && !(typeof abEhAdm === 'function' && abEhAdm()); }
+function caMostraUnid(){ return (!CA.unid && !caSoTelevendas()) || caUnidGeral(); }
 function caPodeCadastro(){ return !CA.unid && (currentUser === 'JULIANA' || (typeof abEhAdm === 'function' && abEhAdm())); }
 function caAutor(){ return CA.unid ? 'unid:' + CA.unid.key : (currentUser || ''); }
 function caMinhaUnidade(){ return CA.unid ? CA.unid.unidade : CA_UNIDADE_RIO; }
@@ -5370,7 +5374,7 @@ function caDcsUsuario(){ var dcs = caConfig().dcs; if (CA.unid && CA.unid.dcs &&
 
 /* ---------- dados ---------- */
 function caLigar(){
-  if (typeof abGarantirListener === 'function' && (!CA.unid || caEhDirecao())) abGarantirListener();
+  if (typeof abGarantirListener === 'function' && (!CA.unid || caUnidGeral())) abGarantirListener();
   if (CA.ligado && (CA.ligadoFb || !firebaseOK)) return;
   CA.ligado = true; CA.ligadoFb = !!firebaseOK;
   dbRef('centralAbast').on('value', function(snap){
@@ -5432,9 +5436,9 @@ function caAbrirDoPedido(key){
   (function tentar(){ if (caAchaVenda(key)) return caModalVenda(key); if (++n < 25) setTimeout(tentar, 150); else caToast('Não encontrei esse pedido na Central.'); })();
 }
 function caLigarPedidos(){
-  if (CA.unid && !caEhDirecao()) return;
+  if (CA.unid && !caUnidGeral()) return;
   if (!CA.unid && !currentUser) return;
-  var chave = (caEhDirecao() ? 'direcao' : currentUser) + (caVeTudo() ? '*' : '');
+  var chave = (CA.unid ? 'unid:' + CA.unid.key : currentUser) + (caVeTudo() ? '*' : '');
   if (CA.pedPara === chave) return;
   CA.pedPara = chave; CA.ped = {};
   var lista = caVeTudo() ? Object.keys(vendedores).filter(function(vn){ var t = vendedores[vn].tipo; return t !== 'administrativo'; }) : [currentUser];
@@ -5462,13 +5466,13 @@ function caVendas(todas){
   var out = [], u = CA.unid;
   Object.keys(CA.dados.vendas || {}).forEach(function(id){
     var v = CA.dados.vendas[id]; if (!v) return;
-    if (u && !u.direcao){ if (v.unidade !== u.unidade) return; }
+    if (u && !u.direcao && !u.veTudo){ if (v.unidade !== u.unidade) return; }
     else if (!u && !caVeTudo() && v.criadoPor !== currentUser) return;
     out.push({ key:'m:' + id, id:id, origem:'manual', chamado:v.chamado || '', cliente:v.cliente || '', vendedor:v.vendedor || '', unidade:v.unidade || '',
       dc:v.dc || '', data:v.data || '', status:v.status || 'aberto', obs:v.obs || '', criadoPor:v.criadoPor, criadoEm:v.criadoEm,
       itens: caArr(v.itens).map(function(i){ return { c:i.c, q:+i.q || 0, semNec:false }; }), raw:v });
   });
-  if (!u || u.direcao){
+  if (!u || u.direcao || u.veTudo){
     var grupos = caGruposAbastecer();
     Object.keys(grupos).forEach(function(okey){
       var g = grupos[okey];
@@ -5478,7 +5482,8 @@ function caVendas(todas){
       out.push(v);
     });
   }
-  if ((!u || u.direcao) && CA.fu && !todas) out = out.filter(function(v){ return caUnidNome(v.unidade) === CA.fu; });
+  if (!u && caSoTelevendas()) out = out.filter(function(v){ return caUnidNome(v.unidade) === CA_UNIDADE_RIO; });
+  if ((!u || u.direcao || u.veTudo) && CA.fu && !todas && !caSoTelevendas()) out = out.filter(function(v){ return caUnidNome(v.unidade) === CA.fu; });
   return out;
 }
 /* Só entram na Central os pedidos que o vendedor mandou para o abastecimento
@@ -6047,7 +6052,7 @@ function caViewPainel(vendas, m){
   parado.sort(function(a, b){ return b.kg - a.kg; });
   var pctCob = totKg ? Math.round(cobKg / totKg * 100) : 0, pctPronto = totKg ? Math.round(prontoKg / totKg * 100) : 0;
   var kpi = function(v, l, sub, cls){ return '<div class="ca-kpi ' + (cls || '') + '"><b>' + v + '</b><span>' + l + '</span>' + (sub ? '<div style="font-size:11.5px;color:#888;margin-top:2px;">' + sub + '</div>' : '') + '</div>'; };
-  var html = '<div style="font-size:12px;color:#888;margin-bottom:8px;">Atualizado em tempo real · ' + caDA(h) + ((CA.unid && !caEhDirecao()) ? ' · unidade: <b>' + caEsc(CA.unid.unidade) + '</b> (pedidos da sua unidade; chamados de abastecimento de todas)' : CA.fu ? ' · unidade: <b>' + caEsc(CA.fu) + '</b>' : ' · todas as unidades') + '. Pesos estimados pela Tabela de Produtos.</div>';
+  var html = '<div style="font-size:12px;color:#888;margin-bottom:8px;">Atualizado em tempo real · ' + caDA(h) + (caSoTelevendas() ? ' · unidade: <b>' + CA_UNIDADE_RIO + '</b> (chamados de abastecimento de todas)' : (CA.unid && !caUnidGeral()) ? ' · unidade: <b>' + caEsc(CA.unid.unidade) + '</b> (pedidos da sua unidade; chamados de abastecimento de todas)' : CA.fu ? ' · unidade: <b>' + caEsc(CA.fu) + '</b>' : ' · todas as unidades') + '. Pesos estimados pela Tabela de Produtos.</div>';
   html += '<div class="ca-kpis">' +
     kpi(t(gapKg) + ' t', 'Sem chamado de abastecimento', gapPed + ' ' + (gapPed === 1 ? 'pedido' : 'pedidos') + ' com falta', gapKg ? 'ruim' : '') +
     kpi(riscoLista.length, 'Pedidos em risco de prazo', riscoLista.filter(function(r){ return r.grave; }).length + ' já vencidos', riscoLista.length ? 'ruim' : '') +
