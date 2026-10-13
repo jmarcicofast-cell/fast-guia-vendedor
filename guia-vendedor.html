@@ -1094,6 +1094,10 @@
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="1" y="7" width="14" height="10" rx="1"/><path d="M15 10h4l3 3v4h-7z"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg>
     Abastecimento
   </button>
+  <button class="nav-btn" id="nav-central" draggable="true" data-nav-id="central" onclick="showTab('central',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+    Central Abast.
+  </button>
   <button class="nav-btn" id="nav-shopping" draggable="true" data-nav-id="shopping" onclick="showTab('shopping',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
     Shopping de Preços
@@ -5094,6 +5098,864 @@ td.p-tie { color:var(--sp-muted); }
 </div>
 <!-- ══ FIM ABASTECIMENTO ══ -->
 
+<!-- ══ CENTRAL DE ABASTECIMENTO — necessidade por DC, chamados que atendem vários pedidos ══ -->
+<style>
+  #tab-central .ca-wrap{ max-width:1180px; margin:0 auto; }
+  #tab-central .ca-topo{ display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+  #tab-central .ca-topo h2{ font-size:15px; font-weight:700; color:#1C1C1C; margin:0 0 2px; }
+  #tab-central .ca-topo p{ font-size:12px; color:#999; margin:0; }
+  #tab-central .ca-acoes{ display:flex; gap:8px; flex-wrap:wrap; }
+  .ca-btn{ padding:8px 14px; border-radius:7px; border:1.5px solid #E2E0D8; background:#fff; color:#1C1C1C; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  .ca-btn:hover{ border-color:#C9C5BA; }
+  .ca-btn.pri{ background:#C41E1E; border-color:#C41E1E; color:#fff; }
+  .ca-btn.pri:hover{ background:#A81818; }
+  .ca-btn.sm{ padding:5px 10px; font-size:12px; }
+  .ca-btn.link{ border:none; background:none; color:#185FA5; padding:4px 6px; }
+  .ca-btn.perigo{ color:#C41E1E; border-color:#F0C4C4; }
+  .ca-btn[disabled]{ opacity:.45; cursor:not-allowed; }
+  #tab-central .ca-seg{ display:flex; gap:2px; background:#F1EFE8; border-radius:9px; padding:3px; margin-bottom:14px; overflow-x:auto; }
+  #tab-central .ca-seg button{ flex:1 0 auto; padding:7px 12px; border:none; border-radius:7px; background:none; font-size:12.5px; font-weight:700; color:#777; cursor:pointer; font-family:inherit; white-space:nowrap; }
+  #tab-central .ca-seg button.on{ background:#fff; color:#1C1C1C; box-shadow:0 1px 2px rgba(0,0,0,.1); }
+  #tab-central .ca-seg .n{ display:inline-block; min-width:18px; margin-left:5px; padding:0 6px; border-radius:9px; background:#E2E0D8; color:#555; font-size:11px; }
+  #tab-central .ca-kpis{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
+  @media (max-width:720px){ #tab-central .ca-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  #tab-central .ca-kpi{ background:#fff; border:1px solid #E8E6E1; border-radius:10px; padding:10px 12px; }
+  #tab-central .ca-kpi b{ display:block; font-size:22px; line-height:1.15; font-variant-numeric:tabular-nums; color:#1C1C1C; }
+  #tab-central .ca-kpi span{ font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.04em; }
+  #tab-central .ca-kpi.ruim b{ color:#C41E1E; } #tab-central .ca-kpi.aten b{ color:#B36B00; }
+  #tab-central .ca-alertas{ display:grid; gap:6px; margin-bottom:14px; }
+  #tab-central .ca-alerta{ display:flex; gap:10px; align-items:flex-start; padding:8px 12px; border-radius:8px; font-size:12.5px; border-left:4px solid; }
+  #tab-central .ca-alerta.ruim{ background:#FBE9E9; border-color:#C41E1E; }
+  #tab-central .ca-alerta.aten{ background:#FFF3E0; border-color:#E08A00; }
+  #tab-central .ca-alerta.info{ background:#E6F1FB; border-color:#185FA5; }
+  #tab-central .ca-alerta .ca-btn{ margin-left:auto; }
+  #tab-central .ca-filtros{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  #tab-central .ca-filtros input, #tab-central .ca-filtros select{ padding:7px 10px; border-radius:7px; border:1.5px solid #E2E0D8; font-size:12.5px; outline:none; background:#fff; font-family:inherit; min-width:0; }
+  #tab-central .ca-filtros input[type=search]{ flex:1 1 220px; }
+  #tab-central .ca-painel{ background:#fff; border:1px solid #E8E6E1; border-radius:10px; margin-bottom:12px; overflow:hidden; }
+  #tab-central .ca-painel-topo{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 12px; border-bottom:1px solid #EFEDE7; background:#FAF9F6; }
+  #tab-central .ca-painel-topo h3{ font-size:13.5px; font-weight:800; margin:0; }
+  #tab-central .ca-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .ca-t{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .ca-t th{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:#888; font-weight:700; text-align:left; padding:7px 10px; border-bottom:1px solid #EFEDE7; white-space:nowrap; }
+  .ca-t td{ padding:7px 10px; border-bottom:1px solid #F1EFE8; vertical-align:top; }
+  .ca-t tr:last-child td{ border-bottom:none; }
+  .ca-t .r{ text-align:right; font-variant-numeric:tabular-nums; }
+  .ca-t tr.sel td{ background:#FFF4F4; }
+  .ca-sub{ display:block; font-size:11px; color:#999; }
+  .ca-cod{ font-family:ui-monospace,monospace; font-size:11px; font-weight:700; color:#555; background:#F1EFE8; padding:1px 5px; border-radius:4px; white-space:nowrap; }
+  .ca-fab{ display:inline-block; font-family:ui-monospace,monospace; font-size:10px; color:#888; border:1px solid #E2E0D8; border-radius:3px; padding:0 4px; margin-right:3px; }
+  .ca-chip{ display:inline-block; font-family:ui-monospace,monospace; font-size:11px; padding:1px 6px; border-radius:4px; background:#F1EFE8; color:#333; border:none; cursor:pointer; margin:1px 3px 1px 0; white-space:nowrap; }
+  .ca-chip.atraso{ background:#FBE9E9; color:#C41E1E; font-weight:700; }
+  .ca-sit{ display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:10px; white-space:nowrap; }
+  .ca-sit.desc{ background:#FBE9E9; color:#C41E1E; } .ca-sit.parcial{ background:#FFF3E0; color:#B36B00; }
+  .ca-sit.coberto{ background:#E6F1FB; color:#0C447C; } .ca-sit.nadc{ background:#E8F5E9; color:#1B5E20; }
+  .ca-sit.neutro{ background:#F1EFE8; color:#666; } .ca-sit.guia{ background:#F3E5F5; color:#6A1B9A; } .ca-sit.manual{ background:#FFF8E1; color:#7A5A00; }
+  .ca-atrasado{ color:#C41E1E; font-weight:700; }
+  #tab-central .ca-cards{ display:grid; gap:8px; }
+  #tab-central .ca-card{ background:#fff; border:1px solid #E8E6E1; border-radius:10px; overflow:hidden; }
+  #tab-central .ca-card-topo{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 14px; padding:10px 12px; cursor:pointer; }
+  #tab-central .ca-card-topo:hover{ background:#FAF9F6; }
+  @media (max-width:560px){ #tab-central .ca-card-topo{ grid-template-columns:minmax(0,1fr); } }
+  #tab-central .ca-card-tit{ display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; }
+  #tab-central .ca-card-tit .ch{ font-family:ui-monospace,monospace; font-weight:700; font-size:13.5px; }
+  #tab-central .ca-card-tit .cl{ font-weight:700; font-size:13px; }
+  #tab-central .ca-meta{ display:flex; gap:3px 14px; flex-wrap:wrap; font-size:12px; color:#888; margin-top:3px; }
+  #tab-central .ca-meta b{ color:#1C1C1C; font-weight:600; }
+  #tab-central .ca-lado{ display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+  @media (max-width:560px){ #tab-central .ca-lado{ align-items:flex-start; } }
+  .ca-barra{ width:150px; max-width:100%; height:6px; border-radius:3px; background:#EFEDE7; overflow:hidden; display:flex; }
+  .ca-barra i{ display:block; height:100%; } .ca-barra .b1{ background:#2E7D32; } .ca-barra .b2{ background:#185FA5; }
+  #tab-central .ca-card-corpo{ border-top:1px solid #EFEDE7; padding-bottom:10px; }
+  #tab-central .ca-card-acoes{ display:flex; gap:8px; flex-wrap:wrap; padding:8px 12px 0; align-items:center; }
+  #tab-central .ca-vazio{ text-align:center; padding:26px 16px; color:#999; font-size:12.5px; }
+  #tab-central .ca-vazio b{ display:block; color:#1C1C1C; font-size:14px; margin-bottom:4px; }
+  #tab-central .ca-fluxo{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
+  @media (max-width:720px){ #tab-central .ca-fluxo{ grid-template-columns:minmax(0,1fr); } }
+  #tab-central .ca-fluxo div{ background:#fff; border:1px solid #E8E6E1; border-radius:10px; padding:10px 12px; font-size:12px; color:#555; }
+  #tab-central .ca-fluxo b{ display:block; color:#1C1C1C; font-size:13px; margin-bottom:2px; }
+  #tab-central .ca-cad{ display:flex; gap:6px; flex-wrap:wrap; padding:12px; }
+  #tab-central .ca-cad span{ display:inline-flex; align-items:center; gap:4px; padding:4px 6px 4px 10px; border:1.5px solid #E2E0D8; border-radius:14px; font-size:12.5px; }
+  #tab-central .ca-cad span button{ border:none; background:none; color:#aaa; cursor:pointer; font-size:14px; line-height:1; }
+  #tab-central .ca-cad-add{ display:flex; gap:8px; padding:0 12px 12px; }
+  #tab-central .ca-cad-add input{ flex:1; padding:7px 10px; border-radius:7px; border:1.5px solid #E2E0D8; font-size:12.5px; min-width:0; font-family:inherit; }
+
+  #ca-modal-ov{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; align-items:flex-start; justify-content:center; padding:24px 12px; overflow-y:auto; }
+  #ca-modal{ background:#fff; border-radius:12px; width:100%; max-width:820px; box-shadow:0 20px 50px rgba(0,0,0,.3); }
+  #ca-modal .cm-topo{ display:flex; align-items:center; gap:10px; padding:14px 18px; border-bottom:1px solid #EFEDE7; }
+  #ca-modal .cm-topo h3{ font-size:15px; font-weight:800; margin:0 auto 0 0; }
+  #ca-modal .cm-topo .x{ border:none; background:none; font-size:18px; color:#888; cursor:pointer; }
+  #ca-modal .cm-corpo{ padding:14px 18px; display:grid; gap:12px; }
+  #ca-modal .cm-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  @media (max-width:600px){ #ca-modal .cm-grid{ grid-template-columns:minmax(0,1fr); } }
+  #ca-modal .cm-f{ display:grid; gap:3px; min-width:0; }
+  #ca-modal .cm-f label{ font-size:10.5px; font-weight:800; color:#777; text-transform:uppercase; letter-spacing:.05em; }
+  #ca-modal .cm-f input, #ca-modal .cm-f select{ width:100%; padding:7px 10px; border:1.5px solid #E2E0D8; border-radius:6px; font-size:13px; font-family:inherit; background:#fff; box-sizing:border-box; }
+  #ca-modal .cm-f input[readonly]{ background:#F8F7F3; color:#555; }
+  #ca-modal .cm-box{ border:1px solid #E8E6E1; border-radius:9px; overflow:hidden; }
+  #ca-modal .cm-box-topo{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; background:#FAF9F6; border-bottom:1px solid #EFEDE7; }
+  #ca-modal .cm-box-topo b{ font-size:12.5px; margin-right:auto; }
+  #ca-modal .cm-itens td{ vertical-align:middle; padding:5px 8px; }
+  #ca-modal .cm-itens input[type=text], #ca-modal .cm-itens input[type=number]{ border:1.5px solid #E2E0D8; border-radius:5px; padding:5px 7px; font-size:12.5px; width:100%; box-sizing:border-box; font-family:inherit; }
+  #ca-modal .cm-itens .cod{ width:110px; font-family:ui-monospace,monospace; }
+  #ca-modal .cm-itens .qtd{ width:86px; text-align:right; }
+  #ca-modal .cm-itens .rm{ border:none; background:none; color:#bbb; font-size:16px; cursor:pointer; }
+  #ca-modal .cm-itens .rm:hover{ color:#C41E1E; }
+  #ca-modal .cm-desc{ font-size:12px; min-width:170px; } #ca-modal .cm-desc.fora{ color:#B36B00; }
+  #ca-modal .cm-colar{ padding:8px 12px; border-top:1px solid #EFEDE7; display:grid; gap:6px; }
+  #ca-modal .cm-colar textarea{ width:100%; min-height:64px; border:1.5px solid #E2E0D8; border-radius:6px; padding:7px; font-family:ui-monospace,monospace; font-size:12px; box-sizing:border-box; }
+  #ca-modal .cm-ped{ border-top:1px solid #EFEDE7; } #ca-modal .cm-ped:first-of-type{ border-top:none; }
+  #ca-modal .cm-ped-topo{ display:flex; gap:6px 10px; align-items:baseline; flex-wrap:wrap; padding:8px 12px 2px; font-size:12.5px; }
+  #ca-modal .cm-tot{ display:flex; gap:4px 16px; flex-wrap:wrap; padding:8px 12px; background:#F8F7F3; font-size:12.5px; }
+  #ca-modal .cm-tot b{ font-size:14px; }
+  #ca-modal .cm-rodape{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:12px 18px; border-top:1px solid #EFEDE7; }
+  #ca-modal .cm-erro{ color:#C41E1E; font-size:12px; font-weight:600; margin-right:auto; }
+  #ca-modal .cm-aviso{ font-size:12px; color:#7A4A00; background:#FFF3E0; border-radius:7px; padding:7px 10px; }
+  #ca-modal .cm-busca{ display:grid; gap:6px; }
+  #ca-modal .cm-busca-lista{ max-height:220px; overflow-y:auto; border:1px solid #E8E6E1; border-radius:7px; }
+  #ca-modal .cm-busca-lista button{ display:flex; gap:8px; width:100%; text-align:left; border:none; border-bottom:1px solid #F1EFE8; background:#fff; padding:7px 10px; font-size:12.5px; cursor:pointer; font-family:inherit; }
+  #ca-modal .cm-busca-lista button:hover{ background:#FAF9F6; }
+  .ca-toast{ position:fixed; left:50%; transform:translateX(-50%); bottom:24px; background:#1C1C1C; color:#fff; padding:9px 16px; border-radius:8px; font-size:13px; font-weight:600; z-index:2000; max-width:calc(100% - 32px); }
+</style>
+
+<div id="tab-central" class="tab-content">
+  <div class="page-section ca-wrap" style="max-width:100%;">
+    <div class="ca-topo">
+      <div>
+        <h2>📦 Central de Abastecimento</h2>
+        <p id="ca-sub">O que cada pedido precisa, por DC, e qual chamado de abastecimento atende cada item.</p>
+      </div>
+      <div class="ca-acoes">
+        <button class="ca-btn" data-ca="nova-venda">+ Pedido manual</button>
+        <button class="ca-btn pri" data-ca="novo-abast">+ Chamado de abastecimento</button>
+      </div>
+    </div>
+    <div class="ca-seg" id="ca-seg">
+      <button data-ca="aba" data-aba="nec" class="on">Necessidade <span class="n" id="ca-n-nec">0</span></button>
+      <button data-ca="aba" data-aba="vendas">Pedidos de venda <span class="n" id="ca-n-ven">0</span></button>
+      <button data-ca="aba" data-aba="abast">Chamados de abastecimento <span class="n" id="ca-n-ab">0</span></button>
+      <button data-ca="aba" data-aba="cad" id="ca-seg-cad">Cadastros</button>
+    </div>
+    <div id="ca-main"><div class="ca-vazio"><b>Carregando…</b>Os pedidos e chamados aparecem aqui assim que a base responder.</div></div>
+  </div>
+</div>
+
+<div id="ca-modal-ov"><div id="ca-modal"></div></div>
+<datalist id="ca-dl-cat"></datalist>
+<!-- ══ FIM CENTRAL DE ABASTECIMENTO (markup) ══ -->
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CENTRAL DE ABASTECIMENTO
+   Um chamado de abastecimento (compra no fabricante para uma DCS) pode atender
+   vários pedidos de venda, inteiros ou em parte.
+   - Rio (equipe do guia): os pedidos em andamento da aba Pedidos entram
+     sozinhos. Falta só dizer a DCS e até quando o material precisa estar lá.
+   - Outras unidades: entram com login próprio (CA_UNIDADES), só veem esta aba
+     e lançam os pedidos de venda à mão.
+   Firebase: centralAbast/
+     vendas/{id}  pedido lançado à mão {chamado, cliente, vendedor, unidade, dc, data, status, obs, itens:[{c,q}], criadoPor, criadoEm}
+     guia/{vendedor__pedidoId}  complemento de um pedido da aba Pedidos {dc, data, semNec:[codigos], ignorar, obs}
+     abast/{id}   chamado de abastecimento {chamado, fabricante, dc, carga, solicitado, previsao, status, obs, unidade, aloc:[{v, c, q}]}
+                  v = 'm:<id>' (pedido manual) ou 'g:<vendedor>__<pedidoId>' (pedido do guia)
+     config       {dcs:[], fabricantes:[]}
+   ══════════════════════════════════════════════════════════════ */
+
+/* Logins das outras unidades: só enxergam a Central de Abastecimento.
+   Exemplo:  'UNIDADE SP': { senha: 'SP1234', nome: 'FAST São Paulo', unidade: 'São Paulo' },  */
+var CA_UNIDADES = {
+};
+var CA_UNIDADE_RIO = 'Rio de Janeiro';
+var CA_CONFIG_PADRAO = { dcs: ['DC FDS', 'DC MDC'], fabricantes: ['Max Steel', 'Nova Metálica', 'Placo FDS', 'Placo MDC'] };
+var CA_ST_V = { aberto:'Em aberto', atendido:'Atendido / faturado', cancelado:'Cancelado', semnec:'Sem necessidade' };
+var CA_ST_A = { solicitado:'Solicitado ao fabricante', confirmado:'Confirmado', transito:'Em trânsito', na_dc:'Chegou na DCS', cancelado:'Cancelado' };
+var CA_COB = { desc:'Sem cobertura', parcial:'Cobertura parcial', coberto:'Coberto (a caminho)', nadc:'Material na DCS', neutro:'Sem necessidade' };
+var CA_PED_ABERTO = { '':1, agendamento:1, 'aguardando-dt':1 };
+
+var CA = { dados:{ vendas:{}, abast:{}, guia:{}, config:null }, carregado:false, ligado:false, ligadoFb:false,
+  ped:{}, pedPara:null, unid:null, aba:'nec', sel:{}, aberto:{}, modal:null,
+  fv:{ q:'', st:'aberto', cob:'', dc:'', origem:'' }, fa:{ q:'', st:'ativos', dc:'' }, fn:{ dc:'' }, rTimer:null };
+try { var _caAba = localStorage.getItem('fgv_ca_aba'); if (_caAba) CA.aba = _caAba; } catch(e){}
+
+/* ---------- utilidades ---------- */
+function caEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+function caArr(x){ if (!x) return []; return Array.isArray(x) ? x.filter(function(v){ return v != null; }) : Object.keys(x).map(function(k){ return x[k]; }); }
+function caHoje(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+function caMaisDias(iso, n){ var d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+function caDias(iso){ return iso ? Math.round((new Date(iso + 'T12:00:00') - new Date(caHoje() + 'T12:00:00')) / 86400000) : null; }
+function caD(iso){ return iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '—'; }
+function caDA(iso){ return iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(2, 4) : '—'; }
+function caN(n){ return (Math.round((+n || 0) * 100) / 100).toLocaleString('pt-BR'); }
+function caQ(v){ if (typeof v === 'number') return v; var s = String(v == null ? '' : v).trim(); if (!s) return 0; s = s.replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'); var n = parseFloat(s); return isFinite(n) ? n : 0; }
+function caId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function caToast(msg){ var t = document.createElement('div'); t.className = 'ca-toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 2600); }
+function caSemAcento(t){ return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim(); }
+
+/* ---------- base de produtos (a mesma da Tabela de Produtos) ---------- */
+var _caCat = null;
+function caCat(){
+  if (_caCat) return _caCat;
+  var map = {}, porNome = {}, lista = [];
+  (typeof allProducts !== 'undefined' ? allProducts : []).forEach(function(p){
+    var c = String(p.codigo || '').trim().toUpperCase(); if (!c) return;
+    if (!map[c]){ map[c] = { c:c, n:String(p.nome || '').trim(), p:p.peso, u:p.pallet, f:[] }; lista.push(map[c]); }
+    if (p.fabrica && map[c].f.indexOf(p.fabrica) === -1) map[c].f.push(p.fabrica);
+    porNome[caSemAcento(p.nome)] = c;
+  });
+  lista.sort(function(a, b){ return a.c.localeCompare(b.c); });
+  _caCat = { map:map, porNome:porNome, lista:lista };
+  return _caCat;
+}
+function caNome(c){ if (c && c.charAt(0) === '?') return c.slice(1); var p = caCat().map[c]; return p ? p.n : null; }
+function caPeso(c){ var p = caCat().map[c]; if (!p) return 0; var v = parseFloat(String(p.p).replace(/\./g, '').replace(',', '.')); return isFinite(v) ? v : 0; }
+function caPallet(c){ var p = caCat().map[c]; if (!p) return 0; var m = String(p.u || '').match(/(\d+)/); return m ? +m[1] : 0; }
+function caFabs(c){ var p = caCat().map[c]; return p ? p.f.map(function(f){ return '<span class="ca-fab">' + caEsc(f) + '</span>'; }).join('') : ''; }
+function caCodHtml(c){ return c && c.charAt(0) === '?' ? '<span class="ca-cod" style="color:#B36B00;" title="Item do pedido sem código">sem código</span>' : '<span class="ca-cod">' + caEsc(c) + '</span>'; }
+
+/* ---------- quem está usando ---------- */
+function caUnid(){ return CA.unid; }
+function caLogado(){ return !!CA.unid || !!(currentUser && vendedores[currentUser]); }
+function caVeTudo(){ return !CA.unid && typeof abVeTudo === 'function' && abVeTudo(); }
+function caPodeCadastro(){ return !CA.unid && (currentUser === 'JULIANA' || (typeof abEhAdm === 'function' && abEhAdm())); }
+function caAutor(){ return CA.unid ? 'unid:' + CA.unid.key : (currentUser || ''); }
+function caMinhaUnidade(){ return CA.unid ? CA.unid.unidade : CA_UNIDADE_RIO; }
+function caNomeAutor(a){ if (!a) return ''; if (a.indexOf('unid:') === 0){ var u = CA_UNIDADES[a.slice(5)]; return u ? u.nome : a.slice(5); } return (typeof abNomeVend === 'function') ? abNomeVend(a) : a; }
+function caConfig(){ var c = CA.dados.config || CA_CONFIG_PADRAO; return { dcs: caArr(c.dcs), fabricantes: caArr(c.fabricantes) }; }
+function caDcsUsuario(){ var dcs = caConfig().dcs; if (CA.unid && CA.unid.dcs && CA.unid.dcs.length) return CA.unid.dcs.slice(); return dcs; }
+
+/* ---------- dados ---------- */
+function caLigar(){
+  if (CA.ligado && (CA.ligadoFb || !firebaseOK)) return;
+  CA.ligado = true; CA.ligadoFb = !!firebaseOK;
+  dbRef('centralAbast').on('value', function(snap){
+    var v = snap.val() || {};
+    CA.dados = { vendas: v.vendas || {}, abast: v.abast || {}, guia: v.guia || {}, config: v.config || null };
+    CA.carregado = true;
+    caPedirRender();
+  });
+}
+function caLigarPedidos(){
+  if (CA.unid || !currentUser) return;
+  var chave = currentUser + (caVeTudo() ? '*' : '');
+  if (CA.pedPara === chave) return;
+  CA.pedPara = chave; CA.ped = {};
+  var lista = caVeTudo() ? Object.keys(vendedores).filter(function(vn){ var t = vendedores[vn].tipo; return t !== 'administrativo'; }) : [currentUser];
+  lista.forEach(function(vn){
+    dbRef('pedidos/' + vn).on('value', function(snap){
+      if (CA.pedPara !== chave) return;
+      var v = snap.val() || {};
+      CA.ped[vn] = Object.keys(v).map(function(k){ var p = v[k] || {}; if (!p.id) p.id = k; if (!p.vendedor) p.vendedor = vn; return p; }).filter(function(p){ return !p.excluido; });
+      caPedirRender();
+    });
+  });
+}
+function caPedirRender(){
+  if (CA.rTimer) return;
+  CA.rTimer = setTimeout(function(){ CA.rTimer = null; var t = document.getElementById('tab-central'); if (t && t.classList.contains('active')) caRender(); }, 60);
+}
+function caInit(){
+  var dl = document.getElementById('ca-dl-cat');
+  if (dl && !dl.options.length) dl.innerHTML = caCat().lista.map(function(p){ return '<option value="' + caEsc(p.c) + '">' + caEsc(p.n) + '</option>'; }).join('');
+  caLigar(); caLigarPedidos(); caRender();
+}
+
+/* pedidos de venda visíveis (manuais + os da aba Pedidos) num formato só */
+function caVendas(){
+  var out = [], u = CA.unid;
+  Object.keys(CA.dados.vendas || {}).forEach(function(id){
+    var v = CA.dados.vendas[id]; if (!v) return;
+    if (u){ if (v.unidade !== u.unidade) return; }
+    else if (!caVeTudo() && v.criadoPor !== currentUser) return;
+    out.push({ key:'m:' + id, id:id, origem:'manual', chamado:v.chamado || '', cliente:v.cliente || '', vendedor:v.vendedor || '', unidade:v.unidade || '',
+      dc:v.dc || '', data:v.data || '', status:v.status || 'aberto', obs:v.obs || '', criadoPor:v.criadoPor,
+      itens: caArr(v.itens).map(function(i){ return { c:i.c, q:+i.q || 0, semNec:false }; }), raw:v });
+  });
+  if (!u){
+    var cat = caCat();
+    Object.keys(CA.ped).forEach(function(vn){
+      (CA.ped[vn] || []).forEach(function(p){
+        if (!p || !p.chamado) return;
+        var okey = vn + '__' + p.id, o = CA.dados.guia[okey] || {};
+        var st = p.status === 'cancelado' ? 'cancelado' : (CA_PED_ABERTO[p.status || ''] ? 'aberto' : 'atendido');
+        if (st === 'aberto' && o.ignorar) st = 'semnec';
+        if (st !== 'aberto' && st !== 'semnec' && !caTemAloc('g:' + okey)) return;
+        var semNec = caArr(o.semNec), por = {}, itens = [];
+        (p.itens && p.itens.length ? p.itens : (p.material ? [{ material:p.material, qtd:p.qtd }] : [])).forEach(function(it){
+          if (!it) return;
+          var c = String(it.codigo || '').trim().toUpperCase() || cat.porNome[caSemAcento(it.material)] || ('?' + String(it.material || 'Item').trim());
+          var q = caQ(it.qtd); if (!(q > 0)) return;
+          if (por[c] != null) itens[por[c]].q += q; else { por[c] = itens.length; itens.push({ c:c, q:q, semNec: semNec.indexOf(c) !== -1 }); }
+        });
+        out.push({ key:'g:' + okey, okey:okey, origem:'guia', chamado:String(p.chamado), cliente:p.empresa || p.cliente || '', vendedor:(typeof abNomeVend === 'function' ? abNomeVend(vn) : vn),
+          vendKey:vn, unidade:CA_UNIDADE_RIO, dc:o.dc || '', data:o.data || '', status:st, pedStatus:p.status || '', obs:o.obs || '', itens:itens, raw:p, over:o });
+      });
+    });
+  }
+  return out;
+}
+function caTemAloc(vkey){ return Object.keys(CA.dados.abast || {}).some(function(id){ var a = CA.dados.abast[id]; return a && a.status !== 'cancelado' && caArr(a.aloc).some(function(x){ return x.v === vkey; }); }); }
+function caAbasts(){
+  var out = [], u = CA.unid, vis = null;
+  if (u){ vis = {}; caVendas().forEach(function(v){ vis[v.key] = 1; }); }
+  Object.keys(CA.dados.abast || {}).forEach(function(id){
+    var a = CA.dados.abast[id]; if (!a) return;
+    var r = Object.assign({ id:id }, a); r.aloc = caArr(a.aloc);
+    if (u && r.unidade !== u.unidade && !r.aloc.some(function(x){ return vis[x.v]; })) return;
+    out.push(r);
+  });
+  return out;
+}
+
+/* ---------- cobertura ---------- */
+function caAlocMap(semId){
+  var m = {};
+  Object.keys(CA.dados.abast || {}).forEach(function(id){
+    var a = CA.dados.abast[id]; if (!a || a.status === 'cancelado' || id === semId) return;
+    var r = Object.assign({ id:id }, a);
+    caArr(a.aloc).forEach(function(x){ var k = x.v + '|' + x.c; (m[k] = m[k] || []).push({ a:r, q:+x.q || 0 }); });
+  });
+  return m;
+}
+function caCob(v, m){
+  var tot = 0, cob = 0, nadc = 0, atraso = false, chs = {};
+  var itens = v.itens.map(function(it){
+    var al = m[v.key + '|' + it.c] || [];
+    var c = al.reduce(function(s, x){ return s + x.q; }, 0), n = al.filter(function(x){ return x.a.status === 'na_dc'; }).reduce(function(s, x){ return s + x.q; }, 0);
+    var late = al.some(function(x){ return x.a.status !== 'na_dc' && x.a.previsao && v.data && x.a.previsao > v.data; });
+    al.forEach(function(x){ chs[x.a.id] = x.a; });
+    if (!it.semNec){ tot += it.q; cob += Math.min(c, it.q); nadc += Math.min(n, it.q); if (late) atraso = true; }
+    return { c:it.c, q:it.q, semNec:it.semNec, cob:c, falta: it.semNec ? 0 : Math.max(0, it.q - c), nadc:n, al:al, late:late };
+  });
+  var falta = tot - cob;
+  var estado = tot === 0 ? 'neutro' : cob === 0 ? 'desc' : falta > 0 ? 'parcial' : nadc >= tot ? 'nadc' : 'coberto';
+  return { itens:itens, tot:tot, cob:cob, nadc:nadc, falta:falta, estado:estado, atraso:atraso, chamados:Object.keys(chs).map(function(k){ return chs[k]; }) };
+}
+function caPrecisaClassificar(v){ return v.origem === 'guia' && v.status === 'aberto' && !v.dc && v.itens.length > 0; }
+
+/* ---------- render ---------- */
+function caRender(){
+  var main = document.getElementById('ca-main'); if (!main) return;
+  document.querySelectorAll('#ca-seg button').forEach(function(b){ b.classList.toggle('on', b.dataset.aba === CA.aba); });
+  var segCad = document.getElementById('ca-seg-cad'); if (segCad) segCad.style.display = CA.unid ? 'none' : '';
+  if (CA.unid && CA.aba === 'cad') CA.aba = 'nec';
+  var sub = document.getElementById('ca-sub');
+  if (sub) sub.textContent = CA.unid ? CA.unid.nome + ' — lance os pedidos que precisam de material e acompanhe os chamados de abastecimento.' : 'Os pedidos em andamento da aba Pedidos entram sozinhos. Defina a DCS e o prazo, e o que falta aparece somado por código.';
+  if (!caLogado()){ main.innerHTML = '<div class="ca-vazio"><b>Entre com seu usuário</b>A Central aparece depois do login.</div>'; return; }
+  if (!CA.carregado){ main.innerHTML = '<div class="ca-vazio"><b>Carregando…</b>Os pedidos e chamados aparecem aqui assim que a base responder.</div>'; return; }
+  var m = caAlocMap(), vendas = caVendas(), abertas = vendas.filter(function(v){ return v.status === 'aberto'; });
+  var nec = caNecessidade(abertas, m);
+  document.getElementById('ca-n-nec').textContent = nec.length;
+  document.getElementById('ca-n-ven').textContent = abertas.length;
+  document.getElementById('ca-n-ab').textContent = caAbasts().filter(function(a){ return a.status !== 'na_dc' && a.status !== 'cancelado'; }).length;
+  var html = '';
+  if (!firebaseOK) html += '<div class="ca-alerta aten" style="margin-bottom:12px;">Sem conexão com a base agora. O que for lançado fica só neste aparelho até a conexão voltar.</div>';
+  if (CA.aba === 'nec') html += caViewNec(nec, abertas, vendas, m);
+  else if (CA.aba === 'vendas') html += caViewVendas(vendas, m);
+  else if (CA.aba === 'abast') html += caViewAbast(vendas);
+  else html += caViewCad();
+  main.innerHTML = html;
+}
+
+function caNecessidade(abertas, m){
+  var g = {};
+  abertas.forEach(function(v){
+    if (!v.dc) return;
+    caCob(v, m).itens.forEach(function(it){
+      if (it.falta <= 0) return;
+      var k = v.dc + '|' + it.c, r = g[k] || (g[k] = { k:k, dc:v.dc, c:it.c, falta:0, peds:[], data:null });
+      r.falta += it.falta; r.peds.push({ v:v, falta:it.falta });
+      if (v.data && (!r.data || v.data < r.data)) r.data = v.data;
+    });
+  });
+  return Object.keys(g).map(function(k){ return g[k]; }).sort(function(a, b){ return (a.data || '9999').localeCompare(b.data || '9999') || a.c.localeCompare(b.c); });
+}
+
+function caKpis(abertas, m){
+  var desc = 0, venc = 0, atr = 0, h = caHoje();
+  abertas.forEach(function(v){ var cb = caCob(v, m); if (cb.falta > 0) desc++; if (cb.falta > 0 && v.data && v.data <= caMaisDias(h, 2)) venc++; if (cb.atraso) atr++; });
+  var abVenc = caAbasts().filter(function(a){ return a.status !== 'na_dc' && a.status !== 'cancelado' && a.previsao && a.previsao < h; }).length;
+  var k = function(n, l, cls){ return '<div class="ca-kpi ' + (n ? cls : '') + '"><b>' + n + '</b><span>' + l + '</span></div>'; };
+  return '<div class="ca-kpis">' + k(desc, 'Pedidos aguardando material', 'aten') + k(venc, 'Descobertos com prazo em até 2 dias', 'ruim') + k(atr, 'Chegada prevista depois do prazo', 'ruim') + k(abVenc, 'Abastecimentos com previsão vencida', 'aten') + '</div>';
+}
+
+function caAlertas(abertas, m){
+  var h = caHoje(), out = [];
+  var semDc = abertas.filter(caPrecisaClassificar);
+  abertas.forEach(function(v){
+    var cb = caCob(v, m);
+    if (v.dc && cb.falta > 0 && v.data && v.data <= caMaisDias(h, 2)){
+      var d = caDias(v.data);
+      out.push({ cls:'ruim', o:v.data, v:v.key, html:'<b>' + caEsc(v.chamado) + '</b> · ' + caEsc(v.cliente) + ' — ' + caN(cb.falta) + ' un. sem chamado de abastecimento; precisa estar na ' + caEsc(v.dc) + ' ' + (d < 0 ? 'desde ' + caD(v.data) + ' (vencido)' : d === 0 ? 'hoje' : 'em ' + d + ' dia' + (d > 1 ? 's' : '') + ' (' + caD(v.data) + ')') + '.' });
+    } else if (cb.atraso){
+      var lt = cb.chamados.filter(function(a){ return a.status !== 'na_dc' && a.previsao && a.previsao > v.data; }).map(function(a){ return caEsc(a.chamado); });
+      out.push({ cls:'aten', o:v.data, v:v.key, html:'<b>' + caEsc(v.chamado) + '</b> · ' + caEsc(v.cliente) + ' — precisa em ' + caD(v.data) + ', mas o chamado ' + lt.join(', ') + ' tem previsão depois disso.' });
+    }
+  });
+  caAbasts().forEach(function(a){
+    if (a.status !== 'na_dc' && a.status !== 'cancelado' && a.previsao && a.previsao < h)
+      out.push({ cls:'aten', o:a.previsao, a:a.id, html:'Abastecimento <b>' + caEsc(a.chamado) + '</b> (' + caEsc(a.fabricante) + ' → ' + caEsc(a.dc) + ') tinha previsão para ' + caD(a.previsao) + ' e ainda não foi marcado como chegou na DCS.' });
+  });
+  out.sort(function(x, y){ return (x.cls === y.cls ? 0 : x.cls === 'ruim' ? -1 : 1) || (x.o || '').localeCompare(y.o || ''); });
+  var html = '';
+  if (semDc.length) html += '<div class="ca-alerta info"><div><b>' + semDc.length + ' ' + (semDc.length === 1 ? 'pedido da aba Pedidos ainda sem' : 'pedidos da aba Pedidos ainda sem') + ' DCS e prazo.</b> Enquanto não forem classificados, não entram na soma do que falta.</div><button class="ca-btn sm" data-ca="ver-classificar">Classificar</button></div>';
+  html += out.slice(0, 10).map(function(a){ return '<div class="ca-alerta ' + a.cls + '"><div>' + a.html + '</div>' + (a.v ? '<button class="ca-btn sm" data-ca="abrir-venda" data-k="' + caEsc(a.v) + '">Abrir pedido</button>' : '<button class="ca-btn sm" data-ca="abrir-abast" data-id="' + caEsc(a.a) + '">Abrir chamado</button>') + '</div>'; }).join('');
+  if (out.length > 10) html += '<div style="font-size:12px;color:#999;">+ ' + (out.length - 10) + ' alertas</div>';
+  return html ? '<div class="ca-alertas">' + html + '</div>' : '';
+}
+
+function caViewNec(nec, abertas, vendas, m){
+  if (!vendas.length && !caAbasts().length){
+    return '<div class="ca-fluxo">' +
+      '<div><b>1. O pedido entra</b>' + (CA.unid ? 'Lance o pedido de venda com os itens pelo código, a DCS e até quando o material precisa estar lá.' : 'Os pedidos em andamento da aba Pedidos aparecem aqui. Você só diz a DCS e o prazo.') + '</div>' +
+      '<div><b>2. O abastecimento vê a falta</b>Esta aba soma o que falta por DCS e por código, com o prazo mais curto primeiro.</div>' +
+      '<div><b>3. Um chamado atende vários pedidos</b>Marque os itens, abra o chamado no fabricante e a cobertura de cada pedido se atualiza para todos.</div></div>' +
+      '<div class="ca-painel"><div class="ca-vazio"><b>Nenhum pedido aguardando material</b>' + (CA.unid ? 'Comece lançando o primeiro pedido de venda.' : 'Assim que houver pedidos em andamento na aba Pedidos, eles aparecem aqui.') + '<div style="margin-top:10px;"><button class="ca-btn pri" data-ca="nova-venda">+ Pedido manual</button></div></div></div>';
+  }
+  var dcs = []; nec.forEach(function(l){ if (dcs.indexOf(l.dc) === -1) dcs.push(l.dc); }); dcs.sort();
+  var linhas = nec.filter(function(l){ return !CA.fn.dc || l.dc === CA.fn.dc; });
+  var sel = Object.keys(CA.sel).filter(function(k){ return CA.sel[k]; });
+  var selDcs = {}; sel.forEach(function(k){ selDcs[k.split('|')[0]] = 1; });
+  var selOk = sel.length > 0 && Object.keys(selDcs).length === 1;
+  var html = caKpis(abertas, m) + caAlertas(abertas, m);
+  var semDc = abertas.filter(caPrecisaClassificar);
+  if (CA.verClassificar && semDc.length){
+    html += '<div class="ca-painel" id="ca-classificar"><div class="ca-painel-topo"><h3>Pedidos da aba Pedidos sem DCS</h3><span style="font-size:12px;color:#888;">Defina a DCS e o prazo, ou marque que não precisam de abastecimento.</span><button class="ca-btn link sm" data-ca="fechar-classificar" style="margin-left:auto;">Esconder</button></div><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Chamado</th><th>Cliente</th><th>Vendedor</th><th>Status no guia</th><th class="r">Itens</th><th></th></tr></thead><tbody>' +
+      semDc.map(function(v){ return '<tr><td><span class="ca-cod">' + caEsc(v.chamado) + '</span></td><td>' + caEsc(v.cliente) + '</td><td>' + caEsc(v.vendedor) + '</td><td>' + caEsc(v.pedStatus || '—') + '</td><td class="r">' + v.itens.length + '</td><td><button class="ca-btn sm" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">Classificar</button></td></tr>'; }).join('') +
+      '</tbody></table></div></div>';
+  }
+  html += '<div class="ca-filtros" style="justify-content:space-between;"><div><b style="font-size:13.5px;">O que falta pedir</b><div style="font-size:12px;color:#999;">Soma do que não tem chamado de abastecimento. Marque itens de uma mesma DCS e abra o chamado já preenchido.</div></div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;"><select id="ca-fn-dc"><option value="">Todas as DCS</option>' + dcs.map(function(d){ return '<option' + (d === CA.fn.dc ? ' selected' : '') + '>' + caEsc(d) + '</option>'; }).join('') + '</select>' +
+    '<button class="ca-btn pri" data-ca="abast-da-selecao"' + (selOk ? '' : ' disabled') + '>Abrir chamado com ' + (sel.length || '') + ' ' + (sel.length === 1 ? 'item' : 'itens') + '</button></div></div>';
+  if (sel.length && !selOk) html += '<div class="ca-alerta aten" style="margin-bottom:10px;">Os itens marcados são de DCS diferentes. Um chamado de abastecimento vai para uma DCS só.</div>';
+  if (!linhas.length) return html + '<div class="ca-painel"><div class="ca-vazio"><b>Nada descoberto</b>Todos os pedidos classificados já têm chamado de abastecimento para cada item.</div></div>';
+  var porDc = {}; linhas.forEach(function(l){ (porDc[l.dc] = porDc[l.dc] || []).push(l); });
+  Object.keys(porDc).sort().forEach(function(dc){
+    var ls = porDc[dc], peso = ls.reduce(function(s, l){ return s + l.falta * caPeso(l.c); }, 0);
+    html += '<div class="ca-painel"><div class="ca-painel-topo"><h3>' + caEsc(dc) + '</h3><span style="font-size:12px;color:#888;">' + ls.length + ' ' + (ls.length === 1 ? 'código' : 'códigos') + ' · ≈ ' + caN(peso / 1000) + ' t</span><button class="ca-btn link sm" data-ca="sel-dc" data-dc="' + caEsc(dc) + '" style="margin-left:auto;">Marcar todos desta DCS</button></div>' +
+      '<div class="ca-scroll"><table class="ca-t"><thead><tr><th></th><th>Código</th><th>Material</th><th class="r">Falta</th><th class="r">Pallets</th><th>Pedidos</th><th>Prazo</th></tr></thead><tbody>' +
+      ls.map(function(l){
+        var pu = caPallet(l.c), d = caDias(l.data), on = !!CA.sel[l.k];
+        return '<tr' + (on ? ' class="sel"' : '') + '><td><input type="checkbox" data-ca="sel" data-k="' + caEsc(l.k) + '"' + (on ? ' checked' : '') + '></td><td>' + caCodHtml(l.c) + '</td><td>' + caEsc(caNome(l.c) || 'Código fora da base') + '<span class="ca-sub">' + caFabs(l.c) + '</span></td>' +
+          '<td class="r"><b>' + caN(l.falta) + '</b></td><td class="r" style="color:#888;">' + (pu ? caN(l.falta / pu) : '—') + '</td>' +
+          '<td>' + l.peds.map(function(p){ return '<button class="ca-chip" data-ca="abrir-venda" data-k="' + caEsc(p.v.key) + '" title="' + caEsc(p.v.cliente) + '">' + caEsc(p.v.chamado) + ' · ' + caN(p.falta) + '</button>'; }).join('') + '</td>' +
+          '<td class="' + (d != null && d <= 2 ? 'ca-atrasado' : '') + '">' + caDA(l.data) + '</td></tr>';
+      }).join('') + '</tbody></table></div></div>';
+  });
+  return html;
+}
+
+function caViewVendas(vendas, m){
+  var f = CA.fv, q = caSemAcento(f.q);
+  var dcs = []; vendas.forEach(function(v){ if (v.dc && dcs.indexOf(v.dc) === -1) dcs.push(v.dc); }); dcs.sort();
+  var lista = vendas.map(function(v){ return { v:v, cb:caCob(v, m) }; }).filter(function(x){
+    var v = x.v;
+    if (f.st && v.status !== f.st) return false;
+    if (f.dc && v.dc !== f.dc) return false;
+    if (f.cob && x.cb.estado !== f.cob) return false;
+    if (f.origem && v.origem !== f.origem) return false;
+    if (q && caSemAcento([v.chamado, v.cliente, v.vendedor, v.obs, v.unidade].concat(v.itens.map(function(i){ return i.c + ' ' + (caNome(i.c) || ''); })).join(' ')).indexOf(q) === -1) return false;
+    return true;
+  }).sort(function(a, b){ return (!a.v.dc ? -1 : 0) - (!b.v.dc ? -1 : 0) || (a.v.data || '9999').localeCompare(b.v.data || '9999'); });
+  var html = '<div class="ca-filtros"><input type="search" id="ca-fv-q" placeholder="🔎 Chamado, cliente, vendedor ou código" value="' + caEsc(f.q) + '">' +
+    '<select id="ca-fv-st"><option value="">Todas as situações</option>' + Object.keys(CA_ST_V).map(function(k){ return '<option value="' + k + '"' + (k === f.st ? ' selected' : '') + '>' + CA_ST_V[k] + '</option>'; }).join('') + '</select>' +
+    '<select id="ca-fv-cob"><option value="">Qualquer cobertura</option>' + Object.keys(CA_COB).map(function(k){ return '<option value="' + k + '"' + (k === f.cob ? ' selected' : '') + '>' + CA_COB[k] + '</option>'; }).join('') + '</select>' +
+    '<select id="ca-fv-dc"><option value="">Todas as DCS</option>' + dcs.map(function(d){ return '<option' + (d === f.dc ? ' selected' : '') + '>' + caEsc(d) + '</option>'; }).join('') + '</select>' +
+    (CA.unid ? '' : '<select id="ca-fv-origem"><option value="">Guia e manuais</option><option value="guia"' + (f.origem === 'guia' ? ' selected' : '') + '>Só da aba Pedidos</option><option value="manual"' + (f.origem === 'manual' ? ' selected' : '') + '>Só manuais</option></select>') + '</div>';
+  if (!lista.length) return html + '<div class="ca-painel"><div class="ca-vazio"><b>' + (vendas.length ? 'Nenhum pedido com esses filtros' : 'Nenhum pedido ainda') + '</b>' + (vendas.length ? 'Limpe a busca ou mude a situação.' : 'Lance o primeiro pedido que precisa de material.') + '</div></div>';
+  return html + '<div class="ca-cards">' + lista.map(function(x){ return caCardVenda(x.v, x.cb); }).join('') + '</div>';
+}
+
+function caCardVenda(v, cb){
+  var aberto = !!CA.aberto[v.key];
+  var p1 = cb.tot ? cb.nadc / cb.tot * 100 : 0, p2 = cb.tot ? (cb.cob - cb.nadc) / cb.tot * 100 : 0;
+  var d = caDias(v.data), urg = v.status === 'aberto' && cb.falta > 0 && d != null && d <= 2;
+  var semDc = caPrecisaClassificar(v);
+  var h = '<div class="ca-card"><div class="ca-card-topo" data-ca="toggle" data-k="' + caEsc(v.key) + '">' +
+    '<div style="min-width:0;"><div class="ca-card-tit"><span class="ch">' + caEsc(v.chamado) + '</span><span class="cl">' + caEsc(v.cliente || 'Cliente não informado') + '</span>' +
+    (v.origem === 'guia' ? '<span class="ca-sit guia">aba Pedidos</span>' : '<span class="ca-sit manual">manual' + (v.unidade && v.unidade !== CA_UNIDADE_RIO && !CA.unid ? ' · ' + caEsc(v.unidade) : '') + '</span>') +
+    (v.status !== 'aberto' ? '<span class="ca-sit neutro">' + CA_ST_V[v.status] + '</span>' : '') + '</div>' +
+    '<div class="ca-meta"><span>DCS <b>' + caEsc(v.dc || 'a definir') + '</b></span><span>Prazo <b class="' + (urg ? 'ca-atrasado' : '') + '">' + caDA(v.data) + '</b></span><span>' + v.itens.length + ' ' + (v.itens.length === 1 ? 'item' : 'itens') + '</span>' + (v.vendedor ? '<span>Vendedor <b>' + caEsc(v.vendedor) + '</b></span>' : '') + '</div></div>' +
+    '<div class="ca-lado">' + (semDc ? '<span class="ca-sit desc">Definir DCS e prazo</span>' : '<span class="ca-sit ' + cb.estado + '">' + CA_COB[cb.estado] + (cb.atraso ? ' · atraso' : '') + '</span>') +
+    '<div class="ca-barra"><i class="b1" style="width:' + p1 + '%"></i><i class="b2" style="width:' + p2 + '%"></i></div>' +
+    '<span style="font-size:11.5px;color:#888;">' + (cb.falta > 0 ? 'falta ' + caN(cb.falta) + ' un.' : cb.tot ? 'tudo com chamado' : 'nada a abastecer') + '</span></div></div>';
+  if (aberto){
+    h += '<div class="ca-card-corpo"><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Código</th><th>Material</th><th class="r">Pedido</th><th class="r">Com chamado</th><th class="r">Falta</th><th>Chamados de abastecimento</th></tr></thead><tbody>' +
+      cb.itens.map(function(it){
+        return '<tr' + (it.semNec ? ' style="opacity:.55;"' : '') + '><td>' + caCodHtml(it.c) + '</td><td>' + caEsc(caNome(it.c) || 'Código fora da base') + (it.semNec ? '<span class="ca-sub">Tem na DCS — não precisa abastecer</span>' : '<span class="ca-sub">' + caFabs(it.c) + '</span>') + '</td>' +
+          '<td class="r">' + caN(it.q) + '</td><td class="r">' + caN(Math.min(it.cob, it.q)) + '</td><td class="r">' + (it.falta ? '<b class="ca-atrasado">' + caN(it.falta) + '</b>' : '—') + '</td>' +
+          '<td>' + (it.al.map(function(x){ var late = x.a.status !== 'na_dc' && x.a.previsao && v.data && x.a.previsao > v.data; return '<button class="ca-chip' + (late ? ' atraso' : '') + '" data-ca="abrir-abast" data-id="' + caEsc(x.a.id) + '" title="' + caEsc(CA_ST_A[x.a.status] || '') + '">' + caEsc(x.a.chamado) + ' · ' + caN(x.q) + ' · ' + (x.a.status === 'na_dc' ? 'na DCS' : caD(x.a.previsao)) + '</button>'; }).join('') || '<span style="color:#bbb;">—</span>') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      (v.obs ? '<div style="padding:6px 12px 0;font-size:12px;"><span style="color:#999;">Obs.:</span> ' + caEsc(v.obs) + '</div>' : '') +
+      '<div class="ca-card-acoes"><button class="ca-btn sm" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + (v.origem === 'guia' ? 'DCS, prazo e itens' : 'Editar pedido') + '</button>' +
+      (v.status === 'aberto' && v.dc && cb.falta > 0 ? '<button class="ca-btn sm" data-ca="abast-da-venda" data-k="' + caEsc(v.key) + '">Abrir chamado para o que falta</button>' : '') +
+      (v.criadoPor ? '<span style="font-size:11.5px;color:#999;margin-left:auto;">Lançado por ' + caEsc(caNomeAutor(v.criadoPor)) + '</span>' : '') + '</div></div>';
+  }
+  return h + '</div>';
+}
+
+function caViewAbast(vendas){
+  var f = CA.fa, q = caSemAcento(f.q), vmap = {}; vendas.forEach(function(v){ vmap[v.key] = v; });
+  var todos = caAbasts(), dcs = []; todos.forEach(function(a){ if (a.dc && dcs.indexOf(a.dc) === -1) dcs.push(a.dc); }); dcs.sort();
+  var lista = todos.filter(function(a){
+    if (f.st === 'ativos' ? (a.status === 'na_dc' || a.status === 'cancelado') : (f.st && a.status !== f.st)) return false;
+    if (f.dc && a.dc !== f.dc) return false;
+    if (q && caSemAcento([a.chamado, a.fabricante, a.dc, a.obs].concat(a.aloc.map(function(x){ var v = vmap[x.v]; return (v ? v.chamado + ' ' + v.cliente : '') + ' ' + x.c; })).join(' ')).indexOf(q) === -1) return false;
+    return true;
+  }).sort(function(x, y){ return (x.previsao || '9999').localeCompare(y.previsao || '9999'); });
+  var html = '<div class="ca-filtros"><input type="search" id="ca-fa-q" placeholder="🔎 Chamado, fabricante, pedido ou cliente" value="' + caEsc(f.q) + '">' +
+    '<select id="ca-fa-st"><option value="ativos"' + (f.st === 'ativos' ? ' selected' : '') + '>Em andamento</option><option value=""' + (f.st === '' ? ' selected' : '') + '>Todos</option>' + Object.keys(CA_ST_A).map(function(k){ return '<option value="' + k + '"' + (k === f.st ? ' selected' : '') + '>' + CA_ST_A[k] + '</option>'; }).join('') + '</select>' +
+    '<select id="ca-fa-dc"><option value="">Todas as DCS</option>' + dcs.map(function(d){ return '<option' + (d === f.dc ? ' selected' : '') + '>' + caEsc(d) + '</option>'; }).join('') + '</select></div>';
+  if (!lista.length) return html + '<div class="ca-painel"><div class="ca-vazio"><b>' + (todos.length ? 'Nenhum chamado com esses filtros' : 'Nenhum chamado de abastecimento ainda') + '</b>' + (todos.length ? 'Mude a situação para "Todos" para ver os que já chegaram.' : 'Abra o primeiro na aba Necessidade, marcando os itens que vão na carga.') + '</div></div>';
+  return html + '<div class="ca-cards">' + lista.map(function(a){ return caCardAbast(a, vmap); }).join('') + '</div>';
+}
+
+function caCardAbast(a, vmap){
+  var aberto = !!CA.aberto['a:' + a.id], porV = {}, porC = {}, tot = 0, peso = 0;
+  a.aloc.forEach(function(x){ (porV[x.v] = porV[x.v] || []).push(x); porC[x.c] = (porC[x.c] || 0) + (+x.q || 0); tot += +x.q || 0; peso += (+x.q || 0) * caPeso(x.c); });
+  var venc = a.status !== 'na_dc' && a.status !== 'cancelado' && a.previsao && a.previsao < caHoje();
+  var cls = { solicitado:'parcial', confirmado:'coberto', transito:'coberto', na_dc:'nadc', cancelado:'neutro' }[a.status] || 'neutro';
+  var nV = Object.keys(porV).length, nC = Object.keys(porC).length;
+  var h = '<div class="ca-card"><div class="ca-card-topo" data-ca="toggle" data-k="a:' + caEsc(a.id) + '">' +
+    '<div style="min-width:0;"><div class="ca-card-tit"><span class="ch">' + caEsc(a.chamado) + '</span><span class="cl">' + caEsc(a.fabricante || '—') + ' → ' + caEsc(a.dc || '—') + '</span>' + (a.carga ? '<span class="ca-sit neutro">' + caEsc(a.carga) + '</span>' : '') + (a.unidade && a.unidade !== CA_UNIDADE_RIO && !CA.unid ? '<span class="ca-sit manual">' + caEsc(a.unidade) + '</span>' : '') + '</div>' +
+    '<div class="ca-meta"><span>Previsão na DCS <b class="' + (venc ? 'ca-atrasado' : '') + '">' + caDA(a.previsao) + '</b></span><span>' + nV + ' ' + (nV === 1 ? 'pedido' : 'pedidos') + ' · ' + nC + ' ' + (nC === 1 ? 'código' : 'códigos') + ' · ' + caN(tot) + ' un.</span><span>≈ <b>' + caN(peso / 1000) + ' t</b></span></div></div>' +
+    '<div class="ca-lado"><span class="ca-sit ' + cls + '">' + (CA_ST_A[a.status] || a.status || '—') + '</span>' + (venc ? '<span class="ca-atrasado" style="font-size:11.5px;">previsão vencida</span>' : '') + '</div></div>';
+  if (aberto){
+    h += '<div class="ca-card-corpo"><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Pedido de venda</th><th>Cliente</th><th>Prazo</th><th>Itens neste chamado</th></tr></thead><tbody>' +
+      Object.keys(porV).map(function(vk){
+        var v = vmap[vk], xs = porV[vk], late = v && a.previsao && v.data && a.previsao > v.data && a.status !== 'na_dc';
+        return '<tr><td>' + (v ? '<button class="ca-chip" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + caEsc(v.chamado) + '</button>' : '<span style="color:#999;">pedido de outra pessoa ou excluído</span>') + '</td><td>' + caEsc(v ? v.cliente : '') + '</td><td class="' + (late ? 'ca-atrasado' : '') + '">' + caDA(v && v.data) + '</td>' +
+          '<td>' + xs.map(function(x){ return caCodHtml(x.c) + ' × ' + caN(x.q); }).join(' &nbsp;') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      (a.obs ? '<div style="padding:6px 12px 0;font-size:12px;"><span style="color:#999;">Obs.:</span> ' + caEsc(a.obs) + '</div>' : '') +
+      '<div class="ca-card-acoes"><button class="ca-btn sm" data-ca="abrir-abast" data-id="' + caEsc(a.id) + '">Editar chamado</button>' +
+      (a.status !== 'na_dc' && a.status !== 'cancelado' ? '<button class="ca-btn sm" data-ca="chegou" data-id="' + caEsc(a.id) + '">Marcar como chegou na DCS</button>' : '') +
+      (a.criadoPor ? '<span style="font-size:11.5px;color:#999;margin-left:auto;">Lançado por ' + caEsc(caNomeAutor(a.criadoPor)) + (a.solicitado ? ' · solicitado em ' + caDA(a.solicitado) : '') + '</span>' : '') + '</div></div>';
+  }
+  return h + '</div>';
+}
+
+function caViewCad(){
+  var cfg = caConfig(), pode = caPodeCadastro();
+  var box = function(key, tit, desc, ph){
+    return '<div class="ca-painel"><div class="ca-painel-topo"><h3>' + tit + '</h3><span style="font-size:12px;color:#888;">' + desc + '</span></div>' +
+      '<div class="ca-cad">' + (cfg[key].map(function(x, i){ return '<span>' + caEsc(x) + (pode ? '<button data-ca="cad-del" data-key="' + key + '" data-i="' + i + '" title="Remover">×</button>' : '') + '</span>'; }).join('') || '<em style="color:#999;font-size:12.5px;">Nada cadastrado.</em>') + '</div>' +
+      (pode ? '<form class="ca-cad-add" data-key="' + key + '"><input id="ca-cad-' + key + '" placeholder="' + ph + '"><button class="ca-btn" type="submit">Adicionar</button></form>' : '') + '</div>';
+  };
+  var unids = Object.keys(CA_UNIDADES);
+  return (pode ? '' : '<div class="ca-alerta info" style="margin-bottom:12px;">Só a gestão e o administrativo alteram os cadastros.</div>') +
+    box('dcs', 'DCS', 'Depósitos que recebem as cargas dos fabricantes', 'Nome da DCS') +
+    box('fabricantes', 'Fabricantes', 'Para quem o abastecimento abre o chamado', 'Nome do fabricante') +
+    '<div class="ca-painel"><div class="ca-painel-topo"><h3>Outras unidades</h3><span style="font-size:12px;color:#888;">Entram com login próprio e só veem esta aba. Os pedidos delas são lançados à mão.</span></div><div class="ca-cad">' +
+    (unids.length ? unids.map(function(k){ var u = CA_UNIDADES[k]; return '<span style="padding-right:10px;">' + caEsc(u.nome) + ' · login ' + caEsc(k) + '</span>'; }).join('') : '<em style="color:#999;font-size:12.5px;">Nenhuma unidade cadastrada ainda.</em>') + '</div></div>' +
+    '<div class="ca-painel"><div class="ca-painel-topo"><h3>Base de produtos</h3><span style="font-size:12px;color:#888;">' + caCat().lista.length + ' códigos da Tabela de Produtos do guia.</span></div></div>';
+}
+
+/* ---------- modal ---------- */
+function caAbrirModal(html){ var ov = document.getElementById('ca-modal-ov'); document.getElementById('ca-modal').innerHTML = html; ov.style.display = 'flex'; }
+function caFecharModal(){ CA.modal = null; var ov = document.getElementById('ca-modal-ov'); if (ov) ov.style.display = 'none'; document.getElementById('ca-modal').innerHTML = ''; }
+function caOpts(lista, atual, vazio){ var all = lista.slice(); if (atual && all.indexOf(atual) === -1) all.push(atual); return '<option value="">' + (vazio || 'Selecione…') + '</option>' + all.map(function(x){ return '<option' + (x === atual ? ' selected' : '') + '>' + caEsc(x) + '</option>'; }).join(''); }
+function caAchaVenda(key){ var r = null; caVendas().forEach(function(v){ if (v.key === key) r = v; }); return r; }
+function caErro(e){ return (e && e.code === 'PERMISSION_DENIED') ? 'A base recusou a gravação. Fale com a Juliana.' : 'Não consegui gravar agora. Verifique a conexão e salve de novo.'; }
+
+/* pedido manual */
+function caModalVenda(key){
+  var v = key ? caAchaVenda(key) : null;
+  if (key && !v) return caToast('Esse pedido não está mais disponível.');
+  if (v && v.origem === 'guia') return caModalGuia(v);
+  var dcs = caDcsUsuario();
+  var d = v ? { chamado:v.chamado, cliente:v.cliente, vendedor:v.vendedor, dc:v.dc, data:v.data, status:v.status, obs:v.obs, itens:v.itens.map(function(i){ return { c:i.c, q:i.q }; }), raw:v.raw }
+            : { chamado:'', cliente:'', vendedor: CA.unid ? '' : ((typeof abNomeVend === 'function' && currentUser && !abEhAdm()) ? abNomeVend(currentUser) : ''), dc: dcs.length === 1 ? dcs[0] : '', data:'', status:'aberto', obs:'', itens:[{ c:'', q:'' }] };
+  if (!d.itens.length) d.itens.push({ c:'', q:'' });
+  CA.modal = { tipo:'venda', id: v ? v.id : null, d:d, del:false, dup:false };
+  caDesenharVenda();
+}
+function caLinhaItem(it, i){
+  var n = it.c ? caNome(it.c) : '';
+  return '<tr data-i="' + i + '"><td><input type="text" class="cod" list="ca-dl-cat" data-f="c" value="' + caEsc(it.c) + '" autocomplete="off" placeholder="Código"></td>' +
+    '<td class="cm-desc' + (it.c && !n ? ' fora' : '') + '">' + (it.c ? caEsc(n || 'Código não está na base do guia') + (n ? ' ' + caFabs(it.c) : '') : '<span style="color:#bbb;">Digite o código</span>') + '</td>' +
+    '<td><input type="number" class="qtd" min="0" step="any" inputmode="decimal" data-f="q" value="' + caEsc(it.q) + '"></td><td><button class="rm" data-ca="v-rm" data-i="' + i + '" title="Remover">×</button></td></tr>';
+}
+function caDesenharVenda(){
+  var md = CA.modal, d = md.d;
+  caAbrirModal('<div class="cm-topo"><h3>' + (md.id ? 'Pedido ' + caEsc(d.chamado) : 'Novo pedido de venda') + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
+    (!CA.unid ? '<div class="cm-aviso">Os pedidos da aba Pedidos já entram sozinhos. Use este formulário só para um pedido que não está lá.</div>' : '') +
+    '<div class="cm-grid"><div class="cm-f"><label>Chamado do pedido</label><input id="ca-v-ch" value="' + caEsc(d.chamado) + '" autocomplete="off"></div>' +
+    '<div class="cm-f" style="grid-column:span 2;"><label>Cliente / carga</label><input id="ca-v-cli" value="' + caEsc(d.cliente) + '"></div></div>' +
+    '<div class="cm-grid"><div class="cm-f"><label>DCS que atende</label><select id="ca-v-dc">' + caOpts(caDcsUsuario(), d.dc) + '</select></div>' +
+    '<div class="cm-f"><label>Material na DCS até</label><input id="ca-v-data" type="date" value="' + caEsc(d.data) + '"></div>' +
+    '<div class="cm-f"><label>Vendedor</label><input id="ca-v-vend" value="' + caEsc(d.vendedor) + '"></div></div>' +
+    '<div class="cm-box"><div class="cm-box-topo"><b>Materiais que o pedido precisa</b><span id="ca-v-tot" style="font-size:12px;color:#888;"></span></div>' +
+    '<div class="ca-scroll"><table class="ca-t cm-itens"><thead><tr><th>Código</th><th>Material</th><th class="r">Qtd</th><th></th></tr></thead><tbody id="ca-v-itens">' + d.itens.map(caLinhaItem).join('') + '</tbody></table></div>' +
+    '<div style="padding:6px 12px;display:flex;gap:8px;flex-wrap:wrap;"><button class="ca-btn sm" data-ca="v-add">+ Item</button><button class="ca-btn sm link" data-ca="v-colar-abrir">Colar lista de itens</button></div>' +
+    '<div class="cm-colar" id="ca-v-colar" style="display:none;"><span style="font-size:12px;color:#888;">Uma linha por item: código e quantidade (ex.: DW00057 120).</span><textarea id="ca-v-colar-tx"></textarea><div><button class="ca-btn sm" data-ca="v-colar">Adicionar à lista</button></div></div></div>' +
+    '<div class="cm-grid"><div class="cm-f"><label>Situação</label><select id="ca-v-st">' + ['aberto', 'atendido', 'cancelado'].map(function(k){ return '<option value="' + k + '"' + (k === d.status ? ' selected' : '') + '>' + CA_ST_V[k] + '</option>'; }).join('') + '</select></div>' +
+    '<div class="cm-f" style="grid-column:span 2;"><label>Observação</label><input id="ca-v-obs" value="' + caEsc(d.obs) + '"></div></div></div>' +
+    '<div class="cm-rodape"><span class="cm-erro" id="ca-v-erro"></span>' + (md.id ? '<button class="ca-btn perigo" data-ca="v-del">' + (md.del ? 'Confirmar exclusão' : 'Excluir') + '</button>' : '') + '<button class="ca-btn" data-ca="fechar">Cancelar</button><button class="ca-btn pri" data-ca="v-salvar">Salvar pedido</button></div>');
+  caTotVenda();
+}
+function caLerVenda(){
+  var d = CA.modal.d, g = function(id){ return document.getElementById(id).value.trim(); };
+  d.chamado = g('ca-v-ch'); d.cliente = g('ca-v-cli'); d.dc = g('ca-v-dc'); d.data = g('ca-v-data'); d.vendedor = g('ca-v-vend'); d.status = g('ca-v-st'); d.obs = g('ca-v-obs');
+  d.itens = Array.prototype.map.call(document.querySelectorAll('#ca-v-itens tr'), function(tr){ return { c: tr.querySelector('[data-f=c]').value.trim().toUpperCase(), q: tr.querySelector('[data-f=q]').value }; });
+}
+function caTotVenda(){
+  var un = 0, kg = 0;
+  document.querySelectorAll('#ca-v-itens tr').forEach(function(tr){ var c = tr.querySelector('[data-f=c]').value.trim().toUpperCase(), q = caQ(tr.querySelector('[data-f=q]').value); un += q; kg += q * caPeso(c); });
+  var el = document.getElementById('ca-v-tot'); if (el) el.textContent = caN(un) + ' un. · ≈ ' + caN(kg / 1000) + ' t';
+}
+function caParseLista(txt){
+  var out = [];
+  String(txt || '').split(/\n/).forEach(function(raw){
+    var ln = raw.trim().toUpperCase(); if (!ln) return;
+    var cm = ln.match(/\b([A-Z]{2}\d{4,6})\b/); if (!cm) return;
+    var nums = ln.replace(cm[1], ' ').match(/\d+(?:[.,]\d+)*/g); if (!nums) return;
+    var q = caQ(nums[nums.length - 1]); if (q > 0) out.push({ c:cm[1], q:q });
+  });
+  return out;
+}
+function caSalvarVenda(){
+  caLerVenda();
+  var md = CA.modal, d = md.d, erro = document.getElementById('ca-v-erro'), itens = [], vistos = {};
+  for (var i = 0; i < d.itens.length; i++){
+    var it = d.itens[i], q = caQ(it.q);
+    if (!it.c && !q) continue;
+    if (!it.c || !(q > 0)){ erro.textContent = 'Cada item precisa de código e quantidade maior que zero.'; return; }
+    if (vistos[it.c] != null) itens[vistos[it.c]].q += q; else { vistos[it.c] = itens.length; itens.push({ c:it.c, q:q }); }
+  }
+  if (!d.chamado){ erro.textContent = 'Informe o número do chamado do pedido.'; return; }
+  if (!d.dc){ erro.textContent = 'Escolha a DCS que vai atender o pedido.'; return; }
+  if (!d.data){ erro.textContent = 'Informe até quando o material precisa estar na DCS.'; return; }
+  if (!itens.length){ erro.textContent = 'Adicione pelo menos um material.'; return; }
+  var dup = caVendas().some(function(v){ return v.chamado === d.chamado && v.id !== md.id; });
+  if (dup && !md.dup){ md.dup = true; erro.textContent = 'Já existe um pedido com o chamado ' + d.chamado + '. Clique em Salvar de novo para gravar mesmo assim.'; return; }
+  var raw = d.raw || {}, agora = Date.now(), id = md.id || caId();
+  var body = { chamado:d.chamado, cliente:d.cliente, vendedor:d.vendedor, dc:d.dc, data:d.data, status:d.status, obs:d.obs, itens:itens,
+    unidade: raw.unidade || caMinhaUnidade(), criadoPor: raw.criadoPor || caAutor(), criadoEm: raw.criadoEm || agora, atualizadoPor: caAutor(), atualizadoEm: agora };
+  var btn = document.querySelector('[data-ca="v-salvar"]'); btn.disabled = true; btn.textContent = 'Salvando…';
+  dbRef('centralAbast/vendas/' + id).set(body).then(function(){ caFecharModal(); caToast(md.id ? 'Pedido atualizado' : 'Pedido lançado'); if (!firebaseOK) caLocal('vendas', id, body); })
+    .catch(function(e){ btn.disabled = false; btn.textContent = 'Salvar pedido'; erro.textContent = caErro(e); });
+}
+/* sem Firebase o dbRef grava só no aparelho e não avisa o listener: reflete na tela */
+function caLocal(col, id, body){ CA.dados[col] = CA.dados[col] || {}; if (body) CA.dados[col][id] = body; else delete CA.dados[col][id]; CA.carregado = true; caRender(); }
+
+/* pedido da aba Pedidos: DCS, prazo e quais itens precisam de abastecimento */
+function caModalGuia(v){
+  var o = v.over || {};
+  CA.modal = { tipo:'guia', v:v, semNec: caArr(o.semNec).slice() };
+  var md = CA.modal;
+  var dcs = caDcsUsuario();
+  caAbrirModal('<div class="cm-topo"><h3>Pedido ' + caEsc(v.chamado) + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
+    '<div style="font-size:12.5px;"><b>' + caEsc(v.cliente) + '</b><div style="color:#888;">Vem da aba Pedidos · vendedor ' + caEsc(v.vendedor) + ' · status no guia: ' + caEsc(v.pedStatus || '—') + '</div></div>' +
+    '<div class="cm-grid"><div class="cm-f"><label>DCS que atende</label><select id="ca-g-dc">' + caOpts(dcs, v.dc || (dcs.length === 1 ? dcs[0] : '')) + '</select></div>' +
+    '<div class="cm-f"><label>Material na DCS até</label><input id="ca-g-data" type="date" value="' + caEsc(v.data) + '"></div>' +
+    '<div class="cm-f"><label>Observação</label><input id="ca-g-obs" value="' + caEsc(v.obs) + '"></div></div>' +
+    '<div class="cm-box"><div class="cm-box-topo"><b>Quais itens precisam de abastecimento?</b><span style="font-size:12px;color:#888;">Desmarque o que já tem na DCS</span></div>' +
+    '<div class="ca-scroll"><table class="ca-t cm-itens"><thead><tr><th></th><th>Código</th><th>Material</th><th class="r">Qtd</th></tr></thead><tbody>' +
+    v.itens.map(function(it){ return '<tr><td><input type="checkbox" data-ca="g-item" data-c="' + caEsc(it.c) + '"' + (md.semNec.indexOf(it.c) === -1 ? ' checked' : '') + '></td><td>' + caCodHtml(it.c) + '</td><td class="cm-desc">' + caEsc(caNome(it.c) || 'Código fora da base') + '</td><td class="r">' + caN(it.q) + '</td></tr>'; }).join('') +
+    '</tbody></table></div></div>' +
+    '<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;"><input type="checkbox" id="ca-g-ign"' + (o.ignorar ? ' checked' : '') + '> Este pedido não precisa de abastecimento (tudo já está na DCS)</label>' +
+    '<div style="font-size:11.5px;color:#999;">Itens, quantidades e cliente vêm da aba Pedidos. Para mudar, edite o pedido lá.</div></div>' +
+    '<div class="cm-rodape"><span class="cm-erro" id="ca-g-erro"></span><button class="ca-btn" data-ca="fechar">Cancelar</button><button class="ca-btn pri" data-ca="g-salvar">Salvar</button></div>');
+}
+function caSalvarGuia(){
+  var md = CA.modal, v = md.v, erro = document.getElementById('ca-g-erro');
+  var ign = document.getElementById('ca-g-ign').checked, dc = document.getElementById('ca-g-dc').value, data = document.getElementById('ca-g-data').value;
+  if (!ign && !dc){ erro.textContent = 'Escolha a DCS que vai atender o pedido.'; return; }
+  if (!ign && !data){ erro.textContent = 'Informe até quando o material precisa estar na DCS.'; return; }
+  var semNec = []; document.querySelectorAll('#ca-modal [data-ca="g-item"]').forEach(function(cb){ if (!cb.checked) semNec.push(cb.dataset.c); });
+  var body = { dc:dc, data:data, obs:document.getElementById('ca-g-obs').value.trim(), ignorar:ign, semNec:semNec, atualizadoPor:caAutor(), atualizadoEm:Date.now() };
+  var btn = document.querySelector('[data-ca="g-salvar"]'); btn.disabled = true; btn.textContent = 'Salvando…';
+  dbRef('centralAbast/guia/' + v.okey).set(body).then(function(){ caFecharModal(); caToast('Pedido ' + v.chamado + ' atualizado'); if (!firebaseOK) caLocal('guia', v.okey, body); })
+    .catch(function(e){ btn.disabled = false; btn.textContent = 'Salvar'; erro.textContent = caErro(e); });
+}
+
+/* chamado de abastecimento */
+function caModalAbast(id, pre){
+  var a = null; if (id) caAbasts().forEach(function(x){ if (x.id === id) a = x; });
+  if (id && !a) return caToast('Esse chamado não está mais disponível.');
+  var fabs = caConfig().fabricantes;
+  var d = a ? JSON.parse(JSON.stringify(a)) : Object.assign({ chamado:'', fabricante:'', dc:'', carga:'Carreta', solicitado:caHoje(), previsao:'', status:'solicitado', obs:'', aloc:[] }, pre || {});
+  var q = {}; caArr(d.aloc).forEach(function(x){ var k = x.v + '|' + x.c; q[k] = (q[k] || 0) + (+x.q || 0); });
+  CA.modal = { tipo:'abast', id: a ? a.id : null, d:d, q:q, del:false, dup:false, outras:false };
+  caDesenharAbast(fabs);
+}
+function caDesenharAbast(fabs){
+  var md = CA.modal, d = md.d;
+  fabs = fabs || caConfig().fabricantes;
+  caAbrirModal('<div class="cm-topo"><h3>' + (md.id ? 'Abastecimento ' + caEsc(d.chamado) : 'Novo chamado de abastecimento') + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
+    '<div class="cm-grid"><div class="cm-f"><label>Nº do chamado</label><input id="ca-a-ch" value="' + caEsc(d.chamado) + '" autocomplete="off"></div>' +
+    '<div class="cm-f"><label>Fabricante</label><select id="ca-a-fab">' + caOpts(fabs, d.fabricante) + '</select></div>' +
+    '<div class="cm-f"><label>DCS de destino</label><select id="ca-a-dc">' + caOpts(caDcsUsuario(), d.dc) + '</select></div></div>' +
+    '<div class="cm-grid"><div class="cm-f"><label>Tipo de carga</label><select id="ca-a-carga">' + ['Truck', 'Carreta'].map(function(x){ return '<option' + (x === d.carga ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>' +
+    '<div class="cm-f"><label>Solicitado em</label><input id="ca-a-sol" type="date" value="' + caEsc(d.solicitado) + '"></div>' +
+    '<div class="cm-f"><label>Previsão de chegada na DCS</label><input id="ca-a-prev" type="date" value="' + caEsc(d.previsao) + '"></div></div>' +
+    '<div class="cm-grid"><div class="cm-f"><label>Situação</label><select id="ca-a-st">' + Object.keys(CA_ST_A).map(function(k){ return '<option value="' + k + '"' + (k === d.status ? ' selected' : '') + '>' + CA_ST_A[k] + '</option>'; }).join('') + '</select></div>' +
+    '<div class="cm-f" style="grid-column:span 2;"><label>Observação</label><input id="ca-a-obs" value="' + caEsc(d.obs) + '"></div></div>' +
+    '<div class="cm-box" id="ca-a-aloc">' + caBlocoAloc() + '</div></div>' +
+    '<div class="cm-rodape"><span class="cm-erro" id="ca-a-erro"></span>' + (md.id ? '<button class="ca-btn perigo" data-ca="a-del">' + (md.del ? 'Confirmar exclusão' : 'Excluir') + '</button>' : '') + '<button class="ca-btn" data-ca="fechar">Cancelar</button><button class="ca-btn pri" data-ca="a-salvar">Salvar chamado</button></div>');
+  caTotAbast();
+}
+function caBlocoAloc(){
+  var md = CA.modal, d = md.d, q = md.q, m = caAlocMap(md.id);
+  var com = {}; Object.keys(q).forEach(function(k){ if (q[k] > 0) com[k.split('|')[0]] = 1; });
+  var vs = caVendas().filter(function(v){ return com[v.key] || (v.status === 'aberto' && v.dc && (md.outras || !d.dc || v.dc === d.dc)); })
+    .map(function(v){ return { v:v, cb:caCob(v, m) }; })
+    .filter(function(x){ return com[x.v.key] || x.cb.falta > 0; })
+    .sort(function(a, b){ return ((com[b.v.key] ? 1 : 0) - (com[a.v.key] ? 1 : 0)) || (a.v.data || '9999').localeCompare(b.v.data || '9999'); });
+  var h = '<div class="cm-box-topo"><b>Pedidos de venda que este chamado atende</b><label style="font-size:12px;color:#888;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="ca-a-outras"' + (md.outras ? ' checked' : '') + '> Mostrar outras DCS</label></div>';
+  if (!d.dc && !md.outras) h += '<div class="ca-vazio" style="padding:14px;">Escolha a DCS de destino para ver os pedidos que esperam material nela.</div>';
+  else if (!vs.length) h += '<div class="ca-vazio" style="padding:14px;">Nenhum pedido com material faltando' + (d.dc ? ' na ' + caEsc(d.dc) : '') + '.</div>';
+  else h += vs.map(function(x){
+    var v = x.v;
+    return '<div class="cm-ped"><div class="cm-ped-topo"><span class="ca-cod">' + caEsc(v.chamado) + '</span><b>' + caEsc(v.cliente) + '</b><span style="color:#888;">' + caEsc(v.dc) + ' · prazo ' + caDA(v.data) + '</span>' +
+      '<span style="margin-left:auto;display:flex;gap:6px;"><button class="ca-btn sm" data-ca="a-encher" data-v="' + caEsc(v.key) + '">Atender o que falta</button><button class="ca-btn sm link" data-ca="a-zerar" data-v="' + caEsc(v.key) + '">Zerar</button></span></div>' +
+      '<div class="ca-scroll"><table class="ca-t cm-itens"><thead><tr><th>Código</th><th>Material</th><th class="r">Pedido</th><th class="r">Em outros chamados</th><th class="r">Falta</th><th class="r">Neste chamado</th></tr></thead><tbody>' +
+      x.cb.itens.filter(function(it){ return !it.semNec || q[v.key + '|' + it.c]; }).map(function(it){
+        var k = v.key + '|' + it.c;
+        return '<tr><td>' + caCodHtml(it.c) + '</td><td class="cm-desc">' + caEsc(caNome(it.c) || 'Fora da base') + ' ' + caFabs(it.c) + '</td><td class="r">' + caN(it.q) + '</td><td class="r">' + (it.cob ? caN(it.cob) : '—') + '</td><td class="r">' + (it.falta ? caN(it.falta) : '—') + '</td>' +
+          '<td><input type="number" class="qtd" min="0" step="any" inputmode="decimal" data-k="' + caEsc(k) + '" data-falta="' + it.falta + '" value="' + (q[k] ? q[k] : '') + '"></td></tr>';
+      }).join('') + '</tbody></table></div></div>';
+  }).join('');
+  return h + '<div class="cm-tot" id="ca-a-tot"></div>';
+}
+function caTotAbast(){
+  var md = CA.modal, q = md.q, porC = {}, un = 0, kg = 0, peds = {};
+  Object.keys(q).forEach(function(k){ var v = q[k]; if (!(v > 0)) return; var p = k.split('|'); porC[p[1]] = (porC[p[1]] || 0) + v; un += v; kg += v * caPeso(p[1]); peds[p[0]] = 1; });
+  var el = document.getElementById('ca-a-tot'); if (!el) return;
+  var nP = Object.keys(peds).length, nC = Object.keys(porC).length;
+  el.innerHTML = un ? '<span><b>' + nP + '</b> ' + (nP === 1 ? 'pedido' : 'pedidos') + '</span><span><b>' + nC + '</b> ' + (nC === 1 ? 'código' : 'códigos') + '</span><span><b>' + caN(un) + '</b> un.</span><span>≈ <b>' + caN(kg / 1000) + '</b> t</span>'
+    : '<span style="color:#999;">Preencha "Neste chamado" nos itens que vão nesta carga.</span>';
+}
+function caLerAbast(){
+  var d = CA.modal.d, g = function(id){ return document.getElementById(id).value.trim(); };
+  d.chamado = g('ca-a-ch'); d.fabricante = g('ca-a-fab'); d.dc = g('ca-a-dc'); d.carga = g('ca-a-carga'); d.solicitado = g('ca-a-sol'); d.previsao = g('ca-a-prev'); d.status = g('ca-a-st'); d.obs = g('ca-a-obs');
+}
+function caSalvarAbast(){
+  caLerAbast();
+  var md = CA.modal, d = md.d, erro = document.getElementById('ca-a-erro');
+  if (!d.chamado){ erro.textContent = 'Informe o número do chamado de abastecimento.'; return; }
+  if (!d.fabricante){ erro.textContent = 'Escolha o fabricante.'; return; }
+  if (!d.dc){ erro.textContent = 'Escolha a DCS de destino.'; return; }
+  var aloc = Object.keys(md.q).filter(function(k){ return md.q[k] > 0; }).map(function(k){ var i = k.indexOf('|'); return { v:k.slice(0, i), c:k.slice(i + 1), q:md.q[k] }; });
+  if (!aloc.length){ erro.textContent = 'Indique pelo menos um item de um pedido que este chamado atende.'; return; }
+  var dup = caAbasts().some(function(a){ return a.chamado === d.chamado && a.id !== md.id; });
+  if (dup && !md.dup){ md.dup = true; erro.textContent = 'Já existe um abastecimento com o chamado ' + d.chamado + '. Clique em Salvar de novo para gravar mesmo assim.'; return; }
+  var agora = Date.now(), id = md.id || caId();
+  var body = { chamado:d.chamado, fabricante:d.fabricante, dc:d.dc, carga:d.carga, solicitado:d.solicitado, previsao:d.previsao, status:d.status, obs:d.obs, aloc:aloc,
+    unidade: d.unidade || caMinhaUnidade(), criadoPor: d.criadoPor || caAutor(), criadoEm: d.criadoEm || agora, atualizadoPor: caAutor(), atualizadoEm: agora };
+  var btn = document.querySelector('[data-ca="a-salvar"]'); btn.disabled = true; btn.textContent = 'Salvando…';
+  dbRef('centralAbast/abast/' + id).set(body).then(function(){ caFecharModal(); CA.sel = {}; caToast(md.id ? 'Chamado atualizado' : 'Chamado de abastecimento lançado'); if (!firebaseOK) caLocal('abast', id, body); else caRender(); })
+    .catch(function(e){ btn.disabled = false; btn.textContent = 'Salvar chamado'; erro.textContent = caErro(e); });
+}
+function caPreSelecao(keys){
+  var m = caAlocMap(), dc = keys[0].split('|')[0], cods = {}, aloc = [];
+  keys.forEach(function(k){ cods[k.slice(k.indexOf('|') + 1)] = 1; });
+  caVendas().forEach(function(v){
+    if (v.status !== 'aberto' || v.dc !== dc) return;
+    caCob(v, m).itens.forEach(function(it){ if (cods[it.c] && it.falta > 0) aloc.push({ v:v.key, c:it.c, q:it.falta }); });
+  });
+  return { dc:dc, aloc:aloc };
+}
+function caSalvarCad(key, arr){
+  var cfg = caConfig(); cfg[key] = arr;
+  dbRef('centralAbast/config').set({ dcs:cfg.dcs, fabricantes:cfg.fabricantes }).then(function(){ caToast('Cadastro atualizado'); if (!firebaseOK){ CA.dados.config = cfg; caRender(); } }).catch(function(e){ caToast(caErro(e)); });
+}
+
+/* ---------- eventos (só dentro da aba e do pop-up) ---------- */
+document.addEventListener('click', function(ev){
+  var ov = document.getElementById('ca-modal-ov');
+  if (ev.target === ov){ caFecharModal(); return; }
+  var t = ev.target.closest ? ev.target.closest('[data-ca]') : null;
+  if (!t || !t.closest('#tab-central, #ca-modal-ov')) return;
+  var act = t.dataset.ca;
+  if (t.tagName === 'INPUT' && act !== 'sel' && act !== 'g-item') return;
+  if (act === 'aba'){ CA.aba = t.dataset.aba; try { localStorage.setItem('fgv_ca_aba', CA.aba); } catch(e){} caRender(); }
+  else if (act === 'toggle'){ var k = t.dataset.k; CA.aberto[k] = !CA.aberto[k]; caRender(); }
+  else if (act === 'nova-venda') caModalVenda();
+  else if (act === 'novo-abast') caModalAbast();
+  else if (act === 'abrir-venda'){ ev.stopPropagation(); caFecharModal(); caModalVenda(t.dataset.k); }
+  else if (act === 'abrir-abast'){ ev.stopPropagation(); caFecharModal(); caModalAbast(t.dataset.id); }
+  else if (act === 'ver-classificar'){ CA.verClassificar = true; caRender(); var el = document.getElementById('ca-classificar'); if (el) el.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  else if (act === 'fechar-classificar'){ CA.verClassificar = false; caRender(); }
+  else if (act === 'sel'){ CA.sel[t.dataset.k] = t.checked; caRender(); }
+  else if (act === 'sel-dc'){ var dc = t.dataset.dc, m = caAlocMap(); CA.sel = {}; caNecessidade(caVendas().filter(function(v){ return v.status === 'aberto'; }), m).forEach(function(l){ if (l.dc === dc) CA.sel[l.k] = true; }); caRender(); }
+  else if (act === 'abast-da-selecao'){ var ks = Object.keys(CA.sel).filter(function(k){ return CA.sel[k]; }); if (ks.length) caModalAbast(null, caPreSelecao(ks)); }
+  else if (act === 'abast-da-venda'){ var v = caAchaVenda(t.dataset.k); if (!v) return; var cb = caCob(v, caAlocMap()); caModalAbast(null, { dc:v.dc, aloc: cb.itens.filter(function(i){ return i.falta > 0; }).map(function(i){ return { v:v.key, c:i.c, q:i.falta }; }) }); }
+  else if (act === 'chegou'){ t.disabled = true; dbRef('centralAbast/abast/' + t.dataset.id + '/status').set('na_dc').then(function(){ dbRef('centralAbast/abast/' + t.dataset.id + '/atualizadoEm').set(Date.now()); caToast('Marcado como chegou na DCS'); }).catch(function(e){ t.disabled = false; caToast(caErro(e)); }); }
+  else if (act === 'fechar') caFecharModal();
+  else if (act === 'v-add'){ caLerVenda(); CA.modal.d.itens.push({ c:'', q:'' }); caDesenharVenda(); var ins = document.querySelectorAll('#ca-v-itens [data-f=c]'); if (ins.length) ins[ins.length - 1].focus(); }
+  else if (act === 'v-rm'){ caLerVenda(); CA.modal.d.itens.splice(+t.dataset.i, 1); if (!CA.modal.d.itens.length) CA.modal.d.itens.push({ c:'', q:'' }); caDesenharVenda(); }
+  else if (act === 'v-colar-abrir'){ var bx = document.getElementById('ca-v-colar'); bx.style.display = bx.style.display === 'none' ? 'grid' : 'none'; }
+  else if (act === 'v-colar'){ var its = caParseLista(document.getElementById('ca-v-colar-tx').value); if (!its.length){ document.getElementById('ca-v-erro').textContent = 'Não encontrei linhas com código e quantidade.'; return; } caLerVenda(); var d = CA.modal.d; d.itens = d.itens.filter(function(i){ return i.c || i.q; }); its.forEach(function(x){ var e = null; d.itens.forEach(function(i){ if (i.c === x.c) e = i; }); if (e) e.q = caQ(e.q) + x.q; else d.itens.push({ c:x.c, q:x.q }); }); caDesenharVenda(); caToast(its.length + ' itens adicionados'); }
+  else if (act === 'v-salvar') caSalvarVenda();
+  else if (act === 'v-del'){ var md = CA.modal; if (!md.del){ caLerVenda(); md.del = true; t.textContent = 'Confirmar exclusão'; document.getElementById('ca-v-erro').textContent = 'Os chamados de abastecimento ligados a este pedido continuam existindo.'; return; } t.disabled = true; dbRef('centralAbast/vendas/' + md.id).remove().then(function(){ caFecharModal(); caToast('Pedido excluído'); if (!firebaseOK) caLocal('vendas', md.id, null); }).catch(function(e){ t.disabled = false; document.getElementById('ca-v-erro').textContent = caErro(e); }); }
+  else if (act === 'g-salvar') caSalvarGuia();
+  else if (act === 'a-encher' || act === 'a-zerar'){ caLerAbast(); document.querySelectorAll('#ca-a-aloc input[data-k]').forEach(function(inp){ if (inp.dataset.k.indexOf(t.dataset.v + '|') !== 0) return; var val = act === 'a-encher' ? (+inp.dataset.falta || 0) : 0; inp.value = val || ''; CA.modal.q[inp.dataset.k] = val; }); caTotAbast(); }
+  else if (act === 'a-salvar') caSalvarAbast();
+  else if (act === 'a-del'){ var ma = CA.modal; if (!ma.del){ caLerAbast(); ma.del = true; t.textContent = 'Confirmar exclusão'; document.getElementById('ca-a-erro').textContent = 'Os pedidos que ele atendia voltam a aparecer como descobertos.'; return; } t.disabled = true; dbRef('centralAbast/abast/' + ma.id).remove().then(function(){ caFecharModal(); caToast('Chamado excluído'); if (!firebaseOK) caLocal('abast', ma.id, null); }).catch(function(e){ t.disabled = false; document.getElementById('ca-a-erro').textContent = caErro(e); }); }
+  else if (act === 'cad-del'){ var key = t.dataset.key, arr = caConfig()[key].slice(); arr.splice(+t.dataset.i, 1); caSalvarCad(key, arr); }
+});
+document.addEventListener('submit', function(ev){
+  var f = ev.target.closest ? ev.target.closest('#tab-central .ca-cad-add') : null; if (!f) return;
+  ev.preventDefault();
+  var key = f.dataset.key, val = f.querySelector('input').value.trim(); if (!val) return;
+  var arr = caConfig()[key].slice();
+  if (arr.some(function(x){ return caSemAcento(x) === caSemAcento(val); })){ caToast('Já está cadastrado'); return; }
+  arr.push(val); arr.sort(function(a, b){ return a.localeCompare(b, 'pt-BR'); }); caSalvarCad(key, arr);
+});
+document.addEventListener('input', function(ev){
+  var t = ev.target; if (!t.closest || !t.closest('#tab-central, #ca-modal-ov')) return;
+  if (t.id === 'ca-fv-q' || t.id === 'ca-fa-q'){
+    (t.id === 'ca-fv-q' ? CA.fv : CA.fa).q = t.value;
+    var id = t.id, pos = t.selectionStart; caRender(); var n = document.getElementById(id); if (n){ n.focus(); try { n.setSelectionRange(pos, pos); } catch(e){} }
+  } else if (t.closest('#ca-v-itens')){
+    if (t.dataset.f === 'c'){ var c = t.value.trim().toUpperCase(), td = t.closest('tr').querySelector('.cm-desc'), n2 = caNome(c); td.className = 'cm-desc' + (c && !n2 ? ' fora' : ''); td.innerHTML = c ? caEsc(n2 || 'Código não está na base do guia') + (n2 ? ' ' + caFabs(c) : '') : '<span style="color:#bbb;">Digite o código</span>'; }
+    caTotVenda();
+  } else if (t.closest('#ca-a-aloc') && t.dataset.k){ CA.modal.q[t.dataset.k] = caQ(t.value); caTotAbast(); }
+});
+document.addEventListener('change', function(ev){
+  var t = ev.target; if (!t.closest || !t.closest('#tab-central, #ca-modal-ov')) return;
+  var mapa = { 'ca-fv-st':['fv','st'], 'ca-fv-cob':['fv','cob'], 'ca-fv-dc':['fv','dc'], 'ca-fv-origem':['fv','origem'], 'ca-fa-st':['fa','st'], 'ca-fa-dc':['fa','dc'], 'ca-fn-dc':['fn','dc'] };
+  if (mapa[t.id]){ CA[mapa[t.id][0]][mapa[t.id][1]] = t.value; caRender(); return; }
+  if (t.id === 'ca-a-dc' || t.id === 'ca-a-outras'){ caLerAbast(); if (t.id === 'ca-a-outras') CA.modal.outras = t.checked; document.getElementById('ca-a-aloc').innerHTML = caBlocoAloc(); caTotAbast(); }
+  if (t.closest('#ca-v-itens') && t.dataset.f === 'c') t.value = t.value.trim().toUpperCase();
+});
+document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && CA.modal) caFecharModal(); });
+
+/* ---------- login das outras unidades ---------- */
+function caLoginUnidade(user, pass){
+  var u = CA_UNIDADES[user];
+  if (!u || String(u.senha).toUpperCase() !== pass) return false;
+  try { localStorage.setItem('fgv_session_unid', user); } catch(e){}
+  caEntrarUnidade(user);
+  return true;
+}
+function caEntrarUnidade(key){
+  var u = CA_UNIDADES[key]; if (!u) return;
+  CA.unid = Object.assign({ key:key }, u);
+  CA.pedPara = null; CA.ped = {}; CA.sel = {};
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('vendedor-banner').style.display = 'flex';
+  document.getElementById('vb-nome-text').textContent = u.nome;
+  document.querySelectorAll('#main-nav .nav-btn[data-nav-id]').forEach(function(b){
+    if (b.dataset.navId !== 'central' && b.style.display !== 'none'){ b.style.display = 'none'; b.setAttribute('data-ca-oculto', '1'); }
+  });
+  var btn = document.getElementById('nav-central');
+  if (btn){ btn.style.display = ''; showTab('central', btn); }
+}
+function caRestaurarUnidade(){
+  try { var k = localStorage.getItem('fgv_session_unid'); if (k && CA_UNIDADES[k]) caEntrarUnidade(k); } catch(e){}
+}
+function caSairUnidade(){
+  try { localStorage.removeItem('fgv_session_unid'); } catch(e){}
+  CA.pedPara = null; CA.ped = {}; CA.sel = {};
+  if (!CA.unid) return;
+  CA.unid = null;
+  document.querySelectorAll('#main-nav .nav-btn[data-ca-oculto]').forEach(function(b){ b.style.display = ''; b.removeAttribute('data-ca-oculto'); });
+}
+</script>
+<!-- ══ FIM CENTRAL DE ABASTECIMENTO ══ -->
+
+
 <!-- ══ SUGESTÕES — ideias, mudanças e bugs ══ -->
 <style>
   #tab-sugestoes .sg-form{ background:#fff; border:1.5px solid #ECEAE4; border-radius:12px; padding:14px 16px; margin-bottom:16px; }
@@ -8645,6 +9507,8 @@ window.addEventListener('DOMContentLoaded', function() {
         var sessao = localStorage.getItem('fgv_session_user');
         if (sessao && vendedores[sessao]) {
           entrarComoUsuario(sessao);
+        } else if (typeof caRestaurarUnidade === 'function') {
+          caRestaurarUnidade();
         }
       } catch(e) {}
     }
@@ -13047,6 +13911,7 @@ function doLogin() {
   if (user === 'MARIA' || user === 'PRISCILLA') user = 'MARIA PRISCILLA';
   const pass  = document.getElementById('login-pass').value.trim().toUpperCase();
   const error = document.getElementById('login-error');
+  if (!vendedores[user] && typeof caLoginUnidade === 'function' && caLoginUnidade(user, pass)) { error.textContent = ''; return; }
   const v = vendedores[user];
   if (!v || v.senha.toUpperCase() !== pass) {
     error.textContent = 'Usuário ou senha incorretos.';
@@ -15195,6 +16060,7 @@ function rtEscolherAvatar(k) {
 }
 
 function doLogout() {
+  try { if (typeof caSairUnidade === 'function') caSairUnidade(); } catch(e) {}
   try { RT.ver = null; } catch(e) {}
   try { liderAoSair(); } catch(e) {}
   currentUser = null;
@@ -15698,6 +16564,7 @@ function showTab(name, btn) {
   if (name === 'rota' && typeof rtInit === 'function') rtInit();
   if (name === 'shopping' && typeof spInit === 'function') spInit();
   if (name === 'abastecimento' && typeof abInit === 'function') abInit();
+  if (name === 'central' && typeof caInit === 'function') caInit();
   if (name === 'sugestoes' && typeof sgInit === 'function') sgInit();
   if (name === 'quiz' && typeof qzInit === 'function') qzInit();
   if (name === 'quadro' && typeof qdInit === 'function') qdInit();
@@ -19042,7 +19909,7 @@ function abPodeEditar(){ return currentUser === 'JULIANA' || abEhAdm(); }
 function abVeTudo(){ return currentUser === 'JULIANA' || currentUser === 'ELIZIANE' || abEhAdm(); }
 
 /* administrativo entra direto no Abastecimento e só vê as abas de consulta */
-var AB_NAV_ADM = ['abastecimento', 'pedidos', 'materiais', 'tabela', 'empresa', 'sugestoes', 'quadro'];
+var AB_NAV_ADM = ['abastecimento', 'central', 'pedidos', 'materiais', 'tabela', 'empresa', 'sugestoes', 'quadro'];
 function abAplicarPerfilNav(v){
   document.querySelectorAll('#main-nav .nav-btn[data-ab-oculto]').forEach(function(b){ b.style.display = ''; b.removeAttribute('data-ab-oculto'); });
   if (!v || v.tipo !== 'administrativo') return;
