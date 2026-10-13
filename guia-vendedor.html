@@ -5297,7 +5297,7 @@ function caCat(){
   var map = {}, porNome = {}, lista = [];
   (typeof allProducts !== 'undefined' ? allProducts : []).forEach(function(p){
     var c = String(p.codigo || '').trim().toUpperCase(); if (!c) return;
-    if (!map[c]){ map[c] = { c:c, n:String(p.nome || '').trim(), p:p.peso, u:p.pallet, f:[] }; lista.push(map[c]); }
+    if (!map[c]){ map[c] = { c:c, n:String(p.nome || '').trim(), p:p.peso, u:p.pallet, k:String(p.categoria || '').trim().toUpperCase(), f:[] }; lista.push(map[c]); }
     if (p.fabrica && map[c].f.indexOf(p.fabrica) === -1) map[c].f.push(p.fabrica);
     porNome[caSemAcento(p.nome)] = c;
   });
@@ -5331,7 +5331,49 @@ function caLigar(){
     CA.dados = { vendas: v.vendas || {}, abast: v.abast || {}, guia: v.guia || {}, config: v.config || null };
     CA.carregado = true;
     caPedirRender();
+    caAtualizarCelulasPedidos();
   });
+}
+
+/* ── Na aba Pedidos: o vendedor vê se o material já está na DCS (só então pede a DT) ── */
+function caSituacaoPedido(p){
+  if (!p || !CA.carregado || CA.unid) return null;
+  if (!CA_PED_ABERTO[p.status || '']) return null;
+  var v = caVendaGuia(p.vendedor, p); if (!v) return null;
+  var placas = v.itens.some(function(i){ return i.semNec && caEhPlaca(i.c); });
+  var obsPlaca = placas ? ' Placas: coleta direto na fábrica.' : '';
+  if (v.status === 'semnec') return { k:'ok', txt:'✅ Material liberado — pode pedir DT', tit:'Marcado como sem necessidade de abastecimento.' + obsPlaca, key:v.key };
+  var cb = caCob(v, caAlocMap());
+  if (cb.tot === 0) return { k:'ok', txt: placas ? '✅ Só placas (coleta na fábrica) — pode pedir DT' : '✅ Nada a abastecer — pode pedir DT', tit:'Nenhum item depende de abastecimento na DCS.' + obsPlaca, key:v.key };
+  if (!v.dc) return { k:'cinza', txt:'⏳ Abastecimento ainda não avaliou', tit:'Falta definir a DCS e o prazo na Central de Abastecimento.', key:v.key };
+  if (cb.estado === 'nadc') return { k:'ok', txt:'✅ Material na ' + v.dc + ' — pode pedir DT', tit:'Todos os itens que passam pela DCS já chegaram.' + obsPlaca, key:v.key };
+  if (cb.falta > 0) return { k:'ruim', txt:'⛔ Aguardando abastecimento — não pedir DT', tit:caN(cb.falta) + ' un. ainda sem chamado de abastecimento para a ' + v.dc + '.', key:v.key };
+  var prev = ''; cb.chamados.forEach(function(a){ if (a.status !== 'na_dc' && a.previsao && a.previsao > prev) prev = a.previsao; });
+  return { k:'aten', txt:'🚚 Material a caminho da ' + v.dc + (prev ? ' — previsão ' + caD(prev) : '') + ' — aguarde para pedir DT', tit:'Chamado(s) ' + cb.chamados.map(function(a){ return a.chamado; }).join(', ') + '.' + obsPlaca, key:v.key };
+}
+var CA_COR_CEL = { ok:['#1B5E20','#E8F5E9'], aten:['#7A4A00','#FFF3E0'], ruim:['#C41E1E','#FBE9E9'], cinza:['#666','#F1EFE8'] };
+function caCelulaPedidoInner(p){
+  var s = caSituacaoPedido(p); if (!s) return '';
+  var c = CA_COR_CEL[s.k];
+  return '<button type="button" onclick="event.stopPropagation();caAbrirDoPedido(\'' + caEsc(s.key) + '\')" title="' + caEsc(s.tit) + '" style="margin-top:5px;border:none;background:' + c[1] + ';color:' + c[0] + ';border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;text-align:left;line-height:1.3;font-family:inherit;">' + caEsc(s.txt) + '</button>';
+}
+function caCelulaPedidoHtml(p){
+  if (!p || p.status === 'cancelado') return '';
+  caLigar();
+  return '<div class="ca-ped-cell" data-vend="' + caEsc(p.vendedor) + '" data-pid="' + caEsc(p.id) + '">' + caCelulaPedidoInner(p) + '</div>';
+}
+function caAtualizarCelulasPedidos(){
+  var todos = (typeof _pedTodosGeral !== 'undefined' && _pedTodosGeral) || [];
+  document.querySelectorAll('.ca-ped-cell').forEach(function(el){
+    var p = todos.filter(function(x){ return x.id === el.dataset.pid && x.vendedor === el.dataset.vend; })[0];
+    if (p) el.innerHTML = caCelulaPedidoInner(p);
+  });
+}
+function caAbrirDoPedido(key){
+  var btn = document.getElementById('nav-central');
+  if (btn) showTab('central', btn);
+  var n = 0;
+  (function tentar(){ if (caAchaVenda(key)) return caModalVenda(key); if (++n < 25) setTimeout(tentar, 150); else caToast('Não encontrei esse pedido na Central.'); })();
 }
 function caLigarPedidos(){
   if (CA.unid || !currentUser) return;
@@ -5370,28 +5412,38 @@ function caVendas(){
       itens: caArr(v.itens).map(function(i){ return { c:i.c, q:+i.q || 0, semNec:false }; }), raw:v });
   });
   if (!u){
-    var cat = caCat();
     Object.keys(CA.ped).forEach(function(vn){
       (CA.ped[vn] || []).forEach(function(p){
-        if (!p || !p.chamado) return;
-        var okey = vn + '__' + p.id, o = CA.dados.guia[okey] || {};
-        var st = p.status === 'cancelado' ? 'cancelado' : (CA_PED_ABERTO[p.status || ''] ? 'aberto' : 'atendido');
-        if (st === 'aberto' && o.ignorar) st = 'semnec';
-        if (st !== 'aberto' && st !== 'semnec' && !caTemAloc('g:' + okey)) return;
-        var semNec = caArr(o.semNec), por = {}, itens = [];
-        (p.itens && p.itens.length ? p.itens : (p.material ? [{ material:p.material, qtd:p.qtd }] : [])).forEach(function(it){
-          if (!it) return;
-          var c = String(it.codigo || '').trim().toUpperCase() || cat.porNome[caSemAcento(it.material)] || ('?' + String(it.material || 'Item').trim());
-          var q = caQ(it.qtd); if (!(q > 0)) return;
-          if (por[c] != null) itens[por[c]].q += q; else { por[c] = itens.length; itens.push({ c:c, q:q, semNec: semNec.indexOf(c) !== -1 }); }
-        });
-        out.push({ key:'g:' + okey, okey:okey, origem:'guia', chamado:String(p.chamado), cliente:p.empresa || p.cliente || '', vendedor:(typeof abNomeVend === 'function' ? abNomeVend(vn) : vn),
-          vendKey:vn, unidade:CA_UNIDADE_RIO, dc:o.dc || '', data:o.data || '', status:st, pedStatus:p.status || '', obs:o.obs || '', itens:itens, raw:p, over:o });
+        var v = caVendaGuia(vn, p); if (!v) return;
+        if (v.status !== 'aberto' && v.status !== 'semnec' && !caTemAloc(v.key)) return;
+        out.push(v);
       });
     });
   }
   return out;
 }
+/* um pedido da aba Pedidos no formato da Central.
+   Placas são coletadas direto na fábrica: enquanto o pedido não foi classificado,
+   elas já vêm marcadas como "não passa pela DCS". */
+function caVendaGuia(vn, p){
+  if (!p || !p.chamado) return null;
+  var cat = caCat(), okey = vn + '__' + p.id, o = CA.dados.guia[okey] || null, classificado = !!o;
+  o = o || {};
+  var st = p.status === 'cancelado' ? 'cancelado' : (CA_PED_ABERTO[p.status || ''] ? 'aberto' : 'atendido');
+  if (st === 'aberto' && o.ignorar) st = 'semnec';
+  var semNec = caArr(o.semNec), por = {}, itens = [];
+  (p.itens && p.itens.length ? p.itens : (p.material ? [{ material:p.material, qtd:p.qtd }] : [])).forEach(function(it){
+    if (!it) return;
+    var c = String(it.codigo || '').trim().toUpperCase() || cat.porNome[caSemAcento(it.material)] || ('?' + String(it.material || 'Item').trim());
+    var q = caQ(it.qtd); if (!(q > 0)) return;
+    var sn = classificado ? semNec.indexOf(c) !== -1 : caEhPlaca(c);
+    if (por[c] != null) itens[por[c]].q += q; else { por[c] = itens.length; itens.push({ c:c, q:q, semNec:sn }); }
+  });
+  return { key:'g:' + okey, okey:okey, origem:'guia', chamado:String(p.chamado), cliente:p.empresa || p.cliente || '', vendedor:(typeof abNomeVend === 'function' ? abNomeVend(vn) : vn),
+    vendKey:vn, unidade:CA_UNIDADE_RIO, dc:o.dc || '', data:o.data || '', status:st, pedStatus:p.status || '', obs:o.obs || '', itens:itens, raw:p, over:o, classificado:classificado };
+}
+function caEhPlaca(c){ var p = caCat().map[c]; return !!p && p.k === 'PLACA'; }
+function caTxtSemNec(c){ return caEhPlaca(c) ? 'Placa — coleta direto na fábrica' : 'Tem na DCS — não precisa abastecer'; }
 function caTemAloc(vkey){ return Object.keys(CA.dados.abast || {}).some(function(id){ var a = CA.dados.abast[id]; return a && a.status !== 'cancelado' && caArr(a.aloc).some(function(x){ return x.v === vkey; }); }); }
 function caAbasts(){
   var out = [], u = CA.unid, vis = null;
@@ -5429,7 +5481,7 @@ function caCob(v, m){
   var estado = tot === 0 ? 'neutro' : cob === 0 ? 'desc' : falta > 0 ? 'parcial' : nadc >= tot ? 'nadc' : 'coberto';
   return { itens:itens, tot:tot, cob:cob, nadc:nadc, falta:falta, estado:estado, atraso:atraso, chamados:Object.keys(chs).map(function(k){ return chs[k]; }) };
 }
-function caPrecisaClassificar(v){ return v.origem === 'guia' && v.status === 'aberto' && !v.dc && v.itens.length > 0; }
+function caPrecisaClassificar(v){ return v.origem === 'guia' && v.status === 'aberto' && !v.dc && v.itens.some(function(i){ return !i.semNec; }); }
 
 /* ---------- render ---------- */
 function caRender(){
@@ -5580,7 +5632,7 @@ function caCardVenda(v, cb){
   if (aberto){
     h += '<div class="ca-card-corpo"><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Código</th><th>Material</th><th class="r">Pedido</th><th class="r">Com chamado</th><th class="r">Falta</th><th>Chamados de abastecimento</th></tr></thead><tbody>' +
       cb.itens.map(function(it){
-        return '<tr' + (it.semNec ? ' style="opacity:.55;"' : '') + '><td>' + caCodHtml(it.c) + '</td><td>' + caEsc(caNome(it.c) || 'Código fora da base') + (it.semNec ? '<span class="ca-sub">Tem na DCS — não precisa abastecer</span>' : '<span class="ca-sub">' + caFabs(it.c) + '</span>') + '</td>' +
+        return '<tr' + (it.semNec ? ' style="opacity:.55;"' : '') + '><td>' + caCodHtml(it.c) + '</td><td>' + caEsc(caNome(it.c) || 'Código fora da base') + (it.semNec ? '<span class="ca-sub">' + caTxtSemNec(it.c) + '</span>' : '<span class="ca-sub">' + caFabs(it.c) + '</span>') + '</td>' +
           '<td class="r">' + caN(it.q) + '</td><td class="r">' + caN(Math.min(it.cob, it.q)) + '</td><td class="r">' + (it.falta ? '<b class="ca-atrasado">' + caN(it.falta) + '</b>' : '—') + '</td>' +
           '<td>' + (it.al.map(function(x){ var late = x.a.status !== 'na_dc' && x.a.previsao && v.data && x.a.previsao > v.data; return '<button class="ca-chip' + (late ? ' atraso' : '') + '" data-ca="abrir-abast" data-id="' + caEsc(x.a.id) + '" title="' + caEsc(CA_ST_A[x.a.status] || '') + '">' + caEsc(x.a.chamado) + ' · ' + caN(x.q) + ' · ' + (x.a.status === 'na_dc' ? 'na DCS' : caD(x.a.previsao)) + '</button>'; }).join('') || '<span style="color:#bbb;">—</span>') + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
@@ -5748,9 +5800,9 @@ function caModalGuia(v){
     '<div class="cm-grid"><div class="cm-f"><label>DCS que atende</label><select id="ca-g-dc">' + caOpts(dcs, v.dc || (dcs.length === 1 ? dcs[0] : '')) + '</select></div>' +
     '<div class="cm-f"><label>Material na DCS até</label><input id="ca-g-data" type="date" value="' + caEsc(v.data) + '"></div>' +
     '<div class="cm-f"><label>Observação</label><input id="ca-g-obs" value="' + caEsc(v.obs) + '"></div></div>' +
-    '<div class="cm-box"><div class="cm-box-topo"><b>Quais itens precisam de abastecimento?</b><span style="font-size:12px;color:#888;">Desmarque o que já tem na DCS</span></div>' +
+    '<div class="cm-box"><div class="cm-box-topo"><b>Quais itens passam pela DCS e precisam de abastecimento?</b><span style="font-size:12px;color:#888;">Placas saem direto da fábrica. Desmarque também o que já tem na DCS.</span></div>' +
     '<div class="ca-scroll"><table class="ca-t cm-itens"><thead><tr><th></th><th>Código</th><th>Material</th><th class="r">Qtd</th></tr></thead><tbody>' +
-    v.itens.map(function(it){ return '<tr><td><input type="checkbox" data-ca="g-item" data-c="' + caEsc(it.c) + '"' + (md.semNec.indexOf(it.c) === -1 ? ' checked' : '') + '></td><td>' + caCodHtml(it.c) + '</td><td class="cm-desc">' + caEsc(caNome(it.c) || 'Código fora da base') + '</td><td class="r">' + caN(it.q) + '</td></tr>'; }).join('') +
+    v.itens.map(function(it){ return '<tr><td><input type="checkbox" data-ca="g-item" data-c="' + caEsc(it.c) + '"' + (!it.semNec ? ' checked' : '') + '></td><td>' + caCodHtml(it.c) + '</td><td class="cm-desc">' + caEsc(caNome(it.c) || 'Código fora da base') + (caEhPlaca(it.c) ? '<span class="ca-sub">Placa — coleta na fábrica</span>' : '') + '</td><td class="r">' + caN(it.q) + '</td></tr>'; }).join('') +
     '</tbody></table></div></div>' +
     '<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;"><input type="checkbox" id="ca-g-ign"' + (o.ignorar ? ' checked' : '') + '> Este pedido não precisa de abastecimento (tudo já está na DCS)</label>' +
     '<div style="font-size:11.5px;color:#999;">Itens, quantidades e cliente vêm da aba Pedidos. Para mudar, edite o pedido lá.</div></div>' +
@@ -5759,8 +5811,9 @@ function caModalGuia(v){
 function caSalvarGuia(){
   var md = CA.modal, v = md.v, erro = document.getElementById('ca-g-erro');
   var ign = document.getElementById('ca-g-ign').checked, dc = document.getElementById('ca-g-dc').value, data = document.getElementById('ca-g-data').value;
-  if (!ign && !dc){ erro.textContent = 'Escolha a DCS que vai atender o pedido.'; return; }
-  if (!ign && !data){ erro.textContent = 'Informe até quando o material precisa estar na DCS.'; return; }
+  var precisa = Array.prototype.some.call(document.querySelectorAll('#ca-modal [data-ca="g-item"]'), function(cb){ return cb.checked; });
+  if (!ign && precisa && !dc){ erro.textContent = 'Escolha a DCS que vai atender o pedido.'; return; }
+  if (!ign && precisa && !data){ erro.textContent = 'Informe até quando o material precisa estar na DCS.'; return; }
   var semNec = []; document.querySelectorAll('#ca-modal [data-ca="g-item"]').forEach(function(cb){ if (!cb.checked) semNec.push(cb.dataset.c); });
   var body = { dc:dc, data:data, obs:document.getElementById('ca-g-obs').value.trim(), ignorar:ign, semNec:semNec, atualizadoPor:caAutor(), atualizadoEm:Date.now() };
   var btn = document.querySelector('[data-ca="g-salvar"]'); btn.disabled = true; btn.textContent = 'Salvando…';
@@ -20061,7 +20114,7 @@ function abCelulaPedidoHtml(p){
   if (typeof AB === 'undefined') return '';
   abGarantirListener();
   var attrs = ' class="ab-ped-cell" data-vend="' + abEsc(p.vendedor) + '" data-pid="' + abEsc(p.id) + '"';
-  return '<div' + attrs + '>' + abCelulaPedidoInner(p) + '</div>';
+  return '<div' + attrs + '>' + abCelulaPedidoInner(p) + '</div>' + (typeof caCelulaPedidoHtml === 'function' ? caCelulaPedidoHtml(p) : '');
 }
 function abCelulaPedidoInner(p){
   if (p.status === 'cancelado') return '<span style="color:#ccc;font-size:12px;">—</span>';
