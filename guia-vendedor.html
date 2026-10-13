@@ -5522,11 +5522,74 @@ function caSaldoChips(dc, c, acao, extra){
   var lst = caSaldos()[dc + '|' + c]; if (!lst || !lst.length) return '';
   return lst.map(function(x){ return '<button class="ca-chip" style="background:#E8F5E9;color:#1B5E20;" data-ca="' + acao + '" data-a="' + caEsc(x.a.id) + '"' + extra + ' title="' + caEsc((CA_ST_A[x.a.status] || '') + (x.a.previsao ? ' · previsão ' + caDA(x.a.previsao) : '')) + '">' + caEsc(x.a.chamado) + ' · saldo ' + caN(x.saldo) + ' · vincular</button>'; }).join('');
 }
+/* "Vincular chamado": escolhe pedidos de venda e quanto de cada item este abastecimento atende */
+function caModalVincular(aId){
+  if (!CA.dados.abast[aId]) return caToast('Esse chamado não está mais disponível.');
+  CA.modal = { tipo:'vinc', id:aId, busca:'', outras:false };
+  caDesenharVincular();
+}
+function caDesenharVincular(){
+  var md = CA.modal, a = CA.dados.abast[md.id]; if (!a) return caFecharModal();
+  var it = caItensAbast(a), us = caUsadoAbast(a), temIt = Object.keys(it).length > 0, m = caAlocMap(), q = caSemAcento(md.busca);
+  var disp = function(c){ return temIt ? Math.max(0, (it[c] || 0) - (us[c] || 0)) : Infinity; };
+  var lista = caVendas().filter(function(v){ return v.status === 'aberto' && v.dc && (md.outras || v.dc === a.dc); })
+    .map(function(v){ return { v:v, its: caCob(v, m).itens.filter(function(i){ return i.falta > 0 && disp(i.c) > 0; }) }; })
+    .filter(function(x){ return x.its.length && (!q || caSemAcento([x.v.chamado, x.v.cliente, x.v.vendedor, caUnidNome(x.v.unidade)].join(' ')).indexOf(q) !== -1); })
+    .sort(function(x, y){ return (x.v.data || '9999').localeCompare(y.v.data || '9999'); });
+  var resumo = temIt ? Object.keys(it).filter(function(c){ return disp(c) > 0; }).map(function(c){ return caCodHtml(c) + ' ' + caN(disp(c)); }).join(' &nbsp; ') : '';
+  var corpo = lista.length ? lista.map(function(x){
+    var v = x.v;
+    return '<div class="cm-ped"><div class="cm-ped-topo"><span class="ca-cod">' + caEsc(v.chamado) + '</span><b>' + caEsc(v.cliente) + '</b><span style="color:#888;">' + caEsc(caUnidNome(v.unidade)) + ' · ' + caEsc(v.dc) + ' · prazo ' + caDA(v.data) + '</span>' +
+      '<span style="margin-left:auto;"><button class="ca-btn sm pri" data-ca="vc-vincular" data-v="' + caEsc(v.key) + '">Vincular este pedido</button></span></div>' +
+      '<div class="ca-scroll"><table class="ca-t cm-itens"><thead><tr><th>Código</th><th>Material</th><th class="r">Falta no pedido</th><th class="r">Disponível no chamado</th><th class="r">Vincular</th></tr></thead><tbody>' +
+      x.its.map(function(i){ var dq = disp(i.c), sug = Math.min(i.falta, dq);
+        return '<tr><td>' + caCodHtml(i.c) + '</td><td class="cm-desc">' + caEsc(caNome(i.c) || 'Fora da base') + '</td><td class="r">' + caN(i.falta) + '</td><td class="r">' + (dq === Infinity ? '—' : caN(dq)) + '</td>' +
+          '<td><input type="number" class="qtd" min="0" step="any" inputmode="decimal" data-vk="' + caEsc(v.key) + '" data-c="' + caEsc(i.c) + '" value="' + sug + '"></td></tr>'; }).join('') +
+      '</tbody></table></div></div>';
+  }).join('') : '<div class="ca-vazio" style="padding:16px;">' + (q ? 'Nenhum pedido encontrado para "' + caEsc(md.busca) + '".' : 'Nenhum pedido ' + (md.outras ? '' : 'da ' + caEsc(a.dc) + ' ') + 'está esperando um item que este chamado tenha disponível.') + '</div>';
+  caAbrirModal('<div class="cm-topo"><h3>Vincular pedidos ao chamado ' + caEsc(a.chamado) + '</h3><button class="x" data-ca="fechar">✕</button></div><div class="cm-corpo">' +
+    '<div style="font-size:12.5px;color:#555;">' + caEsc(a.fabricante || '') + ' → ' + caEsc(a.dc || '') + ' · ' + caEsc(CA_ST_A[a.status] || '') + (resumo ? '<div style="margin-top:4px;">Disponível: ' + resumo + '</div>' : '<div style="margin-top:4px;color:#888;">Este chamado não tem itens lançados: o vínculo não tem limite de quantidade.</div>') + '</div>' +
+    '<div class="ca-filtros" style="margin:0;"><input type="search" id="ca-vc-busca" placeholder="🔎 Chamado de venda, cliente ou vendedor" value="' + caEsc(md.busca) + '" style="flex:1 1 220px;padding:7px 10px;border-radius:7px;border:1.5px solid #E2E0D8;font-size:12.5px;">' +
+    '<label style="font-size:12px;color:#888;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="ca-vc-outras"' + (md.outras ? ' checked' : '') + '> Outras DCS</label></div>' +
+    '<div class="cm-box">' + corpo + '</div></div>' +
+    '<div class="cm-rodape"><span class="cm-erro" id="ca-vc-erro"></span><button class="ca-btn" data-ca="fechar">Fechar</button></div>');
+}
+/* pedido manual: chamados de abastecimento da mesma DCS com saldo dos itens do pedido */
+function caListaVincVenda(){
+  var md = CA.modal, dc = (document.getElementById('ca-v-dc') || {}).value || md.d.dc;
+  var cods = {}; Array.prototype.forEach.call(document.querySelectorAll('#ca-v-itens tr'), function(tr){ var c = tr.querySelector('[data-f=c]').value.trim().toUpperCase(), q = caQ(tr.querySelector('[data-f=q]').value); if (c && q > 0) cods[c] = (cods[c] || 0) + q; });
+  if (!Object.keys(cods).length) md.d.itens.forEach(function(i){ if (i.c && caQ(i.q) > 0) cods[i.c] = (cods[i.c] || 0) + caQ(i.q); });
+  if (!dc) return '<div class="ca-vazio" style="padding:12px;">Escolha a DCS que atende o pedido para ver os chamados disponíveis.</div>';
+  if (!Object.keys(cods).length) return '<div class="ca-vazio" style="padding:12px;">Inclua os materiais do pedido para ver quais chamados têm saldo.</div>';
+  var lst = [];
+  Object.keys(CA.dados.abast || {}).forEach(function(id){
+    var a = CA.dados.abast[id]; if (!a || a.status === 'cancelado' || a.dc !== dc) return;
+    var it = caItensAbast(a), us = caUsadoAbast(a);
+    var comuns = Object.keys(cods).filter(function(c){ return (it[c] || 0) - (us[c] || 0) > 0; });
+    if (comuns.length || md.vinc[id]) lst.push({ id:id, a:a, txt: comuns.map(function(c){ return caCodHtml(c) + ' ' + caN((it[c] || 0) - (us[c] || 0)); }).join(' &nbsp; ') });
+  });
+  if (!lst.length) return '<div class="ca-vazio" style="padding:12px;">Nenhum chamado de abastecimento da ' + caEsc(dc) + ' tem saldo desses itens.</div>';
+  return lst.map(function(x){
+    return '<label style="display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border-top:1px solid #F1EFE8;cursor:pointer;font-size:12.5px;"><input type="checkbox" data-ca="v-vinc-sel" data-a="' + caEsc(x.id) + '"' + (md.vinc[x.id] ? ' checked' : '') + ' style="margin-top:3px;">' +
+      '<span><b class="ca-cod">' + caEsc(x.a.chamado) + '</b> ' + caEsc(x.a.fabricante || '') + ' · <span class="ca-sit ' + (x.a.status === 'na_dc' ? 'nadc' : 'coberto') + '">' + caEsc(CA_ST_A[x.a.status] || '') + '</span>' + (x.a.previsao && x.a.status !== 'na_dc' ? ' · previsão ' + caDA(x.a.previsao) : '') +
+      '<span class="ca-sub">Disponível: ' + (x.txt || '—') + '</span></span></label>';
+  }).join('') + '<div style="padding:6px 12px 10px;font-size:11.5px;color:#999;">Ao salvar, cada item do pedido é vinculado até onde o chamado marcado tiver saldo.</div>';
+}
+function caVincularPedidoAChamados(vkey, itens, ids){
+  var m = caAlocMap(), rest = {};
+  itens.forEach(function(i){ var ja = (m[vkey + '|' + i.c] || []).reduce(function(s, x){ return s + x.q; }, 0); rest[i.c] = Math.max(0, i.q - ja); });
+  ids.forEach(function(aId){
+    var a = CA.dados.abast[aId]; if (!a) return;
+    var it = caItensAbast(a), us = caUsadoAbast(a), temIt = Object.keys(it).length > 0, pares = [];
+    Object.keys(rest).forEach(function(c){ var livre = temIt ? Math.max(0, (it[c] || 0) - (us[c] || 0)) : rest[c]; var q = Math.min(rest[c], livre); if (q > 0){ pares.push({ v:vkey, c:c, q:q }); rest[c] -= q; } });
+    if (pares.length) caVincular(aId, pares);
+  });
+}
 function caVincular(aId, pares){
   var a = CA.dados.abast[aId]; if (!a) return caToast('Esse chamado não está mais disponível.');
   var it = caItensAbast(a), us = caUsadoAbast(a), aloc = caArr(a.aloc).map(function(x){ return { v:x.v, c:x.c, q:+x.q || 0 }; }), n = 0;
   pares.forEach(function(p){
-    var livre = (it[p.c] || 0) - (us[p.c] || 0), q = Math.min(p.q, livre); if (!(q > 0)) return;
+    var temIt = Object.keys(it).length > 0, livre = temIt ? (it[p.c] || 0) - (us[p.c] || 0) : Infinity, q = Math.min(p.q, livre); if (!(q > 0)) return;
     us[p.c] = (us[p.c] || 0) + q; n += q;
     var e = null; aloc.forEach(function(x){ if (x.v === p.v && x.c === p.c) e = x; });
     if (e) e.q += q; else aloc.push({ v:p.v, c:p.c, q:q });
@@ -5535,6 +5598,7 @@ function caVincular(aId, pares){
   dbRef('centralAbast/abast/' + aId + '/aloc').set(aloc).then(function(){
     if (!firebaseOK){ a.aloc = aloc; caRender(); caAtualizarCelulasPedidos(); }
     caToast(caN(n) + ' un. vinculadas ao chamado ' + a.chamado);
+    if (CA.modal && CA.modal.tipo === 'vinc') setTimeout(function(){ if (CA.modal && CA.modal.tipo === 'vinc') caDesenharVincular(); }, 150);
   }).catch(function(e){ caToast(caErro(e)); });
 }
 function caEhPlaca(c){ var p = caCat().map[c]; return !!p && p.k === 'PLACA'; }
@@ -5830,6 +5894,7 @@ function caCardAbast(a, vmap, necMap){
       }).join('') + '</tbody></table></div>' +
       (a.obs ? '<div style="padding:6px 12px 0;font-size:12px;"><span style="color:#999;">Obs.:</span> ' + caEsc(a.obs) + '</div>' : '') +
       '<div class="ca-card-acoes"><button class="ca-btn sm" data-ca="abrir-abast" data-id="' + caEsc(a.id) + '">Editar chamado</button>' +
+      (a.status !== 'cancelado' ? '<button class="ca-btn sm pri" data-ca="vc-abrir" data-id="' + caEsc(a.id) + '">Vincular chamado</button>' : '') +
       (a.status !== 'na_dc' && a.status !== 'cancelado' ? '<button class="ca-btn sm" data-ca="chegou" data-id="' + caEsc(a.id) + '">Marcar como chegou na DCS</button>' : '') +
       (a.criadoPor ? '<span style="font-size:11.5px;color:#999;margin-left:auto;">Lançado por ' + caEsc(caNomeAutor(a.criadoPor)) + (a.solicitado ? ' · solicitado em ' + caDA(a.solicitado) : '') + '</span>' : '') + '</div></div>';
   }
@@ -5868,7 +5933,7 @@ function caModalVenda(key){
   var d = v ? { chamado:v.chamado, cliente:v.cliente, vendedor:v.vendedor, dc:v.dc, data:v.data, status:v.status, obs:v.obs, itens:v.itens.map(function(i){ return { c:i.c, q:i.q }; }), raw:v.raw }
             : { chamado:'', cliente:'', vendedor: CA.unid ? '' : ((typeof abNomeVend === 'function' && currentUser && !abEhAdm()) ? abNomeVend(currentUser) : ''), dc: dcs.length === 1 ? dcs[0] : '', data:'', status:'aberto', obs:'', itens:[{ c:'', q:'' }] };
   if (!d.itens.length) d.itens.push({ c:'', q:'' });
-  CA.modal = { tipo:'venda', id: v ? v.id : null, d:d, del:false, dup:false };
+  CA.modal = { tipo:'venda', id: v ? v.id : null, d:d, del:false, dup:false, vinc:{}, vincAberto:false };
   caDesenharVenda();
 }
 function caLinhaItem(it, i, rmAct){
@@ -5890,6 +5955,7 @@ function caDesenharVenda(){
     '<div class="ca-scroll"><table class="ca-t cm-itens"><thead><tr><th>Código</th><th>Material</th><th class="r">Qtd</th><th></th></tr></thead><tbody id="ca-v-itens">' + d.itens.map(function(it, i){ return caLinhaItem(it, i, 'v-rm'); }).join('') + '</tbody></table></div>' +
     '<div style="padding:6px 12px;display:flex;gap:8px;flex-wrap:wrap;"><button class="ca-btn sm" data-ca="v-add">+ Item</button><button class="ca-btn sm link" data-ca="v-colar-abrir">Colar lista de itens</button></div>' +
     '<div class="cm-colar" id="ca-v-colar" style="display:none;"><span style="font-size:12px;color:#888;">Uma linha por item: código e quantidade (ex.: DW00057 120).</span><textarea id="ca-v-colar-tx"></textarea><div><button class="ca-btn sm" data-ca="v-colar">Adicionar à lista</button></div></div></div>' +
+    '<div class="cm-box"><div class="cm-box-topo"><b>Abastecimento</b><span style="font-size:12px;color:#888;">Se o material já tem chamado de abastecimento, vincule aqui</span><button class="ca-btn sm pri" data-ca="v-vinc-abrir" style="margin-left:auto;">Vincular abastecimento</button></div><div id="ca-v-vinc"' + (md.vincAberto ? '' : ' style="display:none;"') + '>' + (md.vincAberto ? caListaVincVenda() : '') + '</div></div>' +
     '<div class="cm-grid"><div class="cm-f"><label>Situação</label><select id="ca-v-st">' + ['aberto', 'atendido', 'cancelado'].map(function(k){ return '<option value="' + k + '"' + (k === d.status ? ' selected' : '') + '>' + CA_ST_V[k] + '</option>'; }).join('') + '</select></div>' +
     '<div class="cm-f" style="grid-column:span 2;"><label>Observação</label><input id="ca-v-obs" value="' + caEsc(d.obs) + '"></div></div></div>' +
     '<div class="cm-rodape"><span class="cm-erro" id="ca-v-erro"></span>' + (md.id ? '<button class="ca-btn perigo" data-ca="v-del">' + (md.del ? 'Confirmar exclusão' : 'Excluir') + '</button>' : '') + '<button class="ca-btn" data-ca="fechar">Cancelar</button><button class="ca-btn pri" data-ca="v-salvar">Salvar pedido</button></div>');
@@ -5934,7 +6000,11 @@ function caSalvarVenda(){
   var body = { chamado:d.chamado, cliente:d.cliente, vendedor:d.vendedor, dc:d.dc, data:d.data, status:d.status, obs:d.obs, itens:itens,
     unidade: raw.unidade || caMinhaUnidade(), criadoPor: raw.criadoPor || caAutor(), criadoEm: raw.criadoEm || agora, atualizadoPor: caAutor(), atualizadoEm: agora };
   var btn = document.querySelector('[data-ca="v-salvar"]'); btn.disabled = true; btn.textContent = 'Salvando…';
-  dbRef('centralAbast/vendas/' + id).set(body).then(function(){ caFecharModal(); caToast(md.id ? 'Pedido atualizado' : 'Pedido lançado'); if (!firebaseOK) caLocal('vendas', id, body); })
+  var escolhidos = Object.keys(md.vinc || {}).filter(function(k){ return md.vinc[k]; });
+  dbRef('centralAbast/vendas/' + id).set(body).then(function(){
+    caFecharModal(); caToast(md.id ? 'Pedido atualizado' : 'Pedido lançado'); if (!firebaseOK) caLocal('vendas', id, body);
+    if (escolhidos.length) caVincularPedidoAChamados('m:' + id, itens, escolhidos);
+  })
     .catch(function(e){ btn.disabled = false; btn.textContent = 'Salvar pedido'; erro.textContent = caErro(e); });
 }
 /* sem Firebase o dbRef grava só no aparelho e não avisa o listener: reflete na tela */
@@ -6098,7 +6168,7 @@ document.addEventListener('click', function(ev){
   var t = ev.target.closest ? ev.target.closest('[data-ca]') : null;
   if (!t || !t.closest('#tab-central, #ca-modal-ov')) return;
   var act = t.dataset.ca;
-  if (t.tagName === 'INPUT' && act !== 'sel' && act !== 'g-item') return;
+  if (t.tagName === 'INPUT' && act !== 'sel' && act !== 'g-item' && act !== 'v-vinc-sel') return;
   if (act === 'aba'){ CA.aba = t.dataset.aba; try { localStorage.setItem('fgv_ca_aba', CA.aba); } catch(e){} caRender(); }
   else if (act === 'toggle'){ var k = t.dataset.k; CA.aberto[k] = !CA.aberto[k]; caRender(); }
   else if (act === 'nova-venda') caModalVenda();
@@ -6139,6 +6209,10 @@ document.addEventListener('click', function(ev){
   else if (act === 'desvincular'){ ev.stopPropagation(); var ad = CA.dados.abast[t.dataset.id]; if (!ad) return; var nova = caArr(ad.aloc).filter(function(x){ return x.v !== t.dataset.v; }); t.disabled = true;
     dbRef('centralAbast/abast/' + t.dataset.id + '/aloc').set(nova).then(function(){ if (!firebaseOK){ ad.aloc = nova; caRender(); } caToast('Saldo liberado no chamado ' + ad.chamado); }).catch(function(e){ t.disabled = false; caToast(caErro(e)); }); }
   else if (act === 'fu'){ CA.fu = t.dataset.u || ''; CA.sel = {}; try { localStorage.setItem('fgv_ca_fu', CA.fu); } catch(e){} caRender(); }
+  else if (act === 'v-vinc-abrir'){ var bxv = document.getElementById('ca-v-vinc'); CA.modal.vincAberto = true; bxv.style.display = ''; bxv.innerHTML = caListaVincVenda(); }
+  else if (act === 'v-vinc-sel'){ CA.modal.vinc[t.dataset.a] = t.checked; }
+  else if (act === 'vc-abrir'){ ev.stopPropagation(); caModalVincular(t.dataset.id); }
+  else if (act === 'vc-vincular'){ var vk = t.dataset.v, pares = []; document.querySelectorAll('#ca-modal input[data-vk]').forEach(function(inp){ if (inp.dataset.vk !== vk) return; var qv = caQ(inp.value); if (qv > 0) pares.push({ v:vk, c:inp.dataset.c, q:qv }); }); if (!pares.length){ document.getElementById('ca-vc-erro').textContent = 'Informe a quantidade a vincular.'; return; } t.disabled = true; caVincular(CA.modal.id, pares); }
   else if (act === 'vincular'){ ev.stopPropagation(); caVincular(t.dataset.a, [{ v:t.dataset.v, c:t.dataset.c, q:+t.dataset.q }]); }
   else if (act === 'v-del'){ var md = CA.modal; if (!md.del){ caLerVenda(); md.del = true; t.textContent = 'Confirmar exclusão'; document.getElementById('ca-v-erro').textContent = 'Os chamados de abastecimento ligados a este pedido continuam existindo.'; return; } t.disabled = true; dbRef('centralAbast/vendas/' + md.id).remove().then(function(){ caFecharModal(); caToast('Pedido excluído'); if (!firebaseOK) caLocal('vendas', md.id, null); }).catch(function(e){ t.disabled = false; document.getElementById('ca-v-erro').textContent = caErro(e); }); }
   else if (act === 'g-salvar') caSalvarGuia();
@@ -6157,6 +6231,7 @@ document.addEventListener('submit', function(ev){
 });
 document.addEventListener('input', function(ev){
   var t = ev.target; if (!t.closest || !t.closest('#tab-central, #ca-modal-ov')) return;
+  if (t.id === 'ca-vc-busca'){ CA.modal.busca = t.value; var p2 = t.selectionStart; caDesenharVincular(); var nb = document.getElementById('ca-vc-busca'); if (nb){ nb.focus(); try { nb.setSelectionRange(p2, p2); } catch(e){} } return; }
   if (t.id === 'ca-fv-q' || t.id === 'ca-fa-q' || t.id === 'ca-fn-prod'){
     if (t.id === 'ca-fn-prod') CA.fn.prod = t.value; else (t.id === 'ca-fv-q' ? CA.fv : CA.fa).q = t.value;
     var id = t.id, pos = t.selectionStart; caRender(); var n = document.getElementById(id); if (n){ n.focus(); try { n.setSelectionRange(pos, pos); } catch(e){} }
@@ -6180,6 +6255,8 @@ document.addEventListener('change', function(ev){
     }).catch(function(e){ caToast(caErro(e)); });
     return;
   }
+  if (t.id === 'ca-v-dc' && CA.modal && CA.modal.vincAberto){ document.getElementById('ca-v-vinc').innerHTML = caListaVincVenda(); }
+  if (t.id === 'ca-vc-outras'){ CA.modal.outras = t.checked; caDesenharVincular(); return; }
   if (t.id === 'ca-a-dc' || t.id === 'ca-a-outras'){ caLerAbast(); if (t.id === 'ca-a-outras') CA.modal.outras = t.checked; document.getElementById('ca-a-aloc').innerHTML = caBlocoAloc(); caTotAbast(); }
   if ((t.closest('#ca-v-itens') || t.closest('#ca-a-itens')) && t.dataset.f === 'c') t.value = t.value.trim().toUpperCase();
 });
