@@ -5786,10 +5786,12 @@ function caViewAbast(vendas){
     '<select id="ca-fa-st"><option value="ativos"' + (f.st === 'ativos' ? ' selected' : '') + '>Em andamento</option><option value="saldo"' + (f.st === 'saldo' ? ' selected' : '') + '>Com saldo para vincular</option><option value=""' + (f.st === '' ? ' selected' : '') + '>Todos</option>' + Object.keys(CA_ST_A).map(function(k){ return '<option value="' + k + '"' + (k === f.st ? ' selected' : '') + '>' + CA_ST_A[k] + '</option>'; }).join('') + '</select>' +
     '<select id="ca-fa-dc"><option value="">Todas as DCS</option>' + dcs.map(function(d){ return '<option' + (d === f.dc ? ' selected' : '') + '>' + caEsc(d) + '</option>'; }).join('') + '</select></div>';
   if (!lista.length) return html + '<div class="ca-painel"><div class="ca-vazio"><b>' + (todos.length ? 'Nenhum chamado com esses filtros' : 'Nenhum chamado de abastecimento ainda') + '</b>' + (todos.length ? 'Mude a situação para "Todos" para ver os que já chegaram.' : 'Abra o primeiro na aba Necessidade, marcando os itens que vão na carga.') + '</div></div>';
-  return html + '<div class="ca-cards">' + lista.map(function(a){ return caCardAbast(a, vmap); }).join('') + '</div>';
+  var necMap = {}; caNecessidade(caVendas().filter(function(v){ return v.status === 'aberto'; }), caAlocMap()).forEach(function(l){ necMap[l.k] = l; });
+  return html + '<div class="ca-cards">' + lista.map(function(a){ return caCardAbast(a, vmap, necMap); }).join('') + '</div>';
 }
 
-function caCardAbast(a, vmap){
+function caCardAbast(a, vmap, necMap){
+  necMap = necMap || {};
   var aberto = !!CA.aberto['a:' + a.id], porV = {}, porC = {}, tot = 0, peso = 0;
   a.aloc.forEach(function(x){ (porV[x.v] = porV[x.v] || []).push(x); porC[x.c] = (porC[x.c] || 0) + (+x.q || 0); tot += +x.q || 0; peso += (+x.q || 0) * caPeso(x.c); });
   var venc = a.status !== 'na_dc' && a.status !== 'cancelado' && a.previsao && a.previsao < caHoje();
@@ -5802,10 +5804,25 @@ function caCardAbast(a, vmap){
     '<div class="ca-meta"><span>Previsão na DCS <b class="' + (venc ? 'ca-atrasado' : '') + '">' + caDA(a.previsao) + '</b></span><span>' + nV + ' ' + (nV === 1 ? 'pedido' : 'pedidos') + ' · ' + nC + ' ' + (nC === 1 ? 'código' : 'códigos') + ' · ' + caN(tot) + ' un.</span><span>≈ <b>' + caN(peso / 1000) + ' t</b></span></div></div>' +
     '<div class="ca-lado"><span class="ca-sit ' + cls + '">' + (CA_ST_A[a.status] || a.status || '—') + '</span>' + (venc ? '<span class="ca-atrasado" style="font-size:11.5px;">previsão vencida</span>' : '') + (saldoT > 0 && a.status !== 'cancelado' ? '<span class="ca-sit nadc">saldo ' + caN(saldoT) + ' un. para vincular</span>' : '') + '</div></div>';
   if (aberto){
-    h += '<div class="ca-card-corpo">' + (temItens ? '<div class="ca-scroll"><table class="ca-t"><thead><tr><th>Código</th><th>Material</th><th class="r">No chamado</th><th class="r">Vinculado a pedidos</th><th class="r">Saldo</th></tr></thead><tbody>' +
-      Object.keys(itA).map(function(c){ var sd = Math.max(0, itA[c] - (porC[c] || 0)); return '<tr><td>' + caCodHtml(c) + '</td><td>' + caEsc(caNome(c) || 'Código fora da base') + '</td><td class="r">' + caN(itA[c]) + '</td><td class="r">' + caN(porC[c] || 0) + '</td><td class="r">' + (sd > 0 ? '<b style="color:#1B5E20;">' + caN(sd) + '</b>' : '—') + '</td></tr>'; }).join('') +
+    var chipPed = function(x){
+      var v = vmap[x.v], late = v && a.previsao && v.data && a.previsao > v.data && a.status !== 'na_dc';
+      if (v) return '<button class="ca-chip' + (late ? ' atraso' : '') + '" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '" title="' + caEsc(caUnidNome(v.unidade) + ' · ' + v.cliente + ' · prazo ' + caDA(v.data)) + '">' + (!CA.unid && caUnidNome(v.unidade) !== CA_UNIDADE_RIO ? caEsc(caUnidNome(v.unidade)) + ' · ' : '') + caEsc(v.chamado) + ' · ' + caN(x.q) + '</button>';
+      if (caVendaExiste(x.v)) return '<span class="ca-chip" style="cursor:default;color:#888;">outra operação · ' + caN(x.q) + '</span>';
+      return '<span class="ca-chip" style="cursor:default;color:#888;">pedido excluído · ' + caN(x.q) + '</span>' + (caVeTudo() ? '<button class="ca-btn link sm" data-ca="desvincular" data-id="' + caEsc(a.id) + '" data-v="' + caEsc(x.v) + '">Liberar</button>' : '');
+    };
+    h += '<div class="ca-card-corpo">' + (temItens ? '<div class="ca-scroll"><table class="ca-t"><thead><tr><th>Código</th><th>Material</th><th class="r">No chamado</th><th>Pedidos atendidos</th><th class="r">Disponível p/ outros pedidos</th><th>Pedidos aguardando este item</th></tr></thead><tbody>' +
+      Object.keys(itA).map(function(c){
+        var sd = Math.max(0, itA[c] - (porC[c] || 0));
+        var atend = a.aloc.filter(function(x){ return x.c === c && (+x.q || 0) > 0; });
+        var nl = necMap[(a.dc || '') + '|' + c];
+        var aguard = (nl && sd > 0 && a.status !== 'cancelado') ? '<span style="font-size:12px;color:#7A4A00;">' + nl.peds.length + ' ' + (nl.peds.length === 1 ? 'pedido' : 'pedidos') + ' · ' + caN(nl.falta) + ' un.</span> <button class="ca-btn sm" data-ca="usar-saldo" data-a="' + caEsc(a.id) + '" data-k="' + caEsc(nl.k) + '">Vincular ' + caN(Math.min(sd, nl.falta)) + '</button>' : '<span style="color:#ccc;">—</span>';
+        return '<tr><td>' + caCodHtml(c) + '</td><td>' + caEsc(caNome(c) || 'Código fora da base') + '</td><td class="r">' + caN(itA[c]) + '</td>' +
+          '<td>' + (atend.length ? atend.map(chipPed).join('') + '<span class="ca-sub">' + caN(porC[c] || 0) + ' un. vinculadas</span>' : '<span style="color:#bbb;">nenhum ainda</span>') + '</td>' +
+          '<td class="r">' + (sd > 0 ? '<b style="color:#1B5E20;font-size:13.5px;">' + caN(sd) + '</b>' : '<span style="color:#999;">esgotado</span>') + '</td>' +
+          '<td>' + aguard + '</td></tr>';
+      }).join('') +
       '</tbody></table></div>' : '') +
-      (nV ? '<div class="ca-scroll"><table class="ca-t"><thead><tr><th>Pedido de venda</th><th>Cliente</th><th>Prazo</th><th>Itens neste chamado</th></tr></thead><tbody>' : '<div style="padding:8px 12px;font-size:12px;color:#888;">Ainda sem pedido de venda vinculado. Na Necessidade e nos pedidos, o saldo deste chamado aparece para vincular.</div><div style="display:none;"><table><tbody>') +
+      ((nV && !temItens) ? '<div class="ca-scroll"><table class="ca-t"><thead><tr><th>Pedido de venda</th><th>Cliente</th><th>Prazo</th><th>Itens neste chamado</th></tr></thead><tbody>' : (nV ? '' : '<div style="padding:8px 12px;font-size:12px;color:#888;">Ainda sem pedido de venda vinculado. O disponível aparece na Necessidade e nos pedidos para vincular.</div>') + '<div style="display:none;"><table><tbody>') +
       Object.keys(porV).map(function(vk){
         var v = vmap[vk], xs = porV[vk], late = v && a.previsao && v.data && a.previsao > v.data && a.status !== 'na_dc';
         return '<tr><td>' + (v ? '<button class="ca-chip" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + caEsc(v.chamado) + '</button>' : (caVendaExiste(vk) ? '<span style="color:#999;">pedido de outra operação</span>' : '<span style="color:#999;">pedido excluído</span>' + (caVeTudo() ? ' <button class="ca-btn link sm" data-ca="desvincular" data-id="' + caEsc(a.id) + '" data-v="' + caEsc(vk) + '" title="Tira este pedido do chamado e devolve a quantidade para o saldo">Liberar saldo</button>' : ''))) + '</td><td>' + caEsc(v ? v.cliente : '') + '</td><td class="' + (late ? 'ca-atrasado' : '') + '">' + caDA(v && v.data) + '</td>' +
