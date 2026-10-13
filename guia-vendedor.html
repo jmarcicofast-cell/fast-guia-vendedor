@@ -5667,6 +5667,15 @@ function caVendaExiste(vk){
   if (!CA.ped[vn]) return !caVeTudo() ? true : false;
   return !!caPedidoDoGuia(vn, pid);
 }
+/* chamados não podem se repetir: compara sem espaços, pontos ou traços e sem diferenciar maiúsculas */
+function caChNorm(ch){ return String(ch || '').toUpperCase().replace(/[\s.\-\/]/g, ''); }
+function caChamadoVendaExistente(ch, semId){
+  var n = caChNorm(ch), onde = '';
+  Object.keys(CA.dados.vendas || {}).forEach(function(id){ var v = CA.dados.vendas[id]; if (!onde && v && id !== semId && caChNorm(v.chamado) === n) onde = ' na Central (' + caUnidNome(v.unidade) + ')'; });
+  if (!onde && typeof AB !== 'undefined' && AB.itens) Object.keys(AB.itens).forEach(function(id){ var r = AB.itens[id]; if (!onde && r && caChNorm(r.chamado) === n) onde = ' no guia (ABASTECER)'; });
+  if (!onde) Object.keys(CA.ped || {}).forEach(function(vn){ (CA.ped[vn] || []).forEach(function(p){ if (!onde && p && caChNorm(p.chamado) === n) onde = ' na aba Pedidos do guia'; }); });
+  return onde;
+}
 function caTemAloc(vkey){ return Object.keys(CA.dados.abast || {}).some(function(id){ var a = CA.dados.abast[id]; return a && a.status !== 'cancelado' && caArr(a.aloc).some(function(x){ return x.v === vkey; }); }); }
 /* os estoques das DCS são compartilhados: todo chamado de abastecimento aparece para todas as
    operações (Televendas, Lojas do Rio, Atacado SP), e o saldo pode ser vinculado por qualquer uma */
@@ -5922,6 +5931,7 @@ function caCardVenda(v, cb){
 function caViewAbast(vendas){
   var f = CA.fa, q = caSemAcento(f.q), vmap = {}; caVendas(true).forEach(function(v){ vmap[v.key] = v; });
   var todos = caAbasts(), dcs = []; todos.forEach(function(a){ if (a.dc && dcs.indexOf(a.dc) === -1) dcs.push(a.dc); }); dcs.sort();
+  var cont = {}, dupsA = []; todos.forEach(function(a){ var k = caChNorm(a.chamado); cont[k] = (cont[k] || 0) + 1; if (cont[k] === 2) dupsA.push(a.chamado); });
   var lista = todos.filter(function(a){
     if (f.st === 'saldo'){ var ia = caItensAbast(a), ua = caUsadoAbast(a); if (a.status === 'cancelado' || !Object.keys(ia).some(function(c){ return ia[c] - (ua[c] || 0) > 0.0001; })) return false; }
     else if (f.st === 'ativos' ? (a.status === 'na_dc' || a.status === 'cancelado') : (f.st && a.status !== f.st)) return false;
@@ -5932,6 +5942,7 @@ function caViewAbast(vendas){
   var html = '<div class="ca-filtros"><input type="search" id="ca-fa-q" placeholder="🔎 Chamado, fabricante, pedido ou cliente" value="' + caEsc(f.q) + '">' +
     '<select id="ca-fa-st"><option value="ativos"' + (f.st === 'ativos' ? ' selected' : '') + '>Em andamento</option><option value="saldo"' + (f.st === 'saldo' ? ' selected' : '') + '>Com saldo para vincular</option><option value=""' + (f.st === '' ? ' selected' : '') + '>Todos</option>' + Object.keys(CA_ST_A).map(function(k){ return '<option value="' + k + '"' + (k === f.st ? ' selected' : '') + '>' + CA_ST_A[k] + '</option>'; }).join('') + '</select>' +
     '<select id="ca-fa-dc"><option value="">Todas as DCS</option>' + dcs.map(function(d){ return '<option' + (d === f.dc ? ' selected' : '') + '>' + caEsc(d) + '</option>'; }).join('') + '</select></div>';
+  if (dupsA.length) html += '<div class="ca-alerta aten" style="margin-bottom:10px;">Chamados lançados mais de uma vez: <b>' + dupsA.map(caEsc).join(', ') + '</b>. Busque pelo número, junte os itens num só e exclua o repetido.</div>';
   if (!lista.length) return html + '<div class="ca-painel"><div class="ca-vazio"><b>' + (todos.length ? 'Nenhum chamado com esses filtros' : 'Nenhum chamado de abastecimento ainda') + '</b>' + (todos.length ? 'Mude a situação para "Todos" para ver os que já chegaram.' : 'Abra o primeiro na aba Necessidade, marcando os itens que vão na carga.') + '</div></div>';
   var necMap = {}; caNecessidade(caVendas().filter(function(v){ return v.status === 'aberto'; }), caAlocMap()).forEach(function(l){ necMap[l.k] = l; });
   return html + '<div class="ca-cards">' + lista.map(function(a){ return caCardAbast(a, vmap, necMap); }).join('') + '</div>';
@@ -6154,8 +6165,8 @@ function caSalvarVenda(){
   if (!d.data){ erro.textContent = 'Informe até quando o material precisa estar na DCS.'; return; }
   if (!itens.length){ erro.textContent = 'Adicione pelo menos um material.'; return; }
   caSalvarNomesExtras(d.itens);
-  var dup = caVendas().some(function(v){ return v.chamado === d.chamado && v.id !== md.id; });
-  if (dup && !md.dup){ md.dup = true; erro.textContent = 'Já existe um pedido com o chamado ' + d.chamado + '. Clique em Salvar de novo para gravar mesmo assim.'; return; }
+  var dupV = caChamadoVendaExistente(d.chamado, md.id);
+  if (dupV){ erro.textContent = 'O chamado ' + d.chamado + ' já está lançado' + dupV + '. Não é possível duplicar.'; return; }
   var raw = d.raw || {}, agora = Date.now(), id = md.id || caId();
   var body = { chamado:d.chamado, cliente:d.cliente, vendedor:d.vendedor, dc:d.dc, data:d.data, status:d.status, obs:d.obs, itens:itens,
     unidade: raw.unidade || caMinhaUnidade(), criadoPor: raw.criadoPor || caAutor(), criadoEm: raw.criadoEm || agora, atualizadoPor: caAutor(), atualizadoEm: agora };
@@ -6299,8 +6310,8 @@ function caSalvarAbast(){
     Object.keys(usado).forEach(function(c){ if (vis[c] == null){ vis[c] = itens.length; itens.push({ c:c, q:usado[c] }); } });
   }
   caSalvarNomesExtras(d.itens);
-  var dup = caAbasts().some(function(a){ return a.chamado === d.chamado && a.id !== md.id; });
-  if (dup && !md.dup){ md.dup = true; erro.textContent = 'Já existe um abastecimento com o chamado ' + d.chamado + '. Clique em Salvar de novo para gravar mesmo assim.'; return; }
+  var dupA = null; Object.keys(CA.dados.abast || {}).forEach(function(id){ var x = CA.dados.abast[id]; if (x && id !== md.id && caChNorm(x.chamado) === caChNorm(d.chamado)) dupA = x; });
+  if (dupA){ erro.textContent = 'O chamado de abastecimento ' + d.chamado + ' já existe (' + (dupA.fabricante || '') + ' → ' + (dupA.dc || '') + '). Abra o existente em vez de criar outro.'; return; }
   var agora = Date.now(), id = md.id || caId();
   var body = { chamado:d.chamado, fabricante:d.fabricante, dc:d.dc, carga:d.carga, solicitado:d.solicitado, previsao:d.previsao, status:d.status, obs:d.obs, aloc:aloc, itens:itens,
     unidade: d.unidade || caMinhaUnidade(), criadoPor: d.criadoPor || caAutor(), criadoEm: d.criadoEm || agora, atualizadoPor: caAutor(), atualizadoEm: agora };
