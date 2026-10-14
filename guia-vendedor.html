@@ -21804,7 +21804,7 @@ var AB_CONF = [
   { k:'endereco', t:'Endereço' },
   { k:'margem',   t:'Margem autorizada' },
   { k:'frete',    t:'Frete' },
-  { k:'planta',   t:'Planta', op:['MDC','FDS','DCS MDC','DCS FDS'] },
+  { k:'planta',   t:'Planta', op:['MDC','FDS','DCS MDC','DCS FDS','Outros'], outro:'Outros' },
   { k:'veiculo',  t:'Carreta ou truck', op:['Carreta','Truck'] },
   { k:'ordem',    t:'Venda ordem', op:['Não','Sim — CIF','Sim — FOB'] },
   { k:'sabado',   t:'Cliente recebe no sábado?', op:['Sim','Não'] },
@@ -21812,7 +21812,16 @@ var AB_CONF = [
   { k:'mogi',     t:'Compõe em Mogi?', op:['Sim','Não'] },
   { k:'nf',       t:'Nota fiscal ou cupom', op:['Nota fiscal','Cupom'] }
 ];
-function abConfFeito(c){ return !!(c && (c.v || c.ok)); }
+function abConfFeito(c){ return !!(c && (c.ok || (c.v && (c.v !== 'Outros' || (c.txt || '').trim())))); }
+function abConfOutroTxt(id, k, txt){
+  if (!abPodeEditar()) return;
+  var r = AB.itens[id]; if (!r) return;
+  var novo = { v: 'Outros', txt: String(txt || '').trim(), por: currentUser, em: Date.now() }, upd = {};
+  upd['conf/' + k] = novo;
+  r.conf = r.conf || {}; r.conf[k] = novo;
+  abRenderPopup();
+  abAtualizar(id, upd);
+}
 function abConfProg(r){ var c = r.conf || {}, n = 0; AB_CONF.forEach(function(x){ if (abConfFeito(c[x.k])) n++; }); return { feitos:n, total:AB_CONF.length }; }
 function abConfSet(id, k, val){
   if (!abPodeEditar()) return;
@@ -21842,7 +21851,8 @@ function abConfHtml(r, ed){
     var v = c[x.k], feito = abConfFeito(v), quem = feito ? abNomeVend(v.por) + (v.em ? ' · ' + new Date(v.em).toLocaleDateString('pt-BR') : '') : '';
     var ctrl;
     if (x.op){
-      ctrl = x.op.map(function(o){ var on = v && v.v === o; return '<button type="button"' + (ed ? ' onclick="abConfSet(\'' + r.id + '\',\'' + x.k + '\',\'' + o + '\')"' : ' disabled') + ' style="border:1.5px solid ' + (on ? '#2E7D32' : '#D9D6CE') + ';background:' + (on ? '#2E7D32' : '#fff') + ';color:' + (on ? '#fff' : '#555') + ';border-radius:14px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:' + (ed ? 'pointer' : 'default') + ';">' + abEsc(o) + '</button>'; }).join(' ');
+      ctrl = x.op.map(function(o){ var on = v && v.v === o; return '<button type="button"' + (ed ? ' onclick="abConfSet(\'' + r.id + '\',\'' + x.k + '\',\'' + o + '\')"' : ' disabled') + ' style="border:1.5px solid ' + (on ? '#2E7D32' : '#D9D6CE') + ';background:' + (on ? '#2E7D32' : '#fff') + ';color:' + (on ? '#fff' : '#555') + ';border-radius:14px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:' + (ed ? 'pointer' : 'default') + ';">' + abEsc(o) + '</button>'; }).join(' ') +
+        (x.outro && v && v.v === x.outro ? ' <input type="text" value="' + abEsc(v.txt || '') + '" placeholder="Qual planta?" onchange="abConfOutroTxt(\'' + r.id + '\',\'' + x.k + '\',this.value)"' + (ed ? '' : ' disabled') + ' style="width:140px;padding:3px 8px;border:1.5px solid ' + ((v.txt || '').trim() ? '#2E7D32' : '#F0C780') + ';border-radius:14px;font-size:11.5px;">' : '');
     } else {
       ctrl = '<button type="button"' + (ed ? ' onclick="abConfSet(\'' + r.id + '\',\'' + x.k + '\')"' : ' disabled') + ' style="border:1.5px solid ' + (feito ? '#2E7D32' : '#D9D6CE') + ';background:' + (feito ? '#2E7D32' : '#fff') + ';color:' + (feito ? '#fff' : '#555') + ';border-radius:14px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:' + (ed ? 'pointer' : 'default') + ';">' + (feito ? '✓ Conferido' : 'Conferir') + '</button>';
     }
