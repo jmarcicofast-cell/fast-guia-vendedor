@@ -23392,6 +23392,36 @@ function sgRender(){
 .msn-win.min { height:auto; } .msn-win.min .msn-para, .msn-win.min .msn-tb, .msn-win.min .msn-meio, .msn-win.min .msn-sb { display:none; }
 .msn-wins { left:330px; }
 @media (max-width:700px) { .msn-dir { display:none; } .msn-wins { left:0; } }
+
+/* cores escolhidas por cada pessoa (variáveis aplicadas no documento) */
+.msn-xtit, .msn-win .msn-wtopo { background:linear-gradient(var(--msn-t0,#3D95FF) 0%, var(--msn-t1,#0A5FE8) 12%, var(--msn-t2,#0453D8) 55%, var(--msn-t3,#0A3EA8) 100%); }
+.msn-lista, .msn-win { border-color:var(--msn-bd,#4D72AE); }
+.msn-lista { background:linear-gradient(#FFFFFF, var(--msn-l1,#EAF1FB) 22%, var(--msn-l2,#D9E6F6)); }
+.msn-win { background:linear-gradient(var(--msn-l1,#F3F7FD), var(--msn-l2,#DCE8F7)); }
+.msn-cab { background:linear-gradient(#FFFFFF, var(--msn-l1,#E3ECF8)); border-bottom-color:var(--msn-l3,#B7CBE6); }
+.msn-para { background:linear-gradient(#FFFFFF, var(--msn-l1,#E9F0FA)); border-bottom-color:var(--msn-l3,#B7CBE6); }
+.msn-tb { background:linear-gradient(#FFFFFF, var(--msn-l2,#DDE9F8)); border-bottom-color:var(--msn-l3,#B7CBE6); }
+.msn-sb { background:linear-gradient(var(--msn-l1,#E9F0FA), var(--msn-l2,#D7E3F4)); border-top-color:var(--msn-l3,#B7CBE6); color:var(--msn-tx,#4A6A8F); }
+.msn-grp2, .msn-tb button { color:var(--msn-tx,#1C3F73); }
+.msn-ct2:hover, .msn-ct2:focus-visible { background:linear-gradient(#FFFFFF, var(--msn-l2,#D6E6FA)); border-color:var(--msn-l3,#A9C6EC); }
+.msn-lanc { background:linear-gradient(var(--msn-t0,#5FB2F0), var(--msn-t2,#2D7DD2)); border-color:var(--msn-t3,#1C5FA8); }
+.msn-dpbtn { border:0; background:transparent; padding:0; cursor:pointer; border-radius:8px; }
+.msn-dpbtn:hover { filter:brightness(1.06); }
+.msn-cores { margin:6px 10px; padding:8px; background:#fff; border:1px solid var(--msn-l3,#B7CBE6); border-radius:4px; }
+.msn-cores-t { font-weight:bold; color:var(--msn-tx,#1C3F73); margin-bottom:6px; }
+.msn-cores-g { display:grid; grid-template-columns:repeat(6, 1fr); gap:5px; }
+.msn-cores .sw, .msn-fonte-c .sw { width:100%; aspect-ratio:1; min-width:22px; border:1px solid rgba(0,0,0,.35); border-radius:4px; cursor:pointer; padding:0; }
+.msn-cores .sw.on, .msn-fonte-c .sw.on { outline:2px solid #FFD23F; outline-offset:1px; }
+.msn-cores .outra { grid-column:1 / -1; display:flex; align-items:center; gap:6px; font-size:11.5px; color:#3B5875; cursor:pointer; }
+.msn-cores .outra input, .msn-fonte-c input { width:30px; height:24px; padding:0; border:1px solid #9DB9DD; background:#fff; cursor:pointer; }
+.msn-btn2 { border:1px solid #9DB9DD; border-radius:3px; background:linear-gradient(#FFFFFF,#E6EEF9); font:11.5px Tahoma,'Segoe UI',sans-serif; color:#1C3F73; padding:4px 8px; cursor:pointer; min-height:28px; }
+.msn-fontes { max-height:none; }
+.msn-fonte-l { display:flex; gap:6px; align-items:center; font-size:12px; color:#3B5875; }
+.msn-fonte-l select { border:1px solid #9DB9DD; border-radius:3px; font:12px Tahoma,sans-serif; padding:2px 4px; }
+.msn-fonte-l button { width:28px; height:26px; border:1px solid #9DB9DD; border-radius:3px; background:#fff; cursor:pointer; font-size:13px; }
+.msn-fonte-l button.on { background:#D6E6FA; border-color:#4D72AE; }
+.msn-fonte-c { display:grid; grid-template-columns:repeat(11, 1fr); gap:3px; margin:6px 0; align-items:center; }
+.msn-fonte-p { border:1px dashed #B7CBE6; border-radius:3px; padding:4px 6px; font-size:12.5px; }
 @keyframes msnTreme { 0%,100% { transform:translate(0,0); } 10% { transform:translate(-10px,5px); } 20% { transform:translate(10px,-5px); } 30% { transform:translate(-10px,-5px); } 40% { transform:translate(10px,5px); } 50% { transform:translate(-8px,3px); } 60% { transform:translate(8px,-3px); } 70% { transform:translate(-5px,2px); } 80% { transform:translate(5px,-2px); } 90% { transform:translate(-2px,1px); } }
 .msn-tremendo { animation:msnTreme .7s linear 2; }
 @keyframes msnPisca { 0%,100% { box-shadow:inset 0 0 0 0 rgba(229,57,53,0); } 50% { box-shadow:inset 0 0 0 10px rgba(229,57,53,.8); } }
@@ -23434,6 +23464,7 @@ function msnStatus(u) {
 function msnAv(u, tam) {
   tam = tam || 32;
   if (u === 'EQUIPE') return '<div class="msn-ini" style="width:' + tam + 'px;height:' + tam + 'px;background:#C41E1E">👥</div>';
+  if (MSN.fotos && MSN.fotos[u]) return '<div class="msn-avbox" style="width:' + tam + 'px;height:' + tam + 'px"><img src="' + MSN.fotos[u] + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div>';
   var av = MSN.av[u];
   if (av && typeof rtAvatarSvg === 'function') { try { return '<div class="msn-avbox" style="width:' + tam + 'px;height:' + tam + 'px">' + rtAvatarSvg(av, tam - 4) + '</div>'; } catch (e) {} }
   var cores = ['#2D7DD2', '#C41E1E', '#2E7D32', '#6B3FA0', '#E07A2E', '#0B1828'], h = 0; for (var i = 0; i < u.length; i++) h += u.charCodeAt(i);
@@ -23637,6 +23668,9 @@ function msnIniciar(user) {
     MSN.base.pres = true; msnRender();
   });
   dbRef('rotaMeta/avatares').on('value', function(s) { MSN.av = (s && s.val()) || {}; msnRender(); });
+  msnAplicarCor(msnPrefs().cor);
+  dbRef('chat/fotos').on('value', function(s) { MSN.fotos = (s && s.val()) || {}; msnRender(); MSN.abertas.forEach(msnRenderTopoJanela); });
+  dbRef('chat/prefs/' + user).on('value', function(s) { var p = s && s.val(); if (p) { try { localStorage.setItem('msn_prefs_' + user, JSON.stringify(p)); } catch (e) {} msnAplicarCor(p.cor); MSN.abertas.forEach(msnAplicarFmtEntrada); } });
   dbRef('chat/figurinhas').on('value', function(s) { MSN.figs = (s && s.val()) || {}; msnFigAtualizarPaineis(); MSN.abertas.forEach(function(c) { if (MSN.msgs[c]) msnRenderMsgs(c); }); });
   dbRef('chat/config/somMsg').on('value', function(s) { MSN.somMsg = (s && s.val()) || null; MSN.audios = {}; msnRender(); });
   dbRef('chat/config/somTremer').on('value', function(s) { MSN.somTremer = (s && s.val()) || null; MSN.audios = {}; msnRender(); });
@@ -23653,7 +23687,7 @@ function msnIniciar(user) {
 function msnEncerrar(silencioso) {
   if (!MSN.on) return;
   try { dbRef('chat/presenca/' + MSN.eu).update ? dbRef('chat/presenca/' + MSN.eu).update({ status: 'offline', ts: Date.now() }) : dbRef('chat/presenca/' + MSN.eu).set({ status: 'offline', frase: MSN.minhaFrase || '', ts: Date.now() }); } catch (e) {}
-  ['chat/presenca', 'rotaMeta/avatares', 'chat/config/somMsg', 'chat/config/somTremer', 'chat/figurinhas', 'chat/lidas/' + MSN.eu, 'chat/grupo/EQUIPE', 'chat/indice/' + MSN.eu].forEach(function(p) { try { var r = dbRef(p); if (r.off) r.off(); } catch (e) {} });
+  ['chat/presenca', 'rotaMeta/avatares', 'chat/config/somMsg', 'chat/config/somTremer', 'chat/fotos', 'chat/prefs/' + MSN.eu, 'chat/figurinhas', 'chat/lidas/' + MSN.eu, 'chat/grupo/EQUIPE', 'chat/indice/' + MSN.eu].forEach(function(p) { try { var r = dbRef(p); if (r.off) r.off(); } catch (e) {} });
   Object.keys(MSN.ouvindo).forEach(function(c) { msnPararDeOuvir(c); });
   clearInterval(MSN.hb);
   try { if (MSN.pip && !MSN.pip.closed) MSN.pip.close(); } catch (e) {} MSN.pip = null; MSN.pipConv = null;
@@ -23772,12 +23806,14 @@ function msnListaHtml() {
   }
   var vol = 'alto'; try { vol = localStorage.getItem('msn_volume') || 'alto'; } catch (e) {}
   return '<div class="msn-xtit">' + msnBoneco('online', 14) + '<span>Bate-papo FAST</span><button type="button" class="msn-xb" onclick="msnAlternarLista()" aria-label="Fechar lista">✕</button></div>' +
-    '<div class="msn-cab">' + msnFoto(MSN.eu, 46, MSN.meuStatus === 'offline' ? 'offline' : MSN.meuStatus) +
+    '<div class="msn-cab"><button type="button" class="msn-dpbtn" onclick="msnAlternarFotoMenu()" title="Trocar minha foto" aria-label="Trocar minha foto">' + msnFoto(MSN.eu, 46, MSN.meuStatus === 'offline' ? 'offline' : MSN.meuStatus) + '</button>' +
       '<div class="msn-cab-t"><div class="msn-cab-n"><b>' + msnEsc(msnNome(MSN.eu)) + '</b> <select aria-label="Meu status" onchange="msnMudarStatus(this.value)">' + Object.keys(MSN_STATUS).map(function(k) { return '<option value="' + k + '"' + (MSN.meuStatus === k ? ' selected' : '') + '>(' + MSN_STATUS[k] + ')</option>'; }).join('') + '</select></div>' +
       '<input id="msn-frase-in" class="msn-pm" maxlength="80" placeholder="‹Digite uma mensagem pessoal›" value="' + msnEsc(MSN.minhaFrase || '') + '" onchange="msnMudarFrase(this.value)" aria-label="Mensagem pessoal"></div></div>' +
     '<div class="msn-ferr"><label title="Volume dos avisos">🔊 <select aria-label="Volume dos avisos" onchange="msnMudarVolume(this.value)">' + [['alto', 'Alto'], ['medio', 'Médio'], ['baixo', 'Baixo'], ['mudo', 'Mudo']].map(function(o) { return '<option value="' + o[0] + '"' + (vol === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
       '<button type="button" onclick="msnDestravarSom();msnSom(\'msg\')" title="Ouvir o som de mensagem">▶ Ouvir</button>' +
-      (msnPipSuportado() ? '<button type="button" onclick="msnAbrirPip()" title="Janela que fica por cima de todos os programas">' + (MSN.pip ? '📌 Aberta' : '📌 Sempre na frente') + '</button>' : '') + '</div>' +
+      (msnPipSuportado() ? '<button type="button" onclick="msnAbrirPip()" title="Janela que fica por cima de todos os programas">' + (MSN.pip ? '📌 Aberta' : '📌 Sempre na frente') + '</button>' : '') +
+      '<button type="button" onclick="msnAlternarCores()" aria-expanded="' + !!MSN.coresAbertas + '">🎨 Cores</button></div>' +
+    (MSN.coresAbertas ? msnCoresHtml() : '') + (MSN.fotoMenu ? msnFotoMenuHtml() : '') +
     '<div class="msn-bsc"><input id="msn-busca-in" placeholder="Procurar um contato…" value="' + msnEsc(MSN.busca || '') + '" oninput="MSN.busca=this.value;msnRender()" aria-label="Procurar contato"></div>' +
     '<div class="msn-contatos">' + (filtra('EQUIPE') || !q ? grupo('grupo', 'Grupos (1)', ['EQUIPE'], '') : '') +
       grupo('on', 'Online (' + onl.length + ')', onl, 'Ninguém online agora.') + grupo('off', 'Offline (' + off.length + ')', off, '') + '</div>' +
@@ -23790,6 +23826,73 @@ function msnListaHtml() {
         '<input type="file" id="msn-som-' + x[0] + '" accept="audio/*" style="display:none" onchange="msnEscolherSom(this.files[0],\'' + x[0] + '\');this.value=\'\'"></div></div>';
     }).join('') + '<div style="font-size:11px;color:#7A6A3A">Vale para todo mundo. Áudio de até 1 MB.</div></div>' : '');
 }
+
+// ── personalização (como no mensageiro clássico): cor da janela, fonte das mensagens e foto ──
+var MSN_CORES = [['#0453D8', 'Azul'], ['#0A7FA8', 'Turquesa'], ['#2E8B2E', 'Verde'], ['#7A3DB8', 'Roxo'], ['#D63A8A', 'Rosa'], ['#E07A10', 'Laranja'], ['#C41E1E', 'Vermelho'], ['#8B5A2B', 'Marrom'], ['#C9A20C', 'Dourado'], ['#4A5568', 'Grafite'], ['#1C1C1C', 'Preto'], ['#0B2D6B', 'Azul-marinho']];
+var MSN_FONTES = [['Tahoma', 'Tahoma'], ['Segoe UI', 'Segoe UI'], ['Arial', 'Arial'], ['Verdana', 'Verdana'], ['Comic Sans MS', 'Comic Sans'], ['Trebuchet MS', 'Trebuchet'], ['Georgia', 'Georgia'], ['Times New Roman', 'Times'], ['Courier New', 'Courier'], ['Impact', 'Impact']];
+var MSN_COR_TXT = ['#000000', '#0046D5', '#C41E1E', '#2E8B2E', '#7A3DB8', '#D63A8A', '#E07A10', '#0A7FA8', '#8B5A2B', '#4A5568'];
+function msnHexOk(c) { return /^#[0-9a-fA-F]{6}$/.test(String(c || '')); }
+function msnPrefs() { var p = {}; try { p = JSON.parse(localStorage.getItem('msn_prefs_' + MSN.eu) || '{}'); } catch (e) {} return p; }
+function msnSalvarPrefs(p) { try { localStorage.setItem('msn_prefs_' + MSN.eu, JSON.stringify(p)); } catch (e) {} dbRef('chat/prefs/' + MSN.eu).set(p); }
+function msnAplicarCor(hex) {
+  if (!msnHexOk(hex)) hex = '#0453D8';
+  var C = av3dCor, r = document.documentElement.style;
+  r.setProperty('--msn-t0', C(hex, .45)); r.setProperty('--msn-t1', C(hex, .08)); r.setProperty('--msn-t2', hex); r.setProperty('--msn-t3', C(hex, -.28));
+  r.setProperty('--msn-bd', C(hex, -.12)); r.setProperty('--msn-l1', C(hex, .9)); r.setProperty('--msn-l2', C(hex, .8)); r.setProperty('--msn-l3', C(hex, .7));
+  r.setProperty('--msn-tx', C(hex, -.35));
+}
+function msnMudarCor(hex) { if (!msnHexOk(hex)) return; var p = msnPrefs(); p.cor = hex; msnSalvarPrefs(p); msnAplicarCor(hex); msnRender(); }
+function msnFmt() { var f = msnPrefs().fmt || {}; return { f: f.f || 'Tahoma', c: msnHexOk(f.c) ? f.c : '#000000', b: !!f.b, i: !!f.i }; }
+function msnMudarFmt(campo, valor) { var p = msnPrefs(); p.fmt = msnFmt(); p.fmt[campo] = valor; msnSalvarPrefs(p); MSN.abertas.forEach(msnAplicarFmtEntrada); document.querySelectorAll('.msn-fontes').forEach(function(el) { el.innerHTML = msnFontesHtml(el.dataset.conv); }); }
+function msnEstiloFmt(f) {
+  if (!f) return '';
+  var fonte = MSN_FONTES.some(function(x) { return x[0] === f.f; }) ? f.f : 'Tahoma';
+  return 'font-family:\'' + fonte + '\',Tahoma,sans-serif;' + (msnHexOk(f.c) ? 'color:' + f.c + ';' : '') + (f.b ? 'font-weight:bold;' : '') + (f.i ? 'font-style:italic;' : '');
+}
+function msnAplicarFmtEntrada(conv) { var t = document.getElementById('msn-in-' + conv); if (t) t.setAttribute('style', msnEstiloFmt(msnFmt())); }
+function msnFontesHtml(conv) {
+  var f = msnFmt();
+  return '<div class="msn-fonte-l"><label>Fonte <select onchange="msnMudarFmt(\'f\',this.value)">' + MSN_FONTES.map(function(x) { return '<option value="' + x[0] + '" style="font-family:\'' + x[0] + '\'"' + (f.f === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></label>' +
+    '<button type="button" class="' + (f.b ? 'on' : '') + '" onclick="msnMudarFmt(\'b\',' + !f.b + ')" aria-pressed="' + f.b + '" style="font-weight:bold">N</button>' +
+    '<button type="button" class="' + (f.i ? 'on' : '') + '" onclick="msnMudarFmt(\'i\',' + !f.i + ')" aria-pressed="' + f.i + '" style="font-style:italic">I</button></div>' +
+    '<div class="msn-fonte-c">' + MSN_COR_TXT.map(function(c) { return '<button type="button" class="sw' + (f.c === c ? ' on' : '') + '" style="background:' + c + '" onclick="msnMudarFmt(\'c\',\'' + c + '\')" aria-label="Cor ' + c + '"></button>'; }).join('') +
+    '<input type="color" value="' + f.c + '" onchange="msnMudarFmt(\'c\',this.value)" aria-label="Outra cor" title="Outra cor"></div>' +
+    '<div class="msn-fonte-p" style="' + msnEstiloFmt(f) + '">É assim que suas mensagens vão aparecer.</div>';
+}
+function msnAbrirFontes(conv) {
+  var p = document.getElementById('msn-fo-' + conv); if (!p) return;
+  ['msn-e-', 'msn-g-'].forEach(function(k) { var x = document.getElementById(k + conv); if (x) x.classList.remove('on'); });
+  p.classList.toggle('on'); if (p.classList.contains('on')) p.innerHTML = msnFontesHtml(conv);
+}
+function msnCoresHtml() {
+  var atual = msnPrefs().cor || '#0453D8';
+  return '<div class="msn-cores"><div class="msn-cores-t">🎨 Cor da janela</div><div class="msn-cores-g">' + MSN_CORES.map(function(c) { return '<button type="button" class="sw' + (atual === c[0] ? ' on' : '') + '" style="background:linear-gradient(' + av3dCor(c[0], .45) + ',' + c[0] + ' 55%,' + av3dCor(c[0], -.28) + ')" title="' + c[1] + '" aria-label="' + c[1] + '" onclick="msnMudarCor(\'' + c[0] + '\')"></button>'; }).join('') +
+    '<label class="outra" title="Escolher qualquer cor"><input type="color" value="' + atual + '" onchange="msnMudarCor(this.value)" aria-label="Outra cor">Outra…</label></div></div>';
+}
+function msnAlternarCores() { MSN.coresAbertas = !MSN.coresAbertas; MSN.fotoMenu = false; msnRender(); }
+// foto: a pessoa sobe uma foto (fica em chat/fotos/<login>) ou usa o avatar da Rota da Meta
+function msnAlternarFotoMenu() { MSN.fotoMenu = !MSN.fotoMenu; MSN.coresAbertas = false; msnRender(); }
+function msnFotoMenuHtml() {
+  return '<div class="msn-cores"><div class="msn-cores-t">🖼️ Minha foto</div><div style="display:flex;gap:6px;flex-wrap:wrap">' +
+    '<button type="button" class="msn-btn2" onclick="document.getElementById(\'msn-foto-in\').click()">Escolher foto…</button>' +
+    ((MSN.fotos || {})[MSN.eu] ? '<button type="button" class="msn-btn2" onclick="msnTirarFoto()">Usar o avatar da Rota da Meta</button>' : '') +
+    '<input type="file" id="msn-foto-in" accept="image/*" style="display:none" onchange="msnTrocarFoto(this.files[0]);this.value=\'\'"></div></div>';
+}
+function msnTrocarFoto(file) {
+  if (!file || !/^image\//.test(file.type)) return;
+  msnLerComoDataUrl(file).then(function(d) {
+    var img = new Image();
+    img.onload = function() {
+      var lado = Math.min(img.width, img.height), cv = document.createElement('canvas'); cv.width = 128; cv.height = 128;
+      cv.getContext('2d').drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, 128, 128);
+      var dados = cv.toDataURL('image/jpeg', .85);
+      MSN.fotos = MSN.fotos || {}; MSN.fotos[MSN.eu] = dados; MSN.fotoMenu = false;
+      dbRef('chat/fotos/' + MSN.eu).set(dados); msnRender(); MSN.abertas.forEach(msnRenderTopoJanela);
+    };
+    img.src = d;
+  });
+}
+function msnTirarFoto() { if (MSN.fotos) delete MSN.fotos[MSN.eu]; dbRef('chat/fotos/' + MSN.eu).remove(); MSN.fotoMenu = false; msnRender(); MSN.abertas.forEach(msnRenderTopoJanela); }
 
 // ── janelas de conversa ──
 function msnAbrir(conv) {
@@ -23822,12 +23925,14 @@ function msnCriarJanela(conv) {
       '<div class="msn-dig" id="msn-d-' + conv + '"></div>' +
       '<div class="msn-entrada"><div class="msn-emo" id="msn-e-' + conv + '">' + MSN_EMOS.map(function(e) { return '<button type="button" onclick="msnEmo(\'' + conv + '\',\'' + e + '\')" aria-label="' + e + '">' + e + '</button>'; }).join('') + '</div>' +
         '<div class="msn-figs" id="msn-g-' + conv + '"></div>' +
-        '<div class="msn-fmt"><button type="button" onclick="' + emoT + '" title="Emoticons">😀▾</button>' + (conv === 'EQUIPE' ? '' : '<button type="button" onclick="msnTremer(\'' + conv + '\')" title="Chamar atenção">📳</button>') + '<button type="button" onclick="msnFigAbrirPainel(\'' + conv + '\')" title="Figurinhas">🖼️</button></div>' +
+        '<div class="msn-figs msn-fontes" id="msn-fo-' + conv + '" data-conv="' + conv + '"></div>' +
+        '<div class="msn-fmt"><button type="button" onclick="msnAbrirFontes(\'' + conv + '\')" title="Fonte e cor das suas mensagens" style="font:bold 14px Georgia,serif;text-decoration:underline">A</button><button type="button" onclick="' + emoT + '" title="Emoticons">😀▾</button>' + (conv === 'EQUIPE' ? '' : '<button type="button" onclick="msnTremer(\'' + conv + '\')" title="Chamar atenção">📳</button>') + '<button type="button" onclick="msnFigAbrirPainel(\'' + conv + '\')" title="Figurinhas">🖼️</button></div>' +
         '<div class="msn-linha"><textarea id="msn-in-' + conv + '" maxlength="1000" aria-label="Mensagem" onkeydown="msnTecla(event,\'' + conv + '\')" oninput="msnDigitando(\'' + conv + '\')"></textarea>' +
         '<button type="button" onclick="msnEnviar(\'' + conv + '\')">Enviar</button></div></div>' +
     '</div><div class="msn-dir" id="msn-dps-' + conv + '"></div></div>' +
     '<div class="msn-sb" id="msn-sb-' + conv + '"></div>';
   document.getElementById('msn-wins').appendChild(w);
+  msnAplicarFmtEntrada(conv);
   w.addEventListener('dragover', function(e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) { e.preventDefault(); w.classList.add('solta'); } });
   w.addEventListener('dragleave', function(e) { if (!w.contains(e.relatedTarget)) w.classList.remove('solta'); });
   w.addEventListener('drop', function(e) { w.classList.remove('solta'); if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { e.preventDefault(); msnAnexarArquivos(conv, e.dataTransfer.files); } });
@@ -23878,7 +23983,7 @@ function msnRenderMsgs(conv) {
   lista.forEach(function(m) {
     var d = msnDia(m.ts); if (d !== dia) { dia = d; h += '<div class="msn-dia">' + d + '</div>'; }
     if (m.tipo === 'tremer') { h += '<div class="msn-sis">📳 ' + (m.de === MSN.eu ? 'Você chamou a atenção' : msnEsc(msnNome(m.de)) + ' chamou sua atenção!') + ' <span style="color:#9AA5B1;font-weight:400">' + msnHora(m.ts) + '</span></div>'; return; }
-    h += '<div class="msn-msg' + (m.de === MSN.eu ? ' eu' : '') + '"><div class="msn-quem">' + msnEsc(m.de === MSN.eu ? 'Você' : msnNome(m.de)) + (m.tipo === 'anexo' || m.tipo === 'figurinha' ? ' enviou' : ' diz') + ' <span style="color:#9AA5B1">(' + msnHora(m.ts) + ')</span>:</div><div class="msn-txt">' + (m.tipo === 'figurinha' ? msnFigHtml(m.fig) : m.tipo === 'anexo' && m.anexo ? msnAnexoHtml(m.anexo) : msnEsc(m.txt)) + '</div></div>';
+    h += '<div class="msn-msg' + (m.de === MSN.eu ? ' eu' : '') + '"><div class="msn-quem">' + msnEsc(m.de === MSN.eu ? 'Você' : msnNome(m.de)) + (m.tipo === 'anexo' || m.tipo === 'figurinha' ? ' enviou' : ' diz') + ' <span style="color:#9AA5B1">(' + msnHora(m.ts) + ')</span>:</div><div class="msn-txt" style="' + (m.tipo === 'msg' || !m.tipo ? msnEstiloFmt(m.fmt) : '') + '">' + (m.tipo === 'figurinha' ? msnFigHtml(m.fig) : m.tipo === 'anexo' && m.anexo ? msnAnexoHtml(m.anexo) : msnEsc(m.txt)) + '</div></div>';
   });
   box.innerHTML = h;
   if (perto || lista.length && lista[lista.length - 1].de === MSN.eu) box.scrollTop = box.scrollHeight;
@@ -23912,7 +24017,8 @@ function msnEnviar(conv) {
   var t = document.getElementById('msn-in-' + conv); if (!t) return;
   var txt = t.value.replace(/\s+$/, ''); if (!txt.trim()) return;
   t.value = ''; document.getElementById('msn-e-' + conv).classList.remove('on');
-  msnGravar(conv, { de: MSN.eu, txt: txt.slice(0, 1000), ts: Date.now(), tipo: 'msg' });
+  var fo = document.getElementById('msn-fo-' + conv); if (fo) fo.classList.remove('on');
+  msnGravar(conv, { de: MSN.eu, txt: txt.slice(0, 1000), ts: Date.now(), tipo: 'msg', fmt: msnFmt() });
 }
 // ── anexos: o arquivo fica em chat/anexos/<id>; a mensagem leva só nome, tamanho e miniatura ──
 var MSN_ANX_MAX = 5 * 1024 * 1024;
