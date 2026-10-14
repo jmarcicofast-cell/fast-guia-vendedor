@@ -21458,7 +21458,10 @@ function abNaGrade(r){
 }
 function abEtapa(r){
   var e = abEtapaBase(r);
-  return e === 'conferido' && abNaGrade(r) ? 'grade' : e;
+  if (e === 'conferido' && abNaGrade(r)) return 'grade';
+  // pedidos que já estavam em Aguardando DT antes deste controle (sem registro de envio) contam como na grade
+  if (e === 'tratar' && abNaGrade(r)){ var p = abPedidoDe(r); if (p && !p.gradeLog) return 'grade'; }
+  return e;
 }
 /* etapa do chamado = etapa do item mais atrasado */
 function abEtapaBase(r){
@@ -21908,7 +21911,17 @@ function abDispHtml(dcItem, cod){
 }
 
 /* ── Histórico da grade: quando foi para Aguardando DT, quantas vezes voltou, quanto tempo a Placo está levando ── */
-function abGradeEventos(p){ var g = (p && p.gradeLog) || {}; return Object.keys(g).map(function(k){ var e = g[k] || {}; e.id = k; return e; }).filter(function(e){ return e.em; }).sort(function(a, b){ return a.em - b.em; }); }
+function abGradeEventos(p){
+  var g = (p && p.gradeLog) || {};
+  var ev = Object.keys(g).map(function(k){ var e = g[k] || {}; e.id = k; return e; }).filter(function(e){ return e.em; }).sort(function(a, b){ return a.em - b.em; });
+  // já estava em Aguardando DT antes deste controle: usa a data em que o status mudou
+  if (!ev.some(function(e){ return e.tipo === 'enviado'; }) && p && (p.status === 'aguardando-dt' || ev.length) && p.dataStatus){
+    var d = String(p.dataStatus).split('-'); var em = new Date(+d[0], +d[1] - 1, +d[2]).getTime();
+    if (ev.length) em = Math.min(em, ev[0].em);
+    if (em) ev.unshift({ tipo: 'enviado', em: em, semHora: true, por: p.vendedor });
+  }
+  return ev;
+}
 function abDur(ms){ ms = Math.max(0, ms); var h = Math.floor(ms / 3600000), d = Math.floor(h / 24); return d ? d + 'd ' + (h % 24) + 'h' : h ? h + 'h ' + Math.floor(ms / 60000 % 60) + 'min' : Math.floor(ms / 60000) + 'min'; }
 function abGradeInfo(p){
   var ev = abGradeEventos(p); if (!ev.length) return null;
@@ -21934,9 +21947,9 @@ function abGradeHtml(r, ed){
   if (!gi && abEtapa(r) !== 'grade') return '';
   var rot = { enviado:'🗓️ Enviado para a grade', voltou:'↩️ Não seguiu — voltou para a grade', saiu:'✅ Saiu da grade' };
   var tl = gi ? gi.ev.map(function(e, n){
-    var txt = rot[e.tipo] || e.tipo;
+    var txt = (rot[e.tipo] || e.tipo) + (e.semHora ? ' <span style="color:#999;">(data do status, sem hora)</span>' : '');
     if (e.tipo === 'saiu' && e.para) txt += ' (' + (typeof STATUS_LABEL !== 'undefined' && STATUS_LABEL[e.para] ? STATUS_LABEL[e.para] : e.para) + ')';
-    return '<div style="display:flex;gap:8px;font-size:11.5px;padding:3px 0;border-top:' + (n ? '1px dashed #F0D2DE' : 'none') + ';"><span style="color:#888;min-width:82px;font-family:ui-monospace,monospace;">' + abFmtDH(e.em) + '</span><span style="flex:1;">' + txt + (e.motivo ? ' <span style="color:#888;">— ' + abEsc(e.motivo) + '</span>' : '') + '</span><span style="color:#aaa;">' + abEsc(abNomeVend(e.por)) + '</span></div>';
+    return '<div style="display:flex;gap:8px;font-size:11.5px;padding:3px 0;border-top:' + (n ? '1px dashed #F0D2DE' : 'none') + ';"><span style="color:#888;min-width:82px;font-family:ui-monospace,monospace;">' + (e.semHora ? new Date(e.em).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }) : abFmtDH(e.em)) + '</span><span style="flex:1;">' + txt + (e.motivo ? ' <span style="color:#888;">— ' + abEsc(e.motivo) + '</span>' : '') + '</span><span style="color:#aaa;">' + abEsc(abNomeVend(e.por)) + '</span></div>';
   }).join('') : '<div style="font-size:11.5px;color:#999;">Sem registro de envio (pedido marcado antes deste controle).</div>';
   var resumo = gi ? '<b>' + gi.tent + 'ª tentativa</b> · ' + (gi.naGrade ? 'na grade há <b>' + abDur(gi.dur) + '</b>' : 'levou <b>' + abDur(gi.dur) + '</b> na grade') + ' · 1º envio ' + abFmtDH(gi.ini) : '';
   return '<div style="background:#FDF2F6;border:1.5px solid #F0C2D4;border-radius:9px;padding:10px 12px;margin-bottom:14px;">' +
