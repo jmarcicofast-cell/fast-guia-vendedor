@@ -21804,31 +21804,36 @@ var AB_CONF = [
   { k:'endereco', t:'Endereço' },
   { k:'margem',   t:'Margem autorizada' },
   { k:'frete',    t:'Frete' },
-  { k:'planta',   t:'Planta', op:['MDC','FDS','DCS MDC','DCS FDS','Outros'], outro:'Outros' },
+  { k:'planta',   t:'Planta', op:['MDC','FDS','DCS MDC','DCS FDS','Outros'], outro:'Outros', ph:'Qual planta?' },
   { k:'veiculo',  t:'Carreta ou truck', op:['Carreta','Truck'] },
   { k:'ordem',    t:'Venda ordem', op:['Não','Sim — CIF','Sim — FOB'] },
   { k:'sabado',   t:'Cliente recebe no sábado?', op:['Sim','Não'] },
   { k:'entrega',  t:'Entrega ou retira', op:['Entrega','Retira'] },
-  { k:'mogi',     t:'Compõe em Mogi?', op:['Sim','Não'] },
+  { k:'mogi',     t:'Compõe em alguma DCS?', op:['Sim','Não'], outro:'Sim', ph:'Qual DCS?' },
   { k:'nf',       t:'Nota fiscal ou cupom', op:['Nota fiscal','Cupom'] }
 ];
-function abConfFeito(c){ return !!(c && (c.ok || (c.v && (c.v !== 'Outros' || (c.txt || '').trim())))); }
+function abConfFeito(c, k){
+  if (!c) return false; if (c.ok) return true; if (!c.v) return false;
+  var def = AB_CONF.filter(function(x){ return x.k === k; })[0];
+  return !(def && def.outro === c.v && !(c.txt || '').trim());
+}
 function abConfOutroTxt(id, k, txt){
   if (!abPodeEditar()) return;
   var r = AB.itens[id]; if (!r) return;
-  var novo = { v: 'Outros', txt: String(txt || '').trim(), por: currentUser, em: Date.now() }, upd = {};
+  var def = AB_CONF.filter(function(x){ return x.k === k; })[0];
+  var novo = { v: def.outro, txt: String(txt || '').trim(), por: currentUser, em: Date.now() }, upd = {};
   upd['conf/' + k] = novo;
   r.conf = r.conf || {}; r.conf[k] = novo;
   abRenderPopup();
   abAtualizar(id, upd);
 }
-function abConfProg(r){ var c = r.conf || {}, n = 0; AB_CONF.forEach(function(x){ if (abConfFeito(c[x.k])) n++; }); return { feitos:n, total:AB_CONF.length }; }
+function abConfProg(r){ var c = r.conf || {}, n = 0; AB_CONF.forEach(function(x){ if (abConfFeito(c[x.k], x.k)) n++; }); return { feitos:n, total:AB_CONF.length }; }
 function abConfSet(id, k, val){
   if (!abPodeEditar()) return;
   var r = AB.itens[id]; if (!r) return;
   var atual = (r.conf || {})[k], upd = {}, def = AB_CONF.filter(function(x){ return x.k === k; })[0];
   var novo = def.op ? (atual && atual.v === val ? null : { v: val, por: currentUser, em: Date.now() })
-                    : (abConfFeito(atual) ? null : { ok: true, por: currentUser, em: Date.now() });
+                    : (abConfFeito(atual, k) ? null : { ok: true, por: currentUser, em: Date.now() });
   upd['conf/' + k] = novo;
   // mostra na hora, sem esperar o Firebase
   r.conf = r.conf || {}; if (novo) r.conf[k] = novo; else delete r.conf[k];
@@ -21848,11 +21853,11 @@ function abConfHtml(r, ed){
       '<tr style="font-weight:800;border-top:1px solid #E2E0D8;"><td colspan="3">Total do pedido</td><td style="text-align:right;">' + brl(p.vTotal || tot) + '</td></tr></table>';
   }
   var linhas = AB_CONF.map(function(x){
-    var v = c[x.k], feito = abConfFeito(v), quem = feito ? abNomeVend(v.por) + (v.em ? ' · ' + new Date(v.em).toLocaleDateString('pt-BR') : '') : '';
+    var v = c[x.k], feito = abConfFeito(v, x.k), quem = feito ? abNomeVend(v.por) + (v.em ? ' · ' + new Date(v.em).toLocaleDateString('pt-BR') : '') : '';
     var ctrl;
     if (x.op){
       ctrl = x.op.map(function(o){ var on = v && v.v === o; return '<button type="button"' + (ed ? ' onclick="abConfSet(\'' + r.id + '\',\'' + x.k + '\',\'' + o + '\')"' : ' disabled') + ' style="border:1.5px solid ' + (on ? '#2E7D32' : '#D9D6CE') + ';background:' + (on ? '#2E7D32' : '#fff') + ';color:' + (on ? '#fff' : '#555') + ';border-radius:14px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:' + (ed ? 'pointer' : 'default') + ';">' + abEsc(o) + '</button>'; }).join(' ') +
-        (x.outro && v && v.v === x.outro ? ' <input type="text" value="' + abEsc(v.txt || '') + '" placeholder="Qual planta?" onchange="abConfOutroTxt(\'' + r.id + '\',\'' + x.k + '\',this.value)"' + (ed ? '' : ' disabled') + ' style="width:140px;padding:3px 8px;border:1.5px solid ' + ((v.txt || '').trim() ? '#2E7D32' : '#F0C780') + ';border-radius:14px;font-size:11.5px;">' : '');
+        (x.outro && v && v.v === x.outro ? ' <input type="text" value="' + abEsc(v.txt || '') + '" placeholder="' + abEsc(x.ph || '') + '" onchange="abConfOutroTxt(\'' + r.id + '\',\'' + x.k + '\',this.value)"' + (ed ? '' : ' disabled') + ' style="width:140px;padding:3px 8px;border:1.5px solid ' + ((v.txt || '').trim() ? '#2E7D32' : '#F0C780') + ';border-radius:14px;font-size:11.5px;">' : '');
     } else {
       ctrl = '<button type="button"' + (ed ? ' onclick="abConfSet(\'' + r.id + '\',\'' + x.k + '\')"' : ' disabled') + ' style="border:1.5px solid ' + (feito ? '#2E7D32' : '#D9D6CE') + ';background:' + (feito ? '#2E7D32' : '#fff') + ';color:' + (feito ? '#fff' : '#555') + ';border-radius:14px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:' + (ed ? 'pointer' : 'default') + ';">' + (feito ? '✓ Conferido' : 'Conferir') + '</button>';
     }
