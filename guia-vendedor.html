@@ -5148,6 +5148,12 @@ td.p-tie { color:var(--sp-muted); }
   .ca-t tr:last-child td{ border-bottom:none; }
   .ca-t .r{ text-align:right; font-variant-numeric:tabular-nums; }
   .ca-t tr.sel td{ background:#FFF4F4; }
+  .ca-t tr.ca-ok td{ background:#E8F5E9; }
+  .ca-t tr.ca-ok td:first-child{ box-shadow:inset 3px 0 0 #2E7D32; }
+  .ca-flag{ display:inline-flex; align-items:center; gap:3px; font-size:11px; padding:2px 7px; border-radius:10px; border:1px solid #D9D6CE; background:#fff; color:#888; cursor:pointer; margin:1px 2px; white-space:nowrap; }
+  .ca-flag:hover{ border-color:#A5D6A7; color:#1B5E20; }
+  .ca-flag.on{ background:#2E7D32; border-color:#2E7D32; color:#fff; }
+  .ca-flag-tudo{ font-size:11px; padding:1px 7px; border-radius:10px; background:#2E7D32; color:#fff; margin-left:6px; }
   .ca-sub{ display:block; font-size:11px; color:#999; }
   .ca-cod{ font-family:ui-monospace,monospace; font-size:11px; font-weight:700; color:#555; background:#F1EFE8; padding:1px 5px; border-radius:4px; white-space:nowrap; }
   .ca-fab{ display:inline-block; font-family:ui-monospace,monospace; font-size:10px; color:#888; border:1px solid #E2E0D8; border-radius:3px; padding:0 4px; margin-right:3px; }
@@ -5417,7 +5423,7 @@ function caLigar(){
   CA.ligado = true; CA.ligadoFb = !!firebaseOK;
   dbRef('centralAbast').on('value', function(snap){
     var v = snap.val() || {};
-    CA.dados = { vendas: v.vendas || {}, abast: v.abast || {}, guia: v.guia || {}, config: v.config || null, fabPorCod: v.fabPorCod || {}, itensExtra: v.itensExtra || {} };
+    CA.dados = { vendas: v.vendas || {}, abast: v.abast || {}, guia: v.guia || {}, config: v.config || null, fabPorCod: v.fabPorCod || {}, itensExtra: v.itensExtra || {}, flags: v.flags || {} };
     Object.keys(CA.dados.abast).forEach(function(id){ var a = CA.dados.abast[id]; if (a && a.fabricante) a.fabricante = caFabNorm(a.fabricante); });
     Object.keys(CA.dados.fabPorCod).forEach(function(c){ CA.dados.fabPorCod[c] = caFabNorm(CA.dados.fabPorCod[c]); });
     if (CA.dados.config && CA.dados.config.fabricantes){
@@ -5956,18 +5962,20 @@ function caCardVenda(v, cb){
   var h = '<div class="ca-card"><div class="ca-card-topo" data-ca="toggle" data-k="' + caEsc(v.key) + '">' +
     '<div style="min-width:0;"><div class="ca-card-tit"><span class="ch">' + caEsc(v.chamado) + '</span><span class="cl">' + caEsc(v.cliente || 'Cliente não informado') + '</span>' +
     (caMostraUnid() ? '<span class="ca-sit ' + (caUnidNome(v.unidade) === CA_UNIDADE_RIO ? 'neutro' : 'manual') + '">' + caEsc(caUnidNome(v.unidade)) + '</span>' : '') + (v.origem === 'guia' ? '<span class="ca-sit guia">via ABASTECER</span>' : '<span class="ca-sit neutro">manual</span>') +
-    (v.status !== 'aberto' ? '<span class="ca-sit neutro">' + CA_ST_V[v.status] + '</span>' : '') + '</div>' +
+    (v.status !== 'aberto' ? '<span class="ca-sit neutro">' + CA_ST_V[v.status] + '</span>' : '') +
+    (function(){ var n = cb.itens.filter(function(it){ return caFlagOk(v.key, it.c); }).length; return !n ? '' : n === cb.itens.length ? '<span class="ca-flag-tudo">✓ tudo conferido</span>' : '<span class="ca-flag-tudo" style="background:#A5D6A7;color:#1B5E20;">' + n + '/' + cb.itens.length + ' conferidos</span>'; })() + '</div>' +
     '<div class="ca-meta">' + (caDH(v.criadoEm) ? '<span title="' + (v.origem === 'guia' ? 'Quando o vendedor mandou para ABASTECER' : 'Quando o pedido foi lançado na Central') + '">Registrado <b>' + caDH(v.criadoEm) + '</b></span>' : '') + '<span>DCS <b>' + caEsc(v.dc || 'a definir') + '</b></span><span>Prazo <b class="' + (urg ? 'ca-atrasado' : '') + '">' + caDA(v.data) + '</b></span><span>' + v.itens.length + ' ' + (v.itens.length === 1 ? 'item' : 'itens') + '</span>' + (v.vendedor ? '<span>Vendedor <b>' + caEsc(v.vendedor) + '</b></span>' : '') + '</div></div>' +
     '<div class="ca-lado">' + (semDc ? '<span class="ca-sit desc">Definir DCS e prazo</span>' : '<span class="ca-sit ' + cb.estado + '">' + caRotuloCob(cb) + (cb.atraso ? ' · atraso' : '') + '</span>') +
     '<div class="ca-barra"><i class="b1" style="width:' + p1 + '%"></i><i class="b2" style="width:' + p2 + '%"></i></div>' +
     '<span style="font-size:11.5px;color:#888;">' + (cb.falta > 0 ? 'falta ' + caN(cb.falta) + ' un.' : !cb.tot ? 'nada a abastecer' : cb.estado === 'nadc' ? 'tudo na DCS' : 'aguardando chegar: ' + cb.chamados.filter(function(a){ return a.status !== 'na_dc'; }).map(function(a){ return caEsc(a.chamado); }).join(', ')) + '</span></div></div>';
   h += caTarjaVincular(v, cb);
   if (aberto){
-    h += '<div class="ca-card-corpo"><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Código</th><th>Material</th><th class="r">Pedido</th><th class="r">Com chamado</th><th class="r">Falta</th><th>Chamados de abastecimento</th></tr></thead><tbody>' +
+    h += '<div class="ca-card-corpo"><div class="ca-scroll"><table class="ca-t"><thead><tr><th>Código</th><th>Material</th><th class="r">Pedido</th><th class="r">Com chamado</th><th class="r">Falta</th><th>Chamados de abastecimento</th><th>Conferência</th></tr></thead><tbody>' +
       cb.itens.map(function(it){
-        return '<tr' + (it.semNec ? ' style="opacity:.55;"' : '') + '><td>' + caCodHtml(it.c) + '</td><td>' + caEsc(caNome(it.c) || 'Código fora da base') + (it.semNec ? '<span class="ca-sub">' + caTxtSemNec(it.c) + '</span>' : '<span class="ca-sub">' + caFabs(it.c) + '</span>') + '</td>' +
+        var ok = caFlagOk(v.key, it.c);
+        return '<tr' + (ok ? ' class="ca-ok"' : '') + (it.semNec && !ok ? ' style="opacity:.55;"' : '') + '><td>' + caCodHtml(it.c) + '</td><td>' + caEsc(caNome(it.c) || 'Código fora da base') + (it.semNec ? '<span class="ca-sub">' + caTxtSemNec(it.c) + '</span>' : '<span class="ca-sub">' + caFabs(it.c) + '</span>') + '</td>' +
           '<td class="r">' + caN(it.q) + '</td><td class="r">' + caN(Math.min(it.cob, it.q)) + '</td><td class="r">' + (it.falta ? '<b class="ca-atrasado">' + caN(it.falta) + '</b>' : '—') + '</td>' +
-          '<td>' + (it.al.map(function(x){ var late = x.a.status !== 'na_dc' && x.a.previsao && v.data && x.a.previsao > v.data; return '<button class="ca-chip' + (late ? ' atraso' : '') + '" data-ca="abrir-abast" data-id="' + caEsc(x.a.id) + '" title="' + caEsc(CA_ST_A[x.a.status] || '') + '">' + caEsc(x.a.chamado) + ' · ' + caN(x.q) + ' · ' + (x.a.status === 'na_dc' ? 'na DCS' : caD(x.a.previsao)) + '</button>'; }).join('') || (it.falta ? '' : '<span style="color:#bbb;">—</span>')) + (it.falta && v.status === 'aberto' && v.dc ? caSaldoChips(v.dc, it.c, 'vincular', ' data-v="' + caEsc(v.key) + '" data-c="' + caEsc(it.c) + '" data-q="' + it.falta + '"') : '') + '</td></tr>';
+          '<td>' + (it.al.map(function(x){ var late = x.a.status !== 'na_dc' && x.a.previsao && v.data && x.a.previsao > v.data; return '<button class="ca-chip' + (late ? ' atraso' : '') + '" data-ca="abrir-abast" data-id="' + caEsc(x.a.id) + '" title="' + caEsc(CA_ST_A[x.a.status] || '') + '">' + caEsc(x.a.chamado) + ' · ' + caN(x.q) + ' · ' + (x.a.status === 'na_dc' ? 'na DCS' : caD(x.a.previsao)) + '</button>'; }).join('') || (it.falta ? '' : '<span style="color:#bbb;">—</span>')) + (it.falta && v.status === 'aberto' && v.dc ? caSaldoChips(v.dc, it.c, 'vincular', ' data-v="' + caEsc(v.key) + '" data-c="' + caEsc(it.c) + '" data-q="' + it.falta + '"') : '') + '</td><td>' + caFlagBtns(v.key, it.c) + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
       (v.obs ? '<div style="padding:6px 12px 0;font-size:12px;"><span style="color:#999;">Obs.:</span> ' + caEsc(v.obs) + '</div>' : '') +
       '<div class="ca-card-acoes"><button class="ca-btn sm" data-ca="abrir-venda" data-k="' + caEsc(v.key) + '">' + (v.origem === 'guia' ? 'DCS, prazo e itens' : 'Editar pedido') + '</button>' +
@@ -6264,6 +6272,25 @@ function caSalvarVenda(){
     .catch(function(e){ btn.disabled = false; btn.textContent = 'Salvar pedido'; erro.textContent = caErro(e); });
 }
 /* sem Firebase o dbRef grava só no aparelho e não avisa o listener: reflete na tela */
+/* flags de conferência por item: verificado (ver) e reservado (res) */
+function caFlagKey(k){ return String(k || '').replace(/[.#$\[\]\/]/g, '_'); }
+function caFlag(vkey, cod){ var f = (CA.dados.flags || {})[caFlagKey(vkey)]; return (f && f[caFlagKey(cod)]) || {}; }
+function caFlagBtns(vkey, cod){
+  var f = caFlag(vkey, cod), h = '';
+  [['ver','✓ Verificado'],['res','📌 Reservado']].forEach(function(t){
+    var on = f[t[0]], tit = on ? (t[1].slice(2) + ' por ' + caNomeAutor(on.por) + (on.em ? ' em ' + caDH(on.em) : '') + ' — clique para desmarcar') : 'Marcar como ' + t[1].slice(2).toLowerCase();
+    h += '<button class="ca-flag' + (on ? ' on' : '') + '" data-ca="flag" data-k="' + caEsc(vkey) + '" data-c="' + caEsc(cod) + '" data-f="' + t[0] + '" title="' + caEsc(tit) + '">' + t[1] + '</button>';
+  });
+  return h;
+}
+function caFlagOk(vkey, cod){ var f = caFlag(vkey, cod); return !!(f.ver || f.res); }
+function caFlagToggle(vkey, cod, tipo){
+  var path = 'centralAbast/flags/' + caFlagKey(vkey) + '/' + caFlagKey(cod) + '/' + tipo;
+  var on = caFlag(vkey, cod)[tipo], val = on ? null : { por: caAutor(), em: Date.now() };
+  dbRef(path).set(val).then(function(){
+    if (!firebaseOK){ var F = CA.dados.flags = CA.dados.flags || {}, a = F[caFlagKey(vkey)] = F[caFlagKey(vkey)] || {}, b = a[caFlagKey(cod)] = a[caFlagKey(cod)] || {}; if (val) b[tipo] = val; else delete b[tipo]; caRender(); }
+  }).catch(function(e){ caToast('Não consegui salvar: ' + (e && e.message ? e.message : e)); });
+}
 function caLocal(col, id, body){ CA.dados[col] = CA.dados[col] || {}; if (body) CA.dados[col][id] = body; else delete CA.dados[col][id]; CA.carregado = true; caRender(); }
 
 /* pedido da aba Pedidos: DCS, prazo e quais itens precisam de abastecimento */
@@ -6428,6 +6455,7 @@ document.addEventListener('click', function(ev){
   if (caEhDirecao() && CA_ACOES_GRAVAM[act]){ ev.preventDefault(); caToast('Acesso da direção é só de leitura.'); return; }
   if (t.tagName === 'INPUT' && act !== 'sel' && act !== 'g-item' && act !== 'v-vinc-sel' && act !== 'psel' && act !== 'psel-todos') return;
   if (act === 'aba'){ CA.aba = t.dataset.aba; try { localStorage.setItem('fgv_ca_aba', CA.aba); } catch(e){} caRender(); }
+  else if (act === 'flag'){ ev.stopPropagation(); caFlagToggle(t.dataset.k, t.dataset.c, t.dataset.f); }
   else if (act === 'toggle'){ var k = t.dataset.k; CA.aberto[k] = !CA.aberto[k]; caRender(); }
   else if (act === 'nova-venda') caModalVenda();
   else if (act === 'novo-abast') caModalAbast();
