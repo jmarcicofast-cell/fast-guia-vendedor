@@ -12080,6 +12080,7 @@ function renderPedidos(pedidosList, isGestora) {
   _pedIsGestora = isGestora;
   _pedTodosGeral = ativos.slice();
   _cliPedFonte = _pedTodosGeral; cliPnInvalidar();
+  if (typeof abAutoAgendar === 'function') { abGarantirListener(); abAutoAgendar(); }
   renderPedidosFiltrados();
   renderBaseClientes();
   renderResumoClientesPedidos();
@@ -21383,6 +21384,7 @@ function abPedidos(){
       dbRef('pedidos/' + vn).on('value', function(snap){
         var v = snap.val() || {};
         AB.pedPorVend[vn] = Object.keys(v).map(function(k){ var p = v[k] || {}; if (!p.id) p.id = k; if (!p.vendedor) p.vendedor = vn; return p; }).filter(function(p){ return !p.excluido; });
+        abAutoAgendar();
       });
     });
   }
@@ -21493,11 +21495,64 @@ function abGarantirListener(){
   AB.ligado = true; AB.ligadoFb = !!firebaseOK;
   dbRef('abastecimento').on('value', function(snap){
     AB.itens = snap.val() || {};
+    AB.carregado = true;
     abMigrarLegado();
+    abAutoAgendar();
     abRequestRender();
     abAtualizarCelulasPedidos();
     if (typeof caPedirRender === 'function'){ caPedirRender(); caAtualizarCelulasPedidos(); }
   });
+}
+
+/* ── Todo pedido aberto entra sozinho em "Chamado para tratar" (sem tipo: ABASTECER/RESERVAR é passo posterior) ── */
+var AB_ST_FECHADOS = ['entregue', 'cancelado', 'faturado', 'aguardando-fat', 'em-rota'];
+function abPedidoAberto(p){ return !!p && !p.excluido && AB_ST_FECHADOS.indexOf(p.status || '') === -1; }
+function abSemTipo(r){ return !!r && !r.tipo && !Object.keys(r.itens || {}).some(function(k){ return r.itens[k] && r.itens[k].tipo; }); }
+function abAutoKey(p){ return String(p.vendedor + '_' + p.id).replace(/[.#$\[\]\/]/g, '_'); }
+function abAutoAgendar(){ clearTimeout(AB.autoT); AB.autoT = setTimeout(abAutoSync, 1500); }
+function abAutoItens(p){
+  var out = [];
+  (p.itens || []).forEach(function(it){ if (it && (it.material || '').trim()) out.push({ material: it.material.trim(), codigo: it.codigo || '', qtd: String(it.qtd || '') }); });
+  return out;
+}
+function abAutoSync(){
+  if (!AB.carregado || !firebaseOK || !db || !currentUser) return;
+  var lista = abVeTudo() ? abPedidos() : (_pedTodosGeral || []);
+  AB.autoFeito = AB.autoFeito || {};
+  lista.forEach(function(p){
+    if (!p || !p.id || !p.vendedor || !abPedidoAberto(p)) return;
+    if (vendedores[p.vendedor] && vendedores[p.vendedor].tipo === 'administrativo') return;
+    var key = abAutoKey(p), regs = abRegistrosDoPedido(p);
+    // já está no abastecimento: só acrescenta itens novos do pedido no chamado automático ainda para tratar
+    var auto = regs.filter(function(r){ return r.auto && abEtapa(r) === 'tratar'; })[0];
+    if (auto){
+      var jaTem = abItensDe(auto).map(function(i){ return i.material; }), base = Object.keys(auto.itens || {}).length, upd = {}, n = 0;
+      abAutoItens(p).forEach(function(m){ if (jaTem.indexOf(m.material) === -1){ upd['itens/it_' + Date.now() + '_' + n] = { material: m.material, codigo: m.codigo, qtd: m.qtd, ordem: base + n }; n++; } });
+      if (n) db.ref('abastecimento/' + auto.id).update(upd).catch(function(){});
+      return;
+    }
+    if (regs.length || AB.autoFeito[key]) return;
+    var mats = abAutoItens(p); if (!mats.length) return;
+    AB.autoFeito[key] = true;
+    // marcador garante que entra uma vez só (mesmo com várias pessoas logadas) e não volta se o ADM excluir
+    db.ref('abastecimentoAuto/' + key).transaction(function(cur){ return cur ? undefined : { em: Date.now(), por: currentUser }; }).then(function(res){
+      if (!res.committed) return;
+      var hoje = abHoje(), itens = {};
+      mats.forEach(function(m, i){ itens['it_' + i] = { material: m.material, codigo: m.codigo, qtd: m.qtd, ordem: i }; });
+      var hist = { tratar: { por: 'auto', em: hoje } };
+      return db.ref('abastecimento/auto_' + key).set({
+        vendedor: p.vendedor, pedidoId: p.id, chamado: p.chamado || '', cliente: p.empresa || p.cliente || '', uf: p.estado || '',
+        porItem: true, auto: true, etapa: 'tratar', etapaEm: hoje, etapaPor: 'auto', etapaHist: hist,
+        dc: '', prazo: '', previsao: '', respTratamento: '', responsavel: '', numChamadoAbast: '', obs: '',
+        criadoPor: p.vendedor, criadoEm: Date.now(), itens: itens
+      });
+    }).catch(function(e){ AB.autoFeito[key] = false; });
+  });
+}
+/* vendedor/ADM define ABASTECER ou RESERVAR num chamado que entrou sem tipo */
+function abDefinirTipo(id, tipo){
+  var r = AB.itens[id]; if (!r || !AB_TIPOS[tipo]) return;
+  abAtualizar(id, { tipo: tipo });
 }
 
 function abInit(){
@@ -21520,6 +21575,11 @@ function abCelulaPedidoHtml(p){
 function abCelulaPedidoInner(p){
   if (p.status === 'cancelado') return '<span style="color:#ccc;font-size:12px;">—</span>';
   var regs = abRegistrosDoPedido(p);
+  var semTipo = regs.filter(function(r){ return abSemTipo(r); })[0];
+  if (semTipo){
+    return '<div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;"><button type="button" onclick="event.stopPropagation();abAbrirItens(\'' + semTipo.id + '\')" title="Pedido aberto — já está em Chamado para tratar (clique para ver os itens)" style="border:1.5px solid #7A4A00;background:#FFF3E0;color:#7A4A00;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">📝 Para tratar</button>' +
+      ['abastecer','reservar'].map(function(tipo){ var t = AB_TIPOS[tipo]; return '<button type="button" onclick="event.stopPropagation();abDefinirTipo(\'' + semTipo.id + '\',\'' + tipo + '\')" title="Definir este pedido como ' + t.t.toUpperCase() + '" style="border:1.5px dashed ' + t.cor + ';background:#fff;color:' + t.cor + ';border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">' + t.ic + ' ' + t.t + '</button>'; }).join('') + '</div>';
+  }
   return '<div style="display:flex;gap:5px;flex-wrap:wrap;">' + ['abastecer','reservar'].map(function(tipo){
     var t = AB_TIPOS[tipo];
     var rec = regs.filter(function(r){ return abTipo(r) === tipo; })[0];
@@ -21543,6 +21603,8 @@ function abRapido(vend, pid, tipo){
   abGarantirListener();
   var p = (_pedTodosGeral || []).filter(function(x){ return x.id === pid && x.vendedor === vend; })[0];
   if (!p) return;
+  var semTipo = abRegistrosDoPedido(p).filter(function(r){ return abSemTipo(r); })[0];
+  if (semTipo){ abDefinirTipo(semTipo.id, tipo); return; }
   if (!p.chamado){ alert('Esse pedido ainda não tem número de chamado. Preencha o chamado antes de mandar para o abastecimento.'); return; }
   abAbrirModal();
   document.getElementById('ab-m-filtro').value = p.chamado;
@@ -22294,11 +22356,12 @@ function abSalvarNovo(){
   var existente = null;
   Object.keys(AB.itens).forEach(function(id){
     var r = AB.itens[id];
-    if (!existente && r && r.itens && r.pedidoId === p.id && r.vendedor === p.vendedor && abTipo(r) === AB.modalTipo && abEtapa(r) !== 'cliente') existente = id;
+    if (!existente && r && r.itens && r.pedidoId === p.id && r.vendedor === p.vendedor && (abTipo(r) === AB.modalTipo || abSemTipo(r)) && abEtapa(r) !== 'cliente') existente = id;
   });
   if (existente){
     var jaTem = abItensDe(AB.itens[existente]).map(function(i){ return i.material; });
     var novos = materiais.filter(function(m){ return jaTem.indexOf(m.material) === -1; });
+    if (abSemTipo(AB.itens[existente])){ abDefinirTipo(existente, AB.modalTipo); if (!novos.length){ done(); return; } }
     if (!novos.length){ erro.textContent = 'Esses materiais já estão nesse chamado de abastecimento.'; erro.style.display = 'block'; return; }
     var base = Object.keys(AB.itens[existente].itens || {}).length, upd = {};
     novos.forEach(function(m, i){ upd['itens/it_' + agora + '_' + i] = { material: m.material, codigo: m.codigo, qtd: String(m.qtd), ordem: base + i }; });
