@@ -21695,7 +21695,7 @@ function abMigrarLegado(){
 
 function abRequestRender(){
   var a = document.activeElement;
-  if (a && a.closest && (a.closest('#ab-tbody') || a.closest('#ab-it-overlay')) && a.type !== 'checkbox' && a.tagName !== 'SELECT') { AB.pendente = true; return; }
+  if (a && a.closest && (a.closest('#ab-tbody') || a.closest('#ab-it-overlay')) && a.type !== 'checkbox' && a.tagName !== 'SELECT' && a.tagName !== 'BUTTON') { AB.pendente = true; return; }
   abRender();
 }
 
@@ -21821,6 +21821,10 @@ function abConfSet(id, k, val){
   var novo = def.op ? (atual && atual.v === val ? null : { v: val, por: currentUser, em: Date.now() })
                     : (abConfFeito(atual) ? null : { ok: true, por: currentUser, em: Date.now() });
   upd['conf/' + k] = novo;
+  // mostra na hora, sem esperar o Firebase
+  r.conf = r.conf || {}; if (novo) r.conf[k] = novo; else delete r.conf[k];
+  try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch(e){}
+  abRenderPopup();
   abAtualizar(id, upd);
 }
 function abPedidoDe(r){ return abPedidos().filter(function(x){ return x.id === r.pedidoId && x.vendedor === r.vendedor; })[0] || null; }
