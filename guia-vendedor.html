@@ -4988,7 +4988,12 @@ td.p-tie { color:var(--sp-muted); }
   #tab-abastecimento .ab-t input[type=text], #tab-abastecimento .ab-t input[type=date], #tab-abastecimento .ab-t select{ width:100%; padding:5px 7px; border:1px solid #E2E0D8; border-radius:5px; font-size:12px; background:#fff; outline:none; }
   #tab-abastecimento .ab-t input:focus, #tab-abastecimento .ab-t select:focus{ border-color:#C41E1E; }
   #tab-abastecimento .ab-sit{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; white-space:nowrap; display:inline-block; }
-  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(6,minmax(215px,1fr)); gap:10px; min-width:1350px; }
+  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(7,minmax(215px,1fr)); gap:10px; min-width:1580px; align-items:start; }
+  #ab-kanban-wrap{ max-height:calc(100vh - 230px); overflow:auto; }
+  #ab-kb-topbar{ overflow-x:auto; overflow-y:hidden; height:16px; margin-bottom:4px; }
+  #ab-kb-topbar > div{ height:1px; }
+  #ab-kb-nav{ display:flex; gap:6px; justify-content:flex-end; margin-bottom:4px; }
+  #ab-kb-nav button{ border:1.5px solid #E2E0D8; background:#fff; border-radius:7px; padding:4px 12px; font-size:13px; font-weight:700; cursor:pointer; }
   #tab-abastecimento .ab-kb-col{ background:#F5F4F2; border-radius:10px; padding:10px; min-height:220px; transition:background .15s, outline .15s; }
   #tab-abastecimento .ab-kb-col.over{ background:#FBE9E9; outline:2px dashed #C41E1E; }
   #tab-abastecimento .ab-kb-head{ display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:11.5px; font-weight:800; margin-bottom:10px; text-transform:uppercase; letter-spacing:.02em; }
@@ -5037,7 +5042,9 @@ td.p-tie { color:var(--sp-muted); }
 
     <div class="ab-cards" id="ab-cards"></div>
 
-    <div id="ab-kanban-wrap" style="display:none;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;"><div class="ab-kb" id="ab-kanban"></div></div>
+    <div id="ab-kb-nav" style="display:none;"><button type="button" onclick="abKbRolar(-1)" title="Colunas anteriores">◀</button><button type="button" onclick="abKbRolar(1)" title="Próximas colunas">▶</button></div>
+    <div id="ab-kb-topbar" style="display:none;"><div></div></div>
+    <div id="ab-kanban-wrap" style="display:none;-webkit-overflow-scrolling:touch;padding-bottom:6px;"><div class="ab-kb" id="ab-kanban"></div></div>
     <div id="ab-tabela-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid #E8E6E1;border-radius:10px;max-height:70vh;">
       <table class="ab-t">
         <thead><tr>
@@ -22248,6 +22255,7 @@ function abRender(){
     b.style.background = on ? '#1C1C1C' : 'transparent'; b.style.color = on ? '#fff' : '#888';
   });
   document.getElementById('ab-kanban-wrap').style.display = modoKanban ? 'block' : 'none';
+  if (!modoKanban) abKbSincronizar();
   document.getElementById('ab-tabela-wrap').style.display = modoKanban ? 'none' : 'block';
   document.getElementById('ab-dica-kanban').style.display = modoKanban ? 'block' : 'none';
   document.getElementById('ab-dica-tabela').style.display = modoKanban ? 'none' : 'block';
@@ -22331,6 +22339,20 @@ function abRender(){
   }).join('');
 }
 
+/* barra de rolagem lateral no topo + setas, para não precisar descer a página */
+function abKbRolar(dir){ var w = document.getElementById('ab-kanban-wrap'); if (w) w.scrollBy({ left: dir * 450, behavior: 'smooth' }); }
+function abKbSincronizar(){
+  var w = document.getElementById('ab-kanban-wrap'), t = document.getElementById('ab-kb-topbar'), nav = document.getElementById('ab-kb-nav');
+  if (!w || !t) return;
+  var vis = w.style.display !== 'none';
+  t.style.display = vis ? '' : 'none'; if (nav) nav.style.display = vis ? '' : 'none';
+  t.firstChild.style.width = w.scrollWidth + 'px';
+  if (!t.dataset.ok){
+    t.dataset.ok = '1'; var trava = false;
+    t.addEventListener('scroll', function(){ if (trava) return; trava = true; w.scrollLeft = t.scrollLeft; trava = false; });
+    w.addEventListener('scroll', function(){ if (trava) return; trava = true; t.scrollLeft = w.scrollLeft; trava = false; });
+  }
+}
 function abRenderKanban(todos){
   var box = document.getElementById('ab-kanban');
   var corte = new Date(); corte.setDate(corte.getDate() - 30); corte = corte.toISOString().split('T')[0];
@@ -22377,6 +22399,7 @@ function abRenderKanban(todos){
     '</div>';
   }).join('');
   abBindKanbanDrag();
+  setTimeout(abKbSincronizar, 0);
 }
 
 /* ── Pop-up de itens do chamado (usado no Kanban) ── */
