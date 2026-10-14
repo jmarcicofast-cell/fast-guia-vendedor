@@ -4988,7 +4988,7 @@ td.p-tie { color:var(--sp-muted); }
   #tab-abastecimento .ab-t input[type=text], #tab-abastecimento .ab-t input[type=date], #tab-abastecimento .ab-t select{ width:100%; padding:5px 7px; border:1px solid #E2E0D8; border-radius:5px; font-size:12px; background:#fff; outline:none; }
   #tab-abastecimento .ab-t input:focus, #tab-abastecimento .ab-t select:focus{ border-color:#C41E1E; }
   #tab-abastecimento .ab-sit{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; white-space:nowrap; display:inline-block; }
-  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(7,minmax(215px,1fr)); gap:10px; min-width:1580px; align-items:start; }
+  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(8,minmax(215px,1fr)); gap:10px; min-width:1800px; align-items:start; }
   #ab-kanban-wrap{ max-height:calc(100vh - 230px); overflow:auto; }
   #ab-kb-topbar{ overflow-x:auto; overflow-y:hidden; height:16px; margin-bottom:4px; }
   #ab-kb-topbar > div{ height:1px; }
@@ -21355,6 +21355,7 @@ var AB_ETAPAS = [
   { k:'solicitado', t:'Abastecimento solicitado', c:'Solicitado',  ic:'📨', cor:'#4A148C' },
   { k:'reservado',  t:'Material reservado',       c:'Reservado',   ic:'📦', cor:'#00695C' },
   { k:'grade',      t:'Chamado na grade (aguardando DT)', c:'Na grade', ic:'🗓️', cor:'#AD1457' },
+  { k:'previsao',   t:'Com previsão',             c:'Com previsão', ic:'📆', cor:'#E65100' },
   { k:'dc',         t:'Chegada na DCS',            c:'Na DCS',       ic:'🏭', cor:'#185FA5' },
   { k:'cliente',    t:'Chegada no cliente',       c:'No cliente',  ic:'✅', cor:'#1B5E20' }
 ];
@@ -21466,11 +21467,16 @@ function abNaGrade(r){
 }
 function abEtapa(r){
   var e = abEtapaBase(r);
-  if (!abNaGrade(r) || e === 'cliente') return e;
-  // vai para a grade depois do material reservado ou do abastecimento solicitado
-  if (e === 'solicitado' || e === 'reservado' || e === 'dc') return 'grade';
-  // pedidos que já estavam em Aguardando DT antes deste controle (sem registro de envio) contam como na grade
-  var p = abPedidoDe(r); if (p && !p.gradeLog) return 'grade';
+  if (e === 'cliente') return e;
+  var p = abPedidoDe(r); if (!p) return e;
+  if (p.status === 'entregue' || p.status === 'faturado' || p.status === 'aguardando-fat') return e === 'tratar' ? e : 'cliente';
+  // depois do material reservado ou do abastecimento solicitado
+  var pos = e === 'solicitado' || e === 'reservado' || e === 'dc';
+  var legado = !p.gradeLog;   // já estava em Aguardando DT antes deste controle
+  if (p.status === 'com-dt' || p.status === 'em-rota') return (pos || r.previsaoGrade) ? 'previsao' : e;
+  if (p.status !== 'aguardando-dt') return e;
+  if (r.previsaoGrade && (pos || legado)) return 'previsao';
+  if (pos || legado) return 'grade';
   return e;
 }
 /* etapa do chamado = etapa do item mais atrasado */
@@ -21984,12 +21990,61 @@ function abGradeAtual(p){
 }
 function abGradeColetaTxt(ga){ return ga.gc.coletas.map(abFmtDia).join(' / '); }
 
+/* ── Com previsão: a Placo deu data; ticks de print de confirmação do cliente e de saiu DT ── */
+function abPrevDefinir(id, dataIso){
+  if (!abPodeEditar()) return;
+  var r = AB.itens[id]; if (!r) return;
+  var p = abPedidoDe(r);
+  if (!p || ['aguardando-dt', 'com-dt', 'em-rota'].indexOf(p.status) === -1){ alert('"Com previsão" vem depois da grade: o pedido precisa estar em AGUARDANDO DT.'); return; }
+  if (!dataIso){
+    var atual = r.previsaoGrade && r.previsaoGrade.data ? r.previsaoGrade.data.split('-').reverse().join('/') : '';
+    var t = prompt('Previsão dada pela Placo (dd/mm/aaaa):', atual || new Date().toLocaleDateString('pt-BR'));
+    if (t === null) return;
+    var m = String(t).trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+    if (!m){ alert('Data inválida. Use dd/mm/aaaa.'); return; }
+    var y = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : String(new Date().getFullYear());
+    dataIso = y + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+  }
+  var novo = { data: dataIso, por: currentUser, em: Date.now() };
+  r.previsaoGrade = novo; abRenderPopup();
+  abAtualizar(id, { previsaoGrade: novo });
+}
+function abPrevPrint(id){
+  if (!abPodeEditar()) return;
+  var r = AB.itens[id]; if (!r) return;
+  var chk = (r.prevChk || {}).print, novo = chk ? null : { por: currentUser, em: Date.now() };
+  r.prevChk = r.prevChk || {}; if (novo) r.prevChk.print = novo; else delete r.prevChk.print;
+  abRenderPopup(); abAtualizar(id, { 'prevChk/print': novo });
+}
+function abPrevSaiuDt(p){ return !!p && ['com-dt', 'em-rota', 'entregue', 'faturado', 'aguardando-fat'].indexOf(p.status) !== -1; }
+function abPrevHtml(r, ed){
+  if (!r.previsaoGrade && abEtapa(r) !== 'previsao') return '';
+  var p = abPedidoDe(r), pv = r.previsaoGrade, pr = (r.prevChk || {}).print, dt = abPrevSaiuDt(p);
+  var quem = function(x){ return x ? '<span style="font-size:10.5px;color:#888;">' + abEsc(abNomeVend(x.por)) + (x.em ? ' · ' + abFmtDH(x.em) : '') + '</span>' : ''; };
+  var tick = function(on, txt, fn, extra){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;margin-top:5px;background:' + (on ? '#E8F5E9' : '#fff') + ';border:1px solid ' + (on ? '#A5D6A7' : '#F5D0B5') + ';">' +
+      '<span style="font-size:12.5px;font-weight:700;color:' + (on ? '#1B5E20' : '#333') + ';">' + (on ? '✅ ' : '⬜ ') + txt + '</span>' +
+      '<span style="display:flex;gap:6px;align-items:center;">' + (extra || '') + (ed && fn ? '<button type="button" onclick="' + fn + '" style="border:1.5px solid ' + (on ? '#2E7D32' : '#D9D6CE') + ';background:' + (on ? '#2E7D32' : '#fff') + ';color:' + (on ? '#fff' : '#555') + ';border-radius:14px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:pointer;">' + (on ? '✓ Feito' : 'Marcar') + '</button>' : '') + '</span></div>';
+  };
+  var vencida = pv && pv.data && !dt && pv.data < abHoje();
+  return '<div style="background:#FFF3E8;border:1.5px solid ' + (vencida ? '#EF9A9A' : '#F5C9A0') + ';border-radius:9px;padding:10px 12px;margin-bottom:14px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">' +
+      '<span style="font-size:11px;font-weight:800;color:#E65100;">📆 COM PREVISÃO</span>' +
+      '<span style="font-size:12.5px;font-weight:800;color:' + (vencida ? '#C62828' : '#E65100') + ';">' + (pv && pv.data ? 'Previsão Placo: ' + pv.data.split('-').reverse().join('/') + (vencida ? ' — vencida' : '') : 'Sem data') +
+        (ed ? ' <button type="button" onclick="abPrevDefinir(\'' + r.id + '\')" style="border:1px solid #F5C9A0;background:#fff;color:#E65100;border-radius:6px;padding:1px 7px;font-size:11px;cursor:pointer;">✏️</button>' : '') + '</span>' +
+    '</div>' +
+    tick(!!pr, 'Print de confirmação do cliente no chamado', 'abPrevPrint(\'' + r.id + '\')', quem(pr)) +
+    tick(dt, 'Saiu DT', dt ? null : 'abGradeComDt(\'' + r.id + '\')', dt ? '<span style="font-size:10.5px;color:#888;">' + abEsc(STATUS_LABEL[p.status] || p.status) + '</span>' : '') +
+  '</div>';
+}
+
 function abGradeVoltou(id){
   var r = AB.itens[id]; if (!r) return;
   var p = abPedidoDe(r); if (!p) return alert('Não encontrei o pedido deste chamado.');
   var motivo = prompt('Não seguiu para a Placo hoje — fica na grade.\nMotivo (opcional):', 'Falta de material');
   if (motivo === null) return;
   var upd = {}; upd['gradeLog/g' + Date.now()] = { tipo: 'voltou', motivo: String(motivo || '').trim(), em: Date.now(), por: currentUser };
+  if (r.previsaoGrade){ r.previsaoGrade = null; abAtualizar(id, { previsaoGrade: null }); }
   dbRef('pedidos/' + p.vendedor + '/' + p.id).update(upd).then(function(){
     p.gradeLog = p.gradeLog || {}; Object.keys(upd).forEach(function(k){ p.gradeLog[k.slice(9)] = upd[k]; }); AB._pm = null; abRenderPopup(); abRequestRender();
   }).catch(function(e){ alert('Erro ao salvar: ' + (e && e.message ? e.message : e)); });
@@ -22097,6 +22152,7 @@ function abDtAplicar(){
     } else if (regVolta){
       var upd = {}; upd['gradeLog/g' + agora + '_' + i] = { tipo: 'voltou', motivo: 'Não saiu DT (foto do dia)', em: agora, por: currentUser };
       dbRef('pedidos/' + v + '/' + id).update(upd).catch(function(){}); nVolta++;
+      abRegistrosDoPedido({ id: id, vendedor: v }).forEach(function(rg){ if (rg.previsaoGrade) abAtualizar(rg.id, { previsaoGrade: null }); });
     }
   });
   abDtFechar();
@@ -22130,7 +22186,7 @@ function abGradeHtml(r, ed){
     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">' +
       '<span style="font-size:11px;font-weight:800;color:#AD1457;">🗓️ GRADE (AGUARDANDO DT)</span>' +
       '<span style="font-size:12px;color:#555;">' + resumo + '</span></div>' + faixa + tl +
-    (ed && p && p.status === 'aguardando-dt' ? '<div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;"><button type="button" onclick="abGradeVoltou(\'' + r.id + '\')" style="border:1.5px solid #AD1457;background:#fff;color:#AD1457;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">↩️ Não seguiu hoje — fica na grade</button><button type="button" onclick="abGradeComDt(\'' + r.id + '\')" style="border:none;background:#2E7D32;color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">✅ Saiu — Com DT</button></div>' : '') +
+    (ed && p && p.status === 'aguardando-dt' ? '<div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;"><button type="button" onclick="abGradeVoltou(\'' + r.id + '\')" style="border:1.5px solid #AD1457;background:#fff;color:#AD1457;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">↩️ Não seguiu hoje — fica na grade</button><button type="button" onclick="abPrevDefinir(\'' + r.id + '\')" style="border:1.5px solid #E65100;background:#fff;color:#E65100;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">📆 Placo deu previsão</button><button type="button" onclick="abGradeComDt(\'' + r.id + '\')" style="border:none;background:#2E7D32;color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">✅ Saiu — Com DT</button></div>' : '') +
   '</div>';
 }
 
@@ -22170,6 +22226,11 @@ function abConfHtml(r, ed){
 }
 
 function abProgressoHtml(r){
+  if (abEtapa(r) === 'previsao'){
+    var pp = abPedidoDe(r), pv = r.previsaoGrade, pdt = abPrevSaiuDt(pp), pr = !!(r.prevChk || {}).print, venc = pv && pv.data && !pdt && pv.data < abHoje();
+    return '<span style="font-size:10.5px;font-weight:800;color:' + (venc ? '#C62828' : '#E65100') + ';white-space:nowrap;">📆 ' + (pv && pv.data ? 'prev. ' + pv.data.slice(8, 10) + '/' + pv.data.slice(5, 7) + (venc ? ' (vencida)' : '') : 'sem data') + '</span>' +
+      '<span style="display:block;font-size:10.5px;font-weight:700;white-space:nowrap;"><span style="color:' + (pr ? '#1B5E20' : '#C62828') + ';">' + (pr ? '✅' : '⬜') + ' print</span> · <span style="color:' + (pdt ? '#1B5E20' : '#C62828') + ';">' + (pdt ? '✅' : '⬜') + ' saiu DT</span></span>';
+  }
   if (abEtapa(r) === 'grade'){
     var pg = abPedidoDe(r), gi = abGradeInfo(pg), ga = pg ? abGradeAtual(pg) : null;
     var cor = ga && ga.atrasado ? '#C62828' : (gi && gi.tent > 1 ? '#C62828' : '#AD1457');
@@ -22431,7 +22492,7 @@ function abRenderPopup(){
   var lbl = function(t, html){ return '<div><div class="abp-lbl">' + t + '</div>' + html + '</div>'; };
   var etapaCham = ed
     ? '<select onchange="abMoverEtapa(\'' + r.id + '\',this.value)" style="font-weight:700;color:' + et.cor + ';">' +
-        (function(){ var fl = abFluxo(r).slice(), ic = fl.indexOf('reservado'); if (ic !== -1) fl.splice(ic + 1, 0, 'grade');
+        (function(){ var fl = abFluxo(r).slice(), ic = fl.indexOf('reservado'); if (ic !== -1) fl.splice(ic + 1, 0, 'grade', 'previsao');
           return fl.map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + (k === 'grade' && e !== 'grade' ? ' disabled' : '') + '>' + (n + 1) + '. ' + o.t + (k === 'grade' ? ' — vem do pedido' : '') + '</option>'; }).join(''); })() + '</select>'
     : abChipEtapa(e);
   var cab = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;">' +
@@ -22452,7 +22513,7 @@ function abRenderPopup(){
       '</div>' +
       '<div style="margin-top:8px;">' + lbl('Obs. do chamado', '<input type="text" value="' + abEsc(r.obs || '') + '" placeholder="+ obs do chamado" onchange="abSalvarCampo(\'' + r.id + '\',\'obs\',this.value)"' + (ed ? '' : ' disabled') + '>') + '</div>' +
     '</div>' +
-    abGradeHtml(r, ed) + abConfHtml(r, ed) +
+    abPrevHtml(r, ed) + abGradeHtml(r, ed) + abConfHtml(r, ed) +
     '<div style="font-size:11px;font-weight:800;color:#555;margin-bottom:8px;">ITENS (' + its.length + ')</div>';
   var lista = its.map(function(i){
     var si = abSituacaoItem(i);
@@ -22533,6 +22594,7 @@ function abSetEtapaItem(id, itemId, etapa){
 
 /* mover o chamado inteiro: leva todos os itens para a etapa escolhida */
 function abMoverEtapa(id, etapa, semConfirmar){
+  if (etapa === 'previsao'){ abPrevDefinir(id); abRender(); return; }
   if (etapa === 'grade'){ alert('"Chamado na grade" entra sozinho: é só o vendedor marcar o pedido como AGUARDANDO DT na aba Pedidos (depois do material reservado ou do abastecimento solicitado).'); abRender(); return; }
   if (!abPodeEditar()){ alert('Somente o administrativo pode alterar o abastecimento depois de incluído.'); abRender(); return; }
   var r = AB.itens[id]; if (!r) return;
