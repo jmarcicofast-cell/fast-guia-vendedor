@@ -22522,17 +22522,51 @@ var MSN_AUDIO = null;
 function msnSom(tipo) {
   try {
     MSN_AUDIO = MSN_AUDIO || new (window.AudioContext || window.webkitAudioContext)();
-    var ctx = MSN_AUDIO, t = ctx.currentTime;
-    function nota(f, ini, dur, forma, vol) {
-      var o = ctx.createOscillator(), g = ctx.createGain(); o.type = forma || 'sine'; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, t + ini); g.gain.exponentialRampToValueAtTime(vol || 0.18, t + ini + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + ini + dur);
-      o.connect(g); g.connect(ctx.destination); o.start(t + ini); o.stop(t + ini + dur + 0.05);
+    var ctx = MSN_AUDIO;
+    if (ctx.state === 'suspended') ctx.resume();
+    var t = ctx.currentTime;
+    if (tipo === 'tremer' && navigator.vibrate) navigator.vibrate([250, 100, 250, 100, 250]);
+    var vol = msnVolume(); if (!vol) return;
+    // saída com compressor para ficar alto sem distorcer
+    if (!MSN.saida || MSN.saida.context !== ctx) {
+      var comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.knee.value = 6; comp.ratio.value = 6; comp.attack.value = .003; comp.release.value = .15;
+      var mestre = ctx.createGain(); comp.connect(mestre); mestre.connect(ctx.destination); MSN.saida = comp; MSN.mestre = mestre;
     }
-    if (tipo === 'tremer') { nota(120, 0, .35, 'sawtooth', .12); nota(95, .12, .35, 'sawtooth', .12); nota(140, .3, .3, 'square', .06); }
-    else if (tipo === 'entrou') { nota(660, 0, .12); nota(880, .1, .18); }
-    else { nota(988, 0, .14); nota(1319, .11, .22); }
+    MSN.mestre.gain.value = vol;
+    function nota(f, ini, dur, forma, amp) {
+      var o = ctx.createOscillator(), g = ctx.createGain(); o.type = forma || 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t + ini); g.gain.exponentialRampToValueAtTime(amp || .9, t + ini + .015); g.gain.exponentialRampToValueAtTime(0.0001, t + ini + dur);
+      o.connect(g); g.connect(MSN.saida); o.start(t + ini); o.stop(t + ini + dur + .05);
+    }
+    if (tipo === 'tremer') {
+      for (var k = 0; k < 3; k++) { nota(110, k * .33, .3, 'sawtooth', .9); nota(165, k * .33, .3, 'square', .5); nota(880, k * .33 + .02, .12, 'square', .35); }
+    } else if (tipo === 'grupo') { nota(784, 0, .16, 'triangle'); nota(1047, .14, .26, 'triangle'); }
+    else { nota(988, 0, .14, 'triangle'); nota(1319, .12, .14, 'triangle'); nota(1760, .24, .3, 'triangle'); }
   } catch (e) {}
 }
+// o navegador só libera som depois de um clique/tecla na página: destrava no primeiro gesto
+function msnDestravarSom() {
+  try { MSN_AUDIO = MSN_AUDIO || new (window.AudioContext || window.webkitAudioContext)(); if (MSN_AUDIO.state === 'suspended') MSN_AUDIO.resume(); } catch (e) {}
+}
+['pointerdown', 'keydown', 'touchstart'].forEach(function(ev) { document.addEventListener(ev, msnDestravarSom, { passive: true }); });
+// aviso do sistema (aparece mesmo com o guia minimizado ou em outra aba)
+function msnPedirAvisos() {
+  try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+}
+function msnNotificar(titulo, corpo, conv, forte) {
+  try {
+    if (!window.Notification || Notification.permission !== 'granted') return;
+    if (!forte && !document.hidden) return;
+    var n = new Notification(titulo, { body: String(corpo || '').slice(0, 140), tag: 'msn-' + conv, renotify: true, requireInteraction: !!forte });
+    n.onclick = function() { window.focus(); msnAbrir(conv); n.close(); };
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden && MSN.tremerPendente) { var c = MSN.tremerPendente; MSN.tremerPendente = null; setTimeout(function() { msnTremerTela(c); }, 300); }
+});
+var MSN_VOLUMES = { alto: 1, medio: .55, baixo: .25, mudo: 0 };
+function msnVolume() { var v = 'alto'; try { v = localStorage.getItem('msn_volume') || 'alto'; } catch (e) {} return MSN_VOLUMES[v] != null ? MSN_VOLUMES[v] : 1; }
+function msnMudarVolume(v) { try { localStorage.setItem('msn_volume', v); } catch (e) {} msnDestravarSom(); if (v !== 'mudo') msnSom('msg'); }
 function msnTremerTela(conv) {
   var alvo = document.body;
   alvo.classList.remove('msn-tremendo'); void alvo.offsetWidth; alvo.classList.add('msn-tremendo');
@@ -22545,9 +22579,9 @@ function msnTremerTela(conv) {
 // ── início / fim de sessão ──
 function msnIniciar(user) {
   if (!user || !vendedores[user]) return;
-  if (MSN.on && MSN.eu === user) return;
+  if (MSN.on && MSN.eu === user && MSN.fb === !!firebaseOK) return;
   msnEncerrar(true);
-  MSN.on = true; MSN.eu = user; MSN.inicio = Date.now();
+  MSN.on = true; MSN.eu = user; MSN.inicio = Date.now(); MSN.fb = !!firebaseOK; MSN.base = {};
   document.getElementById('msn-lanc').style.display = 'flex';
   var salvo = {}; try { salvo = JSON.parse(localStorage.getItem('msn_meu_status_' + user) || '{}'); } catch (e) {}
   MSN.meuStatus = salvo.status && salvo.status !== 'offline' ? salvo.status : (salvo.status || 'online');
@@ -22558,11 +22592,11 @@ function msnIniciar(user) {
   dbRef('chat/presenca').on('value', function(s) { MSN.pres = (s && s.val()) || {}; msnRender(); });
   dbRef('rotaMeta/avatares').on('value', function(s) { MSN.av = (s && s.val()) || {}; msnRender(); });
   dbRef('chat/lidas/' + user).on('value', function(s) { MSN.lidas = (s && s.val()) || {}; msnRender(); });
-  dbRef('chat/grupo/EQUIPE').on('value', function(s) { var v = s && s.val(); var antes = MSN.grupo; MSN.grupo = v || null; if (v && (!antes || v.ts !== antes.ts)) msnChegou('EQUIPE', v); msnRender(); });
+  dbRef('chat/grupo/EQUIPE').on('value', function(s) { var v = s && s.val(); var antes = MSN.grupo; MSN.grupo = v || null; if (MSN.base.grupo && v && (!antes || v.ts !== antes.ts)) msnChegou('EQUIPE', v); MSN.base.grupo = true; msnRender(); });
   dbRef('chat/indice/' + user).on('value', function(s) {
     var novo = (s && s.val()) || {}, antes = MSN.ind;
-    Object.keys(novo).forEach(function(c) { var v = novo[c]; if (v && (!antes[c] || antes[c].ts !== v.ts)) msnChegou(c, v); });
-    MSN.ind = novo; msnRender();
+    if (MSN.base.ind) Object.keys(novo).forEach(function(c) { var v = novo[c]; if (v && (!antes[c] || antes[c].ts !== v.ts)) msnChegou(c, v); });
+    MSN.base.ind = true; MSN.ind = novo; msnRender();
   });
   window.addEventListener('focus', msnMarcarAbertasLidas);
   msnRender();
@@ -22597,16 +22631,18 @@ function msnMudarFrase(f) {
 function msnUltima(conv) { return conv === 'EQUIPE' ? MSN.grupo : MSN.ind[conv]; }
 function msnNaoLidas(conv) { var u = msnUltima(conv); return !!(u && u.de !== MSN.eu && u.ts > (MSN.lidas[conv] || 0)); }
 function msnChegou(conv, v) {
-  if (!v || v.de === MSN.eu || v.ts < MSN.inicio - 5000) return;
+  if (!v || v.de === MSN.eu) return;
   var aberta = MSN.abertas.indexOf(conv) >= 0;
   if (v.tipo === 'tremer') {
     if (conv === 'EQUIPE') return;
     if (MSN.tremidoEm[conv + v.ts]) return; MSN.tremidoEm[conv + v.ts] = 1;
-    if (Date.now() - v.ts < 60000) { msnAbrir(conv); setTimeout(function() { msnTremerTela(conv); }, 150); }
+    msnAbrir(conv);
+    msnNotificar('📳 ' + msnNome(v.de) + ' está chamando sua atenção!', 'Abra o guia para responder.', conv, true);
+    if (document.hidden) MSN.tremerPendente = conv; else setTimeout(function() { msnTremerTela(conv); }, 150);
     return;
   }
   if (MSN.meuStatus === 'ocupado') return;
-  if (!aberta || document.hidden) msnSom(conv === 'EQUIPE' ? 'grupo' : 'msg');
+  if (!aberta || document.hidden) { msnSom(conv === 'EQUIPE' ? 'grupo' : 'msg'); msnNotificar((conv === 'EQUIPE' ? 'Sala da equipe · ' : '') + msnNome(v.de) + ' diz:', v.txt, conv, false); }
   if (aberta && !document.hidden) msnMarcarLida(conv);
 }
 function msnMarcarLida(conv) { var u = msnUltima(conv); var ts = Math.max(Date.now(), u ? u.ts : 0); MSN.lidas[conv] = ts; dbRef('chat/lidas/' + MSN.eu + '/' + conv).set(ts); }
@@ -22620,6 +22656,7 @@ function msnTitulo(n) {
 
 // ── lista de contatos ──
 function msnAlternarLista() {
+  msnPedirAvisos(); msnDestravarSom();
   MSN.listaAberta = !MSN.listaAberta;
   document.getElementById('msn-lanc').setAttribute('aria-expanded', MSN.listaAberta);
   msnRender();
@@ -22650,6 +22687,8 @@ function msnRender() {
     lista.innerHTML = '<div class="msn-topo">' + msnAv(MSN.eu, 40) + '<div class="msn-eu"><b>' + msnEsc(msnNome(MSN.eu)) + '</b>' +
         '<select aria-label="Meu status" onchange="msnMudarStatus(this.value)">' + Object.keys(MSN_STATUS).map(function(k) { return '<option value="' + k + '"' + (MSN.meuStatus === k ? ' selected' : '') + '>' + MSN_STATUS[k] + '</option>'; }).join('') + '</select></div>' +
         '<button type="button" class="msn-x" onclick="msnAlternarLista()" aria-label="Fechar lista">✕</button></div>' +
+      '<div class="msn-frase" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#3B5875">🔊 Som: <select aria-label="Volume dos avisos" onchange="msnMudarVolume(this.value)" style="font:12px \'Segoe UI\',sans-serif;border:1px solid #B9D3EE;border-radius:4px;padding:2px 4px">' +
+        [['alto', 'Alto'], ['medio', 'Médio'], ['baixo', 'Baixo'], ['mudo', 'Mudo']].map(function(o) { var at = 'alto'; try { at = localStorage.getItem('msn_volume') || 'alto'; } catch (e) {} return '<option value="' + o[0] + '"' + (at === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
       '<div class="msn-frase"><input id="msn-frase-in" maxlength="80" placeholder="Digite sua frase do dia…" value="' + msnEsc(MSN.minhaFrase || '') + '" onchange="msnMudarFrase(this.value)" aria-label="Frase do dia"></div>' +
       '<div class="msn-busca"><input id="msn-busca-in" placeholder="🔎 Procurar contato" value="' + msnEsc(MSN.busca || '') + '" oninput="MSN.busca=this.value;msnRender()" aria-label="Procurar contato"></div>' +
       '<div class="msn-contatos">' + (filtra('EQUIPE') || !q ? '<div class="msn-grupo">Grupo</div>' + linha('EQUIPE') : '') +
