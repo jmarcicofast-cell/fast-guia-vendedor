@@ -5270,10 +5270,11 @@ td.p-tie { color:var(--sp-muted); }
 /* Logins das outras unidades: só enxergam a Central de Abastecimento.
    Exemplo:  'UNIDADE SP': { senha: 'SP1234', nome: 'FAST São Paulo', unidade: 'São Paulo' },  */
 var CA_UNIDADES = {
-  'NIDIA': { senha: 'NIDIA1234', nome: 'Nidia Fujihara — Atacado SP', unidade: 'Atacado SP' },
+  /* bloqueado: true = login desativado (a unidade e o histórico continuam na Central) */
+  'NIDIA': { senha: 'NIDIA1234', nome: 'Nidia Fujihara — Atacado SP', unidade: 'Atacado SP', bloqueado: true },
   'POLIANA': { senha: 'POLIANA1234', nome: 'Poliana — Atacado SP', unidade: 'Atacado SP' },
-  'FRANCIANNE': { senha: 'FRANCIANNE1234', nome: 'Francianne Lagos — Lojas do Rio', unidade: 'Lojas do Rio' },
-  'LIDIANE': { senha: 'LIDIANE1234', nome: 'Lidiane — Atacado B2B', unidade: 'Atacado B2B', veTudo: true },
+  'FRANCIANNE': { senha: 'FRANCIANNE1234', nome: 'Francianne Lagos — Lojas do Rio', unidade: 'Lojas do Rio', bloqueado: true },
+  'LIDIANE': { senha: 'LIDIANE1234', nome: 'Lidiane — Atacado B2B', unidade: 'Atacado B2B', veTudo: true, bloqueado: true },
   /* direção: vê todas as operações e o Painel, sem alterar nada */
   'DIRECAO': { senha: 'DIRECAO1234', nome: 'Direção FAST', unidade: '', direcao: true },
 };
@@ -6167,7 +6168,7 @@ function caViewCad(){
     box('dcs', 'DCS', 'Depósitos que recebem as cargas dos fabricantes', 'Nome da DCS') +
     box('fabricantes', 'Fabricantes', 'Para quem o abastecimento abre o chamado', 'Nome do fabricante') +
     '<div class="ca-painel"><div class="ca-painel-topo"><h3>Outras unidades</h3><span style="font-size:12px;color:#888;">Entram com login próprio e só veem esta aba. Os pedidos delas são lançados à mão.</span></div><div class="ca-cad">' +
-    (unids.length ? unids.map(function(k){ var u = CA_UNIDADES[k]; return '<span style="padding-right:10px;">' + caEsc(u.nome) + ' · login ' + caEsc(k) + '</span>'; }).join('') : '<em style="color:#999;font-size:12.5px;">Nenhuma unidade cadastrada ainda.</em>') + '</div></div>' +
+    (unids.length ? unids.map(function(k){ var u = CA_UNIDADES[k]; return '<span style="padding-right:10px;' + (u.bloqueado ? 'opacity:.5;text-decoration:line-through;' : '') + '">' + caEsc(u.nome) + ' · login ' + caEsc(k) + (u.bloqueado ? ' (acesso desativado)' : '') + '</span>'; }).join('') : '<em style="color:#999;font-size:12.5px;">Nenhuma unidade cadastrada ainda.</em>') + '</div></div>' +
     '<div class="ca-painel"><div class="ca-painel-topo"><h3>Base de produtos</h3><span style="font-size:12px;color:#888;">' + caCat().lista.length + ' códigos da Tabela de Produtos do guia.</span></div></div>';
 }
 
@@ -6533,13 +6534,14 @@ document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && CA
 /* ---------- login das outras unidades ---------- */
 function caLoginUnidade(user, pass){
   var u = CA_UNIDADES[user];
-  if (!u || String(u.senha).toUpperCase() !== pass) return false;
+  if (!u || u.bloqueado || String(u.senha).toUpperCase() !== pass) return false;
   try { localStorage.setItem('fgv_session_unid', user); } catch(e){}
   caEntrarUnidade(user);
   return true;
 }
 function caEntrarUnidade(key){
   var u = CA_UNIDADES[key]; if (!u) return;
+  if (u.bloqueado){ try { localStorage.removeItem('fgv_session_unid'); } catch(e){} return; }
   CA.unid = Object.assign({ key:key }, u);
   CA.pedPara = null; CA.ped = {}; CA.sel = {};
   document.getElementById('login-screen').style.display = 'none';
@@ -6553,7 +6555,7 @@ function caEntrarUnidade(key){
   if (btn){ btn.style.display = ''; showTab('central', btn); }
 }
 function caRestaurarUnidade(){
-  try { var k = localStorage.getItem('fgv_session_unid'); if (k && CA_UNIDADES[k]) caEntrarUnidade(k); } catch(e){}
+  try { var k = localStorage.getItem('fgv_session_unid'); if (k && CA_UNIDADES[k] && !CA_UNIDADES[k].bloqueado) caEntrarUnidade(k); else if (k) localStorage.removeItem('fgv_session_unid'); } catch(e){}
 }
 function caSairUnidade(){
   try { localStorage.removeItem('fgv_session_unid'); } catch(e){}
