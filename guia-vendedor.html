@@ -4988,7 +4988,7 @@ td.p-tie { color:var(--sp-muted); }
   #tab-abastecimento .ab-t input[type=text], #tab-abastecimento .ab-t input[type=date], #tab-abastecimento .ab-t select{ width:100%; padding:5px 7px; border:1px solid #E2E0D8; border-radius:5px; font-size:12px; background:#fff; outline:none; }
   #tab-abastecimento .ab-t input:focus, #tab-abastecimento .ab-t select:focus{ border-color:#C41E1E; }
   #tab-abastecimento .ab-sit{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; white-space:nowrap; display:inline-block; }
-  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(10,minmax(215px,1fr)); gap:10px; min-width:2260px; align-items:start; }
+  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(11,minmax(215px,1fr)); gap:10px; min-width:2490px; align-items:start; }
   #ab-kanban-wrap{ overflow-x:auto; overflow-y:visible; scrollbar-width:none; }
   #ab-kanban-wrap::-webkit-scrollbar{ display:none; }
   #ab-kb-topbar{ overflow-x:auto; overflow-y:hidden; height:16px; margin-bottom:4px; position:sticky; top:0; z-index:5; background:#F5F4F2; }
@@ -21360,8 +21360,10 @@ var AB_ETAPAS = [
   { k:'coleta',     t:'Aguardando coleta',        c:'Ag. coleta',  ic:'🚛', cor:'#5D4037' },
   { k:'faturamento', t:'Aguardando faturamento',  c:'Ag. faturamento', ic:'💰', cor:'#00838F' },
   { k:'entrega',    t:'Aguardando entrega',       c:'Ag. entrega', ic:'📦', cor:'#283593' },
+  { k:'conciliacao', t:'Conciliação',             c:'Conciliação', ic:'⚖️', cor:'#6A1B9A' },
+  { k:'finalizado', t:'Finalizado',               c:'Finalizado',  ic:'🏁', cor:'#1B5E20' },
   { k:'dc',         t:'Chegada na DCS',            c:'Na DCS',       ic:'🏭', cor:'#185FA5', oculta:true },
-  { k:'cliente',    t:'Chegada no cliente',       c:'No cliente',  ic:'✅', cor:'#1B5E20' }
+  { k:'cliente',    t:'Chegada no cliente',       c:'No cliente',  ic:'✅', cor:'#1B5E20', oculta:true }
 ];
 function abIdx(k){ for (var i = 0; i < AB_ETAPAS.length; i++) if (AB_ETAPAS[i].k === k) return i; return 0; }
 
@@ -21472,10 +21474,12 @@ function abNaGrade(r){
 function abEtapa(r){
   var e = abEtapaBase(r);
   if (e === 'dc') e = 'reservado';   // coluna "Na DCS" foi retirada
-  if (e === 'cliente') return e;
-  var p = abPedidoDe(r); if (!p) return e;
-  if (p.status === 'entregue') return e === 'tratar' ? e : 'cliente';
-  if (p.status === 'faturado') return e === 'tratar' ? e : 'entrega';   // faturado → aguardando entrega
+  var p = abPedidoDe(r);
+  if (p && p.conciliado) return 'finalizado';                              // conciliado → finalizado
+  if (!p) return e === 'cliente' ? 'conciliacao' : e;
+  if (p.status === 'entregue') return 'conciliacao';
+  if (p.status === 'faturado'){ if (e === 'tratar' && !r.entrega) return e; return r.entrega ? 'conciliacao' : 'entrega'; }   // faturado → aguardando entrega → conciliação
+  if (e === 'cliente') return 'conciliacao';
   if (p.status === 'aguardando-fat') return e === 'tratar' ? e : 'faturamento';
   // depois do material reservado ou do abastecimento solicitado
   var pos = e === 'solicitado' || e === 'reservado' || e === 'dc';
@@ -22079,6 +22083,63 @@ function abColetaTick(id, k){
   abRenderPopup(); abAtualizar(id, upd);
   abRender();
 }
+/* ── Aguardando entrega: pagamento da carga + entrega; Conciliação → Finalizado ── */
+var AB_PAGTO = { quitada:'✅ Carga quitada', parcial:'🟠 Paga parcialmente', inadimplente:'🔴 Inadimplente — seguir para protesto' };
+function abPagtoSet(id, v){
+  if (!abPodeEditar()) return;
+  var r = AB.itens[id]; if (!r) return;
+  var atual = r.pagto || {}, novo;
+  if (atual.v === v) novo = null;
+  else {
+    novo = { v: v, por: currentUser, em: Date.now() };
+    if (v === 'parcial'){ var f = prompt('Valor que falta pagar (R$):', atual.falta || ''); if (f === null) return; novo.falta = String(f).trim(); }
+  }
+  r.pagto = novo; abRenderPopup(); abRender(); abAtualizar(id, { pagto: novo });
+}
+function abPagtoFalta(id, txt){
+  var r = AB.itens[id]; if (!r || !r.pagto || !abPodeEditar()) return;
+  r.pagto.falta = String(txt || '').trim(); abAtualizar(id, { 'pagto/falta': r.pagto.falta });
+}
+function abEntregaTick(id){
+  if (!abPodeEditar()) return;
+  var r = AB.itens[id]; if (!r) return;
+  var novo = r.entrega ? null : { por: currentUser, em: Date.now() };
+  r.entrega = novo; abRenderPopup(); abRender(); abAtualizar(id, { entrega: novo });
+}
+function abPagtoChip(r){
+  var pg = r.pagto; if (!pg) return '<span style="color:#C62828;">⬜ pagamento</span>';
+  return pg.v === 'quitada' ? '<span style="color:#1B5E20;">✅ quitada</span>' : pg.v === 'parcial' ? '<span style="color:#E65100;">🟠 parcial' + (pg.falta ? ' · falta R$ ' + abEsc(pg.falta) : '') + '</span>' : '<span style="color:#C62828;">🔴 inadimplente → protesto</span>';
+}
+function abEntregaHtml(r, ed){
+  var et = abEtapa(r), p = abPedidoDe(r);
+  if (et !== 'entrega' && et !== 'conciliacao' && et !== 'finalizado') return '';
+  var pg = r.pagto || {};
+  var btn = function(v){ var on = pg.v === v, cor = v === 'quitada' ? '#2E7D32' : v === 'parcial' ? '#E65100' : '#C62828';
+    return '<button type="button"' + (ed ? ' onclick="abPagtoSet(\'' + r.id + '\',\'' + v + '\')"' : ' disabled') + ' style="border:1.5px solid ' + (on ? cor : '#D9D6CE') + ';background:' + (on ? cor : '#fff') + ';color:' + (on ? '#fff' : '#555') + ';border-radius:14px;padding:4px 11px;font-size:11.5px;font-weight:700;cursor:' + (ed ? 'pointer' : 'default') + ';">' + AB_PAGTO[v] + '</button>'; };
+  var pagHtml = '<div style="padding:8px 10px;border-radius:8px;margin-top:6px;background:#fff;border:1px solid ' + (pg.v === 'quitada' ? '#A5D6A7' : pg.v === 'inadimplente' ? '#EF9A9A' : pg.v === 'parcial' ? '#FFCC80' : '#C5CAE9') + ';">' +
+      '<div style="font-size:12px;font-weight:800;color:#283593;margin-bottom:6px;">💳 Pagamento da carga' + (pg.por ? ' <span style="font-weight:400;color:#888;font-size:10.5px;">' + abEsc(abNomeVend(pg.por)) + ' · ' + abFmtDH(pg.em) + '</span>' : '') + '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + btn('quitada') + btn('parcial') + btn('inadimplente') + '</div>' +
+      (pg.v === 'parcial' ? '<div style="margin-top:6px;display:flex;gap:6px;align-items:center;font-size:12px;">Falta pagar R$ <input type="text" value="' + abEsc(pg.falta || '') + '" placeholder="0,00" onchange="abPagtoFalta(\'' + r.id + '\',this.value)"' + (ed ? '' : ' disabled') + ' style="width:130px;padding:3px 8px;border:1.5px solid #FFCC80;border-radius:6px;font-size:12px;"></div>' : '') +
+      (pg.v === 'inadimplente' ? '<div style="margin-top:6px;font-size:12px;font-weight:800;color:#C62828;">⚠️ Seguir para protesto</div>' : '') +
+    '</div>';
+  var ent = r.entrega || (p && p.status === 'entregue');
+  var entHtml = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;margin-top:6px;background:' + (ent ? '#E8F5E9' : '#fff') + ';border:1px solid ' + (ent ? '#A5D6A7' : '#C5CAE9') + ';">' +
+      '<span style="font-size:12.5px;font-weight:700;color:' + (ent ? '#1B5E20' : '#333') + ';">' + (ent ? '✅ ' : '⬜ ') + 'Entregue ao cliente</span>' +
+      '<span style="display:flex;gap:6px;align-items:center;">' + (r.entrega ? '<span style="font-size:10.5px;color:#888;">' + abEsc(abNomeVend(r.entrega.por)) + ' · ' + abFmtDH(r.entrega.em) + '</span>' : '') +
+      (ed && !(p && p.status === 'entregue') ? '<button type="button" onclick="abEntregaTick(\'' + r.id + '\')" style="border:1.5px solid ' + (ent ? '#2E7D32' : '#D9D6CE') + ';background:' + (ent ? '#2E7D32' : '#fff') + ';color:' + (ent ? '#fff' : '#555') + ';border-radius:14px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:pointer;">' + (ent ? '✓ Entregue' : 'Marcar') + '</button>' : '') + '</span></div>';
+  var concHtml = '';
+  if (et === 'conciliacao' || et === 'finalizado'){
+    var podeConc = currentUser === 'JULIANA' && p && p.status === 'faturado' && !p.conciliado;
+    concHtml = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-top:6px;background:' + (p && p.conciliado ? '#E8F5E9' : '#F3E5F5') + ';border:1px solid ' + (p && p.conciliado ? '#A5D6A7' : '#CE93D8') + ';">' +
+      '<span style="font-size:12.5px;font-weight:800;color:' + (p && p.conciliado ? '#1B5E20' : '#6A1B9A') + ';">' + (p && p.conciliado ? '🏁 Conciliado' + (p.conciliadoEm ? ' em ' + p.conciliadoEm.split('-').reverse().join('/') : '') + ' — finalizado' : '⚖️ Aguardando conciliação') + '</span>' +
+      (podeConc ? '<button type="button" onclick="abrirModalConciliar(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#6A1B9A;color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">⚖️ Conciliar</button>' :
+        (p && !p.conciliado && p.status !== 'faturado' ? '<span style="font-size:11px;color:#888;">a conciliação é feita com o pedido FATURADO</span>' : '')) + '</div>';
+  }
+  return '<div style="background:#E8EAF6;border:1.5px solid #9FA8DA;border-radius:9px;padding:10px 12px;margin-bottom:14px;">' +
+    '<div style="font-size:11px;font-weight:800;color:#283593;">📦 ENTREGA, PAGAMENTO E CONCILIAÇÃO' + (p && p.numDoc ? ' <span style="font-weight:400;color:#666;">· DOC ' + abEsc(p.numDoc) + '</span>' : '') + '</div>' +
+    pagHtml + entHtml + concHtml + '</div>';
+}
+
 function abColetaReabrir(id){
   var r = AB.itens[id]; if (!r || !abPodeEditar()) return;
   if (!confirm('Voltar o chamado para Aguardando coleta? O tick "Arquivos no chamado" é desmarcado.')) return;
@@ -22318,7 +22379,9 @@ function abConfHtml(r, ed){
 }
 
 function abProgressoHtml(r){
-  if (abEtapa(r) === 'entrega'){ var pe = abPedidoDe(r); return '<span style="font-size:10.5px;font-weight:800;color:#283593;white-space:nowrap;">📦 faturado' + (pe && pe.numDoc ? ' · DOC ' + abEsc(pe.numDoc) : '') + ' — aguardando entrega</span>'; }
+  if (abEtapa(r) === 'entrega'){ var pe = abPedidoDe(r); return '<span style="font-size:10.5px;font-weight:800;color:#283593;white-space:nowrap;">📦 faturado' + (pe && pe.numDoc ? ' · DOC ' + abEsc(pe.numDoc) : '') + '</span><span style="display:block;font-size:10.5px;font-weight:700;white-space:nowrap;">' + abPagtoChip(r) + '</span>'; }
+  if (abEtapa(r) === 'conciliacao') return '<span style="font-size:10.5px;font-weight:800;color:#6A1B9A;white-space:nowrap;">⚖️ aguardando conciliação</span><span style="display:block;font-size:10.5px;font-weight:700;white-space:nowrap;">' + abPagtoChip(r) + '</span>';
+  if (abEtapa(r) === 'finalizado'){ var pz = abPedidoDe(r); return '<span style="font-size:10.5px;font-weight:800;color:#1B5E20;white-space:nowrap;">🏁 conciliado' + (pz && pz.conciliadoEm ? ' ' + pz.conciliadoEm.slice(8, 10) + '/' + pz.conciliadoEm.slice(5, 7) : '') + '</span>'; }
   if (abEtapa(r) === 'faturamento') return '<span style="font-size:10.5px;font-weight:800;color:#00838F;white-space:nowrap;">💰 aguardando faturamento</span>';
   if (abEtapa(r) === 'coleta'){
     var cc = r.coleta || {}, dcsC = abCompoeDcs(r);
@@ -22517,7 +22580,7 @@ function abRenderKanban(todos){
   var corte = new Date(); corte.setDate(corte.getDate() - 30); corte = corte.toISOString().split('T')[0];
   var prazoMin = function(r){ return abItensDe(r).map(function(i){ return i.prazo || '9999'; }).sort()[0] || '9999'; };
   var lista = todos.filter(function(r){
-    if (abEtapa(r) === 'cliente' && abEtapaEm(r) && abEtapaEm(r) < corte) return false;
+    if (abEtapa(r) === 'finalizado'){ var pf = abPedidoDe(r); if (pf && pf.conciliadoEm && pf.conciliadoEm < corte) return false; }
     return abFiltroBase(r);
   }).sort(function(a, b){ return prazoMin(a).localeCompare(prazoMin(b)); });
   var ed = abPodeEditar();
@@ -22590,7 +22653,7 @@ function abRenderPopup(){
   var lbl = function(t, html){ return '<div><div class="abp-lbl">' + t + '</div>' + html + '</div>'; };
   var etapaCham = ed
     ? '<select onchange="abMoverEtapa(\'' + r.id + '\',this.value)" style="font-weight:700;color:' + et.cor + ';">' +
-        (function(){ var fl = abFluxo(r).slice(), ic = fl.indexOf('reservado'); if (ic !== -1) fl.splice(ic + 1, 0, 'grade', 'previsao', 'coleta', 'faturamento', 'entrega');
+        (function(){ var fl = abFluxo(r).slice(), ic = fl.indexOf('reservado'); if (ic !== -1) fl.splice(ic + 1, 0, 'grade', 'previsao', 'coleta', 'faturamento', 'entrega', 'conciliacao', 'finalizado'); fl = fl.filter(function(k){ return k !== 'cliente'; });
           return fl.map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + '>' + (n + 1) + '. ' + o.t + '</option>'; }).join(''); })() + '</select>'
     : abChipEtapa(e);
   var cab = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;">' +
@@ -22611,7 +22674,7 @@ function abRenderPopup(){
       '</div>' +
       '<div style="margin-top:8px;">' + lbl('Obs. do chamado', '<input type="text" value="' + abEsc(r.obs || '') + '" placeholder="+ obs do chamado" onchange="abSalvarCampo(\'' + r.id + '\',\'obs\',this.value)"' + (ed ? '' : ' disabled') + '>') + '</div>' +
     '</div>' +
-    abColetaHtml(r, ed) + abPrevHtml(r, ed) + abGradeHtml(r, ed) + abConfHtml(r, ed) +
+    abEntregaHtml(r, ed) + abColetaHtml(r, ed) + abPrevHtml(r, ed) + abGradeHtml(r, ed) + abConfHtml(r, ed) +
     '<div style="font-size:11px;font-weight:800;color:#555;margin-bottom:8px;">ITENS (' + its.length + ')</div>';
   var lista = its.map(function(i){
     var si = abSituacaoItem(i);
@@ -22693,6 +22756,7 @@ function abSetEtapaItem(id, itemId, etapa){
 function abMoverEtapa(id, etapa, semConfirmar){
   if (etapa === 'previsao'){ abPrevDefinir(id); abRender(); return; }
   if (etapa === 'coleta'){ abGradeComDt(id); abRender(); return; }
+  if (etapa === 'conciliacao' || etapa === 'finalizado'){ alert(etapa === 'finalizado' ? '"Finalizado" entra sozinho quando a carga é CONCILIADA.' : '"Conciliação" entra sozinho quando a entrega é marcada em Aguardando entrega (ou o pedido fica Entregue).'); abRender(); return; }
   if (etapa === 'entrega'){ alert('"Aguardando entrega" entra sozinho quando o pedido é marcado como FATURADO na aba Pedidos.'); abRender(); return; }
   if (etapa === 'faturamento'){ alert('"Aguardando faturamento" entra sozinho: é só ticar em Aguardando coleta — coletou na Placo, coletou na DCS (se compõe) e arquivos no chamado.'); abRender(); return; }
   if (etapa === 'grade'){ abMandarGrade(id); abRender(); return; }
