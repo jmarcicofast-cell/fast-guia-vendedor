@@ -23436,6 +23436,13 @@ function sgRender(){
 .msn-toast .msn-tt .x { border-color:var(--msn-l3,#9DB3CC); color:var(--msn-tx,#4A6A8F); }
 .msn-toast .msn-tc em, .msn-toast .msn-op { color:var(--msn-t2,#0046D5); }
 .msn-toast .msn-tc .msn-ini, .msn-toast .msn-tc .msn-avbox { border-color:var(--msn-l3,#9DB3CC); }
+/* mover e redimensionar */
+.msn-lista, .msn-win { resize:both; overflow:hidden; min-width:260px; min-height:240px; max-width:96vw; }
+.msn-win.min { resize:none; min-height:0; height:auto !important; }
+.msn-lista .msn-contatos { flex:1; min-height:60px; overflow-y:auto; }
+.msn-xtit, .msn-win .msn-wtopo { cursor:move; user-select:none; touch-action:none; }
+.msn-arrastando { opacity:.92; box-shadow:0 18px 40px rgba(0,20,60,.45) !important; }
+@media (max-width:700px) { .msn-lista, .msn-win { resize:none; } .msn-xtit, .msn-win .msn-wtopo { cursor:default; } }
 @keyframes msnTreme { 0%,100% { transform:translate(0,0); } 10% { transform:translate(-10px,5px); } 20% { transform:translate(10px,-5px); } 30% { transform:translate(-10px,-5px); } 40% { transform:translate(10px,5px); } 50% { transform:translate(-8px,3px); } 60% { transform:translate(8px,-3px); } 70% { transform:translate(-5px,2px); } 80% { transform:translate(5px,-2px); } 90% { transform:translate(-2px,1px); } }
 .msn-tremendo { animation:msnTreme .7s linear 2; }
 @keyframes msnPisca { 0%,100% { box-shadow:inset 0 0 0 0 rgba(229,57,53,0); } 50% { box-shadow:inset 0 0 0 10px rgba(229,57,53,.8); } }
@@ -23657,7 +23664,9 @@ function msnTremerTela(conv) {
 }
 
 // ── início / fim de sessão ──
+var MSN_LISTA_MOVEL = false;
 function msnIniciar(user) {
+  if (!MSN_LISTA_MOVEL) { MSN_LISTA_MOVEL = true; var lst = document.getElementById('msn-lista'); if (lst) msnArrastavel(lst, '.msn-xtit', 'lista'); }
   if (!user || !vendedores[user]) return;
   if (MSN.on && MSN.eu === user && MSN.fb === !!firebaseOK) return;
   msnEncerrar(true);
@@ -23782,7 +23791,9 @@ function msnRender() {
   var bd = document.getElementById('msn-badge'); bd.style.display = naoLidas ? '' : 'none'; bd.textContent = naoLidas;
   msnTitulo(naoLidas);
   var lista = document.getElementById('msn-lista');
+  var abrindo = MSN.listaAberta && lista.style.display === 'none';
   lista.style.display = MSN.listaAberta ? 'flex' : 'none';
+  if (abrindo || (MSN.listaAberta && !lista.dataset.posOk)) { lista.dataset.posOk = '1'; msnPosAplicar(lista, 'lista'); }
   if (MSN.listaAberta) {
     var foco = document.activeElement, focoId = foco && foco.id, selIni = foco && foco.selectionStart;
     lista.innerHTML = msnListaHtml();
@@ -24026,6 +24037,63 @@ function msnWinkTocar(id) {
   setTimeout(function() { tela.remove(); }, dur);
 }
 
+
+// ── janelas móveis (arrastar pela barra de título) e de tamanho ajustável (canto inferior direito) ──
+function msnPosLer(ch) { try { return JSON.parse(localStorage.getItem('msn_pos_' + MSN.eu + '_' + ch) || 'null'); } catch (e) { return null; } }
+function msnPosSalvar(ch, p) { try { var a = msnPosLer(ch) || {}; Object.keys(p).forEach(function(k) { a[k] = p[k]; }); localStorage.setItem('msn_pos_' + MSN.eu + '_' + ch, JSON.stringify(a)); } catch (e) {} }
+function msnPosAplicar(el, ch) {
+  if (window.innerWidth < 700) return;
+  var p = msnPosLer(ch); if (!p) return;
+  if (p.w && p.h) { el.style.width = Math.min(p.w, window.innerWidth - 10) + 'px'; el.style.height = Math.min(p.h, window.innerHeight - 10) + 'px'; el.style.maxHeight = 'none'; }
+  if (p.l != null && p.t != null) {
+    el.style.position = 'fixed'; el.style.margin = '0'; el.style.right = 'auto'; el.style.bottom = 'auto';
+    el.style.left = Math.max(0, Math.min(p.l, window.innerWidth - 120)) + 'px'; el.style.top = Math.max(0, Math.min(p.t, window.innerHeight - 40)) + 'px';
+  }
+}
+function msnPosResetar(el, ch) {
+  try { localStorage.removeItem('msn_pos_' + MSN.eu + '_' + ch); } catch (e) {}
+  ['position', 'left', 'top', 'right', 'bottom', 'margin', 'width', 'height', 'maxHeight'].forEach(function(k) { el.style[k] = ''; });
+}
+function msnArrastavel(el, seletor, ch) {
+  var ini = null;
+  el.addEventListener('pointerdown', function(e) {
+    if (window.innerWidth < 700 || e.button !== 0) return;
+    var alca = e.target.closest(seletor); if (!alca || !el.contains(alca) || e.target.closest('button, select, input, label, a')) return;
+    var r = el.getBoundingClientRect(); ini = { x: e.clientX, y: e.clientY, l: r.left, t: r.top, movido: false, id: e.pointerId };
+  });
+  window.addEventListener('pointermove', function(e) {
+    if (!ini || e.pointerId !== ini.id) return;
+    var dx = e.clientX - ini.x, dy = e.clientY - ini.y;
+    if (!ini.movido && Math.abs(dx) + Math.abs(dy) < 5) return;
+    if (!ini.movido) { ini.movido = true; el.classList.add('msn-arrastando'); var r = el.getBoundingClientRect(); el.style.width = r.width + 'px'; el.style.height = r.height + 'px'; el.style.maxHeight = 'none'; }
+    el.style.position = 'fixed'; el.style.margin = '0'; el.style.right = 'auto'; el.style.bottom = 'auto';
+    el.style.left = Math.max(-el.offsetWidth + 80, Math.min(window.innerWidth - 80, ini.l + dx)) + 'px';
+    el.style.top = Math.max(0, Math.min(window.innerHeight - 30, ini.t + dy)) + 'px';
+  });
+  window.addEventListener('pointerup', function(e) {
+    if (!ini || e.pointerId !== ini.id) return;
+    if (ini.movido) {
+      el.classList.remove('msn-arrastando'); el.dataset.arrastou = '1'; setTimeout(function() { delete el.dataset.arrastou; }, 50);
+      msnPosSalvar(ch, { l: parseInt(el.style.left, 10), t: parseInt(el.style.top, 10), w: el.offsetWidth, h: el.offsetHeight });
+    }
+    ini = null;
+  });
+  // tamanho: a pessoa puxa o canto inferior direito; grava ao soltar
+  el.addEventListener('pointerdown', function(e) {
+    var r = el.getBoundingClientRect();
+    if (e.clientX > r.right - 24 && e.clientY > r.bottom - 24) { el.dataset.redim = '1'; el.dataset.redimW = el.offsetWidth; el.dataset.redimH = el.offsetHeight; el.style.maxHeight = 'none'; }
+  });
+  window.addEventListener('pointerup', function() {
+    if (!el.dataset.redim) return;
+    setTimeout(function() {
+      if (el.offsetWidth && (String(el.offsetWidth) !== el.dataset.redimW || String(el.offsetHeight) !== el.dataset.redimH)) msnPosSalvar(ch, { w: el.offsetWidth, h: el.offsetHeight });
+      delete el.dataset.redim;
+    }, 50);
+  });
+  // duplo clique na barra de título volta ao lugar e tamanho originais
+  el.addEventListener('dblclick', function(e) { if (e.target.closest(seletor) && !e.target.closest('button, select, input')) { msnPosResetar(el, ch); } });
+}
+
 // ── janelas de conversa ──
 function msnAbrir(conv) {
   if (!MSN.on) return;
@@ -24066,6 +24134,7 @@ function msnCriarJanela(conv) {
     '<div class="msn-sb" id="msn-sb-' + conv + '"></div>';
   document.getElementById('msn-wins').appendChild(w);
   msnAplicarFmtEntrada(conv);
+  msnPosAplicar(w, 'w_' + conv); msnArrastavel(w, '.msn-wtopo', 'w_' + conv);
   w.addEventListener('dragover', function(e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) { e.preventDefault(); w.classList.add('solta'); } });
   w.addEventListener('dragleave', function(e) { if (!w.contains(e.relatedTarget)) w.classList.remove('solta'); });
   w.addEventListener('drop', function(e) { w.classList.remove('solta'); if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { e.preventDefault(); msnAnexarArquivos(conv, e.dataTransfer.files); } });
@@ -24079,7 +24148,8 @@ function msnCriarJanela(conv) {
 function msnRenderTopoJanela(conv) {
   var t = document.getElementById('msn-wt-' + conv); if (!t) return;
   var u = msnOutro(conv), st = u === 'EQUIPE' ? 'online' : msnStatus(u), p = MSN.pres[u] || {};
-  t.onclick = function(e) { if (!e.target.closest('button')) msnMinimizar(conv); };
+  t.onclick = null;
+  t.title = 'Arraste para mover · duplo clique volta ao lugar';
   t.innerHTML = (u === 'EQUIPE' ? '<span style="font-size:13px">👥</span>' : msnBoneco(st, 14)) + '<span class="msn-wtt">' + msnEsc(msnNome(u)) + ' - Conversa</span>' +
     '<button type="button" class="msn-xb min" onclick="msnMinimizar(\'' + conv + '\')" aria-label="Minimizar">_</button><button type="button" class="msn-xb" onclick="msnFechar(\'' + conv + '\')" aria-label="Fechar conversa">✕</button>';
   var pa = document.getElementById('msn-pa-' + conv);
