@@ -21475,8 +21475,8 @@ function abEtapa(r){
   var legado = !p.gradeLog;   // já estava em Aguardando DT antes deste controle
   if (p.status === 'com-dt' || p.status === 'em-rota') return (pos || r.previsaoGrade) ? 'previsao' : e;
   if (p.status !== 'aguardando-dt') return e;
-  if (r.previsaoGrade && (pos || legado)) return 'previsao';
-  if (pos || legado) return 'grade';
+  if (r.previsaoGrade && (pos || legado || r.gradeForcado)) return 'previsao';
+  if (pos || legado || r.gradeForcado) return 'grade';
   return e;
 }
 /* etapa do chamado = etapa do item mais atrasado */
@@ -21991,6 +21991,22 @@ function abGradeAtual(p){
 function abGradeColetaTxt(ga){ return ga.gc.coletas.map(abFmtDia).join(' / '); }
 
 /* ── Com previsão: a Placo deu data; ticks de print de confirmação do cliente e de saiu DT ── */
+/* ADM manda o chamado para a grade (arrastando o card ou pelo seletor): pedido vira AGUARDANDO DT */
+function abMandarGrade(id){
+  if (!abPodeEditar()) return;
+  var r = AB.itens[id]; if (!r) return;
+  var p = abPedidoDe(r); if (!p) return alert('Não encontrei o pedido deste chamado.');
+  if (['entregue', 'faturado', 'aguardando-fat', 'cancelado'].indexOf(p.status) !== -1){ alert('O pedido ' + (p.chamado || '') + ' está ' + (STATUS_LABEL[p.status] || p.status) + ' — não dá para mandar para a grade.'); return; }
+  var volta = p.status === 'com-dt' || p.status === 'em-rota' || !!r.previsaoGrade;
+  if (!confirm((volta ? 'Voltar' : 'Mandar') + ' o pedido ' + (p.chamado || '') + ' para a GRADE?\nO status do pedido passa para AGUARDANDO DT' + (volta ? ' e a previsão é apagada' : '') + '.')) return;
+  if (typeof pedidoEstaTravado === 'function' && pedidoEstaTravado(p.vendedor, p.id)){ if (typeof avisarPedidoTravado === 'function') avisarPedidoTravado(); return; }
+  var upd = { gradeForcado: { por: currentUser, em: Date.now() } };
+  if (r.previsaoGrade) upd.previsaoGrade = null;
+  r.gradeForcado = upd.gradeForcado; if (upd.previsaoGrade === null) r.previsaoGrade = null;
+  abAtualizar(id, upd);
+  if (p.status !== 'aguardando-dt') aplicarNovoStatus(p.vendedor, p.id, 'aguardando-dt');
+  setTimeout(function(){ AB._pm = null; abRenderPopup(); abRequestRender(); }, 800);
+}
 function abPrevDefinir(id, dataIso){
   if (!abPodeEditar()) return;
   var r = AB.itens[id]; if (!r) return;
@@ -22491,7 +22507,7 @@ function abRenderPopup(){
   var etapaCham = ed
     ? '<select onchange="abMoverEtapa(\'' + r.id + '\',this.value)" style="font-weight:700;color:' + et.cor + ';">' +
         (function(){ var fl = abFluxo(r).slice(), ic = fl.indexOf('reservado'); if (ic !== -1) fl.splice(ic + 1, 0, 'grade', 'previsao');
-          return fl.map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + (k === 'grade' && e !== 'grade' ? ' disabled' : '') + '>' + (n + 1) + '. ' + o.t + (k === 'grade' ? ' — vem do pedido' : '') + '</option>'; }).join(''); })() + '</select>'
+          return fl.map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + '>' + (n + 1) + '. ' + o.t + '</option>'; }).join(''); })() + '</select>'
     : abChipEtapa(e);
   var cab = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;">' +
       '<div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
@@ -22592,7 +22608,7 @@ function abSetEtapaItem(id, itemId, etapa){
 /* mover o chamado inteiro: leva todos os itens para a etapa escolhida */
 function abMoverEtapa(id, etapa, semConfirmar){
   if (etapa === 'previsao'){ abPrevDefinir(id); abRender(); return; }
-  if (etapa === 'grade'){ alert('"Chamado na grade" entra sozinho: é só o vendedor marcar o pedido como AGUARDANDO DT na aba Pedidos (depois do material reservado ou do abastecimento solicitado).'); abRender(); return; }
+  if (etapa === 'grade'){ abMandarGrade(id); abRender(); return; }
   if (!abPodeEditar()){ alert('Somente o administrativo pode alterar o abastecimento depois de incluído.'); abRender(); return; }
   var r = AB.itens[id]; if (!r) return;
   var atual = abEtapa(r); if (atual === etapa){ abRender(); return; }
