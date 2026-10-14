@@ -4988,7 +4988,7 @@ td.p-tie { color:var(--sp-muted); }
   #tab-abastecimento .ab-t input[type=text], #tab-abastecimento .ab-t input[type=date], #tab-abastecimento .ab-t select{ width:100%; padding:5px 7px; border:1px solid #E2E0D8; border-radius:5px; font-size:12px; background:#fff; outline:none; }
   #tab-abastecimento .ab-t input:focus, #tab-abastecimento .ab-t select:focus{ border-color:#C41E1E; }
   #tab-abastecimento .ab-sit{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; white-space:nowrap; display:inline-block; }
-  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(11,minmax(215px,1fr)); gap:10px; min-width:2490px; align-items:start; }
+  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(10,minmax(215px,1fr)); gap:10px; min-width:2260px; align-items:start; }
   #ab-kanban-wrap{ overflow-x:auto; overflow-y:visible; scrollbar-width:none; }
   #ab-kanban-wrap::-webkit-scrollbar{ display:none; }
   #ab-kb-topbar{ overflow-x:auto; overflow-y:hidden; height:16px; margin-bottom:4px; position:sticky; top:0; z-index:5; background:#F5F4F2; }
@@ -21360,14 +21360,14 @@ var AB_ETAPAS = [
   { k:'coleta',     t:'Aguardando coleta',        c:'Ag. coleta',  ic:'🚛', cor:'#5D4037' },
   { k:'faturamento', t:'Aguardando faturamento',  c:'Ag. faturamento', ic:'💰', cor:'#00838F' },
   { k:'entrega',    t:'Aguardando entrega',       c:'Ag. entrega', ic:'📦', cor:'#283593' },
-  { k:'dc',         t:'Chegada na DCS',            c:'Na DCS',       ic:'🏭', cor:'#185FA5' },
+  { k:'dc',         t:'Chegada na DCS',            c:'Na DCS',       ic:'🏭', cor:'#185FA5', oculta:true },
   { k:'cliente',    t:'Chegada no cliente',       c:'No cliente',  ic:'✅', cor:'#1B5E20' }
 ];
 function abIdx(k){ for (var i = 0; i < AB_ETAPAS.length; i++) if (AB_ETAPAS[i].k === k) return i; return 0; }
 
 /* ABASTECER passa por todas as etapas; RESERVAR pula "solicitado" e "chegada na DCS" */
 var AB_TIPOS = {
-  abastecer: { t:'Abastecer', ic:'🔄', cor:'#0C447C', bg:'#E6F1FB', fluxo:['tratar','conferido','solicitado','reservado','dc','cliente'], marco:'dc' },
+  abastecer: { t:'Abastecer', ic:'🔄', cor:'#0C447C', bg:'#E6F1FB', fluxo:['tratar','conferido','solicitado','reservado','cliente'], marco:'reservado' },
   reservar:  { t:'Reservar',  ic:'📌', cor:'#6A1B9A', bg:'#F3E5F5', fluxo:['tratar','conferido','reservado','cliente'], marco:'reservado' }
 };
 function abTipo(r){ return (r && AB_TIPOS[r.tipo]) ? r.tipo : 'abastecer'; }
@@ -21471,6 +21471,7 @@ function abNaGrade(r){
 }
 function abEtapa(r){
   var e = abEtapaBase(r);
+  if (e === 'dc') e = 'reservado';   // coluna "Na DCS" foi retirada
   if (e === 'cliente') return e;
   var p = abPedidoDe(r); if (!p) return e;
   if (p.status === 'entregue') return e === 'tratar' ? e : 'cliente';
@@ -21781,7 +21782,7 @@ function abSituacaoItem(i){
   if (i.etapa === 'cliente') return { k:'fim', txt:'✅ Entregue ao cliente', cor:'#1B5E20', bg:'#E8F5E9' };
   if (fl.indexOf(i.etapa) >= fl.indexOf(tp.marco)) return i.tipo === 'reservar'
     ? { k:'dc', txt:'📌 Reservado — falta entregar', cor:'#6A1B9A', bg:'#F3E5F5' }
-    : { k:'dc', txt:'🏭 Na DCS — falta entregar', cor:'#185FA5', bg:'#E6F1FB' };
+    : { k:'dc', txt:'📦 Reservado — falta entregar', cor:'#00695C', bg:'#E0F2F1' };
   if (i.prazo && hoje > i.prazo) return { k:'atrasado', txt:'🔴 Prazo vencido', cor:'#B71C1C', bg:'#FFEBEE' };
   if (i.prazo && i.previsao && i.previsao > i.prazo) return { k:'risco', txt:'🟠 Chega depois do prazo', cor:'#B36B00', bg:'#FFF3E0' };
   var et = AB_ETAPAS[abIdx(i.etapa)];
@@ -22403,7 +22404,7 @@ function abRender(){
     if (s.k === 'risco') cont.risco++;
   });
   var cards = [['abertos','Chamados em aberto','#1C1C1C'], ['atrasado','🔴 Prazo vencido','#B71C1C'], ['risco','🟠 Chega após prazo','#B36B00']]
-    .concat(AB_ETAPAS.map(function(et){ return ['e:' + et.k, et.ic + ' ' + et.t, et.cor]; }));
+    .concat(AB_ETAPAS.filter(function(et){ return !et.oculta; }).map(function(et){ return ['e:' + et.k, et.ic + ' ' + et.t, et.cor]; }));
   document.getElementById('ab-cards').innerHTML = cards.map(function(c){
     return '<div class="ab-card' + (AB.filtro === c[0] ? ' on' : '') + '" onclick="abSetFiltro(\'' + c[0] + '\')"><div class="l">' + c[1] + '</div><div class="n" style="color:' + c[2] + ';">' + cont[c[0]] + '</div></div>';
   }).join('');
@@ -22521,7 +22522,7 @@ function abRenderKanban(todos){
   }).sort(function(a, b){ return prazoMin(a).localeCompare(prazoMin(b)); });
   var ed = abPodeEditar();
 
-  box.innerHTML = AB_ETAPAS.map(function(et){
+  box.innerHTML = AB_ETAPAS.filter(function(et){ return !et.oculta; }).map(function(et){
     var itens = lista.filter(function(r){ return abEtapa(r) === et.k; });
     var cards = itens.map(function(r){
       var s = abSituacao(r), aberto = abAberto(r.id);
