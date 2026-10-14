@@ -21619,8 +21619,20 @@ function abCelulaPedidoHtml(p){
   var attrs = ' class="ab-ped-cell" data-vend="' + abEsc(p.vendedor) + '" data-pid="' + abEsc(p.id) + '"';
   return '<div' + attrs + '>' + abCelulaPedidoInner(p) + '</div>' + (typeof caCelulaPedidoHtml === 'function' ? caCelulaPedidoHtml(p) : '');
 }
+function abAvisoVoltou(p){
+  if (!p || p.status !== 'aguardando-dt' || typeof abGradeEventos !== 'function') return '';
+  var ev = abGradeEventos(p), ult = ev[ev.length - 1];
+  if (!ult || ult.tipo !== 'voltou') return '';
+  var n = ev.filter(function(e){ return e.tipo === 'voltou'; }).length;
+  return '<div title="' + abEsc((ult.motivo ? 'Motivo: ' + ult.motivo + ' · ' : '') + 'em ' + abFmtDH(ult.em)) + '" style="margin-bottom:5px;border:1.5px solid #C62828;background:#FFEBEE;color:#C62828;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:800;line-height:1.3;">↩️ Pedido voltou, deve seguir novamente na grade' + (n > 1 ? ' <span style="font-weight:600;">(' + n + 'ª vez)</span>' : '') + (ult.motivo ? '<div style="font-weight:600;color:#8E2424;">' + abEsc(ult.motivo) + '</div>' : '') + '</div>';
+}
 function abCelulaPedidoInner(p){
   if (p.status === 'cancelado') return '<span style="color:#ccc;font-size:12px;">—</span>';
+  var aviso = abAvisoVoltou(p);
+  if (aviso) return aviso + abCelulaPedidoInner2(p);
+  return abCelulaPedidoInner2(p);
+}
+function abCelulaPedidoInner2(p){
   var regs = abRegistrosDoPedido(p);
   var semTipo = regs.filter(function(r){ return abSemTipo(r); })[0];
   if (semTipo){
