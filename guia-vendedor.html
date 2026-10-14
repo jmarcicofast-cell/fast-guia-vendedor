@@ -4592,6 +4592,12 @@
 #tab-rota .rt-col-esq { flex:999 1 560px; min-width:0; display:flex; flex-direction:column; gap:16px; }
 #tab-rota .rt-mapa-box { border:4px solid #0B1828; background:#1B3A5C; overflow:auto; max-height:85vh; }
 #tab-rota .rt-mapa { display:block; width:100%; height:auto; margin:0 auto; }
+#tab-rota .rt-temas { display:flex; flex-wrap:wrap; align-items:center; gap:6px; color:#fff; font-size:14px; margin-bottom:8px; }
+#tab-rota .rt-temas button { display:inline-flex; align-items:center; gap:6px; font-family:'Segoe UI', system-ui, sans-serif; font-size:13px; font-weight:600; padding:6px 10px; min-height:36px; border:3px solid #0B1828; background:#fff; color:#1C1C1C; cursor:pointer; }
+#tab-rota .rt-temas button.on { background:#FFD23F; box-shadow:3px 3px 0 #0B1828; }
+#tab-rota .rt-temas button:focus-visible { outline:3px solid #FFD23F; outline-offset:2px; }
+#tab-rota .rt-tema-am { display:inline-flex; border:2px solid #1C1C1C; }
+#tab-rota .rt-tema-am i { width:8px; height:14px; display:block; }
 #tab-rota .rt-zoom { display:flex; flex-wrap:wrap; align-items:center; gap:6px; color:#fff; font-size:14px; }
 #tab-rota .rt-zoom button { font-family:'Segoe UI', system-ui, sans-serif; font-size:14px; font-weight:700; min-width:34px; padding:4px 10px; border:3px solid #0B1828; background:#fff; cursor:pointer; }
 #tab-rota .rt-zoom input[type=range] { width:140px; accent-color:#FFD23F; }
@@ -15173,6 +15179,7 @@ function rtInit() {
       });
     });
     dbRef('rotaMeta/avatares').on('value', function(snap) { RT.avatares = (snap && snap.val()) || {}; rtRender(); });
+    dbRef('rotaMeta/temas').on('value', function(snap) { RT.temas = (snap && snap.val()) || {}; rtRender(); });
     dbRef('rotaMeta/historico/' + ckMesAtualStr()).on('value', function(snap) { RT.hist = (snap && snap.val()) || {}; RT.histOk = true; rtRender(); });
     dbRef('rotaMeta/chegadas/' + ckMesAtualStr()).on('value', function(snap) { RT.chegadas = (snap && snap.val()) || {}; RT.chegOk = true; rtRender(); });
   }
@@ -15626,19 +15633,189 @@ function rtSprite(key, x, y, px) {
 function rtSpriteSvg(key, px) {
   return '<svg width="' + (px * 8) + '" height="' + (px * 8) + '" viewBox="0 0 ' + (px * 8) + ' ' + (px * 8) + '" shape-rendering="crispEdges" aria-hidden="true">' + rtSprite(key, 0, 0, px) + '</svg>';
 }
+// ── MUNDOS DA ROTA (temas do mapa) ──
+// A trilha, as 10 fases e os avatares são os mesmos em todos os mundos; muda o cenário.
+// Cada vendedor escolhe o seu (rotaMeta/temas/<VEND>); a visão da equipe usa a escolha salva neste aparelho.
+// Os mundos são originais (sem personagens, nomes ou marcas de jogos).
+var RT_ILHAS = [[30,406,270,198],[46,390,238,230],[280,316,250,168],[296,300,218,200],[550,226,210,158],[566,210,178,190],[540,46,300,128],[556,30,268,160]];
+var RT_DECO_PTS = [[230,430],[60,440],[250,560],[330,330],[480,440],[710,330],[580,250],[660,60]];
+function rtR(x, y, w, h, f) { return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + f + '"/>'; }
+function rtTerreno(sombra, borda, topo) {
+  var s = '';
+  RT_ILHAS.forEach(function(r) { s += rtR(r[0] + 8, r[1] + 8, r[2], r[3], sombra); });
+  RT_ILHAS.forEach(function(r) { s += rtR(r[0], r[1], r[2], r[3], borda); });
+  RT_ILHAS.forEach(function(r) { s += rtR(r[0] + 8, r[1] + 8, r[2] - 16, r[3] - 16, topo); });
+  return s;
+}
+var RT_TEMAS = {
+  ilhas: {
+    nome: 'Ilhas Pixel', ic: '🏝️', desc: 'Plataforma clássica: ilhas no mar',
+    wrap: '#14263D', amostra: ['#1B3A5C', '#E3C27A', '#4C9A3F'],
+    mundos: ['MUNDO 1', 'MUNDO 2', 'MUNDO 3', 'MUNDO 4'],
+    trilha: ['#0F2740', '#F7E7B4'], sombraParada: '#0B1828',
+    tag: ['#FFD23F', '#1C1C1C', '#FFD23F'], pier: ['#0F2740', '#A0703F', '#8B5A2B'], filaTag: ['#1C1C1C', '#F7E7B4'],
+    cenario: function() {
+      var s = rtR(0, 0, 860, 684, '#1B3A5C') + '<g fill="#24507A">';
+      [[40,40],[260,120],[420,40],[140,250],[360,580],[620,480],[760,300],[560,620]].forEach(function(p) { s += '<rect x="' + p[0] + '" y="' + p[1] + '" width="24" height="4"/><rect x="' + (p[0] + 24) + '" y="' + (p[1] + 4) + '" width="16" height="4"/>'; });
+      s += '</g>' + rtTerreno('#0F2740', '#E3C27A', '#4C9A3F');
+      RT_DECO_PTS.forEach(function(p) { s += rtR(p[0], p[1], 16, 16, '#3B7D31') + rtR(p[0] + 8, p[1] + 16, 4, 8, '#5C3A1A'); });
+      return s;
+    }
+  },
+  cidade: {
+    nome: 'Cidade Ensolarada', ic: '🌆', desc: 'Mundo aberto: ruas, prédios e pôr do sol',
+    wrap: '#2A1840', amostra: ['#B8457A', '#4A4E58', '#F2D16B'],
+    mundos: ['BAIRRO', 'CENTRO', 'PORTO', 'COBERTURA'],
+    trilha: ['#1C1C1C', '#F2D16B'], sombraParada: '#0E1220',
+    tag: ['#FF8AD8', '#1C1C1C', '#FF8AD8'], pier: ['#0E1220', '#6B7380', '#4A4E58'], filaTag: ['#1C1C1C', '#F2D16B'],
+    cenario: function() {
+      var s = rtR(0, 0, 860, 684, '#1F4E6B');
+      [['#3A2152', 0, 110], ['#5B2A6E', 110, 70], ['#8E3A7A', 180, 50], ['#C4507A', 230, 40], ['#E8734A', 270, 36]].forEach(function(b) { s += rtR(0, b[1], 860, b[2], b[0]); });
+      s += rtR(110, 250, 120, 56, '#FFB347') + rtR(126, 232, 88, 18, '#FFB347') + rtR(146, 222, 48, 10, '#FFD23F');
+      var xs = 10, alt = [60, 90, 44, 110, 70, 52, 96, 64, 80, 48, 100, 58];
+      for (var i = 0; xs < 540; i++) {
+        var w = 30 + (i * 7) % 18, h = alt[i % alt.length];
+        s += rtR(xs, 306 - h, w, h, '#2A1840');
+        for (var wy = 306 - h + 8; wy < 296; wy += 12) for (var wx = xs + 5; wx < xs + w - 5; wx += 9) if ((wx + wy + i) % 3) s += rtR(wx, wy, 3, 4, '#FFD23F');
+        xs += w + 4;
+      }
+      s += '<g fill="#3E7896">';
+      [[60,340],[200,360],[420,560],[700,470],[760,600],[620,520],[300,650]].forEach(function(p) { s += '<rect x="' + p[0] + '" y="' + p[1] + '" width="28" height="3"/>'; });
+      s += '</g>' + rtTerreno('#0E1220', '#C9C2B4', '#4A4E58');
+      // faixas de rua nos quarteirões
+      s += '<g fill="#5C606B">' + RT_ILHAS.filter(function(r, i) { return i % 2; }).map(function(r) { return '<rect x="' + (r[0] + 16) + '" y="' + (r[1] + Math.round(r[3] / 2)) + '" width="' + (r[2] - 32) + '" height="6"/>'; }).join('') + '</g>';
+      var cores = ['#F2A65A', '#5CC8D6', '#E86A92', '#9BD770'];
+      RT_DECO_PTS.forEach(function(p, i) {
+        if (i % 2) { // palmeira
+          s += rtR(p[0] + 7, p[1] - 6, 4, 26, '#8B5A2B') + rtR(p[0] - 4, p[1] - 10, 26, 5, '#2E8B57') + rtR(p[0], p[1] - 15, 18, 5, '#3FAF6A') + rtR(p[0] - 6, p[1] - 5, 6, 6, '#2E8B57') + rtR(p[0] + 18, p[1] - 5, 6, 6, '#2E8B57');
+        } else { // prédio baixo
+          s += rtR(p[0] - 4, p[1] - 14, 26, 34, cores[i / 2 % 4]) + rtR(p[0] - 4, p[1] - 18, 26, 4, '#1C1C1C');
+          for (var y = p[1] - 10; y < p[1] + 14; y += 8) s += rtR(p[0], y, 5, 4, '#FFF3C4') + rtR(p[0] + 12, y, 5, 4, '#FFF3C4');
+        }
+      });
+      s += rtR(720, 548, 64, 12, '#C41E1E') + rtR(728, 540, 40, 8, '#FFFFFF') + rtR(740, 532, 6, 8, '#1C1C1C');
+      return s;
+    }
+  },
+  bairro: {
+    nome: 'Vizinhança', ic: '🏡', desc: 'Simulação de vida: casinhas, jardins e piscina',
+    wrap: '#3E7A2E', amostra: ['#6FB84A', '#F5F1E6', '#F7C6D0'],
+    mundos: ['RUA NOVA', 'PRACINHA', 'CONDOMÍNIO', 'CASA DOS SONHOS'],
+    trilha: ['#9C8A6A', '#F5F1E6'], sombraParada: '#3F6B2A',
+    tag: ['#2E7D32', '#FFFFFF', '#2E7D32'], pier: ['#3F6B2A', '#C89B6A', '#A97C4F'], filaTag: ['#1C1C1C', '#FFFFFF'],
+    cenario: function() {
+      var s = rtR(0, 0, 860, 684, '#6FB84A') + '<g fill="#5EA23D">';
+      for (var i = 0; i < 40; i++) { var x = (i * 137) % 840 + 6, y = (i * 89) % 660 + 10; s += '<rect x="' + x + '" y="' + y + '" width="6" height="4"/><rect x="' + (x + 2) + '" y="' + (y - 4) + '" width="2" height="4"/>'; }
+      s += '</g>';
+      // árvores e lago nas áreas livres
+      [[40,60],[120,150],[250,40],[380,190],[470,80],[30,260],[690,620],[800,450]].forEach(function(p) {
+        s += rtR(p[0] + 10, p[1] + 26, 8, 12, '#7A5230') + rtR(p[0], p[1], 28, 28, '#3E8E2F') + rtR(p[0] + 4, p[1] - 6, 20, 8, '#4FA83C');
+      });
+      s += rtR(180, 236, 150, 46, '#4FC3F7') + rtR(186, 242, 40, 4, '#B3E5FC') + rtR(250, 262, 50, 4, '#B3E5FC');
+      s += rtTerreno('#4E8A34', '#F5F1E6', '#8BD158');
+      var paredes = ['#F7C6D0', '#BFE3F2', '#FFE7A3', '#D7C7F2'], tetos = ['#C0504D', '#4A6FA5', '#C47A2C', '#6A4C93'];
+      RT_DECO_PTS.forEach(function(p, i) {
+        s += rtR(p[0] - 6, p[1] - 2, 30, 22, paredes[i % 4]) + rtR(p[0] - 10, p[1] - 10, 38, 8, tetos[i % 4]) + rtR(p[0] - 4, p[1] - 16, 26, 6, tetos[i % 4]) +
+          rtR(p[0] + 6, p[1] + 8, 7, 12, '#8B5A2B') + rtR(p[0] - 2, p[1] + 3, 6, 6, '#9FD3E8') + rtR(p[0] + 16, p[1] + 3, 6, 6, '#9FD3E8');
+      });
+      // piscina e cerquinha
+      s += rtR(690, 440, 130, 80, '#FFFFFF') + rtR(696, 446, 118, 68, '#4FC3F7') + rtR(704, 456, 36, 4, '#B3E5FC') + rtR(760, 486, 40, 4, '#B3E5FC');
+      for (var fx = 684; fx < 830; fx += 10) s += rtR(fx, 530, 4, 14, '#FFFFFF');
+      s += rtR(684, 534, 146, 3, '#FFFFFF');
+      return s;
+    }
+  },
+  predio: {
+    nome: 'Prédio Pixel', ic: '🏢', desc: 'Quartos em pixel: piso xadrez, móveis e neon',
+    wrap: '#120C24', amostra: ['#1E1636', '#E9D8B4', '#FF4FD8'],
+    mundos: ['TÉRREO', '1º ANDAR', '2º ANDAR', 'COBERTURA'],
+    trilha: ['#3A1F6B', '#FF4FD8'], sombraParada: '#0A0714',
+    tag: ['#5CE1E6', '#120C24', '#5CE1E6'], pier: ['#0A0714', '#4A3A70', '#3A2A5C'], filaTag: ['#120C24', '#5CE1E6'],
+    cenario: function() {
+      var s = '<defs><pattern id="rtXadrez" width="24" height="24" patternUnits="userSpaceOnUse"><rect width="24" height="24" fill="#E9D8B4"/><rect width="12" height="12" fill="#CDB78F"/><rect x="12" y="12" width="12" height="12" fill="#CDB78F"/></pattern></defs>';
+      s += rtR(0, 0, 860, 684, '#1E1636') + '<g fill="#FFFFFF">';
+      for (var i = 0; i < 46; i++) { s += '<rect x="' + ((i * 173) % 850) + '" y="' + ((i * 97) % 300) + '" width="2" height="2"/>'; }
+      s += '</g>' + rtR(400, 50, 40, 40, '#F5F1D0') + rtR(412, 44, 28, 6, '#F5F1D0') + rtR(426, 58, 10, 10, '#DCD6B0');
+      s += rtTerreno('#0A0714', '#7A4FD8', 'url(#rtXadrez)');
+      // paredes do fundo de cada sala
+      s += '<g fill="#5B3FA8">' + RT_ILHAS.filter(function(r, i) { return i % 2; }).map(function(r) { return '<rect x="' + (r[0] + 8) + '" y="' + (r[1] + 8) + '" width="' + (r[2] - 16) + '" height="10"/>'; }).join('') + '</g>';
+      RT_DECO_PTS.forEach(function(p, i) {
+        var k = i % 4;
+        if (k === 0) s += rtR(p[0] - 6, p[1] + 2, 30, 10, '#C0392B') + rtR(p[0] - 6, p[1] - 6, 30, 8, '#922B21') + rtR(p[0] - 10, p[1] - 2, 4, 14, '#922B21') + rtR(p[0] + 24, p[1] - 2, 4, 14, '#922B21');
+        else if (k === 1) s += rtR(p[0] + 2, p[1] + 8, 12, 12, '#8B5A2B') + rtR(p[0] - 4, p[1] - 8, 24, 16, '#2E8B57') + rtR(p[0] + 2, p[1] - 14, 12, 6, '#3FAF6A');
+        else if (k === 2) s += rtR(p[0] + 6, p[1] - 4, 4, 24, '#555555') + rtR(p[0] - 2, p[1] - 14, 20, 10, '#FFD23F') + rtR(p[0] + 2, p[1] + 18, 12, 4, '#555555');
+        else s += rtR(p[0] - 6, p[1] - 6, 30, 22, '#888888') + rtR(p[0] - 2, p[1] - 2, 22, 14, '#5CE1E6') + rtR(p[0] + 6, p[1] + 16, 6, 6, '#555555');
+      });
+      // letreiro neon
+      s += rtR(684, 440, 150, 56, '#120C24') + '<rect x="686" y="442" width="146" height="52" fill="none" stroke="#FF4FD8" stroke-width="4"/>' +
+        '<text x="759" y="476" text-anchor="middle" font-family="\'Press Start 2P\', monospace" font-size="12" fill="#5CE1E6">ABERTO</text>';
+      return s;
+    }
+  },
+  deuses: {
+    nome: 'Monte dos Deuses', ic: '⚡', desc: 'Mitologia grega: templos, tochas e raios',
+    wrap: '#120C10', amostra: ['#1A1420', '#5E5866', '#E2572B'],
+    mundos: ['VALE', 'TEMPLO', 'MONTANHA', 'OLIMPO'],
+    trilha: ['#2A0E0E', '#FFB347'], sombraParada: '#050407',
+    tag: ['#FFB347', '#1A1420', '#FFB347'], pier: ['#050407', '#5E5866', '#4A4552'], filaTag: ['#1A1420', '#FFB347'],
+    cenario: function() {
+      var s = rtR(0, 0, 860, 684, '#1A1420');
+      s += rtR(0, 420, 860, 264, '#3A1010');
+      s += '<g fill="#E2572B">';
+      [[40,640],[200,660],[330,500],[700,430],[780,520],[620,640],[520,470],[120,470]].forEach(function(p) { s += '<rect x="' + p[0] + '" y="' + p[1] + '" width="22" height="4"/><rect x="' + (p[0] + 6) + '" y="' + (p[1] - 4) + '" width="10" height="4" fill="#FFB347"/>'; });
+      s += '</g>';
+      // montanhas ao fundo e raio
+      [[20,300,120],[120,300,170],[260,300,110],[360,300,150]].forEach(function(m) {
+        var n = Math.round(m[2] / 10), cx = m[0] + m[2] / 2;
+        for (var k = 0; k < n; k++) { var w = 16 + k * 22; s += rtR(Math.round(cx - w / 2), m[1] - (n - k) * 10, w, 10, k < 2 ? '#4A4058' : '#2A2030'); }
+      });
+      s += rtR(470, 30, 8, 30, '#FFF3A0') + rtR(460, 60, 18, 8, '#FFF3A0') + rtR(460, 68, 8, 30, '#FFF3A0') + rtR(452, 98, 8, 20, '#FFF3A0');
+      s += rtR(80, 40, 60, 10, '#3A3044') + rtR(70, 50, 90, 10, '#3A3044') + rtR(300, 70, 70, 10, '#3A3044') + rtR(290, 80, 100, 10, '#3A3044');
+      s += rtTerreno('#050407', '#E2572B', '#5E5866');
+      s += '<g fill="#4A4552">' + RT_ILHAS.filter(function(r, i) { return i % 2; }).map(function(r) { return '<rect x="' + (r[0] + 40) + '" y="' + (r[1] + 50) + '" width="30" height="3"/><rect x="' + (r[0] + r[2] - 80) + '" y="' + (r[1] + r[3] - 60) + '" width="40" height="3"/>'; }).join('') + '</g>';
+      RT_DECO_PTS.forEach(function(p, i) {
+        if (i % 2) { // coluna
+          s += rtR(p[0] - 2, p[1] - 16, 20, 5, '#E8E2D0') + rtR(p[0] + 2, p[1] - 11, 12, 30, '#D8D0BA') + rtR(p[0] + 5, p[1] - 11, 2, 30, '#B8AF97') + rtR(p[0] - 2, p[1] + 19, 20, 5, '#E8E2D0');
+        } else { // tocha
+          s += rtR(p[0] + 5, p[1] + 4, 6, 18, '#6B4A2B') + rtR(p[0], p[1], 16, 6, '#8B5A2B') + rtR(p[0] + 2, p[1] - 8, 12, 8, '#E2572B') + rtR(p[0] + 5, p[1] - 14, 6, 6, '#FFB347');
+        }
+      });
+      return s;
+    }
+  }
+};
+var RT_TEMA_ORDEM = ['ilhas', 'cidade', 'bairro', 'predio', 'deuses'];
+function rtTemaKey(foco) {
+  var k = foco ? (RT.temas || {})[foco.vn] : null;
+  if (!foco) { try { k = localStorage.getItem('rtTemaEquipe'); } catch (e) {} }
+  return RT_TEMAS[k] ? k : 'ilhas';
+}
+function rtTemaBarra(foco) {
+  var atual = rtTemaKey(foco), pode = !foco || foco.vn === currentUser;
+  if (!pode) return '<div class="rt-temas"><span>🌍 Mundo de ' + rtEsc(rtNome(foco.vn).split(' ')[0]) + ': <b>' + RT_TEMAS[atual].ic + ' ' + RT_TEMAS[atual].nome + '</b></span></div>';
+  return '<div class="rt-temas"><span>🌍 ' + (foco ? 'Meu mundo:' : 'Mundo da equipe:') + '</span>' + RT_TEMA_ORDEM.map(function(k) {
+    var t = RT_TEMAS[k];
+    return '<button type="button" class="' + (k === atual ? 'on' : '') + '" onclick="rtEscolherTema(\'' + k + '\')" title="' + rtEsc(t.desc) + '" aria-pressed="' + (k === atual) + '">' +
+      '<span class="rt-tema-am">' + t.amostra.map(function(c) { return '<i style="background:' + c + '"></i>'; }).join('') + '</span>' + t.ic + ' ' + t.nome + '</button>';
+  }).join('') + '</div>';
+}
+function rtEscolherTema(k) {
+  if (!RT_TEMAS[k]) return;
+  var foco = RT.ver !== 'EQUIPE' ? RT.ver : null;
+  if (!foco) { try { localStorage.setItem('rtTemaEquipe', k); } catch (e) {} rtRender(); return; }
+  if (foco !== currentUser) return;
+  RT.temas = RT.temas || {}; RT.temas[foco] = k; rtRender();
+  dbRef('rotaMeta/temas/' + foco).set(k);
+}
+
 function rtMapa(calcs, foco) {
   var pts = [RT_LARGADA].concat(RT_STOPS).concat([[800, 90]]).map(function(p) { return p.join(','); }).join(' ');
   var faseFoco = foco ? foco.fase : -1;
-  var s = '<svg class="rt-mapa" viewBox="0 0 860 684" shape-rendering="crispEdges" role="img" aria-label="Mapa da Rota da Meta">' +
-    '<rect width="860" height="684" fill="#1B3A5C"/>' +
-    '<g fill="#24507A"><rect x="40" y="40" width="24" height="4"/><rect x="64" y="44" width="16" height="4"/><rect x="260" y="120" width="24" height="4"/><rect x="284" y="124" width="16" height="4"/><rect x="420" y="40" width="24" height="4"/><rect x="444" y="44" width="16" height="4"/><rect x="140" y="250" width="24" height="4"/><rect x="164" y="254" width="16" height="4"/><rect x="360" y="580" width="24" height="4"/><rect x="384" y="584" width="16" height="4"/><rect x="620" y="480" width="24" height="4"/><rect x="644" y="484" width="16" height="4"/><rect x="760" y="300" width="24" height="4"/><rect x="784" y="304" width="16" height="4"/><rect x="560" y="620" width="24" height="4"/><rect x="584" y="624" width="16" height="4"/></g>' +
-    '<g fill="#0F2740"><rect x="38" y="414" width="270" height="198"/><rect x="54" y="398" width="238" height="230"/><rect x="288" y="324" width="250" height="168"/><rect x="304" y="308" width="218" height="200"/><rect x="558" y="234" width="210" height="158"/><rect x="574" y="218" width="178" height="190"/><rect x="548" y="54" width="300" height="128"/><rect x="564" y="38" width="268" height="160"/></g>' +
-    '<g fill="#E3C27A"><rect x="30" y="406" width="270" height="198"/><rect x="46" y="390" width="238" height="230"/><rect x="280" y="316" width="250" height="168"/><rect x="296" y="300" width="218" height="200"/><rect x="550" y="226" width="210" height="158"/><rect x="566" y="210" width="178" height="190"/><rect x="540" y="46" width="300" height="128"/><rect x="556" y="30" width="268" height="160"/></g>' +
-    '<g fill="#4C9A3F"><rect x="38" y="414" width="254" height="182"/><rect x="54" y="398" width="222" height="214"/><rect x="288" y="324" width="234" height="152"/><rect x="304" y="308" width="202" height="184"/><rect x="558" y="234" width="194" height="142"/><rect x="574" y="218" width="162" height="174"/><rect x="548" y="54" width="284" height="112"/><rect x="564" y="38" width="252" height="144"/></g>' +
-    '<g fill="#3B7D31"><rect x="230" y="430" width="16" height="16"/><rect x="60" y="440" width="16" height="16"/><rect x="250" y="560" width="16" height="16"/><rect x="330" y="330" width="16" height="16"/><rect x="480" y="440" width="16" height="16"/><rect x="710" y="330" width="16" height="16"/><rect x="580" y="250" width="16" height="16"/><rect x="660" y="60" width="16" height="16"/></g>' +
-    '<g fill="#5C3A1A"><rect x="238" y="446" width="4" height="8"/><rect x="68" y="456" width="4" height="8"/><rect x="258" y="576" width="4" height="8"/><rect x="338" y="346" width="4" height="8"/><rect x="488" y="456" width="4" height="8"/><rect x="718" y="346" width="4" height="8"/><rect x="588" y="266" width="4" height="8"/><rect x="668" y="76" width="4" height="8"/></g>' +
-    '<polyline points="' + pts + '" fill="none" stroke="#0F2740" stroke-width="10"/>' +
-    '<polyline points="' + pts + '" fill="none" stroke="#F7E7B4" stroke-width="6" stroke-dasharray="10 6"/>' +
+  var T = RT_TEMAS[rtTemaKey(foco)];
+  var s = '<svg class="rt-mapa" viewBox="0 0 860 684" shape-rendering="crispEdges" role="img" aria-label="Mapa da Rota da Meta — ' + T.nome + '">' +
+    T.cenario() +
+    '<polyline points="' + pts + '" fill="none" stroke="' + T.trilha[0] + '" stroke-width="10"/>' +
+    '<polyline points="' + pts + '" fill="none" stroke="' + T.trilha[1] + '" stroke-width="6" stroke-dasharray="10 6"/>' +
     rtTrilhaVerde(foco) +
     '<rect x="40" y="586" width="56" height="30" fill="#E8E6E1"/><rect x="36" y="578" width="64" height="10" fill="#C41E1E"/><rect x="58" y="598" width="20" height="18" fill="#5B6672"/><rect x="44" y="594" width="10" height="8" fill="#9AA5B1"/><rect x="82" y="594" width="10" height="8" fill="#9AA5B1"/>' +
     '<rect x="790" y="36" width="6" height="64" fill="#E8E6E1"/><rect x="796" y="36" width="34" height="22" fill="#C41E1E"/><rect x="802" y="42" width="8" height="4" fill="#FFFFFF"/><rect x="776" y="100" width="34" height="8" fill="#5B6672"/>';
@@ -15648,22 +15825,21 @@ function rtMapa(calcs, foco) {
       '<text x="' + (x + 7) + '" y="' + (y + tam + 5) + '" font-family="\'Press Start 2P\', monospace" font-size="' + tam + '" fill="' + fg + '">' + rtEsc(txt) + '</text>';
   }
   s += tag(30, 626, 'CD FAST · LARGADA', '#FFFFFF', '#1C1C1C', '#E8E6E1', 8);
-  s += tag(150, 598, 'MUNDO 1 · PROSPECÇÃO', '#FFD23F', '#1C1C1C', '#FFD23F', 9);
-  s += tag(304, 484, 'MUNDO 2 · PROPOSTAS', '#FFD23F', '#1C1C1C', '#FFD23F', 9);
-  s += tag(560, 380, 'MUNDO 3 · CARGAS', '#FFD23F', '#1C1C1C', '#FFD23F', 9);
-  s += tag(556, 8, 'MUNDO 4 · META BATIDA', '#FFD23F', '#1C1C1C', '#FFD23F', 9);
+  [[150, 598, 'PROSPECÇÃO'], [304, 484, 'PROPOSTAS'], [560, 380, 'CARGAS'], [556, 8, 'META BATIDA']].forEach(function(m, i) {
+    s += tag(m[0], m[1], T.mundos[i] + ' · ' + m[2], T.tag[0], T.tag[1], T.tag[2], 9);
+  });
   s += tag(744, 118, '100% · CHEGADA', '#1C1C1C', '#FFD23F', '#1C1C1C', 8);
   RT_STOPS.forEach(function(p, i) {
     var n = i + 1, bg = '#FFFFFF', fg = '#1C1C1C';
     if (faseFoco >= 0) { if (n <= faseFoco) bg = '#FFD23F'; if (n === faseFoco + 1 && faseFoco < 10) { bg = '#C41E1E'; fg = '#FFFFFF'; } }
-    s += '<rect x="' + (p[0] - 14) + '" y="' + (p[1] - 14) + '" width="36" height="36" fill="#0B1828"/>' +
+    s += '<rect x="' + (p[0] - 14) + '" y="' + (p[1] - 14) + '" width="36" height="36" fill="' + T.sombraParada + '"/>' +
       '<rect x="' + (p[0] - 18) + '" y="' + (p[1] - 18) + '" width="36" height="36" fill="' + bg + '" stroke="#1C1C1C" stroke-width="4"/>' +
       '<text x="' + p[0] + '" y="' + (p[1] + 5) + '" text-anchor="middle" font-family="\'Press Start 2P\', monospace" font-size="11" fill="' + fg + '">' + n + '</text>';
   });
   // píer da largada: quem ainda está na fase 0 espera aqui, em fila
-  s += '<rect x="378" y="560" width="276" height="114" fill="#0F2740"/><rect x="374" y="556" width="276" height="114" fill="#A0703F"/>' +
-    '<g fill="#8B5A2B"><rect x="374" y="584" width="276" height="3"/><rect x="374" y="612" width="276" height="3"/><rect x="374" y="640" width="276" height="3"/></g>';
-  s += tag(382, 534, 'FILA DA LARGADA', '#1C1C1C', '#F7E7B4', '#1C1C1C', 8);
+  s += '<rect x="378" y="560" width="276" height="114" fill="' + T.pier[0] + '"/><rect x="374" y="556" width="276" height="114" fill="' + T.pier[1] + '"/>' +
+    '<g fill="' + T.pier[2] + '"><rect x="374" y="584" width="276" height="3"/><rect x="374" y="612" width="276" height="3"/><rect x="374" y="640" width="276" height="3"/></g>';
+  s += tag(382, 534, 'FILA DA LARGADA', T.filaTag[0], T.filaTag[1], '#1C1C1C', 8);
   var porFase = {};
   calcs.forEach(function(c) { (porFase[c.fase] = porFase[c.fase] || []).push(c); });
   function moeda(vn, cx, yy) {
@@ -15913,7 +16089,7 @@ function rtRenderInner() {
   var foco = RT.ver !== 'EQUIPE' ? calcs.find(function(c) { return c.vn === RT.ver; }) : null;
   var nomesMes = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
   var hoje = new Date();
-  var html = '<div class="rt-wrap"><div class="rt-topo"><div class="rt-topo-esq"><span class="rt-logo">ROTA DA META</span><span class="rt-mes">' + nomesMes[hoje.getMonth()] + '</span></div>' +
+  var html = '<div class="rt-wrap" style="background:' + RT_TEMAS[rtTemaKey(foco)].wrap + '"><div class="rt-topo"><div class="rt-topo-esq"><span class="rt-logo">ROTA DA META</span><span class="rt-mes">' + nomesMes[hoje.getMonth()] + '</span></div>' +
     '<div class="rt-legenda"><span><i style="background:#FFD23F"></i>Fase vencida</span><span><i style="background:#C41E1E"></i>Próxima fase</span><span><i style="background:#FFFFFF"></i>A caminho</span></div></div>';
   if (rtGestao()) {
     html += '<div class="rt-sel"><span>Ver:</span><button type="button" class="' + (RT.ver === 'EQUIPE' ? 'on' : '') + '" onclick="rtVer(\'EQUIPE\')">👥 Equipe</button>' +
@@ -15924,7 +16100,7 @@ function rtRenderInner() {
     return '<button type="button" class="' + (aba === a[0] ? 'on' : '') + '" onclick="rtAba(\'' + a[0] + '\')">' + a[1] + '</button>';
   }).join('') + '</div>';
   if (aba === 'mapa') {
-    html += '<div class="rt-corpo"><div class="rt-col-esq">' + rtFaixaGanhos(calcs, foco) + rtZoomBarra() + '<div class="rt-mapa-box" id="rt-mapa-box">' + rtMapa(calcs, foco).replace('<svg class="rt-mapa"', '<svg class="rt-mapa" style="width:' + rtZoomAtual() + '%"') + '</div>' + (foco ? rtQuadroProdutos(foco) : '') + '</div><div class="rt-painel">';
+    html += '<div class="rt-corpo"><div class="rt-col-esq">' + rtFaixaGanhos(calcs, foco) + rtTemaBarra(foco) + rtZoomBarra() + '<div class="rt-mapa-box" id="rt-mapa-box">' + rtMapa(calcs, foco).replace('<svg class="rt-mapa"', '<svg class="rt-mapa" style="width:' + rtZoomAtual() + '%"') + '</div>' + (foco ? rtQuadroProdutos(foco) : '') + '</div><div class="rt-painel">';
     html += foco ? rtPainelVendedor(foco) : rtPainelEquipe(calcs);
     html += '</div></div>';
   } else {
