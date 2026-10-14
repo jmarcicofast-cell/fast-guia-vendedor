@@ -21480,7 +21480,7 @@ function abEtapa(r){
   // saiu DT → aguardando coleta (Placo e, se compõe, DCS)
   if (p.status === 'com-dt' || p.status === 'em-rota'){
     if (!(pos || legado || r.previsaoGrade || r.gradeForcado || r.saiuDt || (p.gradeLog && Object.keys(p.gradeLog).length))) return e;
-    // coletou na Placo, na DCS (se compõe) e arquivos no sistema → aguardando faturamento
+    // coletou na Placo, na DCS (se compõe) e arquivos no chamado → aguardando faturamento
     return abColetaFeita(r) ? 'faturamento' : 'coleta';
   }
   if (p.status !== 'aguardando-dt') return e;
@@ -22078,13 +22078,13 @@ function abColetaTick(id, k){
 }
 function abColetaReabrir(id){
   var r = AB.itens[id]; if (!r || !abPodeEditar()) return;
-  if (!confirm('Voltar o chamado para Aguardando coleta? O tick "Arquivos no sistema" é desmarcado.')) return;
+  if (!confirm('Voltar o chamado para Aguardando coleta? O tick "Arquivos no chamado" é desmarcado.')) return;
   if (r.coleta) delete r.coleta.arquivos;
   abRenderPopup(); abRender(); abAtualizar(id, { 'coleta/arquivos': null });
 }
 function abColetaHtml(r, ed){
   var et = abEtapa(r);
-  if (et === 'faturamento') return '<div style="background:#E0F7FA;border:1.5px solid #80DEEA;border-radius:9px;padding:10px 12px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:11px;font-weight:800;color:#00838F;">💰 AGUARDANDO FATURAMENTO</span>' + (ed && r.coleta ? '<button type="button" onclick="abColetaReabrir(\'' + r.id + '\')" style="border:1px solid #80DEEA;background:#fff;color:#00838F;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;">↩ voltar para coleta</button>' : '') + '</div><div style="font-size:12px;color:#006064;margin-top:4px;">✅ Coletou na Placo' + (abCompoeDcs(r) ? ' · ✅ Coletou na DCS' : '') + ' · ✅ Arquivos no sistema</div></div>';
+  if (et === 'faturamento') return '<div style="background:#E0F7FA;border:1.5px solid #80DEEA;border-radius:9px;padding:10px 12px;margin-bottom:14px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:11px;font-weight:800;color:#00838F;">💰 AGUARDANDO FATURAMENTO</span>' + (ed && r.coleta ? '<button type="button" onclick="abColetaReabrir(\'' + r.id + '\')" style="border:1px solid #80DEEA;background:#fff;color:#00838F;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;">↩ voltar para coleta</button>' : '') + '</div><div style="font-size:12px;color:#006064;margin-top:4px;">✅ Coletou na Placo' + (abCompoeDcs(r) ? ' · ✅ Coletou na DCS' : '') + ' · ✅ Arquivos no chamado</div></div>';
   if (et !== 'coleta') return '';
   var c = r.coleta || {}, dcs = abCompoeDcs(r), p = abPedidoDe(r);
   var linha = function(k, txt, ativo, sub){
@@ -22099,7 +22099,7 @@ function abColetaHtml(r, ed){
       '<span style="font-size:12px;font-weight:700;color:' + (abColetaFeita(r) ? '#1B5E20' : '#5D4037') + ';">' + (abColetaFeita(r) ? (p && p.status === 'em-rota' ? '✅ Coletado — em rota' : '✅ Coletado') : 'DT saiu — aguardando coleta') + '</span></div>' +
     linha('placo', 'Coletou na Placo', true) +
     linha('dcs', 'Coletou na DCS', !!dcs, dcs ? 'composição: ' + abEsc(dcs) : 'sem composição em DCS') +
-    linha('arquivos', 'Arquivos no sistema', true) +
+    linha('arquivos', 'Arquivos no chamado', true) +
     (abColetaFeita(r) ? '' : '<div style="font-size:11px;color:#8D6E63;margin-top:6px;">Com tudo ticado, o chamado vai sozinho para 💰 Aguardando faturamento.</div>') +
   '</div>';
 }
@@ -22689,7 +22689,7 @@ function abSetEtapaItem(id, itemId, etapa){
 function abMoverEtapa(id, etapa, semConfirmar){
   if (etapa === 'previsao'){ abPrevDefinir(id); abRender(); return; }
   if (etapa === 'coleta'){ abGradeComDt(id); abRender(); return; }
-  if (etapa === 'faturamento'){ alert('"Aguardando faturamento" entra sozinho: é só ticar em Aguardando coleta — coletou na Placo, coletou na DCS (se compõe) e arquivos no sistema.'); abRender(); return; }
+  if (etapa === 'faturamento'){ alert('"Aguardando faturamento" entra sozinho: é só ticar em Aguardando coleta — coletou na Placo, coletou na DCS (se compõe) e arquivos no chamado.'); abRender(); return; }
   if (etapa === 'grade'){ abMandarGrade(id); abRender(); return; }
   if (!abPodeEditar()){ alert('Somente o administrativo pode alterar o abastecimento depois de incluído.'); abRender(); return; }
   var r = AB.itens[id]; if (!r) return;
