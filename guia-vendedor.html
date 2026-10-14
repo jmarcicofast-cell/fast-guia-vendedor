@@ -21335,6 +21335,7 @@ var AB = { itens: {}, ligado: false, filtro: 'abertos', filtroTipo: '', modalPed
 var AB_ETAPAS = [
   { k:'tratar',     t:'Chamado para tratar',      c:'Para tratar', ic:'📝', cor:'#7A4A00' },
   { k:'conferido',  t:'Chamado conferido',        c:'Conferido',   ic:'🔎', cor:'#0C447C' },
+  { k:'grade',      t:'Chamado na grade (aguardando DT)', c:'Na grade', ic:'🗓️', cor:'#AD1457' },
   { k:'solicitado', t:'Abastecimento solicitado', c:'Solicitado',  ic:'📨', cor:'#4A148C' },
   { k:'reservado',  t:'Material reservado',       c:'Reservado',   ic:'📦', cor:'#00695C' },
   { k:'dc',         t:'Chegada na DCS',            c:'Na DCS',       ic:'🏭', cor:'#185FA5' },
@@ -21441,8 +21442,17 @@ function abEtapaItem(r, it){
   for (var i = 1; i < fl.length; i++) if (ok[fl[i]]) e2 = fl[i];
   return e2;
 }
-/* etapa do chamado = etapa do item mais atrasado */
+/* "Na grade (aguardando DT)": chamado conferido cujo pedido o vendedor marcou como Aguardando DT */
+function abNaGrade(r){
+  var p = (typeof abPedidoDe === 'function') ? abPedidoDe(r) : null;
+  return !!p && p.status === 'aguardando-dt';
+}
 function abEtapa(r){
+  var e = abEtapaBase(r);
+  return e === 'conferido' && abNaGrade(r) ? 'grade' : e;
+}
+/* etapa do chamado = etapa do item mais atrasado */
+function abEtapaBase(r){
   var ks = Object.keys(r.itens || {});
   if (!ks.length) return abEtapaLeg(r);
   var min = AB_ETAPAS.length - 1;
@@ -21494,7 +21504,7 @@ function abItensDe(r){
 }
 /* quantos itens já passaram da etapa do chamado */
 function abProgresso(r){
-  var fl = abFluxo(r), e = abEtapa(r), prox = fl[fl.indexOf(e) + 1] || null;
+  var fl = abFluxo(r), e = abEtapaBase(r), prox = fl[fl.indexOf(e) + 1] || null;
   var its = abItensDe(r);
   var n = prox ? its.filter(function(it){ return abIdx(it.etapa) > abIdx(e); }).length : its.length;
   return { feitos:n, total:its.length, prox: prox };
@@ -21520,7 +21530,7 @@ var AB_ST_FECHADOS = ['entregue', 'cancelado', 'faturado', 'aguardando-fat', 'em
 function abPedidoAberto(p){ return !!p && !p.excluido && AB_ST_FECHADOS.indexOf(p.status || '') === -1; }
 function abSemTipo(r){ return !!r && !r.tipo && !Object.keys(r.itens || {}).some(function(k){ return r.itens[k] && r.itens[k].tipo; }); }
 function abAutoKey(p){ return String(p.vendedor + '_' + p.id).replace(/[.#$\[\]\/]/g, '_'); }
-function abAutoAgendar(){ clearTimeout(AB.autoT); AB.autoT = setTimeout(abAutoSync, 1500); }
+function abAutoAgendar(){ clearTimeout(AB.autoT); AB.autoT = setTimeout(function(){ abAutoSync(); AB._pm = null; if (AB.carregado) abRequestRender(); }, 1500); }
 function abAutoItens(p){
   var out = [];
   (p.itens || []).forEach(function(it){ if (it && (it.material || '').trim()) out.push({ material: it.material.trim(), codigo: it.codigo || '', qtd: String(it.qtd || '') }); });
@@ -21859,7 +21869,11 @@ function abConfSet(id, k, val){
   abRenderPopup();
   abAtualizar(id, upd);
 }
-function abPedidoDe(r){ return abPedidos().filter(function(x){ return x.id === r.pedidoId && x.vendedor === r.vendedor; })[0] || null; }
+function abPedidoDe(r){
+  var agora = Date.now();
+  if (!AB._pm || agora - AB._pmEm > 800){ AB._pm = {}; AB._pmEm = agora; abPedidos().forEach(function(x){ if (x) AB._pm[x.vendedor + '|' + x.id] = x; }); }
+  return AB._pm[r.vendedor + '|' + r.pedidoId] || null;
+}
 /* abastecimentos abertos da Central com saldo livre deste material (para avaliar se dá para usar) */
 /* família da planta: abastecimento da DCS MDC só serve pedido MDC, e FDS só FDS */
 function abFamilia(t){ t = String(t || '').toUpperCase(); return t.indexOf('MDC') !== -1 ? 'MDC' : t.indexOf('FDS') !== -1 ? 'FDS' : ''; }
@@ -22158,7 +22172,8 @@ function abRenderPopup(){
   var lbl = function(t, html){ return '<div><div class="abp-lbl">' + t + '</div>' + html + '</div>'; };
   var etapaCham = ed
     ? '<select onchange="abMoverEtapa(\'' + r.id + '\',this.value)" style="font-weight:700;color:' + et.cor + ';">' +
-        abFluxo(r).map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + '>' + (n + 1) + '. ' + o.t + '</option>'; }).join('') + '</select>'
+        (function(){ var fl = abFluxo(r).slice(), ic = fl.indexOf('conferido'); if (ic !== -1) fl.splice(ic + 1, 0, 'grade');
+          return fl.map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + (k === 'grade' && e !== 'grade' ? ' disabled' : '') + '>' + (n + 1) + '. ' + o.t + (k === 'grade' ? ' — vem do pedido' : '') + '</option>'; }).join(''); })() + '</select>'
     : abChipEtapa(e);
   var cab = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;">' +
       '<div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
@@ -22259,6 +22274,7 @@ function abSetEtapaItem(id, itemId, etapa){
 
 /* mover o chamado inteiro: leva todos os itens para a etapa escolhida */
 function abMoverEtapa(id, etapa, semConfirmar){
+  if (etapa === 'grade'){ alert('"Chamado na grade" entra sozinho: é só o vendedor marcar o pedido como AGUARDANDO DT na aba Pedidos (depois do chamado conferido).'); abRender(); return; }
   if (!abPodeEditar()){ alert('Somente o administrativo pode alterar o abastecimento depois de incluído.'); abRender(); return; }
   var r = AB.itens[id]; if (!r) return;
   var atual = abEtapa(r); if (atual === etapa){ abRender(); return; }
