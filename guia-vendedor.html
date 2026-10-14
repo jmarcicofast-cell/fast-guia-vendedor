@@ -23238,6 +23238,68 @@ function sgRender(){
 .msn-figctl input:not([type=range]), .msn-figctl select { border:1px solid #B9D3EE; border-radius:5px; padding:6px 8px; font:13px 'Segoe UI', sans-serif; }
 .msn-figctl button.pri { background:linear-gradient(#5FB2F0,#2D7DD2); color:#fff; }
 .msn-figbts { display:flex; gap:6px; } .msn-figbts button { flex:1; }
+
+/* ── visual de mensageiro clássico ── */
+.msn-lista { width:300px; background:linear-gradient(#FFFFFF,#EAF1FB 22%,#D9E6F6); border:1px solid #4D72AE; border-radius:8px 8px 4px 4px; font:12px Tahoma,'Segoe UI',sans-serif; }
+.msn-xtit, .msn-win .msn-wtopo { display:flex; align-items:center; gap:6px; height:28px; padding:0 4px 0 8px; color:#fff; font:bold 12px Tahoma,'Segoe UI',sans-serif; text-shadow:1px 1px 0 rgba(0,0,40,.45);
+  background:linear-gradient(#3D95FF 0%,#0A5FE8 12%,#0453D8 55%,#0646C2 88%,#0A3EA8 100%); border-radius:7px 7px 0 0; cursor:default; }
+.msn-xtit span, .msn-wtt { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msn-win .msn-wtopo { cursor:pointer; }
+.msn-xb { width:22px; height:21px; border:1px solid #fff; border-radius:3px; color:#fff; font:bold 12px Tahoma,sans-serif; cursor:pointer; padding:0; line-height:18px;
+  background:linear-gradient(#F0A08A,#E0552F 45%,#C23A13); box-shadow:inset 0 0 0 1px rgba(255,255,255,.25); }
+.msn-xb.min { background:linear-gradient(#7FB2FF,#2D6DE0 45%,#1A50C0); }
+.msn-xb:hover { filter:brightness(1.15); }
+.msn-cab { display:flex; gap:10px; align-items:center; padding:10px; background:linear-gradient(#F4F8FE,#E3ECF8); border-bottom:1px solid #B7CBE6; }
+.msn-cab-t { flex:1; min-width:0; }
+.msn-cab-n { white-space:nowrap; overflow:hidden; } .msn-cab-n b { font-size:13px; color:#000; }
+.msn-cab-n select { border:0; background:transparent; color:#3B5875; font:12px Tahoma,'Segoe UI',sans-serif; cursor:pointer; padding:0; }
+.msn-pm { width:100%; box-sizing:border-box; border:1px solid transparent; background:transparent; font:italic 12px Tahoma,'Segoe UI',sans-serif; color:#5E7591; padding:2px 3px; margin-top:2px; }
+.msn-pm:hover, .msn-pm:focus { border-color:#9DB9DD; background:#fff; }
+.msn-dp { display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; border-radius:7px; padding:4px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.7), 0 1px 3px rgba(0,30,80,.35); flex-shrink:0; }
+.msn-dp-online { background:linear-gradient(#D7F7C4,#7ED957 50%,#3BA52E); }
+.msn-dp-ausente { background:linear-gradient(#FFF0C2,#FFC94D 50%,#E09A10); }
+.msn-dp-ocupado { background:linear-gradient(#FFD0C8,#FF7A66 50%,#D3341F); }
+.msn-dp-offline { background:linear-gradient(#F2F4F7,#C9D0D9 50%,#99A3AF); }
+.msn-dp-in { display:flex; background:#fff; border-radius:4px; overflow:hidden; }
+.msn-dp-in .msn-ini, .msn-dp-in .msn-avbox { border:0; border-radius:3px; }
+.msn-ferr { display:flex; gap:5px; align-items:center; flex-wrap:wrap; padding:5px 10px; border-bottom:1px solid #C9D9EE; }
+.msn-ferr label { font-size:12px; color:#3B5875; }
+.msn-ferr select, .msn-ferr button, .msn-somg button { border:1px solid #9DB9DD; border-radius:3px; background:linear-gradient(#FFFFFF,#E6EEF9); font:11.5px Tahoma,'Segoe UI',sans-serif; color:#1C3F73; padding:2px 6px; cursor:pointer; min-height:24px; }
+.msn-bsc { padding:6px 10px 4px; } .msn-bsc input { width:100%; box-sizing:border-box; border:1px solid #9DB9DD; border-radius:3px; padding:4px 7px; font:12px Tahoma,'Segoe UI',sans-serif; background:#fff; }
+.msn-contatos { padding:2px 4px 8px; background:#fff; margin:0 6px 6px; border:1px solid #C9D9EE; border-radius:3px; }
+.msn-grp2 { display:block; width:100%; text-align:left; background:transparent; border:0; font:bold 12px Tahoma,'Segoe UI',sans-serif; color:#1C3F73; padding:6px 6px 3px; cursor:pointer; }
+.msn-ct2 { display:flex; align-items:center; gap:6px; width:100%; text-align:left; background:transparent; border:1px solid transparent; border-radius:3px; padding:3px 6px 3px 16px; min-height:28px; cursor:pointer; font:12px Tahoma,'Segoe UI',sans-serif; color:#000; }
+.msn-ct2:hover, .msn-ct2:focus-visible { background:linear-gradient(#EEF5FE,#D6E6FA); border-color:#A9C6EC; outline:none; }
+.msn-ct2-t { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msn-ct2-t i { font-style:normal; color:#7A8DA3; }
+.msn-ct2.off .msn-ct2-t b { font-weight:normal; color:#6B7A8C; }
+.msn-bon { flex-shrink:0; display:inline-block; }
+.msn-vz { padding:2px 16px 4px; color:#7A8DA3; font-size:11.5px; }
+.msn-somg { margin:0 6px 8px; font-size:11.5px; color:#3B5875; background:#FFF8E1; border:1px solid #F2D16B; border-radius:4px; padding:6px 8px; }
+.msn-win { width:470px; height:min(500px, calc(100vh - 30px)); background:linear-gradient(#F3F7FD,#DCE8F7); border:1px solid #4D72AE; border-radius:8px 8px 4px 4px; font:12px Tahoma,'Segoe UI',sans-serif; }
+.msn-para { padding:6px 10px; font-size:12px; color:#000; background:linear-gradient(#FFFFFF,#E9F0FA); border-bottom:1px solid #B7CBE6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msn-para .cz { color:#5E7591; } .msn-para .pm { color:#7A8DA3; font-style:italic; }
+.msn-tb { display:flex; gap:2px; padding:3px 6px; background:linear-gradient(#FAFCFF,#DDE9F8); border-bottom:1px solid #B7CBE6; }
+.msn-tb button { display:flex; flex-direction:column; align-items:center; gap:1px; background:transparent; border:1px solid transparent; border-radius:3px; font:11px Tahoma,'Segoe UI',sans-serif; color:#1C3F73; padding:2px 7px; cursor:pointer; min-height:44px; }
+.msn-tb button .ic { font-size:19px; line-height:22px; }
+.msn-tb button:hover, .msn-tb button:focus-visible { border-color:#9DB9DD; background:linear-gradient(#FFFFFF,#E3EEFB); outline:none; }
+.msn-meio { flex:1; min-height:0; display:flex; gap:6px; padding:6px; }
+.msn-esq { flex:1; min-width:0; display:flex; flex-direction:column; }
+.msn-win .msn-corpo { margin:0; border:1px solid #9DB9DD; border-radius:2px; font:12.5px Tahoma,'Segoe UI',sans-serif; }
+.msn-win .msn-msg .msn-quem { color:#5E7591; font-size:12px; }
+.msn-win .msn-msg .msn-txt { color:#000; padding-left:12px; }
+.msn-win .msn-entrada { padding:4px 0 0; }
+.msn-fmt { display:flex; gap:2px; padding:2px 0; }
+.msn-fmt button { border:1px solid transparent; background:transparent; border-radius:3px; font-size:14px; padding:1px 6px; cursor:pointer; min-height:26px; }
+.msn-fmt button:hover { border-color:#9DB9DD; background:#fff; }
+.msn-win .msn-linha textarea { height:58px; border:1px solid #9DB9DD; border-radius:2px; font:12.5px Tahoma,'Segoe UI',sans-serif; }
+.msn-win .msn-linha button { width:70px; border:1px solid #6F8FB8; border-radius:3px; background:linear-gradient(#FFFFFF,#DCE7F6 50%,#C7D8F0); color:#1C3F73; font:bold 12px Tahoma,'Segoe UI',sans-serif; }
+.msn-win .msn-linha button:hover { background:linear-gradient(#FFFFFF,#E7F0FC 50%,#D3E3F8); }
+.msn-dir { width:100px; display:flex; flex-direction:column; justify-content:space-between; align-items:center; padding:2px 0; }
+.msn-sb { padding:3px 8px; font-size:11px; color:#4A6A8F; background:linear-gradient(#E9F0FA,#D7E3F4); border-top:1px solid #B7CBE6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msn-win.min { height:auto; } .msn-win.min .msn-para, .msn-win.min .msn-tb, .msn-win.min .msn-meio, .msn-win.min .msn-sb { display:none; }
+.msn-wins { left:330px; }
+@media (max-width:700px) { .msn-dir { display:none; } .msn-wins { left:0; } }
 @keyframes msnTreme { 0%,100% { transform:translate(0,0); } 10% { transform:translate(-10px,5px); } 20% { transform:translate(10px,-5px); } 30% { transform:translate(-10px,-5px); } 40% { transform:translate(10px,5px); } 50% { transform:translate(-8px,3px); } 60% { transform:translate(8px,-3px); } 70% { transform:translate(-5px,2px); } 80% { transform:translate(5px,-2px); } 90% { transform:translate(-2px,1px); } }
 .msn-tremendo { animation:msnTreme .7s linear 2; }
 @keyframes msnPisca { 0%,100% { box-shadow:inset 0 0 0 0 rgba(229,57,53,0); } 50% { box-shadow:inset 0 0 0 10px rgba(229,57,53,.8); } }
@@ -23273,7 +23335,8 @@ function msnConv(a, b) { return [a, b].sort().join('__'); }
 function msnOutro(conv) { return conv === 'EQUIPE' ? 'EQUIPE' : conv.split('__').filter(function(x) { return x !== MSN.eu; })[0]; }
 function msnStatus(u) {
   var p = MSN.pres[u]; if (!p || p.status === 'offline') return 'offline';
-  if (Date.now() - (p.ts || 0) > 4 * 60 * 1000) return 'offline';
+  var visto = (MSN.visto && MSN.visto[u]) || p.ts || 0;
+  if (Date.now() - visto > 4 * 60 * 1000) return 'offline';
   return p.status || 'online';
 }
 function msnAv(u, tam) {
@@ -23363,12 +23426,12 @@ function msnBalao(conv, de, texto, atencao) {
   var t = document.createElement('div'); t.className = 'msn-toast'; t.id = 'msn-t-' + conv; t.setAttribute('role', 'button'); t.tabIndex = 0;
   var logo = '<svg class="lg" viewBox="0 0 16 16" aria-hidden="true"><circle cx="5.5" cy="4.5" r="3" fill="#3BB54A"/><path d="M1 14c0-3.5 2-5.5 4.5-5.5S10 10.5 10 14z" fill="#3BB54A"/><circle cx="11" cy="5.5" r="2.6" fill="#2D7DD2"/><path d="M7.5 14.5c0-3 1.6-4.8 3.5-4.8s3.8 1.8 3.8 4.8z" fill="#2D7DD2"/></svg>';
   t.innerHTML = '<div class="msn-tt">' + logo + '<span>' + (conv === 'EQUIPE' ? 'Sala da equipe' : 'Bate-papo FAST') + '</span><span class="x" aria-label="Fechar aviso">×</span></div>' +
-    '<div class="msn-tc">' + msnAv(de, 34) + '<div style="min-width:0;flex:1"><b>' + msnEsc(msnNome(de)) + (atencao ? '' : ' diz:') + '</b><em>' + msnEsc(atencao ? 'acabou de chamar sua atenção!' : texto) + '</em></div></div>' +
-    '<div class="msn-op">' + (atencao ? 'Abrir conversa' : 'Responder') + '</div>';
+    '<div class="msn-tc">' + msnAv(de, 34) + '<div style="min-width:0;flex:1"><b>' + msnEsc(msnNome(de)) + (atencao ? '' : ' diz:') + '</b><em>' + msnEsc(atencao === 'entrou' ? 'acabou de entrar.' : atencao ? 'acabou de chamar sua atenção!' : texto) + '</em></div></div>' +
+    '<div class="msn-op">' + (atencao === 'entrou' ? 'Enviar mensagem' : atencao ? 'Abrir conversa' : 'Responder') + '</div>';
   function sair() { if (t.classList.contains('saindo')) return; t.classList.add('saindo'); setTimeout(function() { t.remove(); }, 500); }
   t.onclick = function(e) { if (e.target.classList.contains('x')) { sair(); return; } msnAbrir(conv); sair(); };
   t.onkeydown = function(e) { if (e.key === 'Enter') { msnAbrir(conv); sair(); } };
-  var fica = atencao ? 9000 : 6000, timer = setTimeout(sair, fica);
+  var fica = atencao === 'entrou' ? 5000 : atencao ? 9000 : 6000, timer = setTimeout(sair, fica);
   t.onmouseenter = function() { clearTimeout(timer); }; t.onmouseleave = function() { timer = setTimeout(sair, 2500); };
   box.appendChild(t);
   while (box.children.length > 3) box.firstChild.remove();
@@ -23462,7 +23525,19 @@ function msnIniciar(user) {
   msnPublicarPresenca();
   try { var r = dbRef('chat/presenca/' + user); if (r.onDisconnect) r.onDisconnect().update({ status: 'offline' }); } catch (e) {}
   MSN.hb = setInterval(msnPublicarPresenca, 60000);
-  dbRef('chat/presenca').on('value', function(s) { MSN.pres = (s && s.val()) || {}; msnRender(); });
+  MSN.visto = {};
+  dbRef('chat/presenca').on('value', function(s) {
+    var novo = (s && s.val()) || {}, agora = Date.now(), primeira = !MSN.base.pres;
+    Object.keys(novo).forEach(function(u) {
+      var p = novo[u], antes = MSN.pres[u], estavaOff = u !== MSN.eu && !primeira && msnStatus(u) === 'offline';
+      if (!p) return;
+      if (primeira) MSN.visto[u] = agora - Math.max(0, agora - (p.ts || 0));
+      else if (!antes || antes.ts !== p.ts || antes.status !== p.status) MSN.visto[u] = agora;
+      MSN.pres[u] = p;
+      if (estavaOff && msnStatus(u) !== 'offline') msnEntrou(u);
+    });
+    MSN.base.pres = true; msnRender();
+  });
   dbRef('rotaMeta/avatares').on('value', function(s) { MSN.av = (s && s.val()) || {}; msnRender(); });
   dbRef('chat/figurinhas').on('value', function(s) { MSN.figs = (s && s.val()) || {}; msnFigAtualizarPaineis(); MSN.abertas.forEach(function(c) { if (MSN.msgs[c]) msnRenderMsgs(c); }); });
   dbRef('chat/config/somMsg').on('value', function(s) { MSN.somMsg = (s && s.val()) || null; MSN.audioMsg = null; msnRender(); });
@@ -23525,6 +23600,10 @@ function msnChegou(conv, v) {
   if (!aberta || minimizada || document.hidden) { msnSom(conv === 'EQUIPE' ? 'grupo' : 'msg'); msnNotificar((conv === 'EQUIPE' ? 'Sala da equipe · ' : '') + msnNome(v.de) + ' diz:', v.txt, conv, false); }
   if (aberta && !document.hidden) msnMarcarLida(conv);
 }
+function msnEntrou(u) {
+  if (!MSN.on || MSN.meuStatus === 'ocupado' || u === MSN.eu || !vendedores[u]) return;
+  msnBalao(msnConv(MSN.eu, u), u, '', 'entrou'); msnSom('entrou');
+}
 function msnMarcarLida(conv) { var u = msnUltima(conv); var ts = Math.max(Date.now(), u ? u.ts : 0); MSN.lidas[conv] = ts; dbRef('chat/lidas/' + MSN.eu + '/' + conv).set(ts); }
 function msnMarcarAbertasLidas() { MSN.abertas.forEach(function(c) { if (msnNaoLidas(c)) msnMarcarLida(c); }); }
 function msnTitulo(n) {
@@ -23553,37 +23632,60 @@ function msnRender() {
   lista.style.display = MSN.listaAberta ? 'flex' : 'none';
   if (MSN.listaAberta) {
     var foco = document.activeElement, focoId = foco && foco.id, selIni = foco && foco.selectionStart;
-    var q = (MSN.busca || '').toLowerCase();
-    function linha(u) {
-      var conv = u === 'EQUIPE' ? 'EQUIPE' : msnConv(MSN.eu, u), st = u === 'EQUIPE' ? 'online' : msnStatus(u), p = MSN.pres[u] || {};
-      var ult = msnUltima(conv), frase = u === 'EQUIPE' ? (ult ? msnNome(ult.de) + ': ' + (ult.tipo === 'tremer' ? 'chamou a atenção' : ult.txt) : 'Todo mundo junto') : (p.frase || (st === 'offline' ? 'Offline' : MSN_STATUS[st]));
-      return '<button type="button" class="msn-ct' + (st === 'offline' ? ' msn-off' : '') + '" onclick="msnAbrir(\'' + conv + '\')">' +
-        '<span class="msn-av">' + msnAv(u) + (u === 'EQUIPE' ? '' : '<span class="msn-dot msn-st-' + st + '" title="' + MSN_STATUS[st] + '"></span>') + '</span>' +
-        '<span class="msn-nm"><b>' + msnEsc(msnNome(u)) + '</b><i>' + msnEsc(frase) + '</i></span>' + (msnNaoLidas(conv) ? '<span class="msn-nao">nova</span>' : '') + '</button>';
-    }
-    var filtra = function(u) { return !q || msnNome(u).toLowerCase().indexOf(q) >= 0; };
-    var onl = cts.filter(function(u) { return msnStatus(u) !== 'offline'; }).filter(filtra).sort(function(a, b) { return msnNome(a).localeCompare(msnNome(b)); });
-    var off = cts.filter(function(u) { return msnStatus(u) === 'offline'; }).filter(filtra).sort(function(a, b) { return msnNome(a).localeCompare(msnNome(b)); });
-    lista.innerHTML = '<div class="msn-topo">' + msnAv(MSN.eu, 40) + '<div class="msn-eu"><b>' + msnEsc(msnNome(MSN.eu)) + '</b>' +
-        '<select aria-label="Meu status" onchange="msnMudarStatus(this.value)">' + Object.keys(MSN_STATUS).map(function(k) { return '<option value="' + k + '"' + (MSN.meuStatus === k ? ' selected' : '') + '>' + MSN_STATUS[k] + '</option>'; }).join('') + '</select></div>' +
-        '<button type="button" class="msn-x" onclick="msnAlternarLista()" aria-label="Fechar lista">✕</button></div>' +
-      '<div class="msn-frase" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#3B5875">🔊 Som: <select aria-label="Volume dos avisos" onchange="msnMudarVolume(this.value)" style="font:12px \'Segoe UI\',sans-serif;border:1px solid #B9D3EE;border-radius:4px;padding:2px 4px">' +
-        [['alto', 'Alto'], ['medio', 'Médio'], ['baixo', 'Baixo'], ['mudo', 'Mudo']].map(function(o) { var at = 'alto'; try { at = localStorage.getItem('msn_volume') || 'alto'; } catch (e) {} return '<option value="' + o[0] + '"' + (at === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
-        '<button type="button" onclick="msnDestravarSom();msnSom(\'msg\')" style="border:1px solid #B9D3EE;border-radius:4px;background:#fff;font:12px \'Segoe UI\',sans-serif;padding:2px 6px;cursor:pointer" title="Ouvir o som de mensagem">▶ Ouvir</button></div>' +
-      (msnEhGestao() ? '<div class="msn-frase" style="font-size:12px;color:#3B5875;background:#FFF8E1;border:1px solid #F2D16B;border-radius:6px;padding:6px 8px">🎵 <b>Som de mensagem da equipe:</b> ' + msnEsc(MSN.somMsg ? MSN.somMsg.nome : 'padrão do guia') +
-        '<div style="display:flex;gap:6px;margin-top:5px"><button type="button" onclick="document.getElementById(\'msn-som-in\').click()" style="flex:1;border:1px solid #1C5FA8;border-radius:4px;background:linear-gradient(#5FB2F0,#2D7DD2);color:#fff;font:600 12px \'Segoe UI\',sans-serif;padding:4px;cursor:pointer">Escolher arquivo…</button>' +
-        (MSN.somMsg ? '<button type="button" onclick="msnSomPadrao()" style="border:1px solid #B9D3EE;border-radius:4px;background:#fff;font:12px \'Segoe UI\',sans-serif;padding:4px 6px;cursor:pointer">Voltar ao padrão</button>' : '') +
-        '<input type="file" id="msn-som-in" accept="audio/*" style="display:none" onchange="msnEscolherSom(this.files[0]);this.value=\'\'"></div><div style="font-size:11px;color:#7A6A3A;margin-top:3px">Vale para todo mundo. Áudio de até 1 MB.</div></div>' : '') +
-      (msnPipSuportado() ? '<div class="msn-frase"><button type="button" onclick="msnAbrirPip()" style="width:100%;min-height:36px;border:1px solid #1C5FA8;border-radius:5px;background:' + (MSN.pip ? '#DCEBFA;color:#1C5FA8' : 'linear-gradient(#5FB2F0,#2D7DD2);color:#fff') + ';font:600 12.5px \'Segoe UI\',sans-serif;cursor:pointer">' + (MSN.pip ? '📌 Janela flutuante aberta' : '📌 Abrir janela sempre na frente') + '</button></div>' : '') +
-      '<div class="msn-frase"><input id="msn-frase-in" maxlength="80" placeholder="Digite sua frase do dia…" value="' + msnEsc(MSN.minhaFrase || '') + '" onchange="msnMudarFrase(this.value)" aria-label="Frase do dia"></div>' +
-      '<div class="msn-busca"><input id="msn-busca-in" placeholder="🔎 Procurar contato" value="' + msnEsc(MSN.busca || '') + '" oninput="MSN.busca=this.value;msnRender()" aria-label="Procurar contato"></div>' +
-      '<div class="msn-contatos">' + (filtra('EQUIPE') || !q ? '<div class="msn-grupo">Grupo</div>' + linha('EQUIPE') : '') +
-        '<div class="msn-grupo">Online (' + onl.length + ')</div>' + (onl.map(linha).join('') || '<div style="padding:4px 10px;color:#6B8199;font-size:12px">Ninguém online agora.</div>') +
-        '<div class="msn-grupo">Offline (' + off.length + ')</div>' + off.map(linha).join('') + '</div>';
+    lista.innerHTML = msnListaHtml();
     if (focoId) { var el = document.getElementById(focoId); if (el) { el.focus(); try { el.setSelectionRange(selIni, selIni); } catch (e) {} } }
   }
   MSN.abertas.forEach(msnRenderTopoJanela);
   msnRenderPip();
+}
+
+// ── visual de mensageiro clássico: bonequinho de status, foto com moldura e lista ──
+var MSN_COR_ST = { online: '#3BB54A', ausente: '#F2A31E', ocupado: '#E53935', offline: '#9AA5B1' };
+function msnBoneco(st, tam) {
+  var c = MSN_COR_ST[st] || MSN_COR_ST.offline, e = av3dCor ? av3dCor(c, -0.3) : c; tam = tam || 16;
+  return '<svg class="msn-bon" width="' + tam + '" height="' + tam + '" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="4.6" r="3.4" fill="' + c + '" stroke="' + e + '" stroke-width=".8"/>' +
+    '<path d="M2 15.2c0-4 2.6-6.4 6-6.4s6 2.4 6 6.4z" fill="' + c + '" stroke="' + e + '" stroke-width=".8"/><ellipse cx="6.8" cy="3.4" rx="1.2" ry=".8" fill="#fff" opacity=".6"/></svg>';
+}
+function msnFoto(u, tam, st) {
+  st = st || (u === 'EQUIPE' ? 'online' : msnStatus(u));
+  return '<span class="msn-dp msn-dp-' + st + '" style="width:' + (tam + 10) + 'px;height:' + (tam + 10) + 'px"><span class="msn-dp-in">' + msnAv(u, tam) + '</span></span>';
+}
+var MSN_GRP_FECH = {};
+function msnGrupoTogg(g) { MSN_GRP_FECH[g] = !MSN_GRP_FECH[g]; msnRender(); }
+function msnListaHtml() {
+  var cts = msnContatos(), q = (MSN.busca || '').toLowerCase();
+  var filtra = function(u) { return !q || msnNome(u).toLowerCase().indexOf(q) >= 0; };
+  var onl = cts.filter(function(u) { return msnStatus(u) !== 'offline'; }).filter(filtra).sort(function(a, b) { return msnNome(a).localeCompare(msnNome(b)); });
+  var off = cts.filter(function(u) { return msnStatus(u) === 'offline'; }).filter(filtra).sort(function(a, b) { return msnNome(a).localeCompare(msnNome(b)); });
+  function linha(u) {
+    var conv = u === 'EQUIPE' ? 'EQUIPE' : msnConv(MSN.eu, u), st = u === 'EQUIPE' ? 'online' : msnStatus(u), p = MSN.pres[u] || {};
+    var ult = msnUltima(conv), frase = u === 'EQUIPE' ? (ult ? msnNome(ult.de) + ': ' + (ult.tipo === 'tremer' ? 'chamou a atenção' : ult.txt) : 'Todo mundo junto') : (p.frase || '');
+    var sufixo = u !== 'EQUIPE' && st !== 'online' && st !== 'offline' ? ' (' + MSN_STATUS[st] + ')' : '';
+    return '<button type="button" class="msn-ct2' + (st === 'offline' ? ' off' : '') + '" onclick="msnAbrir(\'' + conv + '\')" title="' + msnEsc(msnNome(u) + sufixo + (frase ? ' - ' + frase : '')) + '">' +
+      (u === 'EQUIPE' ? '<span class="msn-bon" style="font-size:13px;width:16px;text-align:center">👥</span>' : msnBoneco(st)) +
+      '<span class="msn-ct2-t"><b>' + msnEsc(msnNome(u)) + '</b>' + msnEsc(sufixo) + (frase ? ' <i>- ' + msnEsc(frase) + '</i>' : '') + '</span>' +
+      (msnNaoLidas(conv) ? '<span class="msn-nao">nova</span>' : '') + '</button>';
+  }
+  function grupo(chave, rot, itens, vazio) {
+    var fech = MSN_GRP_FECH[chave];
+    return '<button type="button" class="msn-grp2" onclick="msnGrupoTogg(\'' + chave + '\')" aria-expanded="' + !fech + '">' + (fech ? '▶' : '▼') + ' ' + rot + '</button>' +
+      (fech ? '' : (itens.length ? itens.map(linha).join('') : '<div class="msn-vz">' + vazio + '</div>'));
+  }
+  var vol = 'alto'; try { vol = localStorage.getItem('msn_volume') || 'alto'; } catch (e) {}
+  return '<div class="msn-xtit">' + msnBoneco('online', 14) + '<span>Bate-papo FAST</span><button type="button" class="msn-xb" onclick="msnAlternarLista()" aria-label="Fechar lista">✕</button></div>' +
+    '<div class="msn-cab">' + msnFoto(MSN.eu, 46, MSN.meuStatus === 'offline' ? 'offline' : MSN.meuStatus) +
+      '<div class="msn-cab-t"><div class="msn-cab-n"><b>' + msnEsc(msnNome(MSN.eu)) + '</b> <select aria-label="Meu status" onchange="msnMudarStatus(this.value)">' + Object.keys(MSN_STATUS).map(function(k) { return '<option value="' + k + '"' + (MSN.meuStatus === k ? ' selected' : '') + '>(' + MSN_STATUS[k] + ')</option>'; }).join('') + '</select></div>' +
+      '<input id="msn-frase-in" class="msn-pm" maxlength="80" placeholder="‹Digite uma mensagem pessoal›" value="' + msnEsc(MSN.minhaFrase || '') + '" onchange="msnMudarFrase(this.value)" aria-label="Mensagem pessoal"></div></div>' +
+    '<div class="msn-ferr"><label title="Volume dos avisos">🔊 <select aria-label="Volume dos avisos" onchange="msnMudarVolume(this.value)">' + [['alto', 'Alto'], ['medio', 'Médio'], ['baixo', 'Baixo'], ['mudo', 'Mudo']].map(function(o) { return '<option value="' + o[0] + '"' + (vol === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
+      '<button type="button" onclick="msnDestravarSom();msnSom(\'msg\')" title="Ouvir o som de mensagem">▶ Ouvir</button>' +
+      (msnPipSuportado() ? '<button type="button" onclick="msnAbrirPip()" title="Janela que fica por cima de todos os programas">' + (MSN.pip ? '📌 Aberta' : '📌 Sempre na frente') + '</button>' : '') + '</div>' +
+    '<div class="msn-bsc"><input id="msn-busca-in" placeholder="Procurar um contato…" value="' + msnEsc(MSN.busca || '') + '" oninput="MSN.busca=this.value;msnRender()" aria-label="Procurar contato"></div>' +
+    '<div class="msn-contatos">' + (filtra('EQUIPE') || !q ? grupo('grupo', 'Grupos (1)', ['EQUIPE'], '') : '') +
+      grupo('on', 'Online (' + onl.length + ')', onl, 'Ninguém online agora.') + grupo('off', 'Offline (' + off.length + ')', off, '') + '</div>' +
+    (msnEhGestao() ? '<div class="msn-somg">🎵 <b>Som de mensagem da equipe:</b> ' + msnEsc(MSN.somMsg ? MSN.somMsg.nome : 'padrão do guia') +
+      '<div style="display:flex;gap:6px;margin-top:4px"><button type="button" onclick="document.getElementById(\'msn-som-in\').click()">Escolher arquivo…</button>' +
+      (MSN.somMsg ? '<button type="button" onclick="msnSomPadrao()">Voltar ao padrão</button>' : '') +
+      '<input type="file" id="msn-som-in" accept="audio/*" style="display:none" onchange="msnEscolherSom(this.files[0]);this.value=\'\'"></div></div>' : '');
 }
 
 // ── janelas de conversa ──
@@ -23604,18 +23706,24 @@ function msnFechar(conv) {
 function msnMinimizar(conv) { var w = document.getElementById('msn-w-' + conv); if (w) w.classList.toggle('min'); }
 function msnCriarJanela(conv) {
   var w = document.createElement('div'); w.className = 'msn-win'; w.id = 'msn-w-' + conv; w.setAttribute('role', 'dialog'); w.setAttribute('aria-label', 'Conversa com ' + msnNome(msnOutro(conv)));
+  function tb(ic, rot, acao, dica) { return '<button type="button" onclick="' + acao + '" title="' + (dica || rot) + '"><span class="ic">' + ic + '</span>' + rot + '</button>'; }
+  var emoT = "document.getElementById('msn-g-" + conv + "').classList.remove('on');document.getElementById('msn-e-" + conv + "').classList.toggle('on')";
   w.innerHTML = '<div class="msn-wtopo" id="msn-wt-' + conv + '"></div>' +
-    '<div class="msn-corpo" id="msn-c-' + conv + '" aria-live="polite"><div class="msn-dia">Carregando…</div></div>' +
-    '<div class="msn-dig" id="msn-d-' + conv + '"></div>' +
-    '<div class="msn-entrada"><div class="msn-emo" id="msn-e-' + conv + '">' + MSN_EMOS.map(function(e) { return '<button type="button" onclick="msnEmo(\'' + conv + '\',\'' + e + '\')" aria-label="' + e + '">' + e + '</button>'; }).join('') + '</div>' +
-      '<div class="msn-figs" id="msn-g-' + conv + '"></div>' +
-      '<div class="msn-barra"><button type="button" onclick="document.getElementById(\'msn-g-' + conv + '\').classList.remove(\'on\');document.getElementById(\'msn-e-' + conv + '\').classList.toggle(\'on\')" aria-label="Emoticons">😀 Emoticons</button>' +
-      '<button type="button" onclick="msnFigAbrirPainel(\'' + conv + '\')">🖼️ Figurinhas</button>' +
-      '<button type="button" onclick="document.getElementById(\'msn-f-' + conv + '\').click()" title="Foto, print, PDF, planilha… até 5 MB. Também dá para arrastar o arquivo ou colar um print (Ctrl+V).">📎 Anexar</button>' +
-      '<input type="file" id="msn-f-' + conv + '" style="display:none" onchange="msnAnexarArquivos(\'' + conv + '\', this.files); this.value=\'\'">' +
-      (conv === 'EQUIPE' ? '' : '<button type="button" onclick="msnTremer(\'' + conv + '\')" title="Treme a tela de quem recebe">📳 Chamar atenção</button>') + '</div>' +
-      '<div class="msn-linha"><textarea id="msn-in-' + conv + '" maxlength="1000" placeholder="Escreva uma mensagem… (Enter envia)" aria-label="Mensagem" onkeydown="msnTecla(event,\'' + conv + '\')" oninput="msnDigitando(\'' + conv + '\')"></textarea>' +
-      '<button type="button" onclick="msnEnviar(\'' + conv + '\')">Enviar</button></div></div>';
+    '<div class="msn-para" id="msn-pa-' + conv + '"></div>' +
+    '<div class="msn-tb">' + tb('📎', 'Enviar arquivo', "document.getElementById('msn-f-" + conv + "').click()", 'Foto, print, PDF, planilha… até 5 MB. Também dá para arrastar o arquivo ou colar um print (Ctrl+V).') +
+      tb('🖼️', 'Figurinhas', "msnFigAbrirPainel('" + conv + "')") + tb('😀', 'Emoticons', emoT) +
+      (conv === 'EQUIPE' ? '' : tb('📳', 'Chamar atenção', "msnTremer('" + conv + "')", 'Treme a tela de quem recebe')) + '</div>' +
+    '<input type="file" id="msn-f-' + conv + '" style="display:none" onchange="msnAnexarArquivos(\'' + conv + '\', this.files); this.value=\'\'">' +
+    '<div class="msn-meio"><div class="msn-esq">' +
+      '<div class="msn-corpo" id="msn-c-' + conv + '" aria-live="polite"><div class="msn-dia">Carregando…</div></div>' +
+      '<div class="msn-dig" id="msn-d-' + conv + '"></div>' +
+      '<div class="msn-entrada"><div class="msn-emo" id="msn-e-' + conv + '">' + MSN_EMOS.map(function(e) { return '<button type="button" onclick="msnEmo(\'' + conv + '\',\'' + e + '\')" aria-label="' + e + '">' + e + '</button>'; }).join('') + '</div>' +
+        '<div class="msn-figs" id="msn-g-' + conv + '"></div>' +
+        '<div class="msn-fmt"><button type="button" onclick="' + emoT + '" title="Emoticons">😀▾</button>' + (conv === 'EQUIPE' ? '' : '<button type="button" onclick="msnTremer(\'' + conv + '\')" title="Chamar atenção">📳</button>') + '<button type="button" onclick="msnFigAbrirPainel(\'' + conv + '\')" title="Figurinhas">🖼️</button></div>' +
+        '<div class="msn-linha"><textarea id="msn-in-' + conv + '" maxlength="1000" aria-label="Mensagem" onkeydown="msnTecla(event,\'' + conv + '\')" oninput="msnDigitando(\'' + conv + '\')"></textarea>' +
+        '<button type="button" onclick="msnEnviar(\'' + conv + '\')">Enviar</button></div></div>' +
+    '</div><div class="msn-dir" id="msn-dps-' + conv + '"></div></div>' +
+    '<div class="msn-sb" id="msn-sb-' + conv + '"></div>';
   document.getElementById('msn-wins').appendChild(w);
   w.addEventListener('dragover', function(e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) { e.preventDefault(); w.classList.add('solta'); } });
   w.addEventListener('dragleave', function(e) { if (!w.contains(e.relatedTarget)) w.classList.remove('solta'); });
@@ -23630,10 +23738,18 @@ function msnCriarJanela(conv) {
 function msnRenderTopoJanela(conv) {
   var t = document.getElementById('msn-wt-' + conv); if (!t) return;
   var u = msnOutro(conv), st = u === 'EQUIPE' ? 'online' : msnStatus(u), p = MSN.pres[u] || {};
-  var sub = u === 'EQUIPE' ? msnContatos().filter(function(x) { return msnStatus(x) !== 'offline'; }).length + 1 + ' pessoa(s) online' : MSN_STATUS[st === 'offline' ? 'offline' : st].replace('Aparecer offline', 'Offline') + (p.frase ? ' · ' + p.frase : '');
   t.onclick = function(e) { if (!e.target.closest('button')) msnMinimizar(conv); };
-  t.innerHTML = '<span class="msn-av" style="position:relative;width:32px;height:32px">' + msnAv(u) + '</span><span class="msn-nm"><b>' + msnEsc(msnNome(u)) + '</b><i>' + msnEsc(sub) + '</i></span>' +
-    '<button type="button" class="msn-x" onclick="msnMinimizar(\'' + conv + '\')" aria-label="Minimizar">_</button><button type="button" class="msn-x" onclick="msnFechar(\'' + conv + '\')" aria-label="Fechar conversa">✕</button>';
+  t.innerHTML = (u === 'EQUIPE' ? '<span style="font-size:13px">👥</span>' : msnBoneco(st, 14)) + '<span class="msn-wtt">' + msnEsc(msnNome(u)) + ' - Conversa</span>' +
+    '<button type="button" class="msn-xb min" onclick="msnMinimizar(\'' + conv + '\')" aria-label="Minimizar">_</button><button type="button" class="msn-xb" onclick="msnFechar(\'' + conv + '\')" aria-label="Fechar conversa">✕</button>';
+  var pa = document.getElementById('msn-pa-' + conv);
+  if (pa) pa.innerHTML = 'Para: <b>' + msnEsc(msnNome(u)) + '</b>' + (u === 'EQUIPE' ? ' <span class="cz">(' + (msnContatos().filter(function(x) { return msnStatus(x) !== 'offline'; }).length + 1) + ' online)</span>' : ' <span class="cz">(' + (st === 'offline' ? 'Offline' : MSN_STATUS[st]) + ')</span>' + (p.frase ? ' <span class="pm">&lt;' + msnEsc(p.frase) + '&gt;</span>' : ''));
+  var dp = document.getElementById('msn-dps-' + conv);
+  if (dp) dp.innerHTML = msnFoto(u, 84, st) + msnFoto(MSN.eu, 84, MSN.meuStatus === 'offline' ? 'offline' : MSN.meuStatus);
+  var sb = document.getElementById('msn-sb-' + conv);
+  if (sb) {
+    var rec = (MSN.msgs[conv] || []).filter(function(m) { return m.de !== MSN.eu; }).pop();
+    sb.textContent = rec ? 'Última mensagem recebida às ' + msnHora(rec.ts) + ' em ' + new Date(rec.ts).toLocaleDateString('pt-BR') + '.' : (u === 'EQUIPE' ? 'Conversa em grupo com a equipe.' : 'Nenhuma mensagem recebida ainda.');
+  }
 }
 function msnRefMsgs(conv) { var r = dbRef('chat/conv/' + conv + '/msgs'); return r.limitToLast ? r.limitToLast(120) : r; }
 function msnOuvir(conv) {
@@ -23665,7 +23781,7 @@ function msnRenderMsgs(conv) {
   if (perto || lista.length && lista[lista.length - 1].de === MSN.eu) box.scrollTop = box.scrollHeight;
 }
 var _msnRenderMsgsOrig = msnRenderMsgs;
-msnRenderMsgs = function(conv) { if (document.getElementById('msn-c-' + conv)) _msnRenderMsgsOrig(conv); if (MSN.pipConv === conv) msnRenderPip(); };
+msnRenderMsgs = function(conv) { if (document.getElementById('msn-c-' + conv)) { _msnRenderMsgsOrig(conv); msnRenderTopoJanela(conv); } if (MSN.pipConv === conv) msnRenderPip(); };
 function msnRenderDig(conv) {
   var el = document.getElementById('msn-d-' + conv); if (!el) return;
   var d = MSN.dig[conv] || {}, quem = Object.keys(d).filter(function(u) { return u !== MSN.eu && Date.now() - d[u] < 5000; });
