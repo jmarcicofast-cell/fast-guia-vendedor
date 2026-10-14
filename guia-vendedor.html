@@ -21622,6 +21622,11 @@ function abCelulaPedidoHtml(p){
 function abAvisoVoltou(p){
   if (!p || p.status !== 'aguardando-dt' || typeof abGradeEventos !== 'function') return '';
   var ev = abGradeEventos(p), ult = ev[ev.length - 1];
+  if (ult && ult.tipo === 'enviado'){
+    var ga = abGradeAtual(p); if (!ga) return '';
+    if (ga.atrasado) return '<div style="margin-bottom:5px;border:1.5px solid #C62828;background:#FFEBEE;color:#C62828;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:800;">🔴 Coleta atrasada — era ' + abGradeColetaTxt(ga) + '</div>';
+    return '<div style="margin-bottom:5px;border:1px solid #F0C2D4;background:#FDF2F6;color:#AD1457;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;">📅 Grade de ' + abFmtDia(ga.gc.grade) + ' · coleta ' + abGradeColetaTxt(ga) + (ga.gc.tarde ? '<div style="color:#C62828;">⏰ marcado após 15h — entrou na grade seguinte</div>' : '') + '</div>';
+  }
   if (!ult || ult.tipo !== 'voltou') return '';
   var n = ev.filter(function(e){ return e.tipo === 'voltou'; }).length;
   return '<div title="' + abEsc((ult.motivo ? 'Motivo: ' + ult.motivo + ' · ' : '') + 'em ' + abFmtDH(ult.em)) + '" style="margin-bottom:5px;border:1.5px solid #C62828;background:#FFEBEE;color:#C62828;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:800;line-height:1.3;">↩️ Pedido voltou, deve seguir novamente na grade' + (n > 1 ? ' <span style="font-weight:600;">(' + n + 'ª vez)</span>' : '') + (ult.motivo ? '<div style="font-weight:600;color:#8E2424;">' + abEsc(ult.motivo) + '</div>' : '') + '</div>';
@@ -21947,6 +21952,31 @@ function abGradeInfo(p){
   return { ev: ev, tent: tent, ini: ini ? ini.em : ev[0].em, dur: fim - (ini ? ini.em : ev[0].em), naGrade: naGrade, saida: saida };
 }
 function abFmtDH(ms){ var d = new Date(ms); return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }) + ' ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }); }
+/* Grades diárias (quadro da aba Empresa): prazo até 15h; seg→qua, ter→qui, qua→sex, qui→sáb e seg, sex→ter */
+var AB_GRADE_COLETA = { 1:[3], 2:[4], 3:[5], 4:[6, 1], 5:[2] };
+var AB_DIA_CURTO = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+function abGradeColeta(ms, semHora){
+  var d = new Date(ms), tarde = !semHora && (d.getHours() * 60 + d.getMinutes()) >= 15 * 60;
+  var g = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (tarde) g.setDate(g.getDate() + 1);
+  while (!AB_GRADE_COLETA[g.getDay()]) g.setDate(g.getDate() + 1);   // sábado/domingo → segunda
+  var coletas = AB_GRADE_COLETA[g.getDay()].map(function(wd){ var c = new Date(g); do { c.setDate(c.getDate() + 1); } while (c.getDay() !== wd); return c; });
+  return { grade: g, coletas: coletas, tarde: tarde, mudouDia: g.toDateString() !== new Date(d.getFullYear(), d.getMonth(), d.getDate()).toDateString() };
+}
+function abFmtDia(dt){ return AB_DIA_CURTO[dt.getDay()] + ' ' + dt.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }); }
+/* tentativa atual: último envio/volta → grade e coleta prevista; atrasado se passou da última coleta e ainda está aguardando DT */
+function abGradeAtual(p){
+  var ev = abGradeEventos(p).filter(function(e){ return e.tipo === 'enviado' || e.tipo === 'voltou'; });
+  var ult = ev[ev.length - 1]; if (!ult) return null;
+  var ref = ult.em;
+  if (ult.tipo === 'voltou'){ var dv = new Date(ult.em); ref = new Date(dv.getFullYear(), dv.getMonth(), dv.getDate(), 9, 0).getTime(); }  // voltou → reenvia na grade daquele dia
+  var gc = abGradeColeta(ref, ult.semHora);
+  var fimColeta = new Date(gc.coletas[gc.coletas.length - 1]); fimColeta.setHours(23, 59, 59);
+  var hoje0 = new Date(); hoje0.setHours(0, 0, 0, 0);
+  return { gc: gc, atrasado: p.status === 'aguardando-dt' && Date.now() > fimColeta.getTime(), coletaHoje: gc.coletas.some(function(c){ return c.getTime() === hoje0.getTime(); }), ult: ult };
+}
+function abGradeColetaTxt(ga){ return ga.gc.coletas.map(abFmtDia).join(' / '); }
+
 function abGradeVoltou(id){
   var r = AB.itens[id]; if (!r) return;
   var p = abPedidoDe(r); if (!p) return alert('Não encontrei o pedido deste chamado.');
@@ -22081,14 +22111,18 @@ function abGradeHtml(r, ed){
   var rot = { enviado:'🗓️ Enviado para a grade', voltou:'↩️ Não seguiu — voltou para a grade', saiu:'✅ Saiu da grade' };
   var tl = gi ? gi.ev.map(function(e, n){
     var txt = (rot[e.tipo] || e.tipo) + (e.semHora ? ' <span style="color:#999;">(data do status, sem hora)</span>' : '');
+    if (e.tipo === 'enviado'){ var gce = abGradeColeta(e.em, e.semHora); txt += ' <span style="color:#666;">→ grade de ' + abFmtDia(gce.grade) + ', coleta ' + gce.coletas.map(abFmtDia).join(' / ') + '</span>' + (gce.tarde ? ' <span style="color:#C62828;font-weight:700;">⏰ após 15h — entrou na grade do dia seguinte</span>' : ''); }
     if (e.tipo === 'saiu' && e.para) txt += ' (' + (typeof STATUS_LABEL !== 'undefined' && STATUS_LABEL[e.para] ? STATUS_LABEL[e.para] : e.para) + ')';
     return '<div style="display:flex;gap:8px;font-size:11.5px;padding:3px 0;border-top:' + (n ? '1px dashed #F0D2DE' : 'none') + ';"><span style="color:#888;min-width:82px;font-family:ui-monospace,monospace;">' + (e.semHora ? new Date(e.em).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }) : abFmtDH(e.em)) + '</span><span style="flex:1;">' + txt + (e.motivo ? ' <span style="color:#888;">— ' + abEsc(e.motivo) + '</span>' : '') + '</span><span style="color:#aaa;">' + abEsc(abNomeVend(e.por)) + '</span></div>';
   }).join('') : '<div style="font-size:11.5px;color:#999;">Sem registro de envio (pedido marcado antes deste controle).</div>';
   var resumo = gi ? '<b>' + gi.tent + 'ª tentativa</b> · ' + (gi.naGrade ? 'na grade há <b>' + abDur(gi.dur) + '</b>' : 'levou <b>' + abDur(gi.dur) + '</b> na grade') + ' · 1º envio ' + abFmtDH(gi.ini) : '';
+  var ga = p && p.status === 'aguardando-dt' ? abGradeAtual(p) : null;
+  var faixa = ga ? '<div style="margin:2px 0 8px;padding:6px 10px;border-radius:7px;font-size:12px;font-weight:700;background:' + (ga.atrasado ? '#FFEBEE' : ga.coletaHoje ? '#E8F5E9' : '#fff') + ';color:' + (ga.atrasado ? '#C62828' : ga.coletaHoje ? '#1B5E20' : '#AD1457') + ';border:1px solid ' + (ga.atrasado ? '#EF9A9A' : ga.coletaHoje ? '#A5D6A7' : '#F0C2D4') + ';">' +
+      (ga.atrasado ? '🔴 Coleta atrasada — previsão era ' + abGradeColetaTxt(ga) + ' e ainda não saiu DT' : ga.coletaHoje ? '🚚 Coleta prevista para HOJE (' + abGradeColetaTxt(ga) + ')' : '📅 Grade de ' + abFmtDia(ga.gc.grade) + ' → coleta prevista ' + abGradeColetaTxt(ga)) + '</div>' : '';
   return '<div style="background:#FDF2F6;border:1.5px solid #F0C2D4;border-radius:9px;padding:10px 12px;margin-bottom:14px;">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">' +
       '<span style="font-size:11px;font-weight:800;color:#AD1457;">🗓️ GRADE (AGUARDANDO DT)</span>' +
-      '<span style="font-size:12px;color:#555;">' + resumo + '</span></div>' + tl +
+      '<span style="font-size:12px;color:#555;">' + resumo + '</span></div>' + faixa + tl +
     (ed && p && p.status === 'aguardando-dt' ? '<div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;"><button type="button" onclick="abGradeVoltou(\'' + r.id + '\')" style="border:1.5px solid #AD1457;background:#fff;color:#AD1457;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">↩️ Não seguiu hoje — fica na grade</button><button type="button" onclick="abGradeComDt(\'' + r.id + '\')" style="border:none;background:#2E7D32;color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">✅ Saiu — Com DT</button></div>' : '') +
   '</div>';
 }
@@ -22129,7 +22163,12 @@ function abConfHtml(r, ed){
 }
 
 function abProgressoHtml(r){
-  if (abEtapa(r) === 'grade'){ var gi = abGradeInfo(abPedidoDe(r)); return '<span title="Tentativas de envio para a Placo e tempo na grade" style="font-size:10.5px;font-weight:800;color:' + (gi && gi.tent > 1 ? '#C62828' : '#AD1457') + ';white-space:nowrap;">🗓️ ' + (gi ? gi.tent + 'ª tentativa · ' + abDur(gi.dur) : 'na grade') + '</span>'; }
+  if (abEtapa(r) === 'grade'){
+    var pg = abPedidoDe(r), gi = abGradeInfo(pg), ga = pg ? abGradeAtual(pg) : null;
+    var cor = ga && ga.atrasado ? '#C62828' : (gi && gi.tent > 1 ? '#C62828' : '#AD1457');
+    return '<span title="Tentativas de envio para a Placo, tempo na grade e coleta prevista" style="font-size:10.5px;font-weight:800;color:' + cor + ';white-space:nowrap;">🗓️ ' + (gi ? gi.tent + 'ª tentativa · ' + abDur(gi.dur) : 'na grade') + '</span>' +
+      (ga ? '<span style="display:block;font-size:10.5px;font-weight:800;color:' + (ga.atrasado ? '#C62828' : ga.coletaHoje ? '#1B5E20' : '#888') + ';white-space:nowrap;">' + (ga.atrasado ? '🔴 coleta atrasada (' : ga.coletaHoje ? '🚚 coleta hoje (' : '📅 coleta ') + abGradeColetaTxt(ga) + (ga.atrasado || ga.coletaHoje ? ')' : '') + '</span>' : '');
+  }
   if (abEtapa(r) === 'tratar'){ var cp = abConfProg(r); var cc = cp.feitos === cp.total ? '#1B5E20' : (cp.feitos ? '#B36B00' : '#888'); return '<span title="Conferência administrativa" style="font-size:10.5px;font-weight:800;color:' + cc + ';white-space:nowrap;">🧾 Conferência ' + cp.feitos + '/' + cp.total + '</span>'; }
   var p = abProgresso(r); if (!p.total) return '';
   if (!p.prox) return '<span style="font-size:10.5px;font-weight:800;color:#1B5E20;white-space:nowrap;">' + p.total + '/' + p.total + ' no cliente</span>';
