@@ -21886,7 +21886,8 @@ var AB_CONF = [
   { k:'sabado',   t:'Cliente recebe no sábado?', op:['Sim','Não'] },
   { k:'entrega',  t:'Entrega ou retira', op:['Entrega','Retira'] },
   { k:'mogi',     t:'Compõe em alguma DCS?', op:['Sim','Não'], outro:'Sim', ph:'Qual DCS?' },
-  { k:'nf',       t:'Nota fiscal ou cupom', op:['Nota fiscal','Cupom'] }
+  { k:'nf',       t:'Nota fiscal ou cupom', op:['Nota fiscal','Cupom'] },
+  { k:'arquivos', t:'Arquivos no chamado' }
 ];
 function abConfFeito(c, k){
   if (!c) return false; if (c.ok) return true; if (!c.v) return false;
