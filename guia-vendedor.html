@@ -5051,7 +5051,7 @@ td.p-tie { color:var(--sp-muted); }
           <th>Chamado / Código</th><th style="min-width:220px;">Cliente / Produto</th>
           <th style="min-width:110px;">Tipo</th>
           <th style="min-width:180px;">Etapa</th>
-          <th style="min-width:120px;">DCS</th><th>Prazo na DCS</th><th>Previsão de chegada</th>
+          <th style="min-width:120px;">DCS</th><th>Previsão de chegada</th>
           <th style="min-width:130px;">Resp. tratamento</th><th style="min-width:130px;">Resp. abastecimento</th><th style="min-width:110px;">Nº chamado abast.</th>
           <th>Situação</th><th style="min-width:140px;">Obs.</th><th></th>
         </tr></thead>
@@ -22339,7 +22339,7 @@ function abRender(){
   });
 
   if (!lista.length){
-    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:#aaa;padding:2rem;">' + (todos.length ? 'Nenhum chamado nesse filtro.' : 'Nenhum item encomendado ainda. Clique em "+ Item encomendado".') + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#aaa;padding:2rem;">' + (todos.length ? 'Nenhum chamado nesse filtro.' : 'Nenhum item encomendado ainda. Clique em "+ Item encomendado".') + '</td></tr>';
     return;
   }
 
@@ -22369,7 +22369,6 @@ function abRender(){
       '<td>' + abSelTipo(r, null, ed) + '</td>' +
       '<td>' + etapaSel + '</td>' +
       '<td>' + abResumo(its, 'dc') + '</td>' +
-      '<td>' + (minPrazo ? abFmtData(minPrazo) : '<span style="color:#ccc;">—</span>') + '</td>' +
       '<td>' + (maxPrev ? abFmtData(maxPrev) : '<span style="color:#ccc;">—</span>') + '</td>' +
       '<td>' + abSelResp(r, 'respTratamento', AB_RESP_TRAT, ed) + '</td>' +
       '<td>' + abSelResp(r, 'responsavel', AB_RESP_ABAST, ed) + '</td>' +
@@ -22388,7 +22387,6 @@ function abRender(){
         '<td>' + abSelTipo(r, i, ed) + '</td>' +
         '<td>' + (ed ? abSelEtapaItem(r, i, false) : abChipEtapa(i.etapa)) + '</td>' +
         '<td>' + inp('dc', 'text', ' list="ab-dl-dc" placeholder="DCS"') + '</td>' +
-        '<td>' + inp('prazo', 'date') + '</td>' +
         '<td>' + inp('previsao', 'date') + '</td>' +
         '<td></td><td></td>' +
         '<td>' + inp('numCh', 'text', ' placeholder="Nº"') + '</td>' +
@@ -22532,7 +22530,6 @@ function abRenderPopup(){
         lbl('Tipo', abSelTipo(r, i, ed)) +
         lbl('Etapa', ed ? abSelEtapaItem(r, i, false) : abChipEtapa(i.etapa)) +
         lbl('DCS', inp('dc', 'text', 'DCS')) +
-        lbl('Prazo na DCS', inp('prazo', 'date')) +
         lbl('Previsão de chegada', inp('previsao', 'date')) +
         lbl('Nº chamado abast.', inp('numCh', 'text', 'Nº')) +
       '</div>' +
