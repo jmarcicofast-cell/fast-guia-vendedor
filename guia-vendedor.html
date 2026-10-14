@@ -23443,6 +23443,21 @@ function sgRender(){
 .msn-xtit, .msn-win .msn-wtopo { cursor:move; user-select:none; touch-action:none; }
 .msn-arrastando { opacity:.92; box-shadow:0 18px 40px rgba(0,20,60,.45) !important; }
 @media (max-width:700px) { .msn-lista, .msn-win { resize:none; } .msn-xtit, .msn-win .msn-wtopo { cursor:default; } }
+/* letrinhas animadas */
+.msn-lt { display:inline-block; font:900 30px/1.1 'Arial Black', Impact, Arial, sans-serif; vertical-align:middle; margin:0 1px; font-style:normal; }
+.lt-bolha { background:linear-gradient(170deg,#FFB0A8 0%,#F03A2E 30%,#B80F0F 65%,#6E0000 100%); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-stroke:1.5px #4A0000; filter:drop-shadow(2px 3px 0 rgba(0,0,0,.3)); animation:ltPula 1.1s ease-in-out infinite; }
+.lt-neon { color:#FFF; text-shadow:0 0 3px #FFF, 0 0 7px #FF4FD8, 0 0 14px #FF4FD8, 0 0 24px #E000B0; animation:ltNeon 1.6s linear infinite; }
+.lt-ouro { background:linear-gradient(110deg,#7A5500 0%,#E0A800 25%,#FFF6C9 42%,#FFD86B 50%,#B88300 70%,#7A5500 100%); background-size:260% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-stroke:1px #5A3E00; animation:ltBrilho 2.2s linear infinite; }
+.lt-arco { background:linear-gradient(90deg,#FF3B3B,#FF9F1C,#FFE41C,#3BD16F,#1CC8FF,#5B5BFF,#C04BFF,#FF3B3B); background-size:300% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-stroke:1px rgba(0,0,0,.45); animation:ltArco 2.4s linear infinite, ltBalanca 1.4s ease-in-out infinite; }
+.lt-fogo { background:linear-gradient(0deg,#8E1414 0%,#E2572B 35%,#FFB347 65%,#FFF3A0 100%); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 4px rgba(255,120,30,.75)); transform-origin:50% 100%; animation:ltFogo .55s ease-in-out infinite alternate; }
+.lt-chiclete { background:repeating-linear-gradient(45deg,#FF7EB9 0 5px,#FFFFFF 5px 8px); -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-stroke:1.4px #C2185B; animation:ltBalanca 1s ease-in-out infinite; }
+@keyframes ltPula { 0%,100% { transform:translateY(0) scale(1); } 40% { transform:translateY(-5px) scale(1.08,.95); } 60% { transform:translateY(0) scale(.96,1.05); } }
+@keyframes ltNeon { 0%,18%,22%,62%,66%,100% { opacity:1; } 20%,64% { opacity:.45; } }
+@keyframes ltBrilho { from { background-position:100% 0; } to { background-position:-160% 0; } }
+@keyframes ltArco { from { background-position:0 0; } to { background-position:300% 0; } }
+@keyframes ltBalanca { 0%,100% { transform:rotate(-7deg); } 50% { transform:rotate(7deg); } }
+@keyframes ltFogo { from { transform:scaleY(1) skewX(-2deg); } to { transform:scaleY(1.1) skewX(3deg); } }
+@media (prefers-reduced-motion: reduce) { .msn-lt { animation:none !important; } }
 @keyframes msnTreme { 0%,100% { transform:translate(0,0); } 10% { transform:translate(-10px,5px); } 20% { transform:translate(10px,-5px); } 30% { transform:translate(-10px,-5px); } 40% { transform:translate(10px,5px); } 50% { transform:translate(-8px,3px); } 60% { transform:translate(8px,-3px); } 70% { transform:translate(-5px,2px); } 80% { transform:translate(5px,-2px); } 90% { transform:translate(-2px,1px); } }
 .msn-tremendo { animation:msnTreme .7s linear 2; }
 @keyframes msnPisca { 0%,100% { box-shadow:inset 0 0 0 0 rgba(229,57,53,0); } 50% { box-shadow:inset 0 0 0 10px rgba(229,57,53,.8); } }
@@ -23873,7 +23888,32 @@ function msnAplicarCor(hex) {
   r.setProperty('--msn-tx', C(hex, -.35));
 }
 function msnMudarCor(hex) { if (!msnHexOk(hex)) return; var p = msnPrefs(); p.cor = hex; msnSalvarPrefs(p); msnAplicarCor(hex); msnRender(); }
-function msnFmt() { var f = msnPrefs().fmt || {}; return { f: f.f || 'Tahoma', c: msnHexOk(f.c) ? f.c : '#000000', b: !!f.b, i: !!f.i }; }
+// letrinhas animadas (packs desenhados no próprio guia, geradas para qualquer letra)
+var MSN_LETRAS = [['', 'Nenhuma'], ['bolha', '🔴 Bolha vermelha'], ['neon', '💗 Neon'], ['ouro', '🥇 Ouro'], ['arco', '🌈 Arco-íris'], ['fogo', '🔥 Fogo'], ['chiclete', '🍬 Chiclete']];
+function msnLtOk(lt) {
+  if (!lt || !MSN_LETRAS.some(function(x) { return x[0] && x[0] === lt.p; })) return null;
+  var modo = ['todas', 'iniciais', 'letras'].indexOf(lt.m) >= 0 ? lt.m : 'iniciais';
+  return { p: lt.p, m: modo, l: String(lt.l || '').toUpperCase().replace(/[^A-ZÀ-Ý]/g, '').slice(0, 12) };
+}
+function msnSemAcento(c) { return c.normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function msnTextoLetras(txt, fmt) {
+  var lt = fmt && msnLtOk(fmt.lt); txt = String(txt || '');
+  if (!lt) return msnEsc(txt);
+  var out = '', anterior = ' ', n = 0, alvo = msnSemAcento(lt.l);
+  for (var i = 0; i < txt.length; i++) {
+    var ch = txt.charAt(i), letra = /[A-Za-zÀ-ÿ]/.test(ch), troca = false;
+    if (letra) {
+      if (lt.m === 'todas') troca = true;
+      else if (lt.m === 'iniciais') troca = !/[A-Za-zÀ-ÿ0-9]/.test(anterior);
+      else troca = alvo.indexOf(msnSemAcento(ch.toUpperCase())) >= 0;
+    }
+    out += troca && n < 120 ? '<span class="msn-lt lt-' + lt.p + '" style="animation-delay:' + ((n++ % 8) * .12).toFixed(2) + 's">' + msnEsc(ch.toUpperCase()) + '</span>' : msnEsc(ch);
+    anterior = ch;
+  }
+  return out;
+}
+function msnFmt() { var f = msnPrefs().fmt || {}; return { f: f.f || 'Tahoma', c: msnHexOk(f.c) ? f.c : '#000000', b: !!f.b, i: !!f.i, lt: msnLtOk(f.lt) }; }
+function msnMudarLetras(campo, valor) { var lt = msnFmt().lt || { p: 'bolha', m: 'iniciais', l: '' }; lt[campo] = valor; if (campo === 'p' && !valor) lt = null; msnMudarFmt('lt', lt); }
 function msnMudarFmt(campo, valor) { var p = msnPrefs(); p.fmt = msnFmt(); p.fmt[campo] = valor; msnSalvarPrefs(p); MSN.abertas.forEach(msnAplicarFmtEntrada); document.querySelectorAll('.msn-fontes').forEach(function(el) { el.innerHTML = msnFontesHtml(el.dataset.conv); }); }
 function msnEstiloFmt(f) {
   if (!f) return '';
@@ -23888,7 +23928,10 @@ function msnFontesHtml(conv) {
     '<button type="button" class="' + (f.i ? 'on' : '') + '" onclick="msnMudarFmt(\'i\',' + !f.i + ')" aria-pressed="' + f.i + '" style="font-style:italic">I</button></div>' +
     '<div class="msn-fonte-c">' + MSN_COR_TXT.map(function(c) { return '<button type="button" class="sw' + (f.c === c ? ' on' : '') + '" style="background:' + c + '" onclick="msnMudarFmt(\'c\',\'' + c + '\')" aria-label="Cor ' + c + '"></button>'; }).join('') +
     '<input type="color" value="' + f.c + '" onchange="msnMudarFmt(\'c\',this.value)" aria-label="Outra cor" title="Outra cor"></div>' +
-    '<div class="msn-fonte-p" style="' + msnEstiloFmt(f) + '">É assim que suas mensagens vão aparecer.</div>';
+    '<div class="msn-fonte-l" style="margin-top:6px;flex-wrap:wrap"><label>Letrinhas animadas <select onchange="msnMudarLetras(\'p\',this.value)">' + MSN_LETRAS.map(function(x) { return '<option value="' + x[0] + '"' + ((f.lt ? f.lt.p : '') === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></label>' +
+      (f.lt ? '<label>Trocar <select onchange="msnMudarLetras(\'m\',this.value)">' + [['iniciais', '1ª letra das palavras'], ['todas', 'todas as letras'], ['letras', 'só estas letras:']].map(function(x) { return '<option value="' + x[0] + '"' + (f.lt.m === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></label>' +
+        (f.lt.m === 'letras' ? '<input value="' + msnEsc(f.lt.l) + '" maxlength="12" placeholder="ex.: E" style="width:70px;text-transform:uppercase;border:1px solid #9DB9DD;border-radius:3px;padding:3px 6px" onchange="msnMudarLetras(\'l\',this.value)" aria-label="Letras que viram animadas">' : '') : '') + '</div>' +
+    '<div class="msn-fonte-p" style="' + msnEstiloFmt(f) + '">' + msnTextoLetras(f.lt && f.lt.m === 'letras' && f.lt.l ? 'Ele está aqui, é uma beleza!' : 'Bora bater a meta hoje!', f) + '</div>';
 }
 function msnAbrirFontes(conv) {
   var p = document.getElementById('msn-fo-' + conv); if (!p) return;
@@ -24187,7 +24230,7 @@ function msnRenderMsgs(conv) {
     var d = msnDia(m.ts); if (d !== dia) { dia = d; h += '<div class="msn-dia">' + d + '</div>'; }
     if (m.tipo === 'wink') { var wi = msnWinkInfo(m.wink) || ['', '✨', 'Wink']; h += '<div class="msn-sis wk">' + wi[1] + ' ' + (m.de === MSN.eu ? 'Você enviou' : msnEsc(msnNome(m.de)) + ' enviou') + ' um wink: <b>' + msnEsc(wi[2]) + '</b><button type="button" onclick="msnWinkTocar(\'' + msnEsc(m.wink) + '\')">▶ Ver</button> <span style="color:#9AA5B1;font-weight:400">' + msnHora(m.ts) + '</span></div>'; return; }
     if (m.tipo === 'tremer') { h += '<div class="msn-sis">📳 ' + (m.de === MSN.eu ? 'Você chamou a atenção' : msnEsc(msnNome(m.de)) + ' chamou sua atenção!') + ' <span style="color:#9AA5B1;font-weight:400">' + msnHora(m.ts) + '</span></div>'; return; }
-    h += '<div class="msn-msg' + (m.de === MSN.eu ? ' eu' : '') + '"><div class="msn-quem">' + msnEsc(m.de === MSN.eu ? 'Você' : msnNome(m.de)) + (m.tipo === 'anexo' || m.tipo === 'figurinha' ? ' enviou' : ' diz') + ' <span style="color:#9AA5B1">(' + msnHora(m.ts) + ')</span>:</div><div class="msn-txt" style="' + (m.tipo === 'msg' || !m.tipo ? msnEstiloFmt(m.fmt) : '') + '">' + (m.tipo === 'figurinha' ? msnFigHtml(m.fig) : m.tipo === 'anexo' && m.anexo ? msnAnexoHtml(m.anexo) : msnEsc(m.txt)) + '</div></div>';
+    h += '<div class="msn-msg' + (m.de === MSN.eu ? ' eu' : '') + '"><div class="msn-quem">' + msnEsc(m.de === MSN.eu ? 'Você' : msnNome(m.de)) + (m.tipo === 'anexo' || m.tipo === 'figurinha' ? ' enviou' : ' diz') + ' <span style="color:#9AA5B1">(' + msnHora(m.ts) + ')</span>:</div><div class="msn-txt" style="' + (m.tipo === 'msg' || !m.tipo ? msnEstiloFmt(m.fmt) : '') + '">' + (m.tipo === 'figurinha' ? msnFigHtml(m.fig) : m.tipo === 'anexo' && m.anexo ? msnAnexoHtml(m.anexo) : msnTextoLetras(m.txt, m.fmt)) + '</div></div>';
   });
   box.innerHTML = h;
   if (perto || lista.length && lista[lista.length - 1].de === MSN.eu) box.scrollTop = box.scrollHeight;
