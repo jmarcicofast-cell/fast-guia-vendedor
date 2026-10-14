@@ -5278,13 +5278,42 @@ var CA_UNIDADES = {
   'DIRECAO': { senha: 'DIRECAO1234', nome: 'Direção FAST', unidade: '', direcao: true },
 };
 var CA_UNIDADE_RIO = 'Televendas';
+/* vendedores do Televendas com a Central liberada (veem só o Televendas). Juliana e administrativo sempre veem. */
+var CA_VENDEDORES_LIBERADOS = ['PEDRO', 'GESSICA', 'BREDER', 'JONATAS', 'ELIZIANE', 'VITOR', 'ANTONIO', 'WELLINGTON'];
+function caUsuarioLiberado(user){
+  if (!user || !vendedores[user]) return false;
+  return user === 'JULIANA' || vendedores[user].tipo === 'administrativo' || CA_VENDEDORES_LIBERADOS.indexOf(user) !== -1;
+}
+/* unidades que não aparecem para um usuário do guia */
+var CA_UNID_OCULTAS = { 'JULIANA': ['Atacado SP'] };
+function caUnidVisivel(u){
+  u = caUnidNome(u);
+  if (CA.unid) return true;
+  if (caSoTelevendas()) return u === CA_UNIDADE_RIO;
+  var oc = CA_UNID_OCULTAS[currentUser] || [];
+  return oc.indexOf(u) === -1;
+}
+/* unidade do pedido ligado a uma alocação: 'g:' é pedido do guia (Televendas); 'm:<id>' é pedido manual */
+function caUnidDaChave(k){
+  if (!k) return '';
+  if (k.indexOf('g:') === 0) return CA_UNIDADE_RIO;
+  var v = (CA.dados.vendas || {})[k.slice(2)];
+  return v ? caUnidNome(v.unidade) : '';
+}
+/* chamado de abastecimento visível: da unidade visível ou atendendo algum pedido de unidade visível */
+function caAbastVisivel(a){
+  if (!a) return false;
+  if (CA.unid) return true;
+  if (caUnidVisivel(a.unidade)) return true;
+  return caArr(a.aloc).some(function(x){ var u = x && caUnidDaChave(x.v); return u && caUnidVisivel(u); });
+}
 /* registros antigos da equipe do guia foram gravados como 'Rio de Janeiro' */
 function caUnidNome(u){ return (!u || u === 'Rio de Janeiro') ? CA_UNIDADE_RIO : u; }
 function caListaUnidades(){
   var l = [CA_UNIDADE_RIO];
   Object.keys(CA_UNIDADES).forEach(function(k){ var u = CA_UNIDADES[k].unidade; if (u && l.indexOf(u) === -1) l.push(u); });
   Object.keys(CA.dados.vendas || {}).forEach(function(id){ var v = CA.dados.vendas[id]; var u = v && caUnidNome(v.unidade); if (u && l.indexOf(u) === -1) l.push(u); });
-  return l;
+  return l.filter(function(u){ return caUnidVisivel(u); });
 }
 var CA_CONFIG_PADRAO = { dcs: ['DC FDS', 'DC MDC'], fabricantes: ['Max Steel (Comercial)', 'Nova Metálica (Normatizado)', 'Placo FDS', 'Placo MDC'] };
 /* nomes de fabricante mais fáceis para os usuários: Max Steel = perfil comercial, Nova Metálica = normatizado */
@@ -5488,7 +5517,7 @@ function caVendas(todas){
       out.push(v);
     });
   }
-  if (!u && caSoTelevendas()) out = out.filter(function(v){ return caUnidNome(v.unidade) === CA_UNIDADE_RIO; });
+  if (!u) out = out.filter(function(v){ return caUnidVisivel(v.unidade); });
   if ((!u || u.direcao || u.veTudo) && CA.fu && !todas && !caSoTelevendas()) out = out.filter(function(v){ return caUnidNome(v.unidade) === CA.fu; });
   return out;
 }
@@ -5569,7 +5598,7 @@ function caUsadoAbast(a){ var u = {}; caArr(a && a.aloc).forEach(function(x){ if
 function caSaldos(){
   var m = {};
   Object.keys(CA.dados.abast || {}).forEach(function(id){
-    var a = CA.dados.abast[id]; if (!a || a.status === 'cancelado') return;
+    var a = CA.dados.abast[id]; if (!a || a.status === 'cancelado' || !caAbastVisivel(a)) return;
     var it = caItensAbast(a), us = caUsadoAbast(a);
     Object.keys(it).forEach(function(c){ var sd = it[c] - (us[c] || 0); if (sd > 0.0001){ var k = (a.dc || '') + '|' + c; (m[k] = m[k] || []).push({ a:Object.assign({ id:id }, a), saldo:sd }); } });
   });
@@ -5619,7 +5648,7 @@ function caListaVincVenda(){
     Array.prototype.forEach.call(document.querySelectorAll('#ca-v-itens tr'), function(tr){ var ln = caLerLinha(tr), c = ln.c, q = caQ(ln.q); if (c && q > 0) cods[c] = (cods[c] || 0) + q; });
     var lst = [];
     Object.keys(CA.dados.abast || {}).forEach(function(id){
-      var a = CA.dados.abast[id]; if (!a || a.status === 'cancelado') return;
+      var a = CA.dados.abast[id]; if (!a || a.status === 'cancelado' || !caAbastVisivel(a)) return;
       if (dc && a.dc !== dc && !md.vinc[id]) return;
       var it = caItensAbast(a), us = caUsadoAbast(a), temIt = Object.keys(it).length > 0;
       var disp = Object.keys(it).filter(function(c){ return it[c] - (us[c] || 0) > 0.0001; });
@@ -5698,7 +5727,7 @@ function caTemAloc(vkey){ return Object.keys(CA.dados.abast || {}).some(function
 function caAbasts(){
   var out = [];
   Object.keys(CA.dados.abast || {}).forEach(function(id){
-    var a = CA.dados.abast[id]; if (!a) return;
+    var a = CA.dados.abast[id]; if (!a || !caAbastVisivel(a)) return;
     var r = Object.assign({ id:id }, a); r.aloc = caArr(a.aloc);
     out.push(r);
   });
@@ -5743,6 +5772,8 @@ function caRender(){
   if (sub) sub.textContent = caEhDirecao() ? 'Direção — painel dos gaps de abastecimento de todas as operações. Acesso só de leitura.' : CA.unid ? CA.unid.nome + ' — lance os pedidos que precisam de material e acompanhe os chamados de abastecimento.' : 'Entram aqui os pedidos que o vendedor mandou para ABASTECER na aba Pedidos. O que falta aparece somado por DCS e código.';
   if (!caLogado()){ main.innerHTML = '<div class="ca-vazio"><b>Entre com seu usuário</b>A Central aparece depois do login.</div>'; return; }
   if (!CA.carregado){ main.innerHTML = '<div class="ca-vazio"><b>Carregando…</b>Os pedidos e chamados aparecem aqui assim que a base responder.</div>'; return; }
+  if (CA.fu && !caUnidVisivel(CA.fu)) CA.fu = '';
+  if (!CA.unid && currentUser && !caUsuarioLiberado(currentUser)){ main.innerHTML = '<div class="ca-vazio"><b>Central de Abastecimento</b>Seu acesso a esta aba ainda não foi liberado. Fale com a Juliana.</div>'; return; }
   var m = caAlocMap(), vendas = caVendas(), abertas = vendas.filter(function(v){ return v.status === 'aberto'; });
   var nec = caNecessidade(abertas, m);
   document.getElementById('ca-n-nec').textContent = nec.length;
@@ -6058,7 +6089,7 @@ function caViewPainel(vendas, m){
   parado.sort(function(a, b){ return b.kg - a.kg; });
   var pctCob = totKg ? Math.round(cobKg / totKg * 100) : 0, pctPronto = totKg ? Math.round(prontoKg / totKg * 100) : 0;
   var kpi = function(v, l, sub, cls){ return '<div class="ca-kpi ' + (cls || '') + '"><b>' + v + '</b><span>' + l + '</span>' + (sub ? '<div style="font-size:11.5px;color:#888;margin-top:2px;">' + sub + '</div>' : '') + '</div>'; };
-  var html = '<div style="font-size:12px;color:#888;margin-bottom:8px;">Atualizado em tempo real · ' + caDA(h) + (caSoTelevendas() ? ' · unidade: <b>' + CA_UNIDADE_RIO + '</b> (chamados de abastecimento de todas)' : (CA.unid && !caUnidGeral()) ? ' · unidade: <b>' + caEsc(CA.unid.unidade) + '</b> (pedidos da sua unidade; chamados de abastecimento de todas)' : CA.fu ? ' · unidade: <b>' + caEsc(CA.fu) + '</b>' : ' · todas as unidades') + '. Pesos estimados pela Tabela de Produtos.</div>';
+  var html = '<div style="font-size:12px;color:#888;margin-bottom:8px;">Atualizado em tempo real · ' + caDA(h) + (caSoTelevendas() ? ' · unidade: <b>' + CA_UNIDADE_RIO + '</b>' : (CA.unid && !caUnidGeral()) ? ' · unidade: <b>' + caEsc(CA.unid.unidade) + '</b> (pedidos da sua unidade; chamados de abastecimento de todas)' : CA.fu ? ' · unidade: <b>' + caEsc(CA.fu) + '</b>' : ' · todas as unidades') + '. Pesos estimados pela Tabela de Produtos.</div>';
   html += '<div class="ca-kpis">' +
     kpi(t(gapKg) + ' t', 'Sem chamado de abastecimento', gapPed + ' ' + (gapPed === 1 ? 'pedido' : 'pedidos') + ' com falta', gapKg ? 'ruim' : '') +
     kpi(riscoLista.length, 'Pedidos em risco de prazo', riscoLista.filter(function(r){ return r.grave; }).length + ' já vencidos', riscoLista.length ? 'ruim' : '') +
@@ -14767,6 +14798,9 @@ function entrarComoUsuario(user) {
   // Base de Clientes: só a Juliana vê
   var navCli = document.getElementById('nav-clientes');
   if (navCli) navCli.style.display = (user === 'JULIANA') ? '' : 'none';
+  // Central de Abastecimento: só Juliana, administrativo e os vendedores liberados
+  var navCen = document.getElementById('nav-central');
+  if (navCen) navCen.style.display = caUsuarioLiberado(user) ? '' : 'none';
   listenNegociacoes(user, v.tipo === 'gestora');
   listenAtendimentos(user, v.tipo === 'gestora');
   checarPedidosLocaisPendentes();
