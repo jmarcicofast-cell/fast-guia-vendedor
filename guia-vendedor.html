@@ -5030,6 +5030,7 @@ td.p-tie { color:var(--sp-muted); }
           <button id="ab-view-tabela" onclick="abSetView('tabela')" style="padding:6px 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;">📋 Tabela</button>
           <button id="ab-view-kanban" onclick="abSetView('kanban')" style="padding:6px 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;">🗂️ Kanban</button>
         </div>
+        <button id="ab-btn-dt" onclick="abDtAbrir()" style="display:none;padding:8px 14px;border-radius:7px;border:1.5px solid #AD1457;background:#fff;color:#AD1457;font-size:13px;font-weight:700;cursor:pointer;" title="Mande a foto das DTs do dia e o sistema marca sozinho o que saiu">📸 Ler DTs do dia</button>
         <button onclick="abAbrirModal()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Item encomendado</button>
       </div>
     </div>
@@ -21942,6 +21943,116 @@ function abGradeVoltou(id){
     p.gradeLog = p.gradeLog || {}; Object.keys(upd).forEach(function(k){ p.gradeLog[k.slice(9)] = upd[k]; }); AB._pm = null; abRenderPopup(); abRequestRender();
   }).catch(function(e){ alert('Erro ao salvar: ' + (e && e.message ? e.message : e)); });
 }
+/* ══ Botão inteligente: lê a foto das DTs do dia e marca Com DT / Não seguiu ══ */
+var ABDT = { nums: [], img: null };
+function abDtPedidosGrade(){ return abPedidos().filter(function(p){ return p && p.status === 'aguardando-dt' && !p.excluido; }); }
+function abDtNum(t){ return String(t || '').replace(/\D/g, ''); }
+function abDtAbrir(){
+  if (!abPodeEditar()) return;
+  ABDT = { nums: [], img: null, lendo: false };
+  var ov = document.getElementById('ab-dt-ov');
+  if (!ov){
+    ov = document.createElement('div'); ov.id = 'ab-dt-ov';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow-y:auto;';
+    ov.addEventListener('click', function(e){ if (e.target === ov) abDtFechar(); });
+    document.body.appendChild(ov);
+    document.addEventListener('paste', function(e){
+      var o = document.getElementById('ab-dt-ov'); if (!o || o.style.display === 'none') return;
+      var its = (e.clipboardData && e.clipboardData.items) || [];
+      for (var i = 0; i < its.length; i++) if (its[i].type && its[i].type.indexOf('image') === 0){ e.preventDefault(); abDtArquivo(its[i].getAsFile()); return; }
+    });
+  }
+  ov.style.display = 'flex';
+  abDtDesenhar();
+}
+function abDtFechar(){ var ov = document.getElementById('ab-dt-ov'); if (ov) ov.style.display = 'none'; }
+function abDtArquivo(f){
+  if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){ ABDT.img = rd.result; ABDT.lendo = true; ABDT.prog = 0; abDtDesenhar(); abDtOcr(rd.result); };
+  rd.readAsDataURL(f);
+}
+function abDtCarregarTesseract(cb){
+  if (window.Tesseract) return cb();
+  var sc = document.createElement('script');
+  sc.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+  sc.onload = function(){ cb(); };
+  sc.onerror = function(){ ABDT.lendo = false; ABDT.erro = 'Não consegui carregar o leitor de imagem. Digite os números abaixo.'; abDtDesenhar(); };
+  document.head.appendChild(sc);
+}
+function abDtOcr(img){
+  abDtCarregarTesseract(function(){
+    Tesseract.recognize(img, 'eng', { logger: function(m){ if (m.status === 'recognizing text'){ ABDT.prog = Math.round((m.progress || 0) * 100); var el = document.getElementById('ab-dt-prog'); if (el) el.textContent = 'Lendo a foto… ' + ABDT.prog + '%'; } } })
+      .then(function(res){
+        var txt = (res && res.data && res.data.text) || '';
+        var t0 = txt.replace(/(\d)[Oo]|[Oo](\d)/g, function(m, a, b){ return a ? a + '0' : '0' + b; }).replace(/(\d{1,3})\.(\d{3})\b/g, '$1$2');
+        var achados = t0.split(/\D+/).filter(function(n){ return n.length >= 5 && n.length <= 8; });
+        var grade = abDtPedidosGrade().map(function(p){ return abDtNum(p.chamado); }).filter(Boolean);
+        // números colados (ex.: 462393463688) — tenta achar chamados da grade dentro deles
+        var extra = [];
+        (t0.split(/\D+/)).forEach(function(bloco){ grade.forEach(function(g){ if (bloco.length > g.length && bloco.indexOf(g) !== -1) extra.push(g); }); });
+        var u = {}; achados.concat(extra).forEach(function(n){ u[n] = 1; });
+        ABDT.nums = Object.keys(u); ABDT.lendo = false; ABDT.lido = true;
+        abDtDesenhar();
+      }).catch(function(e){ ABDT.lendo = false; ABDT.erro = 'Não consegui ler a foto (' + (e && e.message ? e.message : e) + '). Digite os números abaixo.'; abDtDesenhar(); });
+  });
+}
+function abDtLerTexto(){
+  var tx = document.getElementById('ab-dt-tx'); if (!tx) return;
+  var u = {}; (tx.value.match(/\d{4,8}/g) || []).forEach(function(n){ u[n] = 1; });
+  ABDT.nums = Object.keys(u); ABDT.lido = true; abDtDesenhar();
+}
+function abDtDesenhar(){
+  var ov = document.getElementById('ab-dt-ov'); if (!ov) return;
+  var grade = abDtPedidosGrade(), nums = ABDT.nums || [];
+  var saiu = function(p){ var n = abDtNum(p.chamado); return !!n && nums.indexOf(n) !== -1; };
+  var naGrade = {}; grade.forEach(function(p){ naGrade[abDtNum(p.chamado)] = 1; });
+  var fora = nums.filter(function(n){ return !naGrade[n]; });
+  var outros = fora.map(function(n){ var p = abPedidos().filter(function(x){ return abDtNum(x.chamado) === n; })[0]; return { n:n, p:p }; });
+  var linhas = grade.slice().sort(function(a, b){ return (saiu(b) ? 1 : 0) - (saiu(a) ? 1 : 0); }).map(function(p){
+    var ok = saiu(p), gi = abGradeInfo(p);
+    return '<tr style="background:' + (ok ? '#E8F5E9' : '#FFF6F6') + ';"><td style="padding:5px 6px;"><input type="checkbox" class="ab-dt-ck" data-v="' + abEsc(p.vendedor) + '" data-id="' + abEsc(p.id) + '"' + (ok ? ' checked' : '') + '></td>' +
+      '<td style="padding:5px 6px;font-family:ui-monospace,monospace;font-weight:700;">' + abEsc(p.chamado || '—') + '</td><td style="padding:5px 6px;">' + abEsc(p.empresa || p.cliente || '') + '</td><td style="padding:5px 6px;color:#888;">' + abEsc(abNomeVend(p.vendedor)) + '</td>' +
+      '<td style="padding:5px 6px;font-size:11px;color:#888;">' + (gi ? gi.tent + 'ª tent. · ' + abDur(gi.dur) : '') + '</td>' +
+      '<td style="padding:5px 6px;font-size:11.5px;font-weight:800;color:' + (ok ? '#2E7D32' : '#C62828') + ';">' + (ok ? '✅ Saiu DT' : '↩️ Não seguiu') + '</td></tr>';
+  }).join('');
+  ov.innerHTML = '<div style="background:#fff;border-radius:14px;width:100%;max-width:820px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-size:16px;font-weight:800;">📸 Ler DTs do dia</div><button onclick="abDtFechar()" style="border:none;background:#F1EFE8;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;">✕</button></div>' +
+    '<div style="font-size:12px;color:#666;margin-bottom:10px;">Mande a foto ou o print das DTs que saíram hoje. O sistema procura os números de chamado e marca: o que está na foto vira <b>Com DT</b>, o que está na grade e não apareceu fica registrado como <b>não seguiu hoje</b>. Você confere antes de aplicar.</div>' +
+    '<label style="display:block;border:2px dashed #E2E0D8;border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:#FAF9F6;margin-bottom:10px;" ondragover="event.preventDefault()" ondrop="event.preventDefault();abDtArquivo(event.dataTransfer.files[0])">' +
+      (ABDT.img ? '<img src="' + ABDT.img + '" style="max-height:160px;max-width:100%;border-radius:6px;display:block;margin:0 auto 6px;">' : '') +
+      '<span style="font-size:12.5px;color:#555;">📎 Clique para escolher a foto, arraste aqui ou cole (Ctrl+V)</span>' +
+      '<input type="file" accept="image/*" style="display:none;" onchange="abDtArquivo(this.files[0])"></label>' +
+    (ABDT.lendo ? '<div id="ab-dt-prog" style="font-size:12.5px;color:#AD1457;font-weight:700;margin-bottom:8px;">Lendo a foto… ' + (ABDT.prog || 0) + '%</div>' : '') +
+    (ABDT.erro ? '<div style="font-size:12px;color:#C62828;margin-bottom:8px;">' + abEsc(ABDT.erro) + '</div>' : '') +
+    '<div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Números de chamado encontrados (pode corrigir)</div>' +
+    '<div style="display:flex;gap:6px;margin-bottom:12px;"><textarea id="ab-dt-tx" style="flex:1;min-height:44px;border:1.5px solid #E2E0D8;border-radius:6px;padding:6px;font-family:ui-monospace,monospace;font-size:12px;">' + abEsc(nums.join(' ')) + '</textarea><button onclick="abDtLerTexto()" style="border:1.5px solid #E2E0D8;background:#fff;border-radius:6px;padding:0 12px;font-size:12px;font-weight:700;cursor:pointer;">Atualizar</button></div>' +
+    '<div style="font-size:11px;font-weight:800;color:#555;margin-bottom:6px;">PEDIDOS NA GRADE (' + grade.length + ')' + (ABDT.lido ? ' · ' + grade.filter(saiu).length + ' saíram DT' : '') + '</div>' +
+    (grade.length ? '<div style="max-height:40vh;overflow:auto;border:1px solid #ECEAE4;border-radius:8px;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;">' + linhas + '</table></div>' : '<div style="font-size:12px;color:#999;">Nenhum pedido em Aguardando DT agora.</div>') +
+    (outros.length ? '<div style="font-size:11.5px;color:#B36B00;margin-top:8px;">⚠️ Na foto mas não estão na grade: ' + outros.map(function(o){ return '<b>' + o.n + '</b>' + (o.p ? ' (' + abEsc(STATUS_LABEL[o.p.status] || o.p.status || '') + ')' : ' (não encontrado)'); }).join(', ') + '</div>' : '') +
+    '<label style="display:flex;gap:6px;align-items:center;font-size:12px;color:#555;margin-top:10px;"><input type="checkbox" id="ab-dt-voltou" checked> Registrar "não seguiu hoje" para os que não saíram</label>' +
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;"><button onclick="abDtFechar()" style="border:1.5px solid #E2E0D8;background:#fff;border-radius:7px;padding:7px 14px;font-size:12.5px;cursor:pointer;">Cancelar</button>' +
+      '<button onclick="abDtAplicar()"' + (ABDT.lido && grade.length ? '' : ' disabled') + ' style="border:none;background:' + (ABDT.lido && grade.length ? '#2E7D32' : '#D9D6CE') + ';color:#fff;border-radius:7px;padding:7px 16px;font-size:12.5px;font-weight:700;cursor:' + (ABDT.lido && grade.length ? 'pointer' : 'not-allowed') + ';">✅ Aplicar</button></div>' +
+  '</div>';
+}
+function abDtAplicar(){
+  var cks = document.querySelectorAll('#ab-dt-ov .ab-dt-ck'), regVolta = (document.getElementById('ab-dt-voltou') || {}).checked;
+  var nSaiu = 0, nVolta = 0, agora = Date.now();
+  cks.forEach(function(ck, i){
+    var v = ck.dataset.v, id = ck.dataset.id;
+    if (ck.checked){
+      if (typeof pedidoEstaTravado === 'function' && pedidoEstaTravado(v, id)) return;
+      aplicarNovoStatus(v, id, 'com-dt'); nSaiu++;
+    } else if (regVolta){
+      var upd = {}; upd['gradeLog/g' + agora + '_' + i] = { tipo: 'voltou', motivo: 'Não saiu DT (foto do dia)', em: agora, por: currentUser };
+      dbRef('pedidos/' + v + '/' + id).update(upd).catch(function(){}); nVolta++;
+    }
+  });
+  abDtFechar();
+  setTimeout(function(){ AB._pm = null; abRequestRender(); }, 800);
+  alert('Pronto: ' + nSaiu + ' pedido(s) marcados como COM DT' + (regVolta ? ' e ' + nVolta + ' registrados como "não seguiu hoje"' : '') + '.');
+}
+
 function abGradeComDt(id){
   var r = AB.itens[id]; if (!r) return;
   var p = abPedidoDe(r); if (!p) return alert('Não encontrei o pedido deste chamado.');
@@ -22021,6 +22132,7 @@ function abResumo(its, campo, fmt){
 }
 
 function abRender(){
+  var bdt = document.getElementById('ab-btn-dt'); if (bdt) bdt.style.display = abPodeEditar() ? '' : 'none';
   var tbody = document.getElementById('ab-tbody');
   if (!tbody) return;
   AB.pendente = false;
