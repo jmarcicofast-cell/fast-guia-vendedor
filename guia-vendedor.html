@@ -2186,7 +2186,19 @@
       <div style="background:#F8F7F3;border-radius:10px;padding:1rem;margin-bottom:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#555;">Itens do Pedido</div>
-          <button type="button" onclick="addItemLinha()" style="padding:5px 12px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Adicionar Item</button>
+          <div style="display:flex;gap:6px;">
+            <button type="button" onclick="pcAbrir('pf')" style="padding:5px 12px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">📋 Preenchimento rápido</button>
+            <button type="button" onclick="addItemLinha()" style="padding:5px 12px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Adicionar Item</button>
+          </div>
+        </div>
+        <div id="pf-colar" style="display:none;background:#fff;border:1px solid #E2E0D8;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+          <div style="font-size:12px;color:#888;margin-bottom:6px;">Cole a lista: uma linha por item com <b>código</b> e <b>quantidade</b>. O valor unitário é opcional (ex.: <span style="font-family:ui-monospace,monospace;">DW00012 300</span> ou <span style="font-family:ui-monospace,monospace;">DW00012 300 12,50</span>).</div>
+          <textarea id="pf-colar-tx" style="width:100%;min-height:80px;border:1.5px solid #E2E0D8;border-radius:6px;padding:7px;font-family:ui-monospace,monospace;font-size:12px;box-sizing:border-box;outline:none;"></textarea>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+            <button type="button" onclick="pcAplicar('pf')" style="padding:5px 12px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Adicionar itens</button>
+            <button type="button" onclick="pcAbrir('pf')" style="padding:5px 10px;border-radius:6px;border:none;background:none;color:#888;font-size:12px;cursor:pointer;">Cancelar</button>
+            <span id="pf-colar-msg" style="font-size:12px;color:#C41E1E;"></span>
+          </div>
         </div>
         <div id="pf-itens-lista" style="display:grid;gap:8px;"></div>
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid #E2E0D8;display:flex;justify-content:space-between;align-items:center;">
@@ -14421,6 +14433,42 @@ function testarConexao() {
 // ── ITENS DO PEDIDO ──
 
 
+/* Preenchimento rápido de itens (igual ao da Central de Abastecimento): código + qtd [+ valor unit.] */
+function pcAbrir(pref){
+  var bx = document.getElementById(pref + '-colar'); if (!bx) return;
+  bx.style.display = bx.style.display === 'none' ? 'block' : 'none';
+  document.getElementById(pref + '-colar-msg').textContent = '';
+  if (bx.style.display === 'block') document.getElementById(pref + '-colar-tx').focus();
+}
+function pcNum(t){ t = String(t || ''); if (t.indexOf(',') !== -1) t = t.replace(/\./g, '').replace(',', '.'); else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, ''); return parseFloat(t) || 0; }
+function pcAchaMaterial(cod){
+  var lst = (typeof allProducts !== 'undefined' ? allProducts : []);
+  for (var i = 0; i < lst.length; i++){ if (String(lst[i].codigo || '').trim().toUpperCase() === cod) return { nome:(lst[i].nome || '').trim(), codigo:cod, cat:categoriaParaComissao(lst[i].categoria || '') }; }
+  var n = null; try { n = (typeof caNome === 'function') ? caNome(cod) : null; } catch(e){}
+  return n ? { nome:n, codigo:cod, cat:'' } : null;
+}
+function pcAplicar(pref){
+  var tx = document.getElementById(pref + '-colar-tx'), msg = document.getElementById(pref + '-colar-msg');
+  var arr = pref === 'edit' ? editItens : pedItens, novos = [], fora = [];
+  String(tx.value || '').split(/\n/).forEach(function(raw){
+    var ln = raw.trim().toUpperCase(); if (!ln) return;
+    var cm = ln.match(/\b([A-Z]{2}\d{4,6})\b/); if (!cm) return;
+    var nums = ln.replace(cm[1], ' ').match(/\d+(?:[.,]\d+)*/g); if (!nums) return;
+    var q = pcNum(nums[0]), vu = nums.length > 1 ? pcNum(nums[1]) : 0; if (!(q > 0)) return;
+    var m = pcAchaMaterial(cm[1]);
+    if (!m){ fora.push(cm[1]); return; }
+    novos.push({ pn:'', cat:m.cat || '', material:m.nome, codigo:m.codigo, qtd:q, vUnit:vu, vTotal:Math.round(q * vu * 100) / 100 });
+  });
+  if (!novos.length){ msg.textContent = fora.length ? 'Códigos não encontrados: ' + fora.join(', ') : 'Não encontrei linhas com código e quantidade.'; return; }
+  // tira linhas vazias antes de adicionar
+  for (var i = arr.length - 1; i >= 0; i--){ if (!arr[i].material && !(parseFloat(arr[i].qtd) > 0)) arr.splice(i, 1); }
+  novos.forEach(function(n){ if (pref === 'edit') delete n.pn; arr.push(n); });
+  if (pref === 'edit') renderEditItens(); else renderItensList();
+  tx.value = '';
+  if (fora.length){ msg.textContent = novos.length + ' item(ns) adicionados. Códigos não encontrados: ' + fora.join(', '); }
+  else { document.getElementById(pref + '-colar').style.display = 'none'; msg.textContent = ''; }
+}
+
 function addItemLinha() {
   var idx = pedItens.length;
   pedItens.push({ pn: '', cat: '', material: '', qtd: 0, vUnit: 0, vTotal: 0 });
@@ -18340,7 +18388,19 @@ function importarArquivo(event) {
       <div style="border-top:1px solid #F0EEEA;padding-top:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <div style="font-size:12px;font-weight:600;color:#1C1C1C;">Itens do Pedido</div>
-          <button type="button" onclick="addEditItem()" style="padding:5px 12px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Adicionar Item</button>
+          <div style="display:flex;gap:6px;">
+            <button type="button" onclick="pcAbrir('edit')" style="padding:5px 12px;border-radius:6px;border:1.5px solid #E2E0D8;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer;">📋 Preenchimento rápido</button>
+            <button type="button" onclick="addEditItem()" style="padding:5px 12px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Adicionar Item</button>
+          </div>
+        </div>
+        <div id="edit-colar" style="display:none;background:#fff;border:1px solid #E2E0D8;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+          <div style="font-size:12px;color:#888;margin-bottom:6px;">Cole a lista: uma linha por item com <b>código</b> e <b>quantidade</b>. O valor unitário é opcional (ex.: <span style="font-family:ui-monospace,monospace;">DW00012 300</span> ou <span style="font-family:ui-monospace,monospace;">DW00012 300 12,50</span>).</div>
+          <textarea id="edit-colar-tx" style="width:100%;min-height:80px;border:1.5px solid #E2E0D8;border-radius:6px;padding:7px;font-family:ui-monospace,monospace;font-size:12px;box-sizing:border-box;outline:none;"></textarea>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap;">
+            <button type="button" onclick="pcAplicar('edit')" style="padding:5px 12px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Adicionar itens</button>
+            <button type="button" onclick="pcAbrir('edit')" style="padding:5px 10px;border-radius:6px;border:none;background:none;color:#888;font-size:12px;cursor:pointer;">Cancelar</button>
+            <span id="edit-colar-msg" style="font-size:12px;color:#C41E1E;"></span>
+          </div>
         </div>
         <div id="edit-itens-lista"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #F0EEEA;margin-top:4px;">
