@@ -21776,7 +21776,14 @@ function abChipEtapa(k){ var et = AB_ETAPAS[abIdx(k)]; return '<span style="font
 function abSelEtapaItem(r, i, compacto){
   var et = AB_ETAPAS[abIdx(i.etapa)];
   return '<select onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" onchange="abSetEtapaItem(\'' + r.id + '\',\'' + i.id + '\',this.value)" style="font-weight:700;color:' + et.cor + ';' + (compacto ? 'font-size:11px;padding:2px 4px;border:1px solid #E2E0D8;border-radius:5px;max-width:100%;' : '') + '">' +
-    i.fluxo.map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === i.etapa ? ' selected' : '') + '>' + (n + 1) + '. ' + o.t + '</option>'; }).join('') + '</select>';
+    (function(){
+      // no item só as etapas de ação; tratar/conferir é do chamado (conferência administrativa)
+      var base = abConfProg(r).feitos === abConfProg(r).total || abEtapa(r) !== 'tratar' ? 'conferido' : 'tratar';
+      var pend = i.etapa === 'tratar' || i.etapa === 'conferido';
+      var acoes = i.fluxo.filter(function(k){ return k !== 'tratar' && k !== 'conferido'; });
+      return '<option value="' + (pend ? i.etapa : base) + '"' + (pend ? ' selected' : '') + '>⏳ Pendente</option>' +
+        acoes.map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === i.etapa ? ' selected' : '') + '>' + (n + 1) + '. ' + o.t + '</option>'; }).join('');
+    })() + '</select>';
 }
 function abSelTipo(r, i, ed){
   var atual = i ? i.tipo : (r.tipo || '');
