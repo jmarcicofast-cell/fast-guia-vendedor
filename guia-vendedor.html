@@ -4988,7 +4988,7 @@ td.p-tie { color:var(--sp-muted); }
   #tab-abastecimento .ab-t input[type=text], #tab-abastecimento .ab-t input[type=date], #tab-abastecimento .ab-t select{ width:100%; padding:5px 7px; border:1px solid #E2E0D8; border-radius:5px; font-size:12px; background:#fff; outline:none; }
   #tab-abastecimento .ab-t input:focus, #tab-abastecimento .ab-t select:focus{ border-color:#C41E1E; }
   #tab-abastecimento .ab-sit{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; white-space:nowrap; display:inline-block; }
-  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(10,minmax(215px,1fr)); gap:10px; min-width:2260px; align-items:start; }
+  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(11,minmax(215px,1fr)); gap:10px; min-width:2490px; align-items:start; }
   #ab-kanban-wrap{ overflow-x:auto; overflow-y:visible; scrollbar-width:none; }
   #ab-kanban-wrap::-webkit-scrollbar{ display:none; }
   #ab-kb-topbar{ overflow-x:auto; overflow-y:hidden; height:16px; margin-bottom:4px; position:sticky; top:0; z-index:5; background:#F5F4F2; }
@@ -21359,6 +21359,7 @@ var AB_ETAPAS = [
   { k:'previsao',   t:'Com previsão',             c:'Com previsão', ic:'📆', cor:'#E65100' },
   { k:'coleta',     t:'Aguardando coleta',        c:'Ag. coleta',  ic:'🚛', cor:'#5D4037' },
   { k:'faturamento', t:'Aguardando faturamento',  c:'Ag. faturamento', ic:'💰', cor:'#00838F' },
+  { k:'entrega',    t:'Aguardando entrega',       c:'Ag. entrega', ic:'📦', cor:'#283593' },
   { k:'dc',         t:'Chegada na DCS',            c:'Na DCS',       ic:'🏭', cor:'#185FA5' },
   { k:'cliente',    t:'Chegada no cliente',       c:'No cliente',  ic:'✅', cor:'#1B5E20' }
 ];
@@ -21472,7 +21473,8 @@ function abEtapa(r){
   var e = abEtapaBase(r);
   if (e === 'cliente') return e;
   var p = abPedidoDe(r); if (!p) return e;
-  if (p.status === 'entregue' || p.status === 'faturado') return e === 'tratar' ? e : 'cliente';
+  if (p.status === 'entregue') return e === 'tratar' ? e : 'cliente';
+  if (p.status === 'faturado') return e === 'tratar' ? e : 'entrega';   // faturado → aguardando entrega
   if (p.status === 'aguardando-fat') return e === 'tratar' ? e : 'faturamento';
   // depois do material reservado ou do abastecimento solicitado
   var pos = e === 'solicitado' || e === 'reservado' || e === 'dc';
@@ -22315,6 +22317,7 @@ function abConfHtml(r, ed){
 }
 
 function abProgressoHtml(r){
+  if (abEtapa(r) === 'entrega'){ var pe = abPedidoDe(r); return '<span style="font-size:10.5px;font-weight:800;color:#283593;white-space:nowrap;">📦 faturado' + (pe && pe.numDoc ? ' · DOC ' + abEsc(pe.numDoc) : '') + ' — aguardando entrega</span>'; }
   if (abEtapa(r) === 'faturamento') return '<span style="font-size:10.5px;font-weight:800;color:#00838F;white-space:nowrap;">💰 aguardando faturamento</span>';
   if (abEtapa(r) === 'coleta'){
     var cc = r.coleta || {}, dcsC = abCompoeDcs(r);
@@ -22586,7 +22589,7 @@ function abRenderPopup(){
   var lbl = function(t, html){ return '<div><div class="abp-lbl">' + t + '</div>' + html + '</div>'; };
   var etapaCham = ed
     ? '<select onchange="abMoverEtapa(\'' + r.id + '\',this.value)" style="font-weight:700;color:' + et.cor + ';">' +
-        (function(){ var fl = abFluxo(r).slice(), ic = fl.indexOf('reservado'); if (ic !== -1) fl.splice(ic + 1, 0, 'grade', 'previsao', 'coleta', 'faturamento');
+        (function(){ var fl = abFluxo(r).slice(), ic = fl.indexOf('reservado'); if (ic !== -1) fl.splice(ic + 1, 0, 'grade', 'previsao', 'coleta', 'faturamento', 'entrega');
           return fl.map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + '>' + (n + 1) + '. ' + o.t + '</option>'; }).join(''); })() + '</select>'
     : abChipEtapa(e);
   var cab = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;">' +
@@ -22689,6 +22692,7 @@ function abSetEtapaItem(id, itemId, etapa){
 function abMoverEtapa(id, etapa, semConfirmar){
   if (etapa === 'previsao'){ abPrevDefinir(id); abRender(); return; }
   if (etapa === 'coleta'){ abGradeComDt(id); abRender(); return; }
+  if (etapa === 'entrega'){ alert('"Aguardando entrega" entra sozinho quando o pedido é marcado como FATURADO na aba Pedidos.'); abRender(); return; }
   if (etapa === 'faturamento'){ alert('"Aguardando faturamento" entra sozinho: é só ticar em Aguardando coleta — coletou na Placo, coletou na DCS (se compõe) e arquivos no chamado.'); abRender(); return; }
   if (etapa === 'grade'){ abMandarGrade(id); abRender(); return; }
   if (!abPodeEditar()){ alert('Somente o administrativo pode alterar o abastecimento depois de incluído.'); abRender(); return; }
