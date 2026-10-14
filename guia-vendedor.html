@@ -4988,7 +4988,7 @@ td.p-tie { color:var(--sp-muted); }
   #tab-abastecimento .ab-t input[type=text], #tab-abastecimento .ab-t input[type=date], #tab-abastecimento .ab-t select{ width:100%; padding:5px 7px; border:1px solid #E2E0D8; border-radius:5px; font-size:12px; background:#fff; outline:none; }
   #tab-abastecimento .ab-t input:focus, #tab-abastecimento .ab-t select:focus{ border-color:#C41E1E; }
   #tab-abastecimento .ab-sit{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:10px; white-space:nowrap; display:inline-block; }
-  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(8,minmax(215px,1fr)); gap:10px; min-width:1800px; align-items:start; }
+  #tab-abastecimento .ab-kb{ display:grid; grid-template-columns:repeat(9,minmax(215px,1fr)); gap:10px; min-width:2030px; align-items:start; }
   #ab-kanban-wrap{ max-height:calc(100vh - 230px); overflow:auto; }
   #ab-kb-topbar{ overflow-x:auto; overflow-y:hidden; height:16px; margin-bottom:4px; }
   #ab-kb-topbar > div{ height:1px; }
@@ -5035,7 +5035,7 @@ td.p-tie { color:var(--sp-muted); }
           <button id="ab-view-tabela" onclick="abSetView('tabela')" style="padding:6px 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;">📋 Tabela</button>
           <button id="ab-view-kanban" onclick="abSetView('kanban')" style="padding:6px 12px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;">🗂️ Kanban</button>
         </div>
-        <button id="ab-btn-dt" onclick="abDtAbrir()" style="display:none;padding:8px 14px;border-radius:7px;border:1.5px solid #AD1457;background:#fff;color:#AD1457;font-size:13px;font-weight:700;cursor:pointer;" title="Mande a foto das DTs do dia e o sistema marca sozinho o que saiu">📸 Ler DTs do dia</button>
+        <button id="ab-btn-dt" onclick="abDtAbrir()" style="display:none;padding:8px 14px;border-radius:7px;border:1.5px solid #AD1457;background:#fff;color:#AD1457;font-size:13px;font-weight:700;cursor:pointer;" title="Mande a foto das previsões de DT do dia e o sistema marca sozinho o que tem previsão">📸 Ler previsões do dia</button>
         <button onclick="abAbrirModal()" style="padding:8px 16px;border-radius:7px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Item encomendado</button>
       </div>
     </div>
@@ -21356,6 +21356,7 @@ var AB_ETAPAS = [
   { k:'reservado',  t:'Material reservado',       c:'Reservado',   ic:'📦', cor:'#00695C' },
   { k:'grade',      t:'Chamado na grade (aguardando DT)', c:'Na grade', ic:'🗓️', cor:'#AD1457' },
   { k:'previsao',   t:'Com previsão',             c:'Com previsão', ic:'📆', cor:'#E65100' },
+  { k:'coleta',     t:'Aguardando coleta',        c:'Ag. coleta',  ic:'🚛', cor:'#5D4037' },
   { k:'dc',         t:'Chegada na DCS',            c:'Na DCS',       ic:'🏭', cor:'#185FA5' },
   { k:'cliente',    t:'Chegada no cliente',       c:'No cliente',  ic:'✅', cor:'#1B5E20' }
 ];
@@ -21473,7 +21474,8 @@ function abEtapa(r){
   // depois do material reservado ou do abastecimento solicitado
   var pos = e === 'solicitado' || e === 'reservado' || e === 'dc';
   var legado = !p.gradeLog;   // já estava em Aguardando DT antes deste controle
-  if (p.status === 'com-dt' || p.status === 'em-rota') return (pos || r.previsaoGrade) ? 'previsao' : e;
+  // saiu DT → aguardando coleta (Placo e, se compõe, DCS)
+  if (p.status === 'com-dt' || p.status === 'em-rota') return (pos || legado || r.previsaoGrade || r.gradeForcado) ? 'coleta' : e;
   if (p.status !== 'aguardando-dt') return e;
   if (r.previsaoGrade && (pos || legado || r.gradeForcado)) return 'previsao';
   if (pos || legado || r.gradeForcado) return 'grade';
@@ -22054,6 +22056,40 @@ function abPrevHtml(r, ed){
   '</div>';
 }
 
+/* ── Aguardando coleta: saiu DT; tica coleta na Placo e, se compõe em DCS, coleta na DCS ── */
+function abCompoeDcs(r){ var m = (r.conf || {}).mogi; return m && m.v === 'Sim' ? (m.txt || 'DCS') : ''; }
+function abColetaFeita(r){ var c = r.coleta || {}; return !!c.placo && (!abCompoeDcs(r) || !!c.dcs); }
+function abColetaTick(id, k){
+  if (!abPodeEditar()) return;
+  var r = AB.itens[id]; if (!r) return;
+  var atual = (r.coleta || {})[k], novo = atual ? null : { por: currentUser, em: Date.now() };
+  r.coleta = r.coleta || {}; if (novo) r.coleta[k] = novo; else delete r.coleta[k];
+  var upd = {}; upd['coleta/' + k] = novo;
+  abRenderPopup(); abAtualizar(id, upd);
+  var p = abPedidoDe(r);
+  if (novo && abColetaFeita(r) && p && p.status === 'com-dt' && confirm('Coleta concluída. Marcar o pedido ' + (p.chamado || '') + ' como EM ROTA?')){
+    aplicarNovoStatus(p.vendedor, p.id, 'em-rota');
+    setTimeout(function(){ AB._pm = null; abRenderPopup(); abRequestRender(); }, 800);
+  }
+}
+function abColetaHtml(r, ed){
+  if (abEtapa(r) !== 'coleta') return '';
+  var c = r.coleta || {}, dcs = abCompoeDcs(r), p = abPedidoDe(r);
+  var linha = function(k, txt, ativo, sub){
+    var on = !!c[k];
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;margin-top:5px;opacity:' + (ativo ? 1 : .55) + ';background:' + (on ? '#E8F5E9' : '#fff') + ';border:1px solid ' + (on ? '#A5D6A7' : '#D7CCC8') + ';">' +
+      '<span style="font-size:12.5px;font-weight:700;color:' + (on ? '#1B5E20' : '#333') + ';">' + (on ? '✅ ' : '⬜ ') + txt + (sub ? ' <span style="font-weight:400;color:#888;font-size:11px;">(' + sub + ')</span>' : '') + '</span>' +
+      '<span style="display:flex;gap:6px;align-items:center;">' + (on ? '<span style="font-size:10.5px;color:#888;">' + abEsc(abNomeVend(c[k].por)) + ' · ' + abFmtDH(c[k].em) + '</span>' : '') +
+        (ed && ativo ? '<button type="button" onclick="abColetaTick(\'' + r.id + '\',\'' + k + '\')" style="border:1.5px solid ' + (on ? '#2E7D32' : '#D9D6CE') + ';background:' + (on ? '#2E7D32' : '#fff') + ';color:' + (on ? '#fff' : '#555') + ';border-radius:14px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:pointer;">' + (on ? '✓ Coletou' : 'Marcar') + '</button>' : '') + '</span></div>';
+  };
+  return '<div style="background:#EFEBE9;border:1.5px solid ' + (abColetaFeita(r) ? '#A5D6A7' : '#BCAAA4') + ';border-radius:9px;padding:10px 12px;margin-bottom:14px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:11px;font-weight:800;color:#5D4037;">🚛 AGUARDANDO COLETA</span>' +
+      '<span style="font-size:12px;font-weight:700;color:' + (abColetaFeita(r) ? '#1B5E20' : '#5D4037') + ';">' + (abColetaFeita(r) ? (p && p.status === 'em-rota' ? '✅ Coletado — em rota' : '✅ Coletado') : 'DT saiu — aguardando coleta') + '</span></div>' +
+    linha('placo', 'Coletou na Placo', true) +
+    linha('dcs', 'Coletou na DCS', !!dcs, dcs ? 'composição: ' + abEsc(dcs) : 'sem composição em DCS') +
+  '</div>';
+}
+
 function abGradeVoltou(id){
   var r = AB.itens[id]; if (!r) return;
   var p = abPedidoDe(r); if (!p) return alert('Não encontrei o pedido deste chamado.');
@@ -22114,7 +22150,7 @@ function abDtOcr(img){
         var extra = [];
         (t0.split(/\D+/)).forEach(function(bloco){ grade.forEach(function(g){ if (bloco.length > g.length && bloco.indexOf(g) !== -1) extra.push(g); }); });
         var u = {}; achados.concat(extra).forEach(function(n){ u[n] = 1; });
-        ABDT.nums = Object.keys(u); ABDT.lendo = false; ABDT.lido = true;
+        ABDT.nums = Object.keys(u); ABDT.lendo = false; ABDT.lido = true; ABDT.txt = t0;
         abDtDesenhar();
       }).catch(function(e){ ABDT.lendo = false; ABDT.erro = 'Não consegui ler a foto (' + (e && e.message ? e.message : e) + '). Digite os números abaixo.'; abDtDesenhar(); });
   });
@@ -22124,8 +22160,22 @@ function abDtLerTexto(){
   var u = {}; (tx.value.match(/\d{4,8}/g) || []).forEach(function(n){ u[n] = 1; });
   ABDT.nums = Object.keys(u); ABDT.lido = true; abDtDesenhar();
 }
+function abDtDataPadrao(){ var d = new Date(); d.setDate(d.getDate() + 1); while (d.getDay() === 0) d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; }
+function abDtDataDaLinha(num){
+  var linhas = String(ABDT.txt || '').split(/\n/);
+  for (var i = 0; i < linhas.length; i++){
+    if (linhas[i].replace(/\D+/g, ' ').split(' ').indexOf(num) === -1) continue;
+    var m = linhas[i].match(/\b(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?\b/);
+    if (m && +m[1] >= 1 && +m[1] <= 31 && +m[2] >= 1 && +m[2] <= 12){
+      var y = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : String(new Date().getFullYear());
+      return y + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+    }
+  }
+  return '';
+}
 function abDtDesenhar(){
   var ov = document.getElementById('ab-dt-ov'); if (!ov) return;
+  if (!ABDT.dataPadrao) ABDT.dataPadrao = abDtDataPadrao();
   var grade = abDtPedidosGrade(), nums = ABDT.nums || [];
   var saiu = function(p){ var n = abDtNum(p.chamado); return !!n && nums.indexOf(n) !== -1; };
   var naGrade = {}; grade.forEach(function(p){ naGrade[abDtNum(p.chamado)] = 1; });
@@ -22136,11 +22186,12 @@ function abDtDesenhar(){
     return '<tr style="background:' + (ok ? '#E8F5E9' : '#FFF6F6') + ';"><td style="padding:5px 6px;"><input type="checkbox" class="ab-dt-ck" data-v="' + abEsc(p.vendedor) + '" data-id="' + abEsc(p.id) + '"' + (ok ? ' checked' : '') + '></td>' +
       '<td style="padding:5px 6px;font-family:ui-monospace,monospace;font-weight:700;">' + abEsc(p.chamado || '—') + '</td><td style="padding:5px 6px;">' + abEsc(p.empresa || p.cliente || '') + '</td><td style="padding:5px 6px;color:#888;">' + abEsc(abNomeVend(p.vendedor)) + '</td>' +
       '<td style="padding:5px 6px;font-size:11px;color:#888;">' + (gi ? gi.tent + 'ª tent. · ' + abDur(gi.dur) : '') + '</td>' +
-      '<td style="padding:5px 6px;font-size:11.5px;font-weight:800;color:' + (ok ? '#2E7D32' : '#C62828') + ';">' + (ok ? '✅ Saiu DT' : '↩️ Não seguiu') + '</td></tr>';
+      '<td style="padding:5px 6px;"><input type="date" class="ab-dt-data" value="' + (abDtDataDaLinha(abDtNum(p.chamado)) || ABDT.dataPadrao) + '" style="border:1px solid #E2E0D8;border-radius:5px;padding:2px 4px;font-size:11.5px;"></td>' +
+      '<td style="padding:5px 6px;font-size:11.5px;font-weight:800;color:' + (ok ? '#E65100' : '#C62828') + ';">' + (ok ? '📆 Com previsão' : '↩️ Não seguiu') + '</td></tr>';
   }).join('');
   ov.innerHTML = '<div style="background:#fff;border-radius:14px;width:100%;max-width:820px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-size:16px;font-weight:800;">📸 Ler DTs do dia</div><button onclick="abDtFechar()" style="border:none;background:#F1EFE8;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;">✕</button></div>' +
-    '<div style="font-size:12px;color:#666;margin-bottom:10px;">Mande a foto ou o print das DTs que saíram hoje. O sistema procura os números de chamado e marca: o que está na foto vira <b>Com DT</b>, o que está na grade e não apareceu fica registrado como <b>não seguiu hoje</b>. Você confere antes de aplicar.</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-size:16px;font-weight:800;">📸 Ler previsões do dia</div><button onclick="abDtFechar()" style="border:none;background:#F1EFE8;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;">✕</button></div>' +
+    '<div style="font-size:12px;color:#666;margin-bottom:10px;">Mande a foto ou o print das <b>previsões de DT</b> que a Placo deu. O sistema procura os números de chamado: o que está na foto vai para <b>Com previsão</b> (com a data da linha, se houver, ou a data padrão), o que está na grade e não apareceu fica registrado como <b>não seguiu hoje</b>. Você confere antes de aplicar.</div>' +
     '<label style="display:block;border:2px dashed #E2E0D8;border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:#FAF9F6;margin-bottom:10px;" ondragover="event.preventDefault()" ondrop="event.preventDefault();abDtArquivo(event.dataTransfer.files[0])">' +
       (ABDT.img ? '<img src="' + ABDT.img + '" style="max-height:160px;max-width:100%;border-radius:6px;display:block;margin:0 auto 6px;">' : '') +
       '<span style="font-size:12.5px;color:#555;">📎 Clique para escolher a foto, arraste aqui ou cole (Ctrl+V)</span>' +
@@ -22149,22 +22200,26 @@ function abDtDesenhar(){
     (ABDT.erro ? '<div style="font-size:12px;color:#C62828;margin-bottom:8px;">' + abEsc(ABDT.erro) + '</div>' : '') +
     '<div style="font-size:11px;color:#999;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Números de chamado encontrados (pode corrigir)</div>' +
     '<div style="display:flex;gap:6px;margin-bottom:12px;"><textarea id="ab-dt-tx" style="flex:1;min-height:44px;border:1.5px solid #E2E0D8;border-radius:6px;padding:6px;font-family:ui-monospace,monospace;font-size:12px;">' + abEsc(nums.join(' ')) + '</textarea><button onclick="abDtLerTexto()" style="border:1.5px solid #E2E0D8;background:#fff;border-radius:6px;padding:0 12px;font-size:12px;font-weight:700;cursor:pointer;">Atualizar</button></div>' +
-    '<div style="font-size:11px;font-weight:800;color:#555;margin-bottom:6px;">PEDIDOS NA GRADE (' + grade.length + ')' + (ABDT.lido ? ' · ' + grade.filter(saiu).length + ' saíram DT' : '') + '</div>' +
+    '<div style="font-size:11px;font-weight:800;color:#555;margin-bottom:6px;">PEDIDOS NA GRADE (' + grade.length + ')' + (ABDT.lido ? ' · ' + grade.filter(saiu).length + ' com previsão' : '') + '</div>' +
     (grade.length ? '<div style="max-height:40vh;overflow:auto;border:1px solid #ECEAE4;border-radius:8px;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;">' + linhas + '</table></div>' : '<div style="font-size:12px;color:#999;">Nenhum pedido em Aguardando DT agora.</div>') +
     (outros.length ? '<div style="font-size:11.5px;color:#B36B00;margin-top:8px;">⚠️ Na foto mas não estão na grade: ' + outros.map(function(o){ return '<b>' + o.n + '</b>' + (o.p ? ' (' + abEsc(STATUS_LABEL[o.p.status] || o.p.status || '') + ')' : ' (não encontrado)'); }).join(', ') + '</div>' : '') +
-    '<label style="display:flex;gap:6px;align-items:center;font-size:12px;color:#555;margin-top:10px;"><input type="checkbox" id="ab-dt-voltou" checked> Registrar "não seguiu hoje" para os que não saíram</label>' +
+    '<div style="display:flex;gap:8px;align-items:center;font-size:12px;color:#555;margin-top:10px;">Data padrão da previsão: <input type="date" value="' + ABDT.dataPadrao + '" onchange="ABDT.dataPadrao=this.value;abDtDesenhar()" style="border:1px solid #E2E0D8;border-radius:5px;padding:2px 4px;"></div>' +
+    '<label style="display:flex;gap:6px;align-items:center;font-size:12px;color:#555;margin-top:6px;"><input type="checkbox" id="ab-dt-voltou" checked> Registrar "não seguiu hoje" para os que não saíram</label>' +
     '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px;"><button onclick="abDtFechar()" style="border:1.5px solid #E2E0D8;background:#fff;border-radius:7px;padding:7px 14px;font-size:12.5px;cursor:pointer;">Cancelar</button>' +
       '<button onclick="abDtAplicar()"' + (ABDT.lido && grade.length ? '' : ' disabled') + ' style="border:none;background:' + (ABDT.lido && grade.length ? '#2E7D32' : '#D9D6CE') + ';color:#fff;border-radius:7px;padding:7px 16px;font-size:12.5px;font-weight:700;cursor:' + (ABDT.lido && grade.length ? 'pointer' : 'not-allowed') + ';">✅ Aplicar</button></div>' +
   '</div>';
 }
 function abDtAplicar(){
-  var cks = document.querySelectorAll('#ab-dt-ov .ab-dt-ck'), regVolta = (document.getElementById('ab-dt-voltou') || {}).checked;
-  var nSaiu = 0, nVolta = 0, agora = Date.now();
+  var cks = document.querySelectorAll('#ab-dt-ov .ab-dt-ck'), datas = document.querySelectorAll('#ab-dt-ov .ab-dt-data'), regVolta = (document.getElementById('ab-dt-voltou') || {}).checked;
+  var nSaiu = 0, nVolta = 0, semCham = [], agora = Date.now();
   cks.forEach(function(ck, i){
     var v = ck.dataset.v, id = ck.dataset.id;
     if (ck.checked){
-      if (typeof pedidoEstaTravado === 'function' && pedidoEstaTravado(v, id)) return;
-      aplicarNovoStatus(v, id, 'com-dt'); nSaiu++;
+      var dt = (datas[i] && datas[i].value) || ABDT.dataPadrao;
+      var regs = abRegistrosDoPedido({ id: id, vendedor: v });
+      if (!regs.length){ semCham.push(id); return; }
+      regs.forEach(function(rg){ var nv = { data: dt, por: currentUser, em: agora, foto: true }; rg.previsaoGrade = nv; abAtualizar(rg.id, { previsaoGrade: nv }); });
+      nSaiu++;
     } else if (regVolta){
       var upd = {}; upd['gradeLog/g' + agora + '_' + i] = { tipo: 'voltou', motivo: 'Não saiu DT (foto do dia)', em: agora, por: currentUser };
       dbRef('pedidos/' + v + '/' + id).update(upd).catch(function(){}); nVolta++;
@@ -22173,7 +22228,7 @@ function abDtAplicar(){
   });
   abDtFechar();
   setTimeout(function(){ AB._pm = null; abRequestRender(); }, 800);
-  alert('Pronto: ' + nSaiu + ' pedido(s) marcados como COM DT' + (regVolta ? ' e ' + nVolta + ' registrados como "não seguiu hoje"' : '') + '.');
+  alert('Pronto: ' + nSaiu + ' pedido(s) foram para COM PREVISÃO' + (regVolta ? ' e ' + nVolta + ' registrados como "não seguiu hoje"' : '') + '.' + (semCham.length ? '\n\n' + semCham.length + ' pedido(s) sem chamado no abastecimento — abra o chamado e use "Placo deu previsão".' : ''));
 }
 
 function abGradeComDt(id){
@@ -22242,6 +22297,11 @@ function abConfHtml(r, ed){
 }
 
 function abProgressoHtml(r){
+  if (abEtapa(r) === 'coleta'){
+    var cc = r.coleta || {}, dcsC = abCompoeDcs(r);
+    return '<span style="display:block;font-size:10.5px;font-weight:700;white-space:nowrap;"><span style="color:' + (cc.placo ? '#1B5E20' : '#C62828') + ';">' + (cc.placo ? '✅' : '⬜') + ' Placo</span>' +
+      (dcsC ? ' · <span style="color:' + (cc.dcs ? '#1B5E20' : '#C62828') + ';">' + (cc.dcs ? '✅' : '⬜') + ' DCS</span>' : '') + '</span>';
+  }
   if (abEtapa(r) === 'previsao'){
     var pp = abPedidoDe(r), pv = r.previsaoGrade, pdt = abPrevSaiuDt(pp), pr = !!(r.prevChk || {}).print, venc = pv && pv.data && !pdt && pv.data < abHoje();
     return '<span style="font-size:10.5px;font-weight:800;color:' + (venc ? '#C62828' : '#E65100') + ';white-space:nowrap;">📆 ' + (pv && pv.data ? 'prev. ' + pv.data.slice(8, 10) + '/' + pv.data.slice(5, 7) + (venc ? ' (vencida)' : '') : 'sem data') + '</span>' +
@@ -22506,7 +22566,7 @@ function abRenderPopup(){
   var lbl = function(t, html){ return '<div><div class="abp-lbl">' + t + '</div>' + html + '</div>'; };
   var etapaCham = ed
     ? '<select onchange="abMoverEtapa(\'' + r.id + '\',this.value)" style="font-weight:700;color:' + et.cor + ';">' +
-        (function(){ var fl = abFluxo(r).slice(), ic = fl.indexOf('reservado'); if (ic !== -1) fl.splice(ic + 1, 0, 'grade', 'previsao');
+        (function(){ var fl = abFluxo(r).slice(), ic = fl.indexOf('reservado'); if (ic !== -1) fl.splice(ic + 1, 0, 'grade', 'previsao', 'coleta');
           return fl.map(function(k, n){ var o = AB_ETAPAS[abIdx(k)]; return '<option value="' + o.k + '"' + (o.k === e ? ' selected' : '') + '>' + (n + 1) + '. ' + o.t + '</option>'; }).join(''); })() + '</select>'
     : abChipEtapa(e);
   var cab = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;">' +
@@ -22527,7 +22587,7 @@ function abRenderPopup(){
       '</div>' +
       '<div style="margin-top:8px;">' + lbl('Obs. do chamado', '<input type="text" value="' + abEsc(r.obs || '') + '" placeholder="+ obs do chamado" onchange="abSalvarCampo(\'' + r.id + '\',\'obs\',this.value)"' + (ed ? '' : ' disabled') + '>') + '</div>' +
     '</div>' +
-    abPrevHtml(r, ed) + abGradeHtml(r, ed) + abConfHtml(r, ed) +
+    abColetaHtml(r, ed) + abPrevHtml(r, ed) + abGradeHtml(r, ed) + abConfHtml(r, ed) +
     '<div style="font-size:11px;font-weight:800;color:#555;margin-bottom:8px;">ITENS (' + its.length + ')</div>';
   var lista = its.map(function(i){
     var si = abSituacaoItem(i);
@@ -22608,6 +22668,7 @@ function abSetEtapaItem(id, itemId, etapa){
 /* mover o chamado inteiro: leva todos os itens para a etapa escolhida */
 function abMoverEtapa(id, etapa, semConfirmar){
   if (etapa === 'previsao'){ abPrevDefinir(id); abRender(); return; }
+  if (etapa === 'coleta'){ abGradeComDt(id); abRender(); return; }
   if (etapa === 'grade'){ abMandarGrade(id); abRender(); return; }
   if (!abPodeEditar()){ alert('Somente o administrativo pode alterar o abastecimento depois de incluído.'); abRender(); return; }
   var r = AB.itens[id]; if (!r) return;
