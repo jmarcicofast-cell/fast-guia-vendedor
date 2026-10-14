@@ -5285,7 +5285,7 @@ function caUsuarioLiberado(user){
   return user === 'JULIANA' || vendedores[user].tipo === 'administrativo' || CA_VENDEDORES_LIBERADOS.indexOf(user) !== -1;
 }
 /* unidades que não aparecem para um usuário do guia */
-var CA_UNID_OCULTAS = { 'JULIANA': ['Atacado SP'] };
+var CA_UNID_OCULTAS = {};
 function caUnidVisivel(u){
   u = caUnidNome(u);
   if (CA.unid) return true;
@@ -5327,7 +5327,9 @@ var CA_PED_ABERTO = { '':1, agendamento:1, 'aguardando-dt':1 };
 var CA = { dados:{ vendas:{}, abast:{}, guia:{}, config:null }, carregado:false, ligado:false, ligadoFb:false,
   ped:{}, pedPara:null, unid:null, aba:'nec', sel:{}, aberto:{}, modal:null,
   fv:{ q:'', st:'aberto', cob:'', dc:'', origem:'' }, fa:{ q:'', st:'ativos', dc:'' }, fn:{ dc:'', fab:'', prod:'', cat:'' }, rTimer:null };
-try { var _caAba = localStorage.getItem('fgv_ca_aba'); if (_caAba) CA.aba = _caAba; CA.fu = localStorage.getItem('fgv_ca_fu') || ''; } catch(e){}
+try { var _caAba = localStorage.getItem('fgv_ca_aba'); if (_caAba) CA.aba = _caAba; CA.fu = localStorage.getItem('fgv_ca_fu') || '';
+  /* uma vez: volta o filtro de unidade para "Todas" (todas as operações aparecendo) */
+  if (!localStorage.getItem('fgv_ca_fu_v2')) { CA.fu = ''; localStorage.setItem('fgv_ca_fu', ''); localStorage.setItem('fgv_ca_fu_v2', '1'); } } catch(e){}
 
 /* ---------- utilidades ---------- */
 function caEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
