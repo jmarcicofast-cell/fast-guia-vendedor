@@ -16054,6 +16054,51 @@ var RT_TEMAS = {
       }
       return s;
     }
+    // ── o hotel grandão da FAST ao fundo (isométrico menor: losango 24x12) ──
+    function PH(i, j, z) { return [Math.round(176 + (i - j) * 12), Math.round(262 + (i + j) * 6 - (z || 0))]; }
+    function cx3(i, j, z, w, d, h, topo, esq, dir) {
+      var c = '#2B1D14';
+      return pol([PH(i, j + d, z), PH(i + w, j + d, z), PH(i + w, j + d, z + h), PH(i, j + d, z + h)], esq, c) +
+        pol([PH(i + w, j, z), PH(i + w, j + d, z), PH(i + w, j + d, z + h), PH(i + w, j, z + h)], dir, c) +
+        pol([PH(i, j, z + h), PH(i + w, j, z + h), PH(i + w, j + d, z + h), PH(i, j + d, z + h)], topo, c);
+    }
+    function janelasH(i0, w, j0, d, z0, z1, passo) {
+      var s = '';
+      for (var z = z0 + 6; z + 7 <= z1 - 3; z += passo) {
+        for (var i = i0 + .3; i + .5 <= i0 + w - .2; i += 1) s += pol([PH(i, j0 + d, z), PH(i + .55, j0 + d, z), PH(i + .55, j0 + d, z + 7), PH(i, j0 + d, z + 7)], '#5D8FB8');
+        for (var j = j0 + .3; j + .5 <= j0 + d - .2; j += 1) s += pol([PH(i0 + w, j, z), PH(i0 + w, j + .55, z), PH(i0 + w, j + .55, z + 7), PH(i0 + w, j, z + 7)], '#4A7499');
+      }
+      return s;
+    }
+    function hotel() {
+      var s = '', cre = '#F1E3C6', creE = '#E2CFA8', creD = '#C9B48A', ver = '#C41E1E', verE = '#A81818', verD = '#861313';
+      // jardim da base
+      s += pol([PH(-3, -2, 0), PH(11, -2, 0), PH(11, 9, 0), PH(-3, 9, 0)], '#6FB84A', '#2B1D14');
+      for (var a = -3; a < 11; a += 2) for (var b = -2; b < 9; b += 2) if ((a + b) % 4 === 0) s += pol([PH(a, b), PH(a + 1, b), PH(a + 1, b + 1), PH(a, b + 1)], '#63A842');
+      s += pol([PH(3, 6, 0), PH(5, 6, 0), PH(5, 9, 0), PH(3, 9, 0)], '#D9D2C3');
+      // ala com piscina no telhado
+      s += cx3(-2, 1, 0, 3, 5, 34, creE, cre, creD) + janelasH(-2, 3, 1, 5, 0, 34, 12);
+      s += pol([PH(-1.6, 1.8, 34), PH(.4, 1.8, 34), PH(.4, 5.2, 34), PH(-1.6, 5.2, 34)], '#4FC3F7', '#FFFFFF');
+      // base, torre e coroa
+      s += cx3(1, 0, 0, 8, 6, 44, '#E9DCC0', cre, creD);
+      s += pol([PH(3.2, 6, 0), PH(5.8, 6, 0), PH(5.8, 6, 26), PH(3.2, 6, 26)], '#8FC3E6', '#2B1D14') + pol([PH(4.45, 6, 0), PH(4.55, 6, 0), PH(4.55, 6, 26), PH(4.45, 6, 26)], '#2B1D14');
+      s += pol([PH(2.8, 6, 26), PH(6.2, 6, 26), PH(6.6, 6.6, 30), PH(2.4, 6.6, 30)], ver, '#2B1D14');
+      s += janelasH(1, 8, 0, 6, 0, 22, 12).split('</polygon>').join('');
+      s += cx3(2, 1, 44, 6, 4, 150, cre, cre, creD) + janelasH(2, 6, 1, 4, 44, 194, 11);
+      s += pol([PH(4.6, 5, 44), PH(5.4, 5, 44), PH(5.4, 5, 194), PH(4.6, 5, 194)], '#8FC3E6', '#2B1D14');
+      [90, 140].forEach(function(z) { s += pol([PH(2, 5, z), PH(8, 5, z), PH(8, 5, z + 5), PH(2, 5, z + 5)], ver) + pol([PH(8, 1, z), PH(8, 5, z), PH(8, 5, z + 5), PH(8, 1, z + 5)], verD); });
+      s += cx3(2.6, 1.6, 194, 4.8, 2.8, 30, '#D9C9A8', verE, verD);
+      s += '<text transform="matrix(1 0.5 0 1 ' + PH(3, 4.4, 214)[0] + ' ' + PH(3, 4.4, 214)[1] + ')" font-family="Arial Black, Arial" font-weight="900" font-size="15" fill="#FFFFFF">FAST</text>';
+      s += cx3(4.6, 2.6, 224, .8, .8, 34, '#B0BEC5', '#90A4AE', '#78909C') + '<rect x="' + (PH(5, 3, 262)[0] - 2) + '" y="' + (PH(5, 3, 262)[1] - 4) + '" width="4" height="4" fill="#C41E1E"/>';
+      // palmeiras e chafariz
+      [[-2.5, 7.5], [9.5, 1], [10, 6], [0, 8.5], [8, 8.5]].forEach(function(p) {
+        var b = PH(p[0], p[1], 0);
+        s += '<rect x="' + (b[0] - 1) + '" y="' + (b[1] - 26) + '" width="3" height="26" fill="#8B5A2B"/><rect x="' + (b[0] - 10) + '" y="' + (b[1] - 30) + '" width="22" height="5" fill="#2E8B57"/><rect x="' + (b[0] - 6) + '" y="' + (b[1] - 35) + '" width="14" height="5" fill="#3FAF6A"/><rect x="' + (b[0] - 12) + '" y="' + (b[1] - 25) + '" width="5" height="5" fill="#2E8B57"/><rect x="' + (b[0] + 9) + '" y="' + (b[1] - 25) + '" width="5" height="5" fill="#2E8B57"/>';
+      });
+      var f = PH(4.5, 8, 0);
+      s += '<ellipse cx="' + f[0] + '" cy="' + f[1] + '" rx="16" ry="8" fill="#D9D2C3" stroke="#2B1D14"/><ellipse cx="' + f[0] + '" cy="' + f[1] + '" rx="11" ry="5" fill="#4FC3F7"/><rect x="' + (f[0] - 2) + '" y="' + (f[1] - 12) + '" width="4" height="12" fill="#BFE3F2"/>';
+      return s;
+    }
     var stops = [P(Q[0], 2, 5), P(Q[0], 4, 3), P(Q[0], 6, 2.5), P(Q[1], 1.2, 4.6), P(Q[1], 3.4, 3.2), P(Q[1], 6, 3.4), P(Q[2], 2.4, 4.4), P(Q[2], 5.4, 2.4), P(Q[3], 2, 4), P(Q[3], 5, 3)];
     return {
       nome: 'Prédio Pixel', ic: '🏢', avatarEscala: 1.7,
@@ -16076,7 +16121,7 @@ var RT_TEMAS = {
       tag: ['#FFFFFF', '#2B1D14', '#E8C547'], pier: ['#2B1D14', '#8A9096', '#6B7380'], filaTag: ['#2B1D14', '#FFFFFF'],
       geo: {
         stops: stops, largada: [70, 600], fim: P(Q[3], 6, 1.2),
-        tags: { largada: [14, 640], mundos: [[200, 596], [330, 520], [596, 446], [40, 70]], chegada: [604, 120], fila: [356, 640] },
+        tags: { largada: [14, 640], mundos: [[200, 596], [330, 520], [596, 446], [594, 40]], chegada: [604, 120], fila: [356, 640] },
         fila0: [500, 676, 52, 54]
       },
       cenario: function() {
@@ -16084,7 +16129,8 @@ var RT_TEMAS = {
         [['#8FD3F4', 0, 240], ['#A6DCF6', 240, 200], ['#BFE6F8', 440, 160], ['#7FBF5A', 600, 84]].forEach(function(b) { s += '<rect x="0" y="' + b[1] + '" width="860" height="' + b[2] + '" fill="' + b[0] + '"/>'; });
         [[60, 60], [300, 40], [640, 90], [760, 220], [90, 300], [560, 560]].forEach(function(c) { s += '<g fill="#FFFFFF"><rect x="' + c[0] + '" y="' + c[1] + '" width="44" height="12"/><rect x="' + (c[0] + 10) + '" y="' + (c[1] - 8) + '" width="22" height="8"/><rect x="' + (c[0] - 8) + '" y="' + (c[1] + 4) + '" width="60" height="8"/></g>'; });
         // prédios ao fundo
-        [[0, 520, 70, 80], [80, 500, 50, 100], [700, 480, 70, 120], [780, 510, 80, 90]].forEach(function(b) { s += '<rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + b[3] + '" fill="#9BB7CC"/>'; for (var y = b[1] + 8; y < b[1] + b[3] - 6; y += 12) for (var x = b[0] + 6; x < b[0] + b[2] - 6; x += 12) s += '<rect x="' + x + '" y="' + y + '" width="5" height="6" fill="#C9DCEC"/>'; });
+        s += hotel();
+        [[700, 480, 70, 120], [780, 510, 80, 90]].forEach(function(b) { s += '<rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + b[3] + '" fill="#9BB7CC"/>'; for (var y = b[1] + 8; y < b[1] + b[3] - 6; y += 12) for (var x = b[0] + 6; x < b[0] + b[2] - 6; x += 12) s += '<rect x="' + x + '" y="' + y + '" width="5" height="6" fill="#C9DCEC"/>'; });
         // rua e calçada
         s += '<rect x="0" y="614" width="860" height="70" fill="#6B7380"/><rect x="0" y="610" width="860" height="6" fill="#C9C2B4"/>';
         for (var x = 0; x < 860; x += 48) s += '<rect x="' + x + '" y="647" width="26" height="4" fill="#F4F4F4"/>';
