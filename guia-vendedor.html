@@ -21476,7 +21476,7 @@ function abEtapa(r){
   var pos = e === 'solicitado' || e === 'reservado' || e === 'dc';
   var legado = !p.gradeLog;   // já estava em Aguardando DT antes deste controle
   // saiu DT → aguardando coleta (Placo e, se compõe, DCS)
-  if (p.status === 'com-dt' || p.status === 'em-rota') return (pos || legado || r.previsaoGrade || r.gradeForcado) ? 'coleta' : e;
+  if (p.status === 'com-dt' || p.status === 'em-rota') return (pos || legado || r.previsaoGrade || r.gradeForcado || r.saiuDt || (p.gradeLog && Object.keys(p.gradeLog).length)) ? 'coleta' : e;
   if (p.status !== 'aguardando-dt') return e;
   if (r.previsaoGrade && (pos || legado || r.gradeForcado)) return 'previsao';
   if (pos || legado || r.gradeForcado) return 'grade';
@@ -22235,9 +22235,13 @@ function abDtAplicar(){
 function abGradeComDt(id){
   var r = AB.itens[id]; if (!r) return;
   var p = abPedidoDe(r); if (!p) return alert('Não encontrei o pedido deste chamado.');
-  if (!confirm('Marcar o pedido ' + (p.chamado || '') + ' como COM DT?\nEle sai da grade e o tempo na grade para de contar.')) return;
+  if (!confirm('Saiu DT do pedido ' + (p.chamado || '') + '?\nEle vai para AGUARDANDO COLETA e o pedido passa para COM DT.')) return;
   if (typeof pedidoEstaTravado === 'function' && pedidoEstaTravado(p.vendedor, p.id)){ if (typeof avisarPedidoTravado === 'function') avisarPedidoTravado(); return; }
+  var marca = { por: currentUser, em: Date.now() };
+  r.saiuDt = marca; abAtualizar(id, { saiuDt: marca });
   aplicarNovoStatus(p.vendedor, p.id, 'com-dt');
+  p.status = 'com-dt';   // mostra na hora em Aguardando coleta
+  abRenderPopup(); abRender();
   setTimeout(function(){ AB._pm = null; abRenderPopup(); abRequestRender(); }, 800);
 }
 function abGradeHtml(r, ed){
