@@ -22164,7 +22164,10 @@ function abRenderPopup(){
     var si = abSituacaoItem(i);
     var cls = si.k === 'atrasado' ? 'atrasado' : si.k === 'risco' ? 'risco' : si.k === 'fim' ? 'fim' : '';
     var inp = function(campo, tipo, ph){ return '<input type="' + tipo + '" value="' + abEsc(i[campo] || '') + '"' + (ph ? ' placeholder="' + ph + '"' : '') + (campo === 'dc' ? ' list="ab-dl-dc"' : '') + ' onchange="abSalvarItemCampo(\'' + r.id + '\',\'' + i.id + '\',\'' + campo + '\',this.value)"' + (ed ? '' : ' disabled') + '>'; };
-    return '<div class="abp-item ' + cls + '">' +
+    var ix = abIdx(i.etapa), okRes = ix >= abIdx('reservado'), naoTrat = i.etapa === 'tratar';
+    var tarja = okRes ? 'border-left:6px solid #2E7D32;background:#F1F8F1;' : naoTrat ? 'border-left:6px solid #C62828;background:#FFF6F6;' : '';
+    return '<div class="abp-item ' + cls + '" style="' + tarja + '">' +
+      (naoTrat ? '<div style="font-size:11px;font-weight:800;color:#C62828;margin:-2px 0 6px;">⚠️ Item ainda não tratado</div>' : okRes ? '<div style="font-size:11px;font-weight:800;color:#2E7D32;margin:-2px 0 6px;">✅ Material reservado</div>' : '') +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' + abCodHtml(i.codigo) +
         '<span style="flex:1;font-weight:700;font-size:13px;">' + abEsc(i.material) + (i.qtd ? ' <span style="color:#888;font-weight:400;font-size:12px;">· ' + abEsc(i.qtd) + '</span>' : '') + '</span>' +
         '<span class="ab-sit" style="color:' + si.cor + ';background:' + si.bg + ';">' + si.txt + '</span>' +
