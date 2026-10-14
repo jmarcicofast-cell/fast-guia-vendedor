@@ -23422,6 +23422,20 @@ function sgRender(){
 .msn-fonte-l button.on { background:#D6E6FA; border-color:#4D72AE; }
 .msn-fonte-c { display:grid; grid-template-columns:repeat(11, 1fr); gap:3px; margin:6px 0; align-items:center; }
 .msn-fonte-p { border:1px dashed #B7CBE6; border-radius:3px; padding:4px 6px; font-size:12.5px; }
+.msn-wink-tela { position:fixed; inset:0; z-index:100005; pointer-events:none; overflow:hidden; }
+.msn-wk-el { position:absolute; line-height:1; will-change:transform, opacity; }
+.msn-wkgrade { display:grid; grid-template-columns:repeat(3, 1fr); gap:4px; }
+.msn-wkgrade button { display:flex; flex-direction:column; align-items:center; gap:2px; border:1px solid #C9D9EE; border-radius:5px; background:linear-gradient(#FFFFFF,#EEF4FC); font:11px Tahoma,'Segoe UI',sans-serif; color:#1C3F73; padding:5px 2px; cursor:pointer; min-height:52px; }
+.msn-wkgrade button span { font-size:24px; line-height:26px; }
+.msn-wkgrade button:hover, .msn-wkgrade button:focus-visible { border-color:#4D72AE; background:linear-gradient(#FFFFFF,#D6E6FA); }
+.msn-sis.wk { color:#7A3DB8; }
+.msn-sis.wk button { border:1px solid #B79BDB; border-radius:3px; background:#fff; color:#7A3DB8; font:11px Tahoma,sans-serif; padding:1px 6px; cursor:pointer; margin-left:4px; }
+/* balão do canto acompanha a cor escolhida */
+.msn-toast { border-color:var(--msn-bd,#7F9DB9); background:linear-gradient(180deg,#FFFFFF 0%,var(--msn-l1,#F3F8FE) 38%,var(--msn-l2,#DCEAF9) 72%,var(--msn-l3,#C9DEF5) 100%); }
+.msn-toast .msn-tt { color:var(--msn-tx,#4A6A8F); }
+.msn-toast .msn-tt .x { border-color:var(--msn-l3,#9DB3CC); color:var(--msn-tx,#4A6A8F); }
+.msn-toast .msn-tc em, .msn-toast .msn-op { color:var(--msn-t2,#0046D5); }
+.msn-toast .msn-tc .msn-ini, .msn-toast .msn-tc .msn-avbox { border-color:var(--msn-l3,#9DB3CC); }
 @keyframes msnTreme { 0%,100% { transform:translate(0,0); } 10% { transform:translate(-10px,5px); } 20% { transform:translate(10px,-5px); } 30% { transform:translate(-10px,-5px); } 40% { transform:translate(10px,5px); } 50% { transform:translate(-8px,3px); } 60% { transform:translate(8px,-3px); } 70% { transform:translate(-5px,2px); } 80% { transform:translate(5px,-2px); } 90% { transform:translate(-2px,1px); } }
 .msn-tremendo { animation:msnTreme .7s linear 2; }
 @keyframes msnPisca { 0%,100% { box-shadow:inset 0 0 0 0 rgba(229,57,53,0); } 50% { box-shadow:inset 0 0 0 10px rgba(229,57,53,.8); } }
@@ -23533,6 +23547,7 @@ function msnNotificar(titulo, corpo, conv, forte) {
   } catch (e) {}
 }
 document.addEventListener('visibilitychange', function() {
+  if (!document.hidden && MSN.winkPendente) { var wkp = MSN.winkPendente; MSN.winkPendente = null; setTimeout(function() { msnWinkTocar(wkp); }, 400); }
   if (!document.hidden && MSN.tremerPendente) { var c = MSN.tremerPendente; MSN.tremerPendente = null; setTimeout(function() { msnTremerTela(c); }, 300); }
 });
 var MSN_VOLUMES = { alto: 1, medio: .55, baixo: .25, mudo: 0 };
@@ -23555,12 +23570,12 @@ function msnBalao(conv, de, texto, atencao) {
   var t = document.createElement('div'); t.className = 'msn-toast'; t.id = 'msn-t-' + conv; t.setAttribute('role', 'button'); t.tabIndex = 0;
   var logo = '<svg class="lg" viewBox="0 0 16 16" aria-hidden="true"><circle cx="5.5" cy="4.5" r="3" fill="#3BB54A"/><path d="M1 14c0-3.5 2-5.5 4.5-5.5S10 10.5 10 14z" fill="#3BB54A"/><circle cx="11" cy="5.5" r="2.6" fill="#2D7DD2"/><path d="M7.5 14.5c0-3 1.6-4.8 3.5-4.8s3.8 1.8 3.8 4.8z" fill="#2D7DD2"/></svg>';
   t.innerHTML = '<div class="msn-tt">' + logo + '<span>' + (conv === 'EQUIPE' ? 'Sala da equipe' : 'Bate-papo FAST') + '</span><span class="x" aria-label="Fechar aviso">×</span></div>' +
-    '<div class="msn-tc">' + msnAv(de, 34) + '<div style="min-width:0;flex:1"><b>' + msnEsc(msnNome(de)) + (atencao ? '' : ' diz:') + '</b><em>' + msnEsc(atencao === 'entrou' ? 'acabou de entrar.' : atencao ? 'acabou de chamar sua atenção!' : texto) + '</em></div></div>' +
-    '<div class="msn-op">' + (atencao === 'entrou' ? 'Enviar mensagem' : atencao ? 'Abrir conversa' : 'Responder') + '</div>';
+    '<div class="msn-tc">' + msnAv(de, 34) + '<div style="min-width:0;flex:1"><b>' + msnEsc(msnNome(de)) + (atencao ? '' : ' diz:') + '</b><em>' + msnEsc(atencao === 'entrou' ? 'acabou de entrar.' : atencao === 'wink' ? texto : atencao ? 'acabou de chamar sua atenção!' : texto) + '</em></div></div>' +
+    '<div class="msn-op">' + (atencao === 'entrou' ? 'Enviar mensagem' : atencao === 'wink' ? 'Ver conversa' : atencao ? 'Abrir conversa' : 'Responder') + '</div>';
   function sair() { if (t.classList.contains('saindo')) return; t.classList.add('saindo'); setTimeout(function() { t.remove(); }, 500); }
   t.onclick = function(e) { if (e.target.classList.contains('x')) { sair(); return; } msnAbrir(conv); sair(); };
   t.onkeydown = function(e) { if (e.key === 'Enter') { msnAbrir(conv); sair(); } };
-  var fica = atencao === 'entrou' ? 5000 : atencao ? 9000 : 6000, timer = setTimeout(sair, fica);
+  var fica = atencao === 'entrou' ? 5000 : atencao === 'wink' ? 6000 : atencao ? 9000 : 6000, timer = setTimeout(sair, fica);
   t.onmouseenter = function() { clearTimeout(timer); }; t.onmouseleave = function() { timer = setTimeout(sair, 2500); };
   box.appendChild(t);
   while (box.children.length > 3) box.firstChild.remove();
@@ -23728,6 +23743,11 @@ function msnChegou(conv, v) {
     return;
   }
   if (MSN.meuStatus === 'ocupado') return;
+  if (v.tipo === 'wink' && v.wink) {
+    if (document.hidden) MSN.winkPendente = v.wink; else msnWinkTocar(v.wink);
+    if (!aberta) msnBalao(conv, v.de, 'enviou um wink: ' + ((msnWinkInfo(v.wink) || [])[2] || '') + ' ' + ((msnWinkInfo(v.wink) || [])[1] || ''), 'wink');
+    return;
+  }
   var win = document.getElementById('msn-w-' + conv), minimizada = win && win.classList.contains('min');
   if (!aberta || minimizada) msnBalao(conv, v.de, v.txt, false);
   if (!aberta || minimizada || document.hidden) { msnSom(conv === 'EQUIPE' ? 'grupo' : 'msg'); msnNotificar((conv === 'EQUIPE' ? 'Sala da equipe · ' : '') + msnNome(v.de) + ' diz:', v.txt, conv, false); }
@@ -23894,6 +23914,118 @@ function msnTrocarFoto(file) {
 }
 function msnTirarFoto() { if (MSN.fotos) delete MSN.fotos[MSN.eu]; dbRef('chat/fotos/' + MSN.eu).remove(); MSN.fotoMenu = false; msnRender(); MSN.abertas.forEach(msnRenderTopoJanela); }
 
+// ── WINKS: animações de tela cheia (desenhadas para o guia) ──
+var MSN_WINKS = [
+  ['confete', '🎉', 'Confete'], ['beijo', '💋', 'Beijo'], ['carreta', '🚚', 'Carreta fechada'],
+  ['dinheiro', '💰', 'Chuva de dinheiro'], ['meta', '🏆', 'Meta batida'], ['risada', '😂', 'Gargalhada'],
+  ['coracoes', '❤️', 'Corações'], ['aplausos', '👏', 'Aplausos'], ['acorda', '⏰', 'Acorda!']
+];
+function msnWinkInfo(id) { for (var i = 0; i < MSN_WINKS.length; i++) if (MSN_WINKS[i][0] === id) return MSN_WINKS[i]; return null; }
+function msnWinkPainel(conv) {
+  var p = document.getElementById('msn-wk-' + conv); if (!p) return;
+  ['msn-e-', 'msn-g-', 'msn-fo-'].forEach(function(k) { var x = document.getElementById(k + conv); if (x) x.classList.remove('on'); });
+  p.classList.toggle('on');
+  if (p.classList.contains('on')) p.innerHTML = '<div class="msn-figtopo"><b>✨ Winks</b><span style="color:#7A8DA3;font-size:11px">tomam conta da tela de quem recebe</span></div><div class="msn-wkgrade">' +
+    MSN_WINKS.map(function(w) { return '<button type="button" onclick="msnWinkEnviar(\'' + conv + '\',\'' + w[0] + '\')" title="Enviar o wink ' + w[2] + '"><span>' + w[1] + '</span>' + w[2] + '</button>'; }).join('') + '</div>';
+}
+function msnWinkEnviar(conv, id) {
+  var w = msnWinkInfo(id); if (!w) return;
+  var falta = 8000 - (Date.now() - (MSN.ultWink || 0)), d = document.getElementById('msn-d-' + conv);
+  if (falta > 0) { if (d) d.textContent = 'Espere ' + Math.ceil(falta / 1000) + 's para mandar outro wink.'; return; }
+  MSN.ultWink = Date.now();
+  var p = document.getElementById('msn-wk-' + conv); if (p) p.classList.remove('on');
+  msnGravar(conv, { de: MSN.eu, txt: '✨ Wink: ' + w[2], ts: Date.now(), tipo: 'wink', wink: id });
+  msnWinkTocar(id);
+}
+function msnWinkSom(id) {
+  try {
+    var vol = msnVolume(); if (!vol) return;
+    MSN_AUDIO = MSN_AUDIO || new (window.AudioContext || window.webkitAudioContext)();
+    var ctx = MSN_AUDIO; if (ctx.state === 'suspended') ctx.resume();
+    var t = ctx.currentTime, g0 = ctx.createGain(); g0.gain.value = .5 * vol; g0.connect(ctx.destination);
+    function n(f, ini, dur, tipo, f2) {
+      var o = ctx.createOscillator(), g = ctx.createGain(); o.type = tipo || 'triangle'; o.frequency.setValueAtTime(f, t + ini); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + ini + dur);
+      g.gain.setValueAtTime(.0001, t + ini); g.gain.exponentialRampToValueAtTime(.8, t + ini + .02); g.gain.exponentialRampToValueAtTime(.0001, t + ini + dur);
+      o.connect(g); g.connect(g0); o.start(t + ini); o.stop(t + ini + dur + .05);
+    }
+    if (id === 'carreta') { n(311, 0, .35, 'square'); n(392, 0, .35, 'square'); n(311, .45, .6, 'square'); n(392, .45, .6, 'square'); }
+    else if (id === 'acorda') { for (var k = 0; k < 8; k++) n(1400, k * .16, .1, 'square'); }
+    else if (id === 'beijo') { n(500, 0, .35, 'sine', 1400); }
+    else if (id === 'risada') { [0, .16, .32, .48].forEach(function(s, i) { n(520 - i * 30, s, .12, 'sawtooth', 380); }); }
+    else { [523, 659, 784, 1047].forEach(function(f, i) { n(f, i * .11, .35); }); n(1319, .5, .6); }
+  } catch (e) {}
+}
+function msnWinkTocar(id) {
+  if (!msnWinkInfo(id)) return;
+  var velho = document.getElementById('msn-wink-tela'); if (velho) velho.remove();
+  var tela = document.createElement('div'); tela.id = 'msn-wink-tela'; tela.className = 'msn-wink-tela'; tela.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(tela);
+  var W = window.innerWidth, H = window.innerHeight, reduzir = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function el(html, css) { var e = document.createElement('div'); e.className = 'msn-wk-el'; e.innerHTML = html; e.style.cssText = css || ''; tela.appendChild(e); return e; }
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function anima(e, quadros, dur, atraso, easing) { return e.animate(quadros, { duration: dur, delay: atraso || 0, easing: easing || 'linear', fill: 'both' }); }
+  function chuva(simbolos, qtd, tamMin, tamMax) {
+    for (var i = 0; i < qtd; i++) {
+      var s = simbolos[i % simbolos.length], x = rnd(0, W), tam = rnd(tamMin, tamMax);
+      var e = el(s, 'left:' + x + 'px;top:-60px;font-size:' + tam + 'px');
+      anima(e, [{ transform: 'translate(0,0) rotate(0deg)' }, { transform: 'translate(' + rnd(-120, 120) + 'px,' + (H + 120) + 'px) rotate(' + rnd(-540, 540) + 'deg)' }], rnd(2200, 3800), rnd(0, 1300), 'cubic-bezier(.3,.1,.7,1)');
+    }
+  }
+  function titulo(txt, cor, atraso) {
+    var tamT = Math.max(28, Math.min(96, (W * .9) / (Math.max(6, txt.length) * .62)));
+    var e = el(txt, 'left:50%;top:42%;font:900 ' + Math.round(tamT) + 'px Impact,"Arial Black",Arial,sans-serif;color:' + cor + ';-webkit-text-stroke:3px #1C1C1C;text-shadow:4px 6px 0 rgba(0,0,0,.35);white-space:nowrap');
+    var fsT = Math.round(tamT); while (e.offsetWidth > W * .78 && fsT > 22) { fsT -= 4; e.style.fontSize = fsT + 'px'; }
+    anima(e, [{ transform: 'translate(-50%,-50%) scale(.1) rotate(-12deg)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.15) rotate(3deg)', opacity: 1, offset: .25 }, { transform: 'translate(-50%,-50%) scale(1) rotate(0deg)', opacity: 1, offset: .8 }, { transform: 'translate(-50%,-50%) scale(1.3)', opacity: 0 }], 3400, atraso || 0, 'ease-out');
+  }
+  function centro(sim, tam, quadros, dur) { var e = el(sim, 'left:50%;top:50%;font-size:' + tam + 'px'); anima(e, quadros, dur, 0, 'ease-in-out'); return e; }
+  var dur = 4200;
+  if (reduzir) { titulo(msnWinkInfo(id)[1] + ' ' + msnWinkInfo(id)[2].toUpperCase(), '#FFD23F'); }
+  else if (id === 'confete') {
+    var cores = ['#C41E1E', '#FFD23F', '#2D7DD2', '#3BB54A', '#D63A8A', '#E07A10', '#7A3DB8'];
+    for (var i = 0; i < 140; i++) { var c = el('', 'left:' + rnd(0, W) + 'px;top:-20px;width:' + rnd(8, 14) + 'px;height:' + rnd(12, 20) + 'px;background:' + cores[i % cores.length] + ';border-radius:2px');
+      anima(c, [{ transform: 'translate(0,0) rotate(0)' }, { transform: 'translate(' + rnd(-160, 160) + 'px,' + (H + 60) + 'px) rotate(' + rnd(360, 1440) + 'deg)' }], rnd(2400, 3800), rnd(0, 900), 'cubic-bezier(.25,.1,.6,1)'); }
+    centro('🎉', 160, [{ transform: 'translate(-50%,-50%) scale(0)' }, { transform: 'translate(-50%,-50%) scale(1.2)', offset: .3 }, { transform: 'translate(-50%,-50%) scale(1)', offset: .8 }, { transform: 'translate(-50%,-50%) scale(0)', opacity: 0 }], 2600);
+  } else if (id === 'beijo') {
+    centro('💋', 120, [{ transform: 'translate(-50%,-50%) scale(.2)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(3.2)', opacity: 1, offset: .45 }, { transform: 'translate(-50%,-50%) scale(2.8)', opacity: 1, offset: .75 }, { transform: 'translate(-50%,-50%) scale(5)', opacity: 0 }], 3000);
+    for (var b = 0; b < 26; b++) { var a = b / 26 * Math.PI * 2, h2 = el(['❤️', '💋', '💕'][b % 3], 'left:50%;top:50%;font-size:' + rnd(28, 48) + 'px');
+      anima(h2, [{ transform: 'translate(-50%,-50%) scale(.3)', opacity: 0 }, { transform: 'translate(' + (Math.cos(a) * W * .45 - 20) + 'px,' + (Math.sin(a) * H * .45 - 20) + 'px) scale(1.2)', opacity: 1, offset: .7 }, { transform: 'translate(' + (Math.cos(a) * W * .55) + 'px,' + (Math.sin(a) * H * .55) + 'px) scale(1)', opacity: 0 }], 2600, 700, 'ease-out'); }
+  } else if (id === 'carreta') {
+    var cam = el('<svg width="420" height="170" viewBox="0 0 420 170"><rect x="10" y="20" width="270" height="105" rx="6" fill="#F4F4F4" stroke="#1C1C1C" stroke-width="5"/><text x="145" y="92" text-anchor="middle" font-family="Arial Black,Arial" font-weight="900" font-size="52" fill="#C41E1E">FAST</text>' +
+      '<path d="M285 45 H350 L395 85 V125 H285 Z" fill="#C41E1E" stroke="#1C1C1C" stroke-width="5"/><path d="M300 57 H345 L375 85 H300 Z" fill="#9FD3E8" stroke="#1C1C1C" stroke-width="4"/>' +
+      '<g fill="#1C1C1C"><circle cx="70" cy="135" r="22"/><circle cx="130" cy="135" r="22"/><circle cx="240" cy="135" r="22"/><circle cx="350" cy="135" r="22"/></g><g fill="#9E9E9E"><circle cx="70" cy="135" r="9"/><circle cx="130" cy="135" r="9"/><circle cx="240" cy="135" r="9"/><circle cx="350" cy="135" r="9"/></g></svg>', 'left:0;top:' + (H * .52) + 'px');
+    anima(cam, [{ transform: 'translate(-460px,0)' }, { transform: 'translate(' + (W * .5 - 210) + 'px,-6px)', offset: .45 }, { transform: 'translate(' + (W * .5 - 200) + 'px,0)', offset: .6 }, { transform: 'translate(' + (W + 40) + 'px,0)' }], 3800, 0, 'ease-in-out');
+    for (var p = 0; p < 14; p++) { var fu = el('💨', 'left:0;top:' + (H * .52 + 110) + 'px;font-size:' + rnd(26, 40) + 'px;opacity:0');
+      anima(fu, [{ transform: 'translate(' + (p / 14 * W - 60) + 'px,0) scale(.4)', opacity: 0 }, { transform: 'translate(' + (p / 14 * W - 90) + 'px,-10px) scale(1)', opacity: .8, offset: .3 }, { transform: 'translate(' + (p / 14 * W - 140) + 'px,-30px) scale(1.4)', opacity: 0 }], 900, p * 230); }
+    titulo('CARRETA FECHADA! 🚚', '#FFD23F', 900);
+  } else if (id === 'dinheiro') { chuva(['💵', '💰', '💸', '🪙'], 70, 30, 56); titulo('$$$ 💰 $$$', '#3BB54A', 300); }
+  else if (id === 'meta') {
+    var cfs = ['#FFD23F', '#C41E1E', '#3BB54A', '#2D7DD2', '#D63A8A', '#FFFFFF'];
+    for (var f = 0; f < 6; f++) { var cx = rnd(W * .15, W * .85), cy = rnd(H * .15, H * .5);
+      for (var k = 0; k < 26; k++) { var ang = k / 26 * Math.PI * 2, r = rnd(90, 170), dot = el('', 'left:' + cx + 'px;top:' + cy + 'px;width:9px;height:9px;border-radius:50%;background:' + cfs[(f + k) % cfs.length] + ';box-shadow:0 0 8px ' + cfs[(f + k) % cfs.length]);
+        anima(dot, [{ transform: 'translate(0,0) scale(.3)', opacity: 0 }, { transform: 'translate(' + (Math.cos(ang) * r * .3) + 'px,' + (Math.sin(ang) * r * .3) + 'px) scale(1)', opacity: 1, offset: .15 }, { transform: 'translate(' + (Math.cos(ang) * r) + 'px,' + (Math.sin(ang) * r + 60) + 'px) scale(.6)', opacity: 0 }], 1500, f * 420, 'cubic-bezier(.1,.7,.3,1)'); } }
+    titulo('META BATIDA! 🏆', '#FFD23F', 500);
+  } else if (id === 'risada') {
+    centro('😂', 180, [{ transform: 'translate(-50%,-50%) scale(0) rotate(0)' }, { transform: 'translate(-50%,-60%) scale(1.2) rotate(-15deg)', offset: .2 }, { transform: 'translate(-50%,-45%) scale(1.1) rotate(15deg)', offset: .4 }, { transform: 'translate(-50%,-60%) scale(1.2) rotate(-15deg)', offset: .6 }, { transform: 'translate(-50%,-45%) scale(1.1) rotate(15deg)', offset: .8 }, { transform: 'translate(-50%,-50%) scale(0) rotate(0)' }], 3400);
+    for (var q = 0; q < 16; q++) { var kk = el('KKKK', 'left:' + rnd(0, W - 160) + 'px;top:' + rnd(0, H - 60) + 'px;font:900 ' + rnd(28, 54) + 'px Impact,Arial Black,sans-serif;color:#FFD23F;-webkit-text-stroke:2px #1C1C1C');
+      anima(kk, [{ transform: 'scale(0) rotate(' + rnd(-30, 30) + 'deg)', opacity: 0 }, { transform: 'scale(1.2)', opacity: 1, offset: .3 }, { transform: 'scale(1)', opacity: 0 }], 1100, rnd(0, 2600), 'ease-out'); }
+  } else if (id === 'coracoes') {
+    for (var hh = 0; hh < 60; hh++) { var co = el(['❤️', '💖', '💕', '💗'][hh % 4], 'left:' + rnd(0, W) + 'px;top:' + (H + 40) + 'px;font-size:' + rnd(26, 60) + 'px');
+      anima(co, [{ transform: 'translate(0,0) scale(.6)', opacity: 0 }, { transform: 'translate(' + rnd(-60, 60) + 'px,' + (-H * .5) + 'px) scale(1)', opacity: 1, offset: .5 }, { transform: 'translate(' + rnd(-90, 90) + 'px,' + (-H - 80) + 'px) scale(1.1)', opacity: 0 }], rnd(2600, 3800), rnd(0, 1200), 'ease-out'); }
+  } else if (id === 'aplausos') {
+    for (var ap = 0; ap < 26; ap++) { var cl = el('👏', 'left:' + rnd(20, W - 90) + 'px;top:' + rnd(20, H - 90) + 'px;font-size:' + rnd(44, 80) + 'px');
+      anima(cl, [{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1.3)', opacity: 1, offset: .2 }, { transform: 'scale(1) rotate(-10deg)', offset: .4 }, { transform: 'scale(1.2) rotate(10deg)', offset: .6 }, { transform: 'scale(0)', opacity: 0 }], 1400, rnd(0, 2400), 'ease-out'); }
+    titulo('PARABÉNS! 👏', '#FFFFFF', 400);
+  } else if (id === 'acorda') {
+    tela.style.background = 'rgba(255,210,63,.18)';
+    anima(tela, [{ backgroundColor: 'rgba(255,210,63,0)' }, { backgroundColor: 'rgba(255,210,63,.35)' }, { backgroundColor: 'rgba(255,210,63,0)' }], 400, 0).effect.updateTiming({ iterations: 8 });
+    var rel = el('⏰', 'left:50%;top:45%;font-size:200px');
+    anima(rel, [{ transform: 'translate(-50%,-50%) rotate(-14deg)' }, { transform: 'translate(-50%,-50%) rotate(14deg)' }], 90, 0).effect.updateTiming({ iterations: 36, direction: 'alternate' });
+    titulo('ACORDA! ⏰', '#C41E1E', 300);
+  }
+  msnWinkSom(id);
+  setTimeout(function() { tela.remove(); }, dur);
+}
+
 // ── janelas de conversa ──
 function msnAbrir(conv) {
   if (!MSN.on) return;
@@ -23917,7 +24049,7 @@ function msnCriarJanela(conv) {
   w.innerHTML = '<div class="msn-wtopo" id="msn-wt-' + conv + '"></div>' +
     '<div class="msn-para" id="msn-pa-' + conv + '"></div>' +
     '<div class="msn-tb">' + tb('📎', 'Enviar arquivo', "document.getElementById('msn-f-" + conv + "').click()", 'Foto, print, PDF, planilha… até 5 MB. Também dá para arrastar o arquivo ou colar um print (Ctrl+V).') +
-      tb('🖼️', 'Figurinhas', "msnFigAbrirPainel('" + conv + "')") + tb('😀', 'Emoticons', emoT) +
+      tb('🖼️', 'Figurinhas', "msnFigAbrirPainel('" + conv + "')") + tb('✨', 'Winks', "msnWinkPainel('" + conv + "')", 'Animações que tomam conta da tela') + tb('😀', 'Emoticons', emoT) +
       (conv === 'EQUIPE' ? '' : tb('📳', 'Chamar atenção', "msnTremer('" + conv + "')", 'Treme a tela de quem recebe')) + '</div>' +
     '<input type="file" id="msn-f-' + conv + '" style="display:none" onchange="msnAnexarArquivos(\'' + conv + '\', this.files); this.value=\'\'">' +
     '<div class="msn-meio"><div class="msn-esq">' +
@@ -23926,6 +24058,7 @@ function msnCriarJanela(conv) {
       '<div class="msn-entrada"><div class="msn-emo" id="msn-e-' + conv + '">' + MSN_EMOS.map(function(e) { return '<button type="button" onclick="msnEmo(\'' + conv + '\',\'' + e + '\')" aria-label="' + e + '">' + e + '</button>'; }).join('') + '</div>' +
         '<div class="msn-figs" id="msn-g-' + conv + '"></div>' +
         '<div class="msn-figs msn-fontes" id="msn-fo-' + conv + '" data-conv="' + conv + '"></div>' +
+        '<div class="msn-figs" id="msn-wk-' + conv + '"></div>' +
         '<div class="msn-fmt"><button type="button" onclick="msnAbrirFontes(\'' + conv + '\')" title="Fonte e cor das suas mensagens" style="font:bold 14px Georgia,serif;text-decoration:underline">A</button><button type="button" onclick="' + emoT + '" title="Emoticons">😀▾</button>' + (conv === 'EQUIPE' ? '' : '<button type="button" onclick="msnTremer(\'' + conv + '\')" title="Chamar atenção">📳</button>') + '<button type="button" onclick="msnFigAbrirPainel(\'' + conv + '\')" title="Figurinhas">🖼️</button></div>' +
         '<div class="msn-linha"><textarea id="msn-in-' + conv + '" maxlength="1000" aria-label="Mensagem" onkeydown="msnTecla(event,\'' + conv + '\')" oninput="msnDigitando(\'' + conv + '\')"></textarea>' +
         '<button type="button" onclick="msnEnviar(\'' + conv + '\')">Enviar</button></div></div>' +
@@ -23982,6 +24115,7 @@ function msnRenderMsgs(conv) {
   if (!lista.length) h = '<div class="msn-dia">Nenhuma mensagem ainda. Diga um oi! 👋</div>';
   lista.forEach(function(m) {
     var d = msnDia(m.ts); if (d !== dia) { dia = d; h += '<div class="msn-dia">' + d + '</div>'; }
+    if (m.tipo === 'wink') { var wi = msnWinkInfo(m.wink) || ['', '✨', 'Wink']; h += '<div class="msn-sis wk">' + wi[1] + ' ' + (m.de === MSN.eu ? 'Você enviou' : msnEsc(msnNome(m.de)) + ' enviou') + ' um wink: <b>' + msnEsc(wi[2]) + '</b><button type="button" onclick="msnWinkTocar(\'' + msnEsc(m.wink) + '\')">▶ Ver</button> <span style="color:#9AA5B1;font-weight:400">' + msnHora(m.ts) + '</span></div>'; return; }
     if (m.tipo === 'tremer') { h += '<div class="msn-sis">📳 ' + (m.de === MSN.eu ? 'Você chamou a atenção' : msnEsc(msnNome(m.de)) + ' chamou sua atenção!') + ' <span style="color:#9AA5B1;font-weight:400">' + msnHora(m.ts) + '</span></div>'; return; }
     h += '<div class="msn-msg' + (m.de === MSN.eu ? ' eu' : '') + '"><div class="msn-quem">' + msnEsc(m.de === MSN.eu ? 'Você' : msnNome(m.de)) + (m.tipo === 'anexo' || m.tipo === 'figurinha' ? ' enviou' : ' diz') + ' <span style="color:#9AA5B1">(' + msnHora(m.ts) + ')</span>:</div><div class="msn-txt" style="' + (m.tipo === 'msg' || !m.tipo ? msnEstiloFmt(m.fmt) : '') + '">' + (m.tipo === 'figurinha' ? msnFigHtml(m.fig) : m.tipo === 'anexo' && m.anexo ? msnAnexoHtml(m.anexo) : msnEsc(m.txt)) + '</div></div>';
   });
@@ -24007,6 +24141,7 @@ function msnGravar(conv, m) {
   var id = m.ts + '_' + MSN.eu + '_' + Math.random().toString(36).slice(2, 6);
   var p = dbRef('chat/conv/' + conv + '/msgs/' + id).set(m);
   var resumo = { de: m.de, txt: String(m.txt || '').slice(0, 120), ts: m.ts, tipo: m.tipo };
+  if (m.wink) resumo.wink = m.wink;
   if (conv === 'EQUIPE') dbRef('chat/grupo/EQUIPE').set(resumo);
   else conv.split('__').forEach(function(u) { dbRef('chat/indice/' + u + '/' + conv).set(resumo); });
   try { dbRef('chat/digitando/' + conv + '/' + MSN.eu).remove(); } catch (e) {}
