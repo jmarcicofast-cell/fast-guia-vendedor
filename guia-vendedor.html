@@ -11367,7 +11367,7 @@ function linhaPedidoHtml(p, isGestora) {
     '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;font-weight:600;" title="' + clienteNome.replace(/"/g,'&quot;') + '">' + clienteNome + '</td>' +
     vendLabel +
     '<td style="font-weight:700;font-size:14px;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
-    '<td onclick="event.stopPropagation()"><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)"' + selectAttrs + '>' + statusSelectOpts(p, isGestora) + '</select></td>' +
+    '<td onclick="event.stopPropagation()"><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)"' + selectAttrs + '>' + statusSelectOpts(p, isGestora) + '</select>' + (typeof abFunilTagHtml === 'function' ? abFunilTagHtml(p) : '') + '</td>' +
     '<td onclick="event.stopPropagation()">' + abCelulaPedidoHtml(p) + '</td>' +
     '<td onclick="event.stopPropagation()">' + numDocCellHtml(p) + '</td>' +
     '<td onclick="event.stopPropagation()">' + conciliacaoCellHtml(p) + '</td>' +
@@ -11691,7 +11691,7 @@ function cardPedidoHtml(p, isGestora) {
     vendLine +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;">' +
       '<span style="display:inline-block;background:#1C1C1C;color:#fff;font-family:monospace;font-size:15px;font-weight:700;padding:5px 12px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + (travadoNegocio ? ' 🔒' : '') + '</span>' +
-      '<span class="status-badge s-' + (p.status||'') + '" style="font-size:11px;">' + (STATUS_LABEL[p.status]||p.status||'') + '</span>' +
+      '<span class="status-badge s-' + (p.status||'') + '" style="font-size:11px;">' + (STATUS_LABEL[p.status]||p.status||'') + '</span>' + (typeof abFunilTagHtml === 'function' ? abFunilTagHtml(p) : '') +
     '</div>' +
     '<div style="font-size:16px;font-weight:700;color:#1C1C1C;margin-bottom:10px;">' + clienteNome + '</div>' +
     '<div style="font-size:18px;font-weight:700;color:#1B5E20;">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
@@ -21480,7 +21480,7 @@ function abEtapa(r){
   if (p.status === 'entregue') return 'conciliacao';
   if (p.status === 'faturado'){ if (e === 'tratar' && !r.entrega) return e; return r.entrega ? 'conciliacao' : 'entrega'; }   // faturado → aguardando entrega → conciliação
   if (e === 'cliente') return 'conciliacao';
-  if (p.status === 'aguardando-fat') return e === 'tratar' ? e : 'faturamento';
+  if (p.status === 'aguardando-fat') return e === 'tratar' ? e : (r.coleta && !abColetaFeita(r) ? 'coleta' : 'faturamento');
   // depois do material reservado ou do abastecimento solicitado
   var pos = e === 'solicitado' || e === 'reservado' || e === 'dc';
   var legado = !p.gradeLog;   // já estava em Aguardando DT antes deste controle
@@ -21690,6 +21690,31 @@ function abAtualizarCelulasPedidos(){
     var p = todos.filter(function(x){ return x.id === el.dataset.pid && x.vendedor === el.dataset.vend; })[0];
     if (p) el.innerHTML = abCelulaPedidoInner(p);
   });
+  document.querySelectorAll('.ab-funil').forEach(function(el){
+    var p = todos.filter(function(x){ return x.id === el.dataset.pid && x.vendedor === el.dataset.vend; })[0];
+    if (p) el.outerHTML = abFunilTagHtml(p);
+  });
+}
+/* a partir de Aguardando DT, mostra embaixo do status em que etapa do funil o pedido está */
+var AB_ST_FUNIL = ['aguardando-dt', 'com-dt', 'em-rota', 'aguardando-fat', 'faturado', 'entregue'];
+function abFunilTagHtml(p){
+  var vazio = '<div class="ab-funil" data-vend="' + abEsc(p.vendedor) + '" data-pid="' + abEsc(p.id) + '"></div>';
+  if (!p || AB_ST_FUNIL.indexOf(p.status) === -1 || typeof AB === 'undefined') return vazio;
+  abGarantirListener();
+  var r = abRegistrosDoPedido(p)[0]; if (!r) return vazio;
+  var e = abEtapa(r), et = AB_ETAPAS[abIdx(e)], extra = '';
+  if (e === 'grade'){ var ga = abGradeAtual(p); if (ga) extra = ga.atrasado ? ' · coleta atrasada' : ' · coleta ' + abGradeColetaTxt(ga); }
+  if (e === 'previsao' && r.previsaoGrade && r.previsaoGrade.data) extra = ' ' + r.previsaoGrade.data.slice(8, 10) + '/' + r.previsaoGrade.data.slice(5, 7);
+  if (e === 'coleta'){ var c = r.coleta || {}; extra = ' · ' + (c.placo ? '✅' : '⬜') + ' Placo' + (abCompoeDcs(r) ? ' ' + (c.dcs ? '✅' : '⬜') + ' DCS' : ''); }
+  if ((e === 'entrega' || e === 'conciliacao') && r.pagto) extra = ' · ' + (r.pagto.v === 'quitada' ? 'quitada' : r.pagto.v === 'parcial' ? 'pago parcial' : 'inadimplente');
+  return '<div class="ab-funil" data-vend="' + abEsc(p.vendedor) + '" data-pid="' + abEsc(p.id) + '" title="Etapa no funil de Pedidos abertos (atualiza sozinho)" style="margin-top:4px;font-size:10.5px;font-weight:800;color:' + et.cor + ';background:#F7F6F2;border-left:3px solid ' + et.cor + ';border-radius:4px;padding:2px 6px;line-height:1.35;">' + et.ic + ' ' + et.t + abEsc(extra) + '</div>';
+}
+/* coleta completa → pedido vai para AGUARDANDO FATURAMENTO; desfeita → volta para COM DT */
+function abSincStatusColeta(r){
+  var p = abPedidoDe(r); if (!p) return;
+  if (typeof pedidoEstaTravado === 'function' && pedidoEstaTravado(p.vendedor, p.id)) return;
+  if (abColetaFeita(r) && (p.status === 'com-dt' || p.status === 'em-rota')){ aplicarNovoStatus(p.vendedor, p.id, 'aguardando-fat'); p.status = 'aguardando-fat'; }
+  else if (!abColetaFeita(r) && p.status === 'aguardando-fat'){ aplicarNovoStatus(p.vendedor, p.id, 'com-dt'); p.status = 'com-dt'; }
 }
 /* abre o "Novo item encomendado" já com o pedido, o tipo e os materiais marcados */
 function abRapido(vend, pid, tipo){
@@ -22080,6 +22105,7 @@ function abColetaTick(id, k){
   var atual = (r.coleta || {})[k], novo = atual ? null : { por: currentUser, em: Date.now() };
   r.coleta = r.coleta || {}; if (novo) r.coleta[k] = novo; else delete r.coleta[k];
   var upd = {}; upd['coleta/' + k] = novo;
+  abSincStatusColeta(r);
   abRenderPopup(); abAtualizar(id, upd);
   abRender();
 }
@@ -22144,6 +22170,7 @@ function abColetaReabrir(id){
   var r = AB.itens[id]; if (!r || !abPodeEditar()) return;
   if (!confirm('Voltar o chamado para Aguardando coleta? O tick "Arquivos no chamado" é desmarcado.')) return;
   if (r.coleta) delete r.coleta.arquivos;
+  abSincStatusColeta(r);
   abRenderPopup(); abRender(); abAtualizar(id, { 'coleta/arquivos': null });
 }
 function abColetaHtml(r, ed){
