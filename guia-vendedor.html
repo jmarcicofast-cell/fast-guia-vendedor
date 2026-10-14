@@ -21942,6 +21942,14 @@ function abGradeVoltou(id){
     p.gradeLog = p.gradeLog || {}; Object.keys(upd).forEach(function(k){ p.gradeLog[k.slice(9)] = upd[k]; }); AB._pm = null; abRenderPopup(); abRequestRender();
   }).catch(function(e){ alert('Erro ao salvar: ' + (e && e.message ? e.message : e)); });
 }
+function abGradeComDt(id){
+  var r = AB.itens[id]; if (!r) return;
+  var p = abPedidoDe(r); if (!p) return alert('Não encontrei o pedido deste chamado.');
+  if (!confirm('Marcar o pedido ' + (p.chamado || '') + ' como COM DT?\nEle sai da grade e o tempo na grade para de contar.')) return;
+  if (typeof pedidoEstaTravado === 'function' && pedidoEstaTravado(p.vendedor, p.id)){ if (typeof avisarPedidoTravado === 'function') avisarPedidoTravado(); return; }
+  aplicarNovoStatus(p.vendedor, p.id, 'com-dt');
+  setTimeout(function(){ AB._pm = null; abRenderPopup(); abRequestRender(); }, 800);
+}
 function abGradeHtml(r, ed){
   var p = abPedidoDe(r), gi = abGradeInfo(p);
   if (!gi && abEtapa(r) !== 'grade') return '';
@@ -21956,7 +21964,7 @@ function abGradeHtml(r, ed){
     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">' +
       '<span style="font-size:11px;font-weight:800;color:#AD1457;">🗓️ GRADE (AGUARDANDO DT)</span>' +
       '<span style="font-size:12px;color:#555;">' + resumo + '</span></div>' + tl +
-    (ed && p && p.status === 'aguardando-dt' ? '<div style="margin-top:8px;text-align:right;"><button type="button" onclick="abGradeVoltou(\'' + r.id + '\')" style="border:1.5px solid #AD1457;background:#fff;color:#AD1457;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">↩️ Não seguiu hoje — fica na grade</button></div>' : '') +
+    (ed && p && p.status === 'aguardando-dt' ? '<div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;"><button type="button" onclick="abGradeVoltou(\'' + r.id + '\')" style="border:1.5px solid #AD1457;background:#fff;color:#AD1457;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">↩️ Não seguiu hoje — fica na grade</button><button type="button" onclick="abGradeComDt(\'' + r.id + '\')" style="border:none;background:#2E7D32;color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">✅ Saiu — Com DT</button></div>' : '') +
   '</div>';
 }
 
