@@ -11187,6 +11187,15 @@ function aplicarNovoStatus(vendNome, pedidoId, novoStatus, numDoc) {
   // a data real da mudança (e nao a data em que o pedido foi originalmente lançado).
   var updates = { status: novoStatus, dataStatus: agora };
   if (typeof numDoc !== 'undefined') updates.numDoc = numDoc;
+  // histórico da grade (Placo): entrada em Aguardando DT e saída
+  try {
+    var pAnt = (_pedTodosGeral || []).find(function(x){ return x.vendedor === vendNome && x.id === pedidoId; })
+      || ((typeof AB !== 'undefined' && AB.pedPorVend && AB.pedPorVend[vendNome]) || []).find(function(x){ return x.id === pedidoId; });
+    var stAnt = pAnt ? pAnt.status : '';
+    var gk = 'gradeLog/g' + Date.now();
+    if (novoStatus === 'aguardando-dt' && stAnt !== 'aguardando-dt') updates[gk] = { tipo: 'enviado', em: Date.now(), por: currentUser || '' };
+    else if (stAnt === 'aguardando-dt' && novoStatus !== 'aguardando-dt') updates[gk] = { tipo: 'saiu', para: novoStatus, em: Date.now(), por: currentUser || '' };
+  } catch(e){}
   dbRef('pedidos/' + vendNome + '/' + pedidoId).update(updates)
     .catch(e => console.error('Erro status:', e));
 }
@@ -21898,6 +21907,46 @@ function abDispHtml(dcItem, cod){
     }).join('') + '</div>';
 }
 
+/* ── Histórico da grade: quando foi para Aguardando DT, quantas vezes voltou, quanto tempo a Placo está levando ── */
+function abGradeEventos(p){ var g = (p && p.gradeLog) || {}; return Object.keys(g).map(function(k){ var e = g[k] || {}; e.id = k; return e; }).filter(function(e){ return e.em; }).sort(function(a, b){ return a.em - b.em; }); }
+function abDur(ms){ ms = Math.max(0, ms); var h = Math.floor(ms / 3600000), d = Math.floor(h / 24); return d ? d + 'd ' + (h % 24) + 'h' : h ? h + 'h ' + Math.floor(ms / 60000 % 60) + 'min' : Math.floor(ms / 60000) + 'min'; }
+function abGradeInfo(p){
+  var ev = abGradeEventos(p); if (!ev.length) return null;
+  var tent = ev.filter(function(e){ return e.tipo === 'enviado' || e.tipo === 'voltou'; }).length;
+  var ini = ev.filter(function(e){ return e.tipo === 'enviado'; })[0], naGrade = p.status === 'aguardando-dt';
+  var saida = naGrade ? null : ev.filter(function(e){ return e.tipo === 'saiu'; }).slice(-1)[0];
+  var fim = naGrade ? Date.now() : (saida ? saida.em : ev[ev.length - 1].em);
+  return { ev: ev, tent: tent, ini: ini ? ini.em : ev[0].em, dur: fim - (ini ? ini.em : ev[0].em), naGrade: naGrade, saida: saida };
+}
+function abFmtDH(ms){ var d = new Date(ms); return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }) + ' ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }); }
+function abGradeVoltou(id){
+  var r = AB.itens[id]; if (!r) return;
+  var p = abPedidoDe(r); if (!p) return alert('Não encontrei o pedido deste chamado.');
+  var motivo = prompt('Não seguiu para a Placo hoje — fica na grade.\nMotivo (opcional):', 'Falta de material');
+  if (motivo === null) return;
+  var upd = {}; upd['gradeLog/g' + Date.now()] = { tipo: 'voltou', motivo: String(motivo || '').trim(), em: Date.now(), por: currentUser };
+  dbRef('pedidos/' + p.vendedor + '/' + p.id).update(upd).then(function(){
+    p.gradeLog = p.gradeLog || {}; Object.keys(upd).forEach(function(k){ p.gradeLog[k.slice(9)] = upd[k]; }); AB._pm = null; abRenderPopup(); abRequestRender();
+  }).catch(function(e){ alert('Erro ao salvar: ' + (e && e.message ? e.message : e)); });
+}
+function abGradeHtml(r, ed){
+  var p = abPedidoDe(r), gi = abGradeInfo(p);
+  if (!gi && abEtapa(r) !== 'grade') return '';
+  var rot = { enviado:'🗓️ Enviado para a grade', voltou:'↩️ Não seguiu — voltou para a grade', saiu:'✅ Saiu da grade' };
+  var tl = gi ? gi.ev.map(function(e, n){
+    var txt = rot[e.tipo] || e.tipo;
+    if (e.tipo === 'saiu' && e.para) txt += ' (' + (typeof STATUS_LABEL !== 'undefined' && STATUS_LABEL[e.para] ? STATUS_LABEL[e.para] : e.para) + ')';
+    return '<div style="display:flex;gap:8px;font-size:11.5px;padding:3px 0;border-top:' + (n ? '1px dashed #F0D2DE' : 'none') + ';"><span style="color:#888;min-width:82px;font-family:ui-monospace,monospace;">' + abFmtDH(e.em) + '</span><span style="flex:1;">' + txt + (e.motivo ? ' <span style="color:#888;">— ' + abEsc(e.motivo) + '</span>' : '') + '</span><span style="color:#aaa;">' + abEsc(abNomeVend(e.por)) + '</span></div>';
+  }).join('') : '<div style="font-size:11.5px;color:#999;">Sem registro de envio (pedido marcado antes deste controle).</div>';
+  var resumo = gi ? '<b>' + gi.tent + 'ª tentativa</b> · ' + (gi.naGrade ? 'na grade há <b>' + abDur(gi.dur) + '</b>' : 'levou <b>' + abDur(gi.dur) + '</b> na grade') + ' · 1º envio ' + abFmtDH(gi.ini) : '';
+  return '<div style="background:#FDF2F6;border:1.5px solid #F0C2D4;border-radius:9px;padding:10px 12px;margin-bottom:14px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">' +
+      '<span style="font-size:11px;font-weight:800;color:#AD1457;">🗓️ GRADE (AGUARDANDO DT)</span>' +
+      '<span style="font-size:12px;color:#555;">' + resumo + '</span></div>' + tl +
+    (ed && p && p.status === 'aguardando-dt' ? '<div style="margin-top:8px;text-align:right;"><button type="button" onclick="abGradeVoltou(\'' + r.id + '\')" style="border:1.5px solid #AD1457;background:#fff;color:#AD1457;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">↩️ Não seguiu hoje — fica na grade</button></div>' : '') +
+  '</div>';
+}
+
 function abConfHtml(r, ed){
   var c = r.conf || {}, pr = abConfProg(r), p = abPedidoDe(r), tudo = pr.feitos === pr.total;
   var brl = function(n){ n = parseFloat(String(n == null ? '' : n).replace(',', '.')) || 0; return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 }); };
@@ -21934,6 +21983,7 @@ function abConfHtml(r, ed){
 }
 
 function abProgressoHtml(r){
+  if (abEtapa(r) === 'grade'){ var gi = abGradeInfo(abPedidoDe(r)); return '<span title="Tentativas de envio para a Placo e tempo na grade" style="font-size:10.5px;font-weight:800;color:' + (gi && gi.tent > 1 ? '#C62828' : '#AD1457') + ';white-space:nowrap;">🗓️ ' + (gi ? gi.tent + 'ª tentativa · ' + abDur(gi.dur) : 'na grade') + '</span>'; }
   if (abEtapa(r) === 'tratar'){ var cp = abConfProg(r); var cc = cp.feitos === cp.total ? '#1B5E20' : (cp.feitos ? '#B36B00' : '#888'); return '<span title="Conferência administrativa" style="font-size:10.5px;font-weight:800;color:' + cc + ';white-space:nowrap;">🧾 Conferência ' + cp.feitos + '/' + cp.total + '</span>'; }
   var p = abProgresso(r); if (!p.total) return '';
   if (!p.prox) return '<span style="font-size:10.5px;font-weight:800;color:#1B5E20;white-space:nowrap;">' + p.total + '/' + p.total + ' no cliente</span>';
@@ -22193,7 +22243,7 @@ function abRenderPopup(){
       '</div>' +
       '<div style="margin-top:8px;">' + lbl('Obs. do chamado', '<input type="text" value="' + abEsc(r.obs || '') + '" placeholder="+ obs do chamado" onchange="abSalvarCampo(\'' + r.id + '\',\'obs\',this.value)"' + (ed ? '' : ' disabled') + '>') + '</div>' +
     '</div>' +
-    abConfHtml(r, ed) +
+    abGradeHtml(r, ed) + abConfHtml(r, ed) +
     '<div style="font-size:11px;font-weight:800;color:#555;margin-bottom:8px;">ITENS (' + its.length + ')</div>';
   var lista = its.map(function(i){
     var si = abSituacaoItem(i);
