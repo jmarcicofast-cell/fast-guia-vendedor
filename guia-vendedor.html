@@ -15663,38 +15663,114 @@ var RT_TEMAS = {
     }
   },
   cidade: {
-    nome: 'Cidade Ensolarada', ic: '🌆', desc: 'Mundo aberto: ruas, prédios e pôr do sol',
-    wrap: '#2A1840', amostra: ['#B8457A', '#4A4E58', '#F2D16B'],
+    nome: 'Cidade Ensolarada', ic: '🌆', desc: 'Mapa ilustrado de uma cidade litorânea no fim de tarde',
+    wrap: '#1B2633', amostra: ['#1F7A99', '#E4DCCB', '#FFB067'], suave: true,
     mundos: ['BAIRRO', 'CENTRO', 'PORTO', 'COBERTURA'],
-    trilha: ['#1C1C1C', '#F2D16B'], sombraParada: '#0E1220',
-    tag: ['#FF8AD8', '#1C1C1C', '#FF8AD8'], pier: ['#0E1220', '#6B7380', '#4A4E58'], filaTag: ['#1C1C1C', '#F2D16B'],
+    trilha: ['#1E1E22', '#F4D35E'], sombraParada: '#0E1220',
+    tag: ['#FFD7A8', '#1C1C1C', '#FFD7A8'], pier: ['#0E1220', '#6B7380', '#4A4E58'], filaTag: ['#1C1C1C', '#F2D16B'],
     cenario: function() {
-      var s = rtR(0, 0, 860, 684, '#1F4E6B');
-      [['#3A2152', 0, 110], ['#5B2A6E', 110, 70], ['#8E3A7A', 180, 50], ['#C4507A', 230, 40], ['#E8734A', 270, 36]].forEach(function(b) { s += rtR(0, b[1], 860, b[2], b[0]); });
-      s += rtR(110, 250, 120, 56, '#FFB347') + rtR(126, 232, 88, 18, '#FFB347') + rtR(146, 222, 48, 10, '#FFD23F');
-      var xs = 10, alt = [60, 90, 44, 110, 70, 52, 96, 64, 80, 48, 100, 58];
-      for (var i = 0; xs < 540; i++) {
-        var w = 30 + (i * 7) % 18, h = alt[i % alt.length];
-        s += rtR(xs, 306 - h, w, h, '#2A1840');
-        for (var wy = 306 - h + 8; wy < 296; wy += 12) for (var wx = xs + 5; wx < xs + w - 5; wx += 9) if ((wx + wy + i) % 3) s += rtR(wx, wy, 3, 4, '#FFD23F');
-        xs += w + 4;
+      function rr(r, pad, f, extra) { return '<rect x="' + (r[0] - pad) + '" y="' + (r[1] - pad) + '" width="' + (r[2] + pad * 2) + '" height="' + (r[3] + pad * 2) + '" rx="' + (26 + pad) + '" fill="' + f + '"' + (extra || '') + '/>'; }
+      function palmeira(x, y, k) {
+        var s = '<ellipse cx="' + (x + 6) + '" cy="' + (y + 7) + '" rx="13" ry="9" fill="#000" opacity=".18"/>';
+        for (var a = 0; a < 6; a++) s += '<ellipse cx="' + x + '" cy="' + (y - 8) + '" rx="4.5" ry="10" fill="' + (a % 2 ? '#2F7D46' : '#3E9A57') + '" transform="rotate(' + (a * 60 + k * 17) + ' ' + x + ' ' + y + ')"/>';
+        return s + '<circle cx="' + x + '" cy="' + y + '" r="3" fill="#7A5230"/>';
       }
-      s += '<g fill="#3E7896">';
-      [[60,340],[200,360],[420,560],[700,470],[760,600],[620,520],[300,650]].forEach(function(p) { s += '<rect x="' + p[0] + '" y="' + p[1] + '" width="28" height="3"/>'; });
-      s += '</g>' + rtTerreno('#0E1220', '#C9C2B4', '#4A4E58');
-      // faixas de rua nos quarteirões
-      s += '<g fill="#5C606B">' + RT_ILHAS.filter(function(r, i) { return i % 2; }).map(function(r) { return '<rect x="' + (r[0] + 16) + '" y="' + (r[1] + Math.round(r[3] / 2)) + '" width="' + (r[2] - 32) + '" height="6"/>'; }).join('') + '</g>';
-      var cores = ['#F2A65A', '#5CC8D6', '#E86A92', '#9BD770'];
-      RT_DECO_PTS.forEach(function(p, i) {
-        if (i % 2) { // palmeira
-          s += rtR(p[0] + 7, p[1] - 6, 4, 26, '#8B5A2B') + rtR(p[0] - 4, p[1] - 10, 26, 5, '#2E8B57') + rtR(p[0], p[1] - 15, 18, 5, '#3FAF6A') + rtR(p[0] - 6, p[1] - 5, 6, 6, '#2E8B57') + rtR(p[0] + 18, p[1] - 5, 6, 6, '#2E8B57');
-        } else { // prédio baixo
-          s += rtR(p[0] - 4, p[1] - 14, 26, 34, cores[i / 2 % 4]) + rtR(p[0] - 4, p[1] - 18, 26, 4, '#1C1C1C');
-          for (var y = p[1] - 10; y < p[1] + 14; y += 8) s += rtR(p[0], y, 5, 4, '#FFF3C4') + rtR(p[0] + 12, y, 5, 4, '#FFF3C4');
-        }
+      function arvore(x, y, r) {
+        return '<circle cx="' + (x + 3) + '" cy="' + (y + 4) + '" r="' + r + '" fill="#000" opacity=".15"/><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#5E9E4E"/><circle cx="' + (x - r / 3) + '" cy="' + (y - r / 3) + '" r="' + (r / 2.4) + '" fill="#7DB86A"/>';
+      }
+      var s = '<defs>' +
+        '<linearGradient id="rtCidMar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A8DAA"/><stop offset="1" stop-color="#0F4C6B"/></linearGradient>' +
+        '<radialGradient id="rtCidSol" cx="0.12" cy="0.02" r="0.95"><stop offset="0" stop-color="#FFB067" stop-opacity=".55"/><stop offset=".45" stop-color="#FF7A59" stop-opacity=".2"/><stop offset="1" stop-color="#FF7A59" stop-opacity="0"/></radialGradient>' +
+        '<linearGradient id="rtCidMorro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D9B77A"/><stop offset="1" stop-color="#B8925A"/></linearGradient>' +
+        '<filter id="rtCidSombra" x="-10%" y="-10%" width="130%" height="130%"><feDropShadow dx="4" dy="6" stdDeviation="5" flood-color="#06202E" flood-opacity=".45"/></filter>' +
+        '<clipPath id="rtCidClip">' + RT_ILHAS.map(function(r) { return rr(r, 0, '#000'); }).join('') + '</clipPath></defs>';
+      s += '<rect width="860" height="684" fill="url(#rtCidMar)"/>';
+      // ondas
+      s += '<g fill="none" stroke="#FFFFFF" stroke-opacity=".16" stroke-width="2" stroke-linecap="round">';
+      [[70,330],[210,350],[330,560],[620,470],[720,610],[790,420],[560,640],[180,660],[470,520],[820,250]].forEach(function(p) { s += '<path d="M' + p[0] + ' ' + p[1] + ' q8 -6 16 0 t16 0"/>'; });
+      s += '</g>';
+      // continente com morros (canto superior esquerdo)
+      s += '<path d="M0 0 H530 C515 70 470 128 400 160 C320 196 250 205 170 236 C100 262 50 300 0 330 Z" fill="#E9D3A1"/>';
+      s += '<path d="M0 0 H514 C498 62 456 116 390 146 C312 180 242 190 164 220 C96 246 46 282 0 312 Z" fill="url(#rtCidMorro)"/>';
+      s += '<g fill="none" stroke="#8C6A3C" stroke-opacity=".3" stroke-width="1.5">';
+      [[110,95,90,48,-12],[330,60,80,40,8],[200,175,60,26,-18]].forEach(function(m) {
+        for (var q = 0; q < 4; q++) s += '<ellipse cx="' + m[0] + '" cy="' + m[1] + '" rx="' + (m[2] - q * 18) + '" ry="' + (m[3] - q * 10) + '" transform="rotate(' + m[4] + ' ' + m[0] + ' ' + m[1] + ')"/>';
       });
-      s += rtR(720, 548, 64, 12, '#C41E1E') + rtR(728, 540, 40, 8, '#FFFFFF') + rtR(740, 532, 6, 8, '#1C1C1C');
+      s += '</g>';
+      s += '<path d="M0 270 C80 240 120 200 190 190 C260 180 300 140 350 130 C400 120 440 90 470 40" fill="none" stroke="#5B5550" stroke-width="7" stroke-linecap="round"/>' +
+        '<path d="M0 270 C80 240 120 200 190 190 C260 180 300 140 350 130 C400 120 440 90 470 40" fill="none" stroke="#F4D35E" stroke-width="1.2" stroke-dasharray="6 6"/>';
+      [[90,190,7],[120,60,8],[210,120,6],[330,60,7],[420,110,6],[60,250,6],[300,180,5],[460,30,6]].forEach(function(t) { s += arvore(t[0], t[1], t[2]); });
+      // praia, água rasa e bairros
+      s += '<g filter="url(#rtCidSombra)">' + RT_ILHAS.map(function(r) { return rr(r, 14, '#58B9CC'); }).join('') + '</g>';
+      s += RT_ILHAS.map(function(r) { return rr(r, 8, '#EAD7A6'); }).join('');
+      s += RT_ILHAS.map(function(r) { return rr(r, 0, '#8F8C86'); }).join('');
+      // quadras (com ruas entre elas), recortadas pelo formato dos bairros
+      var tetos = ['#C9826B', '#D9A66C', '#B9B3A6', '#8FA7B8', '#D8CDB8', '#A58C7A', '#E3B9A0', '#9DB39A'];
+      s += '<g clip-path="url(#rtCidClip)">';
+      for (var gx = 24; gx < 850; gx += 40) for (var gy = 24; gy < 640; gy += 40) {
+        var dentro = RT_ILHAS.some(function(r) { return gx + 8 >= r[0] && gx + 28 <= r[0] + r[2] && gy + 8 >= r[1] && gy + 28 <= r[1] + r[3]; });
+        if (!dentro) continue;
+        var k = (gx * 7 + gy * 13) % 97;
+        s += '<rect x="' + (gx + 2) + '" y="' + (gy + 2) + '" width="34" height="34" rx="4" fill="#D9D1C0"/>';
+        if (k % 9 === 0) { s += '<rect x="' + (gx + 4) + '" y="' + (gy + 4) + '" width="30" height="30" rx="3" fill="#86B86E"/>' + arvore(gx + 14, gy + 15, 6) + arvore(gx + 26, gy + 25, 5); continue; }
+        var c = tetos[k % tetos.length];
+        s += '<rect x="' + (gx + 9) + '" y="' + (gy + 9) + '" width="24" height="24" rx="2" fill="#000" opacity=".18"/>' +
+          '<rect x="' + (gx + 6) + '" y="' + (gy + 6) + '" width="' + (k % 3 ? 24 : 26) + '" height="' + (k % 2 ? 24 : 18) + '" rx="2" fill="' + c + '"/>' +
+          '<rect x="' + (gx + 9) + '" y="' + (gy + 9) + '" width="8" height="5" rx="1" fill="#FFFFFF" opacity=".35"/>';
+      }
+      s += '</g>';
+      // palmeiras na orla
+      RT_DECO_PTS.forEach(function(p, i) { s += palmeira(p[0] + 8, p[1] + 8, i); });
+      [[44,400],[290,312],[560,222],[548,42],[836,60],[296,612],[760,388]].forEach(function(p, i) { s += palmeira(p[0], p[1], i + 3); });
+      // navio e veleiro
+      s += '<g filter="url(#rtCidSombra)"><path d="M690 606 H830 L816 638 H704 Z" fill="#2E3B4E"/>' +
+        '<rect x="708" y="594" width="16" height="12" fill="#E2572B"/><rect x="726" y="594" width="16" height="12" fill="#3F88C5"/><rect x="744" y="594" width="16" height="12" fill="#F4D35E"/><rect x="762" y="594" width="16" height="12" fill="#2A9D8F"/><rect x="790" y="586" width="20" height="20" rx="2" fill="#FFFFFF"/></g>' +
+        '<path d="M790 470 l14 0 l-4 8 l-8 0 z" fill="#FFFFFF"/><path d="M797 446 v24 l12 -4 z" fill="#FFFFFF" opacity=".9"/>';
+      s += '<rect width="860" height="684" fill="url(#rtCidSol)" pointer-events="none"/>';
       return s;
+    },
+    trilhaSvg: function(pts) {
+      return '<polyline points="' + pts + '" fill="none" stroke="#1E1E22" stroke-width="20" stroke-linejoin="round" stroke-linecap="round" opacity=".55"/>' +
+        '<polyline points="' + pts + '" fill="none" stroke="#3B3B42" stroke-width="15" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<polyline points="' + pts + '" fill="none" stroke="#F4D35E" stroke-width="2" stroke-dasharray="10 8" stroke-linejoin="round"/>';
+    },
+    verdeSvg: function(s) {
+      return '<polyline points="' + s + '" fill="none" stroke="#1B5E20" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<polyline points="' + s + '" fill="none" stroke="#5BE37D" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>';
+    },
+    tagSvg: function(x, y, txt, tipo) {
+      var cores = { mundo: ['#14101E', '#FFD7A8'], largada: ['#FFFFFF', '#1C1C1C'], chegada: ['#F4C430', '#1C1C1C'], fila: ['#14101E', '#FFFFFF'] }[tipo] || ['#14101E', '#FFFFFF'];
+      var w = Math.round(txt.length * 7.1 + 22), hh = 22;
+      return '<rect x="' + (x + 2) + '" y="' + (y + 3) + '" width="' + w + '" height="' + hh + '" rx="11" fill="#000" opacity=".25"/>' +
+        '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + hh + '" rx="11" fill="' + cores[0] + '" opacity=".92"/>' +
+        '<text x="' + (x + w / 2) + '" y="' + (y + 15) + '" text-anchor="middle" font-family="\'Segoe UI\', system-ui, sans-serif" font-weight="800" font-size="11" letter-spacing=".6" fill="' + cores[1] + '">' + rtEsc(txt) + '</text>';
+    },
+    paradaSvg: function(p, n, est) {
+      var fill = est === 'feita' ? '#F4C430' : est === 'proxima' ? '#E53935' : '#FFFFFF', fg = est === 'proxima' ? '#FFFFFF' : '#1C1C1C';
+      var s = '<ellipse cx="' + p[0] + '" cy="' + (p[1] + 18) + '" rx="18" ry="6" fill="#000" opacity=".3"/>';
+      if (est === 'proxima') s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="22" fill="none" stroke="#E53935" stroke-width="3"><animate attributeName="r" values="22;34" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values=".8;0" dur="1.6s" repeatCount="indefinite"/></circle>';
+      return s + '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="19" fill="' + fill + '" stroke="#FFFFFF" stroke-width="4"/>' +
+        '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="19" fill="none" stroke="#1C1C1C" stroke-opacity=".35" stroke-width="1"/>' +
+        '<text x="' + p[0] + '" y="' + (p[1] + 5.5) + '" text-anchor="middle" font-family="\'Segoe UI\', system-ui, sans-serif" font-weight="800" font-size="15" fill="' + fg + '">' + n + '</text>';
+    },
+    marcosSvg: function() {
+      // CD FAST visto de cima (largada) e heliponto no alto do prédio (chegada)
+      var s = '<g filter="url(#rtCidSombra)"><rect x="30" y="568" width="78" height="46" rx="5" fill="#ECEFF1"/>' +
+        '<rect x="30" y="568" width="78" height="10" rx="5" fill="#C41E1E"/>';
+      for (var i = 0; i < 6; i++) s += '<rect x="' + (36 + i * 12) + '" y="582" width="2" height="28" fill="#CFD8DC"/>';
+      s += '<rect x="112" y="584" width="26" height="12" rx="2" fill="#FFFFFF"/><rect x="138" y="586" width="8" height="8" rx="2" fill="#C41E1E"/>' +
+        '<rect x="112" y="600" width="26" height="12" rx="2" fill="#FFFFFF"/><rect x="138" y="602" width="8" height="8" rx="2" fill="#C41E1E"/></g>';
+      s += '<g filter="url(#rtCidSombra)"><rect x="764" y="34" width="76" height="76" rx="8" fill="#455A64"/>' +
+        '<circle cx="802" cy="72" r="28" fill="#2E3B42"/><circle cx="802" cy="72" r="28" fill="none" stroke="#F4C430" stroke-width="3"/>' +
+        '<text x="802" y="82" text-anchor="middle" font-family="\'Segoe UI\', system-ui, sans-serif" font-weight="900" font-size="28" fill="#FFFFFF">H</text></g>' +
+        '<rect x="832" y="18" width="3" height="34" fill="#ECEFF1"/><path d="M835 18 h18 l-5 7 l5 7 h-18 z" fill="#C41E1E"/>';
+      return s;
+    },
+    filaSvg: function() {
+      var s = '<g filter="url(#rtCidSombra)"><rect x="368" y="550" width="288" height="126" rx="10" fill="#D9D1C0"/>' +
+        '<rect x="376" y="558" width="272" height="110" rx="6" fill="#5F6368"/></g>';
+      for (var k = 0; k <= 5; k++) { var x = 382 + k * 52; s += '<rect x="' + x + '" y="562" width="2" height="38" fill="#FFFFFF" opacity=".8"/><rect x="' + x + '" y="616" width="2" height="38" fill="#FFFFFF" opacity=".8"/>'; }
+      return s + '<rect x="376" y="606" width="272" height="4" fill="#F4D35E" opacity=".7"/>';
     }
   },
   bairro: {
@@ -15812,34 +15888,38 @@ function rtMapa(calcs, foco) {
   var pts = [RT_LARGADA].concat(RT_STOPS).concat([[800, 90]]).map(function(p) { return p.join(','); }).join(' ');
   var faseFoco = foco ? foco.fase : -1;
   var T = RT_TEMAS[rtTemaKey(foco)];
-  var s = '<svg class="rt-mapa" viewBox="0 0 860 684" shape-rendering="crispEdges" role="img" aria-label="Mapa da Rota da Meta — ' + T.nome + '">' +
+  RT._verdeSvg = T.verdeSvg || null;
+  var s = '<svg class="rt-mapa" viewBox="0 0 860 684" shape-rendering="' + (T.suave ? 'geometricPrecision' : 'crispEdges') + '" role="img" aria-label="Mapa da Rota da Meta — ' + T.nome + '">' +
     T.cenario() +
+    (T.trilhaSvg ? T.trilhaSvg(pts) :
     '<polyline points="' + pts + '" fill="none" stroke="' + T.trilha[0] + '" stroke-width="10"/>' +
-    '<polyline points="' + pts + '" fill="none" stroke="' + T.trilha[1] + '" stroke-width="6" stroke-dasharray="10 6"/>' +
-    rtTrilhaVerde(foco) +
+    '<polyline points="' + pts + '" fill="none" stroke="' + T.trilha[1] + '" stroke-width="6" stroke-dasharray="10 6"/>') +
+    rtTrilhaVerde(foco) + (T.marcosSvg ? T.marcosSvg() :
     '<rect x="40" y="586" width="56" height="30" fill="#E8E6E1"/><rect x="36" y="578" width="64" height="10" fill="#C41E1E"/><rect x="58" y="598" width="20" height="18" fill="#5B6672"/><rect x="44" y="594" width="10" height="8" fill="#9AA5B1"/><rect x="82" y="594" width="10" height="8" fill="#9AA5B1"/>' +
-    '<rect x="790" y="36" width="6" height="64" fill="#E8E6E1"/><rect x="796" y="36" width="34" height="22" fill="#C41E1E"/><rect x="802" y="42" width="8" height="4" fill="#FFFFFF"/><rect x="776" y="100" width="34" height="8" fill="#5B6672"/>';
-  function tag(x, y, txt, fg, bg, borda, tam) {
+    '<rect x="790" y="36" width="6" height="64" fill="#E8E6E1"/><rect x="796" y="36" width="34" height="22" fill="#C41E1E"/><rect x="802" y="42" width="8" height="4" fill="#FFFFFF"/><rect x="776" y="100" width="34" height="8" fill="#5B6672"/>');
+  function tag(x, y, txt, fg, bg, borda, tam, tipo) {
+    if (T.tagSvg) return T.tagSvg(x, y, txt, tipo || 'mundo');
     var w = Math.round(txt.length * (tam * 1.02) + 14);
     return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + (tam + 12) + '" fill="' + bg + '" stroke="' + borda + '" stroke-width="2"/>' +
       '<text x="' + (x + 7) + '" y="' + (y + tam + 5) + '" font-family="\'Press Start 2P\', monospace" font-size="' + tam + '" fill="' + fg + '">' + rtEsc(txt) + '</text>';
   }
-  s += tag(30, 626, 'CD FAST · LARGADA', '#FFFFFF', '#1C1C1C', '#E8E6E1', 8);
+  s += tag(30, 626, 'CD FAST · LARGADA', '#FFFFFF', '#1C1C1C', '#E8E6E1', 8, 'largada');
   [[150, 598, 'PROSPECÇÃO'], [304, 484, 'PROPOSTAS'], [560, 380, 'CARGAS'], [556, 8, 'META BATIDA']].forEach(function(m, i) {
     s += tag(m[0], m[1], T.mundos[i] + ' · ' + m[2], T.tag[0], T.tag[1], T.tag[2], 9);
   });
-  s += tag(744, 118, '100% · CHEGADA', '#1C1C1C', '#FFD23F', '#1C1C1C', 8);
+  s += tag(T.tagSvg ? 738 : 744, T.tagSvg ? 132 : 118, '100% · CHEGADA', '#1C1C1C', '#FFD23F', '#1C1C1C', 8, 'chegada');
   RT_STOPS.forEach(function(p, i) {
     var n = i + 1, bg = '#FFFFFF', fg = '#1C1C1C';
     if (faseFoco >= 0) { if (n <= faseFoco) bg = '#FFD23F'; if (n === faseFoco + 1 && faseFoco < 10) { bg = '#C41E1E'; fg = '#FFFFFF'; } }
+    if (T.paradaSvg) { s += T.paradaSvg(p, n, faseFoco < 0 ? 'livre' : n <= faseFoco ? 'feita' : n === faseFoco + 1 ? 'proxima' : 'livre'); return; }
     s += '<rect x="' + (p[0] - 14) + '" y="' + (p[1] - 14) + '" width="36" height="36" fill="' + T.sombraParada + '"/>' +
       '<rect x="' + (p[0] - 18) + '" y="' + (p[1] - 18) + '" width="36" height="36" fill="' + bg + '" stroke="#1C1C1C" stroke-width="4"/>' +
       '<text x="' + p[0] + '" y="' + (p[1] + 5) + '" text-anchor="middle" font-family="\'Press Start 2P\', monospace" font-size="11" fill="' + fg + '">' + n + '</text>';
   });
   // píer da largada: quem ainda está na fase 0 espera aqui, em fila
-  s += '<rect x="378" y="560" width="276" height="114" fill="' + T.pier[0] + '"/><rect x="374" y="556" width="276" height="114" fill="' + T.pier[1] + '"/>' +
+  if (T.filaSvg) s += T.filaSvg(); else s += '<rect x="378" y="560" width="276" height="114" fill="' + T.pier[0] + '"/><rect x="374" y="556" width="276" height="114" fill="' + T.pier[1] + '"/>' +
     '<g fill="' + T.pier[2] + '"><rect x="374" y="584" width="276" height="3"/><rect x="374" y="612" width="276" height="3"/><rect x="374" y="640" width="276" height="3"/></g>';
-  s += tag(382, 534, 'FILA DA LARGADA', T.filaTag[0], T.filaTag[1], '#1C1C1C', 8);
+  s += tag(382, T.filaSvg ? 524 : 534, 'FILA DA LARGADA', T.filaTag[0], T.filaTag[1], '#1C1C1C', 8, 'fila');
   var porFase = {};
   calcs.forEach(function(c) { (porFase[c.fase] = porFase[c.fase] || []).push(c); });
   function moeda(vn, cx, yy) {
@@ -15892,6 +15972,7 @@ function rtTrilhaVerde(c) {
   }
   if (pts.length < 2) return '';
   var s = pts.map(function(p) { return Math.round(p[0]) + ',' + Math.round(p[1]); }).join(' ');
+  if (RT._verdeSvg) return RT._verdeSvg(s);
   return '<polyline points="' + s + '" fill="none" stroke="#1B5E20" stroke-width="10"/>' +
     '<polyline points="' + s + '" fill="none" stroke="#5BD45B" stroke-width="6" stroke-dasharray="10 6"/>';
 }
