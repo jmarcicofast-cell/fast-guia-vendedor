@@ -23419,12 +23419,17 @@ function msnContatos() { return Object.keys(vendedores).filter(function(u) { ret
 // ── som (sem arquivos: gerado no navegador) ──
 var MSN_AUDIO = null;
 function msnSom(tipo) {
-  if ((tipo === 'msg' || tipo === 'grupo') && MSN.somMsg && MSN.somMsg.dados) {
+  // som escolhido pela gestão: mensagem nova e chamar atenção (o tremor usa o próprio, ou o da mensagem)
+  var esc = (tipo === 'msg' || tipo === 'grupo') ? MSN.somMsg : tipo === 'tremer' ? (MSN.somTremer || MSN.somMsg) : null;
+  if (esc && esc.dados) {
     try {
+      if (tipo === 'tremer' && navigator.vibrate) navigator.vibrate([250, 100, 250, 100, 250]);
       var vol = msnVolume(); if (!vol) return;
-      MSN.audioMsg = MSN.audioMsg || new Audio(MSN.somMsg.dados);
-      MSN.audioMsg.volume = Math.min(1, vol); MSN.audioMsg.currentTime = 0;
-      var pr = MSN.audioMsg.play(); if (pr && pr.catch) pr.catch(function() {});
+      MSN.audios = MSN.audios || {};
+      var a = MSN.audios[esc.dados.length + '_' + (esc.nome || '')];
+      if (!a) a = MSN.audios[esc.dados.length + '_' + (esc.nome || '')] = new Audio(esc.dados);
+      a.volume = Math.min(1, vol); a.currentTime = 0;
+      var pr = a.play(); if (pr && pr.catch) pr.catch(function() {});
       return;
     } catch (e) {}
   }
@@ -23475,15 +23480,16 @@ document.addEventListener('visibilitychange', function() {
 var MSN_VOLUMES = { alto: 1, medio: .55, baixo: .25, mudo: 0 };
 function msnVolume() { var v = 'alto'; try { v = localStorage.getItem('msn_volume') || 'alto'; } catch (e) {} return MSN_VOLUMES[v] != null ? MSN_VOLUMES[v] : 1; }
 function msnEhGestao() { return MSN.eu === 'JULIANA'; }
-function msnEscolherSom(file) {
+function msnEscolherSom(file, qual) {
+  qual = qual === 'tremer' ? 'somTremer' : 'somMsg';
   if (!file || !msnEhGestao()) return;
   if (!/^audio\//.test(file.type)) { alert('Escolha um arquivo de áudio (mp3, wav, ogg…).'); return; }
   if (file.size > 1024 * 1024) { alert('O som precisa ter até 1 MB (o seu tem ' + msnTam(file.size) + ').'); return; }
   msnLerComoDataUrl(file).then(function(d) {
-    dbRef('chat/config/somMsg').set({ nome: file.name, dados: d, por: MSN.eu, ts: Date.now() }).then(function() { MSN.somMsg = { nome: file.name, dados: d }; MSN.audioMsg = null; msnSom('msg'); msnRender(); });
+    dbRef('chat/config/' + qual).set({ nome: file.name, dados: d, por: MSN.eu, ts: Date.now() }).then(function() { MSN[qual] = { nome: file.name, dados: d }; MSN.audios = {}; msnSom(qual === 'somTremer' ? 'tremer' : 'msg'); msnRender(); });
   });
 }
-function msnSomPadrao() { if (!msnEhGestao()) return; dbRef('chat/config/somMsg').remove(); MSN.somMsg = null; MSN.audioMsg = null; msnSom('msg'); msnRender(); }
+function msnSomPadrao(qual) { if (!msnEhGestao()) return; qual = qual === 'tremer' ? 'somTremer' : 'somMsg'; dbRef('chat/config/' + qual).remove(); MSN[qual] = null; MSN.audios = {}; msnSom(qual === 'somTremer' ? 'tremer' : 'msg'); msnRender(); }
 function msnMudarVolume(v) { try { localStorage.setItem('msn_volume', v); } catch (e) {} msnDestravarSom(); if (v !== 'mudo') msnSom('msg'); }
 function msnBalao(conv, de, texto, atencao) {
   var box = document.getElementById('msn-toasts'); if (!box) return;
@@ -23605,7 +23611,8 @@ function msnIniciar(user) {
   });
   dbRef('rotaMeta/avatares').on('value', function(s) { MSN.av = (s && s.val()) || {}; msnRender(); });
   dbRef('chat/figurinhas').on('value', function(s) { MSN.figs = (s && s.val()) || {}; msnFigAtualizarPaineis(); MSN.abertas.forEach(function(c) { if (MSN.msgs[c]) msnRenderMsgs(c); }); });
-  dbRef('chat/config/somMsg').on('value', function(s) { MSN.somMsg = (s && s.val()) || null; MSN.audioMsg = null; msnRender(); });
+  dbRef('chat/config/somMsg').on('value', function(s) { MSN.somMsg = (s && s.val()) || null; MSN.audios = {}; msnRender(); });
+  dbRef('chat/config/somTremer').on('value', function(s) { MSN.somTremer = (s && s.val()) || null; MSN.audios = {}; msnRender(); });
   dbRef('chat/lidas/' + user).on('value', function(s) { MSN.lidas = (s && s.val()) || {}; msnRender(); });
   dbRef('chat/grupo/EQUIPE').on('value', function(s) { var v = s && s.val(); var antes = MSN.grupo; MSN.grupo = v || null; if (MSN.base.grupo && v && (!antes || v.ts !== antes.ts)) msnChegou('EQUIPE', v); MSN.base.grupo = true; msnRender(); });
   dbRef('chat/indice/' + user).on('value', function(s) {
@@ -23619,7 +23626,7 @@ function msnIniciar(user) {
 function msnEncerrar(silencioso) {
   if (!MSN.on) return;
   try { dbRef('chat/presenca/' + MSN.eu).update ? dbRef('chat/presenca/' + MSN.eu).update({ status: 'offline', ts: Date.now() }) : dbRef('chat/presenca/' + MSN.eu).set({ status: 'offline', frase: MSN.minhaFrase || '', ts: Date.now() }); } catch (e) {}
-  ['chat/presenca', 'rotaMeta/avatares', 'chat/config/somMsg', 'chat/figurinhas', 'chat/lidas/' + MSN.eu, 'chat/grupo/EQUIPE', 'chat/indice/' + MSN.eu].forEach(function(p) { try { var r = dbRef(p); if (r.off) r.off(); } catch (e) {} });
+  ['chat/presenca', 'rotaMeta/avatares', 'chat/config/somMsg', 'chat/config/somTremer', 'chat/figurinhas', 'chat/lidas/' + MSN.eu, 'chat/grupo/EQUIPE', 'chat/indice/' + MSN.eu].forEach(function(p) { try { var r = dbRef(p); if (r.off) r.off(); } catch (e) {} });
   Object.keys(MSN.ouvindo).forEach(function(c) { msnPararDeOuvir(c); });
   clearInterval(MSN.hb);
   try { if (MSN.pip && !MSN.pip.closed) MSN.pip.close(); } catch (e) {} MSN.pip = null; MSN.pipConv = null;
@@ -23747,10 +23754,14 @@ function msnListaHtml() {
     '<div class="msn-bsc"><input id="msn-busca-in" placeholder="Procurar um contato…" value="' + msnEsc(MSN.busca || '') + '" oninput="MSN.busca=this.value;msnRender()" aria-label="Procurar contato"></div>' +
     '<div class="msn-contatos">' + (filtra('EQUIPE') || !q ? grupo('grupo', 'Grupos (1)', ['EQUIPE'], '') : '') +
       grupo('on', 'Online (' + onl.length + ')', onl, 'Ninguém online agora.') + grupo('off', 'Offline (' + off.length + ')', off, '') + '</div>' +
-    (msnEhGestao() ? '<div class="msn-somg">🎵 <b>Som de mensagem da equipe:</b> ' + msnEsc(MSN.somMsg ? MSN.somMsg.nome : 'padrão do guia') +
-      '<div style="display:flex;gap:6px;margin-top:4px"><button type="button" onclick="document.getElementById(\'msn-som-in\').click()">Escolher arquivo…</button>' +
-      (MSN.somMsg ? '<button type="button" onclick="msnSomPadrao()">Voltar ao padrão</button>' : '') +
-      '<input type="file" id="msn-som-in" accept="audio/*" style="display:none" onchange="msnEscolherSom(this.files[0]);this.value=\'\'"></div></div>' : '');
+    (msnEhGestao() ? '<div class="msn-somg">' + [['msg', 'somMsg', '🎵 Som de mensagem', 'padrão do guia'], ['tremer', 'somTremer', '📳 Som do chamar atenção', MSN.somMsg ? 'o mesmo da mensagem' : 'padrão do guia']].map(function(x) {
+      var atual = MSN[x[1]];
+      return '<div style="margin-bottom:6px"><b>' + x[2] + ' (equipe):</b> ' + msnEsc(atual ? atual.nome : x[3]) +
+        '<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap"><button type="button" onclick="document.getElementById(\'msn-som-' + x[0] + '\').click()">Escolher arquivo…</button>' +
+        '<button type="button" onclick="msnDestravarSom();msnSom(\'' + x[0] + '\')">▶ Ouvir</button>' +
+        (atual ? '<button type="button" onclick="msnSomPadrao(\'' + x[0] + '\')">' + (x[0] === 'tremer' ? 'Usar o da mensagem' : 'Voltar ao padrão') + '</button>' : '') +
+        '<input type="file" id="msn-som-' + x[0] + '" accept="audio/*" style="display:none" onchange="msnEscolherSom(this.files[0],\'' + x[0] + '\');this.value=\'\'"></div></div>';
+    }).join('') + '<div style="font-size:11px;color:#7A6A3A">Vale para todo mundo. Áudio de até 1 MB.</div></div>' : '');
 }
 
 // ── janelas de conversa ──
