@@ -15697,104 +15697,142 @@ var RT_TEMAS = {
     }
   },
   cidade: {
-    nome: 'Cidade Ensolarada', ic: '🌆', desc: 'Mapa de GPS de mundo aberto: cidade, mato, deserto e rodovias',
-    wrap: '#0B0B0B', amostra: ['#3BA7B5', '#2F7D3A', '#F6E03B'], suave: true,
+    nome: 'Cidade Ensolarada', ic: '🌆', desc: 'Cidade em 3D vista do alto, estilo mapa de satélite',
+    wrap: '#1F2A33', amostra: ['#4FA3D1', '#9BC27A', '#F4B400'], suave: true,
     mundos: ['BAIRRO', 'CENTRO', 'PORTO', 'COBERTURA'],
-    trilha: ['#111111', '#F6E03B'], sombraParada: '#0B0B0B',
-    tag: ['#F6E03B', '#111111', '#F6E03B'], pier: ['#0B0B0B', '#6B7380', '#4A4E58'], filaTag: ['#111111', '#F6E03B'],
+    trilha: ['#E2A93B', '#FBD872'], sombraParada: '#000000',
+    tag: ['#202124', '#FFFFFF', '#FFFFFF'], pier: ['#000', '#9AA0A6', '#80868B'], filaTag: ['#202124', '#FFFFFF'],
     cenario: function() {
-      function rr(r, pad, f, rx) { return '<rect x="' + (r[0] - pad) + '" y="' + (r[1] - pad) + '" width="' + (r[2] + pad * 2) + '" height="' + (r[3] + pad * 2) + '" rx="' + ((rx || 18) + pad) + '" fill="' + f + '"/>'; }
-      var VERDE = '#2F7D3A', VERDE2 = '#4FA34A', CAQUI = '#B9B48A', AREIA = '#D8D29A', COSTA = '#8EDCE3', MAR = '#3BA7B5', RUA = '#141414';
+      function rr(r, pad, f, extra) { return '<rect x="' + (r[0] - pad) + '" y="' + (r[1] - pad) + '" width="' + (r[2] + pad * 2) + '" height="' + (r[3] + pad * 2) + '" rx="' + (22 + pad) + '" fill="' + f + '"' + (extra || '') + '/>'; }
+      function arvore(x, y, r) {
+        return '<ellipse cx="' + (x + r * .6) + '" cy="' + (y + r * .7) + '" rx="' + r + '" ry="' + (r * .7) + '" fill="#1F3A12" opacity=".35"/><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="url(#rtCidArv)"/>';
+      }
+      // prédio em projeção oblíqua: telhado sobe h e anda h*0.28 para a direita
+      function predio(x, y, w, d, h, vidro) {
+        var dx = Math.round(h * .28), s = '';
+        s += '<path d="M' + x + ' ' + (y + d) + ' L' + (x + w) + ' ' + (y + d) + ' L' + (x + w + h * .9) + ' ' + (y + d + h * .45) + ' L' + (x + h * .9) + ' ' + (y + d + h * .45) + ' Z" fill="#000" opacity=".22"/>';
+        var cRoof = vidro ? '#C9DCEC' : '#F1EFEA', cFront = vidro ? '#7E9DBC' : '#CFCAC0', cLeft = vidro ? '#5D7C9C' : '#ADA79C';
+        s += '<path d="M' + x + ' ' + y + ' L' + x + ' ' + (y + d) + ' L' + (x + dx) + ' ' + (y + d - h) + ' L' + (x + dx) + ' ' + (y - h) + ' Z" fill="' + cLeft + '"/>';
+        s += '<path d="M' + x + ' ' + (y + d) + ' L' + (x + w) + ' ' + (y + d) + ' L' + (x + w + dx) + ' ' + (y + d - h) + ' L' + (x + dx) + ' ' + (y + d - h) + ' Z" fill="' + cFront + '"/>';
+        if (h > 14) for (var a = y + d - h + 5; a < y + d - 3; a += 5) s += '<path d="M' + (x + 2 + dx * (y + d - a) / h) + ' ' + a + ' H' + (x + w - 2 + dx * (y + d - a) / h) + '" stroke="' + (vidro ? '#B9D2EA' : '#E4E0D8') + '" stroke-width="1" opacity=".7"/>';
+        s += '<rect x="' + (x + dx) + '" y="' + (y - h) + '" width="' + w + '" height="' + d + '" fill="' + cRoof + '" stroke="' + cLeft + '" stroke-width=".8"/>';
+        if (!vidro && w > 12) s += '<rect x="' + (x + dx + 3) + '" y="' + (y - h + 3) + '" width="5" height="4" fill="#D9D5CC"/>';
+        return s;
+      }
+      var s = '<defs>' +
+        '<filter id="rtCidTex" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="saturate" values="0" result="g"/>' +
+          '<feComponentTransfer in="g" result="g2"><feFuncR type="linear" slope=".38" intercept=".7"/><feFuncG type="linear" slope=".38" intercept=".7"/><feFuncB type="linear" slope=".38" intercept=".7"/></feComponentTransfer>' +
+          '<feBlend in="SourceGraphic" in2="g2" mode="multiply" result="b"/><feComposite in="b" in2="SourceGraphic" operator="in"/></filter>' +
+        '<filter id="rtCidAgua" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".012 .05" numOctaves="2" seed="2" result="n"/><feColorMatrix in="n" type="saturate" values="0" result="g"/>' +
+          '<feComponentTransfer in="g" result="g2"><feFuncR type="linear" slope=".3" intercept=".82"/><feFuncG type="linear" slope=".3" intercept=".82"/><feFuncB type="linear" slope=".3" intercept=".82"/></feComponentTransfer>' +
+          '<feBlend in="SourceGraphic" in2="g2" mode="multiply"/></filter>' +
+        '<filter id="rtCidSomb" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="3" dy="5" stdDeviation="4" flood-color="#0B2A3A" flood-opacity=".35"/></filter>' +
+        '<linearGradient id="rtCidMar" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6CC3E0"/><stop offset="1" stop-color="#2C7DB3"/></linearGradient>' +
+        '<radialGradient id="rtCidMorro1" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#E9D7AE"/><stop offset=".6" stop-color="#C9AE7C"/><stop offset="1" stop-color="#9E8456"/></radialGradient>' +
+        '<radialGradient id="rtCidMorro2" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#B9D08F"/><stop offset=".6" stop-color="#8DAE63"/><stop offset="1" stop-color="#5F8040"/></radialGradient>' +
+        '<radialGradient id="rtCidArv" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#8BC26A"/><stop offset=".7" stop-color="#4E8A35"/><stop offset="1" stop-color="#2F5E22"/></radialGradient>' +
+        '<linearGradient id="rtCidLuz" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE3B0" stop-opacity=".28"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="1" stop-color="#0B2A3A" stop-opacity=".18"/></linearGradient>' +
+        '<clipPath id="rtCidClip">' + RT_ILHAS.map(function(r) { return rr(r, 0, '#000'); }).join('') + '</clipPath></defs>';
+      s += '<rect width="860" height="684" fill="url(#rtCidMar)" filter="url(#rtCidAgua)"/>';
+      // continente com morros sombreados
       var mainland = 'M0 0 H530 C515 70 470 128 400 160 C320 196 250 205 170 236 C100 262 50 300 0 330 Z';
       var mainIn = 'M0 0 H516 C501 64 458 118 392 148 C314 183 244 193 166 223 C98 249 48 286 0 316 Z';
-      var s = '<defs><clipPath id="rtCidClip">' + RT_ILHAS.map(function(r) { return rr(r, 0, '#000'); }).join('') + '</clipPath>' +
-        '<clipPath id="rtCidClipM"><path d="' + mainIn + '"/></clipPath></defs>';
-      s += '<rect width="860" height="684" fill="' + MAR + '"/>';
-      // costa clara + terra
-      s += '<path d="' + mainland + '" fill="' + COSTA + '"/>' + RT_ILHAS.map(function(r) { return rr(r, 10, COSTA); }).join('');
-      s += '<path d="' + mainIn + '" fill="' + VERDE + '"/>' + RT_ILHAS.map(function(r) { return rr(r, 0, VERDE); }).join('');
-      // continente: deserto, morro de pedra, pista de pouso e estradas
-      s += '<g clip-path="url(#rtCidClipM)">' +
-        '<path d="M150 0 H520 C505 60 470 110 410 140 C350 170 280 150 250 110 C220 70 170 50 150 0 Z" fill="' + CAQUI + '"/>' +
-        '<ellipse cx="85" cy="120" rx="70" ry="55" fill="#8F8F88"/><g fill="none" stroke="#B5B5AD" stroke-width="2"><ellipse cx="85" cy="120" rx="52" ry="40"/><ellipse cx="85" cy="120" rx="32" ry="24"/><ellipse cx="85" cy="120" rx="12" ry="9"/></g>' +
-        '<path d="M60 230 C90 210 120 220 140 200 C160 180 200 190 210 170" fill="none" stroke="' + VERDE2 + '" stroke-width="22" stroke-linecap="round"/>' +
-        '<rect x="300" y="40" width="150" height="16" fill="#8A8A84" transform="rotate(-8 375 48)"/>' +
-        '<g fill="#FFFFFF" transform="rotate(-8 375 48)"><rect x="312" y="47" width="10" height="2"/><rect x="332" y="47" width="10" height="2"/><rect x="352" y="47" width="10" height="2"/><rect x="372" y="47" width="10" height="2"/><rect x="392" y="47" width="10" height="2"/><rect x="412" y="47" width="10" height="2"/><rect x="432" y="47" width="10" height="2"/></g>' +
-        '<g fill="none" stroke="' + RUA + '" stroke-linecap="round" stroke-linejoin="round">' +
-          '<path d="M0 270 C80 240 120 200 190 190 C260 180 300 140 350 130 C400 120 440 90 470 40 L500 0" stroke-width="6"/>' +
-          '<path d="M180 0 C190 60 230 90 250 130 C265 160 250 190 230 200" stroke-width="4"/>' +
-          '<path d="M0 60 C40 70 60 180 30 250" stroke-width="4"/></g>' +
-        '<path d="M0 286 C90 252 130 214 200 204 C270 194 310 156 360 144 C410 132 450 104 482 52" fill="none" stroke="#7A1E1E" stroke-width="2"/>' +
-        '</g>';
-      // bairros: mato, áreas claras e cáqui, e a parte urbana (quarteirões brancos em ruas pretas)
-      var zonas = [[36, 470, 170, 126], [366, 316, 152, 120], [606, 236, 144, 118], [556, 40, 186, 126]];
-      s += '<g clip-path="url(#rtCidClip)">';
-      [[90,410,70,40],[250,520,60,70],[300,320,60,50],[470,450,60,40],[560,360,70,30],[700,370,50,30],[760,60,70,40],[600,150,50,30]].forEach(function(e, i) {
-        s += '<ellipse cx="' + e[0] + '" cy="' + e[1] + '" rx="' + e[2] + '" ry="' + e[3] + '" fill="' + (i % 3 === 2 ? CAQUI : VERDE2) + '"/>';
+      s += '<path d="' + mainland + '" fill="#8FD0E6"/><path d="' + mainland + '" fill="#EADBB0" transform="translate(0 -6)"/>';
+      s += '<path d="' + mainIn + '" fill="#C8B583" filter="url(#rtCidTex)"/>';
+      [[95,110,100,72,1],[330,70,96,56,1],[210,170,70,40,2],[440,40,60,36,2],[40,250,50,40,2]].forEach(function(m) {
+        s += '<ellipse cx="' + (m[0] + 12) + '" cy="' + (m[1] + 14) + '" rx="' + m[2] + '" ry="' + m[3] + '" fill="#5B4A2A" opacity=".25"/>' +
+          '<ellipse cx="' + m[0] + '" cy="' + m[1] + '" rx="' + m[2] + '" ry="' + m[3] + '" fill="url(#rtCidMorro' + m[4] + ')" filter="url(#rtCidTex)"/>';
       });
+      s += '<path d="M0 270 C80 240 120 200 190 190 C260 180 300 140 350 130 C400 120 440 90 470 40 L500 0" fill="none" stroke="#B5A88E" stroke-width="9" stroke-linecap="round"/>' +
+        '<path d="M0 270 C80 240 120 200 190 190 C260 180 300 140 350 130 C400 120 440 90 470 40 L500 0" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>';
+      [[60,190,7],[150,40,8],[250,120,7],[300,190,6],[420,120,6],[480,90,7],[30,60,6],[200,60,6],[380,170,6]].forEach(function(t) { s += arvore(t[0], t[1], t[2]); });
+      // bairros: água rasa, praia, terreno com textura
+      s += RT_ILHAS.map(function(r) { return rr(r, 14, '#8FD0E6'); }).join('');
+      s += RT_ILHAS.map(function(r) { return rr(r, 7, '#EADBB0'); }).join('');
+      s += '<g filter="url(#rtCidTex)">' + RT_ILHAS.map(function(r) { return rr(r, 0, '#A9C98A'); }).join('') + '</g>';
+      s += '<g clip-path="url(#rtCidClip)">';
+      [[90,410,70,40],[250,540,60,60],[300,330,60,50],[480,460,60,40],[570,370,60,30],[720,380,50,30],[780,70,60,40],[600,160,50,30]].forEach(function(e) {
+        s += '<ellipse cx="' + e[0] + '" cy="' + e[1] + '" rx="' + e[2] + '" ry="' + e[3] + '" fill="#86B866" filter="url(#rtCidTex)"/>';
+      });
+      // ruas brancas das áreas urbanas
+      var zonas = [[36, 466, 176, 134, 1], [362, 316, 156, 126, 2], [602, 236, 150, 122, 2], [556, 40, 196, 130, 3]];
+      zonas.forEach(function(z) {
+        s += '<rect x="' + z[0] + '" y="' + z[1] + '" width="' + z[2] + '" height="' + z[3] + '" rx="6" fill="#DAD7D0"/>';
+        for (var gx = z[0]; gx <= z[0] + z[2]; gx += 26) s += '<rect x="' + (gx - 2) + '" y="' + z[1] + '" width="4" height="' + z[3] + '" fill="#FFFFFF"/>';
+        for (var gy = z[1]; gy <= z[1] + z[3]; gy += 26) s += '<rect x="' + z[0] + '" y="' + (gy - 2) + '" width="' + z[2] + '" height="4" fill="#FFFFFF"/>';
+      });
+      // árvores nas áreas verdes dos bairros
+      [[60,420],[110,440],[240,420],[270,470],[280,560],[230,600],[320,350],[330,450],[500,470],[460,480],[580,380],[730,390],[760,250],[570,250],[600,190],[790,160],[810,110],[570,60]].forEach(function(t, i) { s += arvore(t[0], t[1], 6 + i % 3); });
+      // prédios (desenhados de trás para frente)
+      var pr = [];
       zonas.forEach(function(z, zi) {
-        s += '<rect x="' + z[0] + '" y="' + z[1] + '" width="' + z[2] + '" height="' + z[3] + '" rx="6" fill="' + RUA + '"/>';
-        for (var x = z[0] + 3; x + 14 <= z[0] + z[2] - 2; x += 18) for (var y = z[1] + 3; y + 14 <= z[1] + z[3] - 2; y += 18) {
-          var k = (x * 7 + y * 13 + zi * 5) % 23;
-          if (k === 0) { s += '<rect x="' + x + '" y="' + y + '" width="15" height="15" fill="' + VERDE2 + '"/>'; continue; }
-          var w = k % 4 === 1 ? 33 : 15;
-          if (w > 15 && x + 33 > z[0] + z[2] - 2) w = 15;
-          s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="15" fill="' + (k % 5 === 0 ? '#CFCFCF' : '#F4F4F4') + '"/>';
-          if (w > 15) x += 18;
+        for (var gx = z[0] + 4; gx + 18 <= z[0] + z[2]; gx += 26) for (var gy = z[1] + 6; gy + 18 <= z[1] + z[3]; gy += 26) {
+          var k = (gx * 7 + gy * 13 + zi * 11) % 29;
+          if (k % 7 === 0) continue;
+          var alt = z[4] === 3 ? 14 + (k * 5) % 34 : z[4] === 2 ? 8 + (k * 3) % 22 : 5 + k % 10;
+          pr.push([gx, gy + 4, 18, 16, alt, alt > 22]);
         }
       });
-      // rodovias e estradas secundárias no mato
-      s += '<g fill="none" stroke="' + RUA + '" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">' +
-        '<path d="M40 420 C80 470 60 520 100 600"/><path d="M220 400 C240 470 290 500 260 600"/><path d="M290 470 C340 440 360 480 420 470 C470 460 500 480 520 440"/>' +
-        '<path d="M560 230 C600 280 560 330 600 390"/><path d="M700 220 C740 260 720 330 755 380"/><path d="M550 160 C620 120 700 170 830 140"/></g>';
-      // estádio e campo
-      s += '<ellipse cx="248" cy="438" rx="20" ry="14" fill="#F4F4F4" stroke="' + RUA + '" stroke-width="3"/><ellipse cx="248" cy="438" rx="11" ry="7" fill="' + VERDE2 + '"/>';
+      pr.sort(function(a, b) { return a[1] - b[1]; }).forEach(function(b) { s += predio(b[0], b[1], b[2], b[3], b[4], b[5]); });
       s += '</g>';
-      // areia nas praias
-      [[30,520,10,40],[290,300,40,8],[760,280,8,40],[840,70,8,50],[540,120,8,40]].forEach(function(b) { s += '<rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + b[3] + '" rx="4" fill="' + AREIA + '"/>'; });
-      // ícones de radar espalhados pelo mapa
-      [[462, 78, 'aviao'], [232, 92, 'lanche'], [66, 492, 'casa'], [250, 452, 'lanche'], [428, 330, 'cifrao'], [500, 410, 'saude'], [738, 345, 'ancora'], [722, 226, 'caminhao'], [584, 80, 'oficina'], [606, 182, 'coracao'], [668, 592, 'ancora']].forEach(function(b) { s += rtCidBlip(b[0], b[1], b[2]); });
-      // navio no mar
-      s += '<path d="M700 606 H830 L818 630 H712 Z" fill="#F4F4F4"/><rect x="716" y="596" width="60" height="10" fill="#CFCFCF"/><rect x="784" y="590" width="16" height="16" fill="#F4F4F4"/>';
+      // navio e veleiro
+      s += '<g filter="url(#rtCidSomb)"><path d="M700 606 H830 L816 634 H712 Z" fill="#37474F"/><path d="M700 606 H830 L828 610 H702 Z" fill="#546E7A"/>' +
+        '<rect x="712" y="592" width="18" height="14" fill="#E2572B"/><rect x="732" y="592" width="18" height="14" fill="#3F88C5"/><rect x="752" y="592" width="18" height="14" fill="#F4B400"/><rect x="796" y="580" width="22" height="26" fill="#ECEFF1"/><rect x="796" y="580" width="22" height="5" fill="#B0BEC5"/></g>' +
+        '<g filter="url(#rtCidSomb)"><path d="M786 476 h22 l-5 8 h-12 z" fill="#FFFFFF"/><path d="M797 446 v28 l12 -4 z" fill="#FFFFFF"/></g>';
+      s += '<rect width="860" height="684" fill="url(#rtCidLuz)" pointer-events="none"/>';
       return s;
     },
     trilhaSvg: function(pts) {
-      return '<polyline points="' + pts + '" fill="none" stroke="#000000" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>' +
-        '<polyline points="' + pts + '" fill="none" stroke="#262626" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>' +
-        '<polyline points="' + pts + '" fill="none" stroke="#F6E03B" stroke-width="1.6" stroke-dasharray="8 7" stroke-linejoin="round"/>';
+      return '<polyline points="' + pts + '" fill="none" stroke="#000" stroke-width="16" stroke-linejoin="round" stroke-linecap="round" opacity=".18" transform="translate(2 3)"/>' +
+        '<polyline points="' + pts + '" fill="none" stroke="#E2A93B" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<polyline points="' + pts + '" fill="none" stroke="#FBD872" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<polyline points="' + pts + '" fill="none" stroke="#FFFFFF" stroke-width="1.4" stroke-dasharray="8 8" stroke-linejoin="round" opacity=".9"/>';
     },
     verdeSvg: function(s) {
-      return '<polyline points="' + s + '" fill="none" stroke="#000000" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>' +
-        '<polyline points="' + s + '" fill="none" stroke="#5BE37D" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>';
+      return '<polyline points="' + s + '" fill="none" stroke="#0B57D0" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<polyline points="' + s + '" fill="none" stroke="#4C8DF6" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>';
     },
     tagSvg: function(x, y, txt, tipo) {
-      var cores = { mundo: ['#111111', '#F6E03B'], largada: ['#F4F4F4', '#111111'], chegada: ['#F6E03B', '#111111'], fila: ['#111111', '#F4F4F4'] }[tipo] || ['#111111', '#F4F4F4'];
       var ic = tipo === 'largada' ? 'caminhao' : tipo === 'chegada' ? 'bandeira' : tipo === 'mundo' ? ({ BAIRRO: 'casa', CENTRO: 'cifrao', PORTO: 'ancora', COBERTURA: 'trofeu' })[txt.split(' ')[0]] : null;
-      var w = Math.round(txt.length * 7.1 + 18), pad = ic ? 22 : 0;
-      return '<rect x="' + x + '" y="' + y + '" width="' + (w + pad) + '" height="20" fill="' + cores[0] + '" stroke="#000" stroke-width="2"/>' +
-        (ic ? rtCidBlip(x + 12, y + 10, ic, 0.62) : '') +
-        '<text x="' + (x + pad + w / 2) + '" y="' + (y + 14) + '" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="11" letter-spacing=".4" fill="' + cores[1] + '">' + rtEsc(txt) + '</text>';
+      var bolinha = { largada: '#C41E1E', chegada: '#F4B400', mundo: '#1A73E8' }[tipo] || '#5F6368';
+      var w = Math.round(txt.length * 7 + 18), pad = ic ? 26 : 0;
+      return '<g filter="url(#rtCidSomb)"><rect x="' + x + '" y="' + y + '" width="' + (w + pad) + '" height="24" rx="12" fill="#FFFFFF"/></g>' +
+        (ic ? '<circle cx="' + (x + 12) + '" cy="' + (y + 12) + '" r="10" fill="' + bolinha + '"/>' + rtCidBlip(x + 12, y + 12, ic, 0.55) : '') +
+        '<text x="' + (x + pad + w / 2 - (ic ? 3 : 0)) + '" y="' + (y + 16.5) + '" text-anchor="middle" font-family="\'Segoe UI\', Roboto, Arial, sans-serif" font-weight="700" font-size="11.5" fill="#202124">' + rtEsc(txt) + '</text>';
     },
     paradaSvg: function(p, n, est) {
-      var fill = est === 'feita' ? '#F6E03B' : est === 'proxima' ? '#E53935' : '#F4F4F4', fg = est === 'proxima' ? '#FFFFFF' : '#111111';
-      var s = '';
-      if (est === 'proxima') s += '<rect x="' + (p[0] - 20) + '" y="' + (p[1] - 20) + '" width="40" height="40" fill="none" stroke="#E53935" stroke-width="3"><animate attributeName="opacity" values="1;0" dur="1.2s" repeatCount="indefinite"/></rect>';
-      return s + '<rect x="' + (p[0] - 15) + '" y="' + (p[1] - 15) + '" width="30" height="30" fill="' + fill + '" stroke="#000" stroke-width="3"/>' +
-        '<text x="' + p[0] + '" y="' + (p[1] + 5.5) + '" text-anchor="middle" font-family="Arial, \'Segoe UI\', sans-serif" font-weight="900" font-size="15" fill="' + fg + '">' + n + '</text>';
+      var cor = est === 'feita' ? '#F4B400' : est === 'proxima' ? '#EA4335' : '#80868B', borda = est === 'feita' ? '#B7860B' : est === 'proxima' ? '#B31412' : '#5F6368';
+      var x = p[0], y = p[1] - 4, s = '<ellipse cx="' + (x + 3) + '" cy="' + (p[1] + 17) + '" rx="10" ry="4" fill="#000" opacity=".3"/>';
+      if (est === 'proxima') s += '<ellipse cx="' + x + '" cy="' + (p[1] + 16) + '" rx="12" ry="5" fill="none" stroke="#EA4335" stroke-width="3"><animate attributeName="rx" values="10;26" dur="1.5s" repeatCount="indefinite"/><animate attributeName="ry" values="4;10" dur="1.5s" repeatCount="indefinite"/><animate attributeName="opacity" values=".9;0" dur="1.5s" repeatCount="indefinite"/></ellipse>';
+      s += '<path d="M' + x + ' ' + (p[1] + 16) + ' C' + (x - 5) + ' ' + (y + 9) + ' ' + (x - 16) + ' ' + (y + 6) + ' ' + (x - 16) + ' ' + (y - 6) + ' A16 16 0 1 1 ' + (x + 16) + ' ' + (y - 6) + ' C' + (x + 16) + ' ' + (y + 6) + ' ' + (x + 5) + ' ' + (y + 9) + ' ' + x + ' ' + (p[1] + 16) + ' Z" fill="' + cor + '" stroke="' + borda + '" stroke-width="1.5"/>';
+      s += '<ellipse cx="' + (x - 6) + '" cy="' + (y - 13) + '" rx="5" ry="3" fill="#FFFFFF" opacity=".35"/>';
+      return s + '<circle cx="' + x + '" cy="' + (y - 6) + '" r="10.5" fill="#FFFFFF"/>' +
+        '<text x="' + x + '" y="' + (y - 1.8) + '" text-anchor="middle" font-family="\'Segoe UI\', Roboto, Arial, sans-serif" font-weight="800" font-size="12.5" fill="' + borda + '">' + n + '</text>';
     },
     marcosSvg: function() {
-      // CD FAST (largada) e heliponto no alto do prédio (chegada), em estilo de mapa
-      var s = '<rect x="30" y="570" width="76" height="44" fill="#F4F4F4" stroke="#000" stroke-width="3"/><rect x="30" y="570" width="76" height="9" fill="#C41E1E"/>' +
-        '<text x="68" y="603" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="13" fill="#C41E1E">FAST</text>';
-      s += '<rect x="766" y="36" width="72" height="72" fill="#F4F4F4" stroke="#000" stroke-width="3"/><circle cx="802" cy="72" r="26" fill="#2B2B2B"/><circle cx="802" cy="72" r="26" fill="none" stroke="#F6E03B" stroke-width="3"/>' +
-        '<text x="802" y="82" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="26" fill="#FFFFFF">H</text>' +
-        '<rect x="834" y="18" width="3" height="32" fill="#111"/><path d="M837 18 h18 l-5 7 l5 7 h-18 z" fill="#C41E1E"/>';
+      // CD FAST em 3D (largada) e torre de vidro com heliponto (chegada)
+      function caixa(x, y, w, d, h, teto, frente, lado) {
+        var dx = Math.round(h * .28);
+        return '<path d="M' + x + ' ' + (y + d) + ' L' + (x + w) + ' ' + (y + d) + ' L' + (x + w + h * .9) + ' ' + (y + d + h * .45) + ' L' + (x + h * .9) + ' ' + (y + d + h * .45) + ' Z" fill="#000" opacity=".22"/>' +
+          '<path d="M' + x + ' ' + y + ' L' + x + ' ' + (y + d) + ' L' + (x + dx) + ' ' + (y + d - h) + ' L' + (x + dx) + ' ' + (y - h) + ' Z" fill="' + lado + '"/>' +
+          '<path d="M' + x + ' ' + (y + d) + ' L' + (x + w) + ' ' + (y + d) + ' L' + (x + w + dx) + ' ' + (y + d - h) + ' L' + (x + dx) + ' ' + (y + d - h) + ' Z" fill="' + frente + '"/>' +
+          '<rect x="' + (x + dx) + '" y="' + (y - h) + '" width="' + w + '" height="' + d + '" fill="' + teto + '"/>';
+      }
+      var s = caixa(28, 580, 82, 36, 12, '#F5F5F5', '#D7D7D7', '#B5B5B5');
+      s += '<rect x="31" y="568" width="82" height="8" fill="#C41E1E"/><text x="72" y="596" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="14" fill="#C41E1E">FAST</text>';
+      for (var i = 0; i < 4; i++) s += '<rect x="' + (36 + i * 18) + '" y="608" width="12" height="8" fill="#9E9E9E"/>';
+      s += caixa(112, 596, 22, 10, 6, '#FFFFFF', '#E0E0E0', '#BDBDBD') + caixa(112, 608, 22, 10, 6, '#FFFFFF', '#E0E0E0', '#BDBDBD');
+      s += caixa(768, 76, 60, 44, 40, '#C9DCEC', '#7E9DBC', '#5D7C9C');
+      for (var a = 0; a < 7; a++) s += '<path d="M' + (770 + a * 1.6) + ' ' + (82 + a * 5) + ' H' + (826 + a * 1.6) + '" stroke="#B9D2EA" stroke-width="1" opacity=".7" transform="translate(' + (11 - a * 1.6) + ' ' + (0) + ')"/>';
+      s += '<circle cx="809" cy="58" r="17" fill="#3C4043"/><circle cx="809" cy="58" r="17" fill="none" stroke="#F4B400" stroke-width="2.5"/>' +
+        '<text x="809" y="65" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="18" fill="#FFFFFF">H</text>' +
+        '<rect x="834" y="10" width="2.5" height="28" fill="#ECEFF1"/><path d="M836.5 10 h16 l-4 6 l4 6 h-16 z" fill="#C41E1E"/>';
       return s;
     },
     filaSvg: function() {
-      var s = '<rect x="370" y="552" width="284" height="122" fill="#8EDCE3"/><rect x="376" y="558" width="272" height="110" fill="#5F6368" stroke="#000" stroke-width="3"/>';
-      for (var k = 0; k <= 5; k++) { var x = 382 + k * 52; s += '<rect x="' + x + '" y="562" width="2" height="38" fill="#FFFFFF"/><rect x="' + x + '" y="616" width="2" height="38" fill="#FFFFFF"/>'; }
-      return s + '<rect x="376" y="606" width="272" height="3" fill="#F6E03B"/>';
+      var s = '<g filter="url(#rtCidSomb)"><rect x="368" y="550" width="288" height="126" rx="8" fill="#E3E1DC"/></g><rect x="376" y="558" width="272" height="110" rx="4" fill="#8A9096"/>';
+      for (var k = 0; k <= 5; k++) { var x = 382 + k * 52; s += '<rect x="' + x + '" y="562" width="2" height="38" fill="#FFFFFF" opacity=".9"/><rect x="' + x + '" y="616" width="2" height="38" fill="#FFFFFF" opacity=".9"/>'; }
+      return s + '<rect x="376" y="606" width="272" height="3" fill="#FBD872"/>';
     }
   },
   bairro: {
