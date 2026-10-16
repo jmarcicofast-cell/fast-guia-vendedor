@@ -3039,8 +3039,8 @@
 
     <!-- SUB-NAV -->
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
-      <button class="qf-btn active" id="ev-nav-tempo" onclick="evVendNav('tempo',this)">⏱️ Gestão de Tempo</button>
-      <button class="qf-btn" id="ev-nav-perfil" onclick="evVendNav('perfil',this)">👤 Perfil do Vendedor</button>
+      <button class="qf-btn" id="ev-nav-tempo" style="display:none;" onclick="evVendNav('tempo',this)">⏱️ Gestão de Tempo</button>
+      <button class="qf-btn active" id="ev-nav-perfil" onclick="evVendNav('perfil',this)">👤 Perfil do Vendedor</button>
       <button class="qf-btn" id="ev-nav-feedback" onclick="evVendNav('feedback',this)">💬 Feedback</button>
     </div>
 
@@ -3111,7 +3111,7 @@
     </div>
 
     <!-- ═══════════ SUB-ABA: PERFIL DO VENDEDOR ═══════════ -->
-    <div id="ev-sub-perfil" class="ev-sub-panel" style="display:none;gap:12px;grid-template-columns:1fr;">
+    <div id="ev-sub-perfil" class="ev-sub-panel" style="display:grid;gap:12px;grid-template-columns:1fr;">
 
       <!-- LIGAÇÕES DO MÊS -->
       <div style="background:#1C1C1C;border-radius:12px;padding:1.25rem;border-left:4px solid #C41E1E;">
@@ -3641,7 +3641,7 @@
         <div style="background:#7B1FA2;border-radius:8px;padding:6px 10px;font-size:18px;">⏱️</div>
         <div>
           <h2 style="font-size:16px;font-weight:600;color:#1C1C1C;">Gestão de Tempo — Ajustar por Vendedor</h2>
-          <p style="font-size:12px;color:#888;">Personalize as metas diárias e os prazos. O vendedor vê isso na sub-aba "Gestão de Tempo" da Evolução dele.</p>
+          <p style="font-size:12px;color:#888;">Personalize as metas diárias e os prazos. O vendedor vê isso (só leitura) no fim da aba Minhas Metas dele.</p>
         </div>
       </div>
 
@@ -4898,7 +4898,7 @@ td.p-tie { color:var(--sp-muted); }
 
   <div class="mm-head">
     <h2 id="mm-titulo">📍 Minhas Metas</h2>
-    <p>Ligações e propostas vêm do check-in diário. Vendido, clientes e produtos são calculados automaticamente a partir dos seus pedidos.</p>
+    <p>Ligações vêm da Rota da Meta e propostas do check-in diário. Vendido, clientes e produtos são calculados automaticamente a partir dos seus pedidos.</p>
     <div id="mm-seletor" class="mm-seletor" style="display:none;"></div>
   </div>
 
@@ -9785,6 +9785,24 @@ function evVendNav(secao, btn) {
   if (btn) btn.classList.add('active');
   if (secao === 'tempo') { aplicarGestaoTempoNaTela(); renderGestaoTempoHoje(); }
   if (secao === 'perfil') { renderEvComissao(); renderEvConquistas(); renderEvVendasMes(); renderEvRankingMes(); }
+}
+
+// ── GESTÃO DE TEMPO EM UMA TELA SÓ — a gestora ajusta em Gestão > Gestão de Tempo;
+// o vendedor vê a rotina dele (só leitura) no fim de Minhas Metas.
+function gtMontarNoMinhasMetas(v) {
+  var painel = document.getElementById('ev-sub-tempo');
+  var wrap = document.querySelector('#tab-minhasmetas .mm-wrap');
+  if (!painel || !wrap) return;
+  var slot = document.getElementById('mm-tempo-slot');
+  if (!slot) {
+    slot = document.createElement('div'); slot.id = 'mm-tempo-slot'; slot.style.marginTop = '18px';
+    slot.innerHTML = '<h3 style="font-size:14px;font-weight:700;color:#1C1C1C;margin:0 0 4px;">⏱️ Minha Gestão de Tempo</h3>' +
+      '<p style="font-size:12px;color:#888;margin:0 0 10px;">Rotina, metas do dia e prazos definidos pela gestão.</p>';
+    wrap.appendChild(slot);
+  }
+  if (painel.parentNode !== slot) slot.appendChild(painel);
+  painel.style.display = 'grid';
+  slot.style.display = (v && v.tipo !== 'gestora' && v.tipo !== 'administrativo') ? '' : 'none';
 }
 
 // ── GESTÃO DE TEMPO — aplica metas/prazos personalizados (definidos pela gestora) na tela ──
@@ -14915,6 +14933,7 @@ function entrarComoUsuario(user) {
       fbListenVendedor(user);
       listenLigacoesVendedor(user);
     }
+    try { gtMontarNoMinhasMetas(v); } catch (e) {}
     if (v.tipo !== 'gestora') {
       aplicarGestaoTempoNaTela();
       renderGestaoTempoHoje();
