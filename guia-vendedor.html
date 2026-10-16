@@ -25269,5 +25269,100 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   });
 })();
 </script>
+<!-- ══ ATUALIZAÇÃO AUTOMÁTICA — recarrega sozinho quando sai uma versão nova do guia ══ -->
+<style>
+.au-faixa { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 100030; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+  background: var(--surface, #fff); color: var(--txt, #111); border: 1px solid var(--line, #ddd); border-radius: 14px; padding: 10px 14px; box-shadow: 0 14px 40px rgba(0,0,0,.3);
+  font: 600 13px var(--font, system-ui), sans-serif; animation: auIn .3s cubic-bezier(.2,1.3,.4,1); max-width: calc(100vw - 24px); }
+@keyframes auIn { from { opacity: 0; transform: translate(-50%, -14px); } to { opacity: 1; transform: translateX(-50%); } }
+.au-faixa b { color: var(--acc-txt, #C41E1E); }
+.au-faixa button { border: 1px solid var(--line, #ddd); background: var(--surface-2, #f6f6f6); color: var(--txt, #111); border-radius: 9px; padding: 6px 11px; font: 700 12px var(--font, system-ui), sans-serif; cursor: pointer; }
+.au-faixa button.pri { background: var(--acc, #C41E1E); border-color: var(--acc, #C41E1E); color: #fff; }
+</style>
+<script>
+(function(){
+  'use strict';
+  if (!/^https?:$/.test(location.protocol)) return;      // só quando o guia está publicado (GitHub Pages)
+  var INTERVALO = 60000, ESPERA = 10, QUIETO_MS = 20000;
+  var base = null, achouNova = false, adiadoAte = 0, ultimaDigitacao = 0, faixa = null, tique = null;
+
+  function urlCheck(){ return location.origin + location.pathname + '?_v=' + Date.now(); }
+  function assinatura(r){ return r.headers.get('etag') || r.headers.get('last-modified') || r.headers.get('content-length') || ''; }
+  function checar(){
+    if (achouNova || document.hidden) return;
+    fetch(urlCheck(), { method: 'HEAD', cache: 'no-store' }).then(function(r){
+      if (!r.ok) return;
+      var a = assinatura(r); if (!a) return;
+      if (base === null) { base = a; return; }
+      if (a !== base) { achouNova = true; avisar(); }
+    }).catch(function(){});
+  }
+
+  // não recarrega no meio de uma digitação
+  document.addEventListener('input', function(){ ultimaDigitacao = Date.now(); }, true);
+  document.addEventListener('keydown', function(){ ultimaDigitacao = Date.now(); }, true);
+  function podeRecarregar(){
+    var el = document.activeElement;
+    var editando = el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) && el.type !== 'button' && el.type !== 'checkbox' && el.type !== 'radio';
+    return !editando && Date.now() - ultimaDigitacao > QUIETO_MS && Date.now() > adiadoAte;
+  }
+  function logado(){ try { return !!localStorage.getItem('fgv_session_user') && document.getElementById('login-screen') && document.getElementById('login-screen').style.display === 'none'; } catch(e) { return false; } }
+
+  function recarregar(){
+    try {
+      var ativa = document.querySelector('.tab-content.active');
+      sessionStorage.setItem('fgv_reload_aba', ativa ? ativa.id.replace(/^tab-/, '') : '');
+      sessionStorage.setItem('fgv_reload_scroll', String(window.scrollY || 0));
+    } catch(e) {}
+    location.reload();
+  }
+  function avisar(){
+    if (!logado()) { if (podeRecarregar()) recarregar(); else agendar(); return; }
+    if (faixa) faixa.remove();
+    faixa = document.createElement('div'); faixa.className = 'au-faixa'; faixa.setAttribute('role', 'status');
+    faixa.innerHTML = '<span>🦅 Saiu uma versão nova do guia! <span id="au-txt"></span></span>' +
+      '<button type="button" class="pri" id="au-ja">Atualizar agora</button><button type="button" id="au-dep">Depois</button>';
+    document.body.appendChild(faixa);
+    document.getElementById('au-ja').onclick = recarregar;
+    document.getElementById('au-dep').onclick = function(){ adiadoAte = Date.now() + 5 * 60000; faixa.remove(); faixa = null; clearInterval(tique); setTimeout(avisar, 5 * 60000 + 500); };
+    var n = ESPERA;
+    clearInterval(tique);
+    tique = setInterval(function(){
+      var t = document.getElementById('au-txt'); if (!t) { clearInterval(tique); return; }
+      if (!podeRecarregar()) { n = ESPERA; t.innerHTML = 'Atualizo quando você terminar de digitar.'; return; }
+      t.innerHTML = 'Atualizando em <b>' + n + 's</b>…';
+      if (n-- <= 0) { clearInterval(tique); recarregar(); }
+    }, 1000);
+  }
+  function agendar(){ setTimeout(avisar, 5000); }
+
+  // volta para a mesma aba e posição depois de recarregar
+  (function restaurar(){
+    var aba = null, sc = 0;
+    try { aba = sessionStorage.getItem('fgv_reload_aba'); sc = +sessionStorage.getItem('fgv_reload_scroll') || 0; } catch(e) {}
+    if (!aba) return;
+    try { sessionStorage.removeItem('fgv_reload_aba'); sessionStorage.removeItem('fgv_reload_scroll'); } catch(e) {}
+    var orig = window.entrarComoUsuario; if (typeof orig !== 'function') return;
+    var feito = false;
+    window.entrarComoUsuario = function(){
+      var r = orig.apply(this, arguments);
+      if (!feito) {
+        feito = true;
+        setTimeout(function(){
+          var b = document.querySelector('.nav-btn[data-nav-id="' + aba + '"]');
+          if (b && b.style.display !== 'none' && typeof showTab === 'function') { try { showTab(aba, b); } catch(e) {} }
+          setTimeout(function(){ window.scrollTo(0, sc); }, 400);
+        }, 600);
+      }
+      return r;
+    };
+  })();
+
+  checar();
+  setInterval(checar, INTERVALO);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) checar(); });
+  window.addEventListener('focus', checar);
+})();
+</script>
 </body>
 </html>
