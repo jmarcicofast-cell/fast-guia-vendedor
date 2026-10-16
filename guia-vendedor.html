@@ -15245,6 +15245,12 @@ function rtInit() {
       ckData = ckGarantirDefaults(snap && snap.val());
       RT.ckOk = true; rtRender();
     });
+    // pedidos lançados pela própria gestora também entram na comissão dela
+    dbRef('pedidos/JULIANA').on('value', function(snap) {
+      var v = (snap && snap.val()) || {};
+      RT.pedGest = Object.keys(v).map(function(k) { return v[k]; }).filter(function(p) { return p && !p.excluido; });
+      RT.premN = (RT.premN || 0) + 1; rtRender();
+    });
     CK_EQUIPE.forEach(function(vn) {
       dbRef('pedidos/' + vn).on('value', function(snap) {
         var v = (snap && snap.val()) || {};
@@ -16501,6 +16507,29 @@ function comCalc(vn) {
   RT.comCache[vn] = r;
   return r;
 }
+// ── Comissão da GESTORA (mesma regra da aba Pedidos > "Minha Comissão — Baseada na Equipe"):
+// taxa por faixa de % da meta da gestora, sobre o total FATURADO da equipe no mês.
+// Previsto = o que ela ganharia se os pedidos do mês ainda não faturados fossem faturados.
+function rtTaxaGestora(pct) {
+  if (pct >= 120) return 0.0029; if (pct >= 110) return 0.0027; if (pct >= 90) return 0.0023;
+  if (pct >= 70) return 0.0021; return 0.0020;
+}
+function rtComGestora() {
+  var mes = ckMesAtualStr(), fat = 0, lanc = 0;
+  var listas = CK_EQUIPE.map(function(vn) { return RT.ped[vn] || []; }).concat([RT.pedGest || []]);
+  listas.forEach(function(lista) {
+    lista.forEach(function(p) {
+      if (!p || p.excluido || !p.data || String(p.data).slice(0, 7) !== mes || p.status === 'cancelado') return;
+      var v = mmValorPedido(p) || Number(p.vTotal || 0); lanc += v; if (p.status === 'faturado') fat += v;
+    });
+  });
+  var metaEl = document.getElementById('gest-meta');
+  var meta = metaEl && metaEl.value ? (parseFloat(metaEl.value.replace(/\./g, '').replace(',', '.')) || META_EQUIPE) : META_EQUIPE;
+  var pct = meta > 0 ? fat / meta * 100 : 0, taxa = rtTaxaGestora(pct);
+  var ok = fat * taxa, tot = lanc * rtTaxaGestora(meta > 0 ? lanc / meta * 100 : 0);
+  return { ok: ok, prev: Math.max(0, tot - ok), fat: fat, lanc: lanc, meta: meta, pct: pct, taxa: taxa };
+}
+function rtSouGestora() { return !!(currentUser && vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora'); }
 function comRS(v) { return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function comCardHtml(vn, eu) {
   var c = comCalc(vn), pctLig = Math.min(100, Math.round(c.lig / c.metaLig * 100));
@@ -16526,8 +16555,20 @@ function rtFaixaGanhos(calcs, foco) {
     prem += r2.total; com += c2.ok; prevCom += c2.prev; prevPrem += r2.pend; nPed += c2.nPrev;
     r2.itens.forEach(function(it) { if (it.pend) partes[it.rot] = (partes[it.rot] || 0) + it.pend; });
   });
-  // Visão da equipe (gestão): premiações não somam, só a comissão da equipe
-  if (!foco) { prem = 0; prevPrem = 0; partes = {}; tit = 'COMISSÃO DA EQUIPE'; }
+  // Visão da equipe: mostra a comissão DA GESTORA (não a soma dos vendedores); para os demais, nada de valores
+  if (!foco) {
+    if (!rtSouGestora()) return '';
+    var g = rtComGestora();
+    prem = 0; prevPrem = 0; partes = {}; com = g.ok; prevCom = g.prev; tit = 'MINHA COMISSÃO (GESTÃO)';
+    var dicaG = 'Faturado da equipe no mês: ' + comRS(g.fat) + ' · ' + Math.round(g.pct) + '% da meta de ' + comRS(g.meta) + ' · taxa ' + (g.taxa * 100).toFixed(2) + '%' +
+      '\nPrevisto: se os ' + comRS(Math.max(0, g.lanc - g.fat)) + ' lançados e ainda não faturados forem faturados';
+    return '<div class="rt-faixa-ganhos" title="' + rtEsc(dicaG) + '">' +
+      '<span class="rt-fg-moeda">$</span>' +
+      '<div class="rt-fg-bloco"><div class="rt-fg-rot">' + tit + '</div><div class="rt-fg-total">' + comRS(g.ok) + '</div></div>' +
+      '<div class="rt-fg-bloco"><div class="rt-fg-rot">📊 FATURADO DA EQUIPE</div><div class="rt-fg-val">' + comRS(g.fat) + '</div><div class="rt-fg-mini">' + Math.round(g.pct) + '% da meta · taxa ' + (g.taxa * 100).toFixed(2).replace('.', ',') + '%</div></div>' +
+      '<div class="rt-fg-bloco"><div class="rt-fg-rot">⏳ PREVISTO</div><div class="rt-fg-val rt-fg-prev">+' + comRS(g.prev) + '</div><div class="rt-fg-mini">comissão a faturar</div></div>' +
+      '</div>';
+  }
   prev = prevCom + prevPrem;
   var dica = 'Previsto = comissão de ' + nPed + ' pedido(s) do mês ainda não conciliado(s): ' + comRS(prevCom) + ' (taxa cheia)' +
     Object.keys(partes).map(function(k) { return '\n+ ' + k + ' a conciliar: ' + comRS(partes[k]); }).join('');
@@ -16551,9 +16592,16 @@ function rtPlacaPremios(calcs, foco) {
   } else {
     var tp = 0, tc = 0, tpend = 0, top = null;
     calcs.forEach(function(x) { var r2 = premCalc(x.vn), c2 = comCalc(x.vn), g = r2.total + c2.ok; tp += r2.total; tc += c2.ok; tpend += r2.pend + c2.prev; if (!top || g > top.g) top = { vn: x.vn, g: g }; });
-    tit = 'GANHOS DA EQUIPE'; val = comRS(tp + tc);
-    l1 = '🏆 Prêmios ' + premRS(tp) + '   💼 Comissão ' + comRS(tc);
-    l2 = top && top.g > 0 ? 'Líder: ' + rtNome(top.vn).split(' ')[0] + ' ' + comRS(top.g) + (tpend ? ' · +' + comRS(tpend) + ' previstos' : '') : (tpend ? '+' + comRS(tpend) + ' previstos (a conciliar)' : 'conciliou, contou!');
+    if (rtSouGestora()) {
+      var gg = rtComGestora();
+      tit = 'MINHA COMISSÃO (GESTÃO)'; val = comRS(gg.ok);
+      l1 = '📊 Faturado da equipe ' + comRS(gg.fat) + ' · ' + Math.round(gg.pct) + '%';
+      l2 = gg.prev ? '+' + comRS(gg.prev) + ' previstos (a faturar)' : 'tudo faturado';
+    } else {
+      tit = 'PRÊMIOS DA EQUIPE'; val = premRS(tp);
+      l1 = top && top.g > 0 ? 'Líder: ' + rtNome(top.vn).split(' ')[0] : 'Bora conciliar!';
+      l2 = 'clique num vendedor para ver o detalhe';
+    }
   }
   var x = 22, y = 18, w = 340, h = 104;
   return '<g class="rt-placa-prem" style="cursor:pointer" onclick="var e=document.querySelector(\'#tab-rota .rt-prem\'); if(e) e.scrollIntoView({behavior:\'smooth\',block:\'center\'});">' +
@@ -16938,8 +16986,11 @@ function rtCopiarMetas(vn, origem) {
 function rtPainelEquipe(calcs) {
   var ord = calcs.slice().sort(function(a, b) { return b.fase - a.fase || b.basePct - a.basePct || b.estrelas - a.estrelas; });
   var pr = calcs.map(function(c) { var r = premCalc(c.vn), cm = comCalc(c.vn); return { vn: c.vn, t: r.total, p: r.pend + cm.prev, c: cm.ok, g: r.total + cm.ok }; }).sort(function(a, b) { return b.g - a.g || b.p - a.p; });
-  var premHtml = '<div class="rt-card rt-prem"><div class="rt-pix">💼 COMISSÃO DA EQUIPE</div><div class="rt-prem-total" style="color:color-mix(in srgb, #185FA5 var(--tm), #fff)">' + comRS(pr.reduce(function(a, x) { return a + x.c; }, 0)) + '</div>' +
-    '<div class="rt-sub">Comissão garantida (conciliada). Prêmios aparecem por vendedor e não somam no total da equipe · clique num vendedor para ver o detalhe</div><table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Prêmios</th><th>Comissão</th></tr></thead><tbody>' +
+  var gH = rtSouGestora() ? rtComGestora() : null;
+  var premHtml = '<div class="rt-card rt-prem"><div class="rt-pix">💼 ' + (gH ? 'MINHA COMISSÃO (GESTÃO)' : 'GANHOS POR VENDEDOR') + '</div>' +
+    (gH ? '<div class="rt-prem-total" style="color:color-mix(in srgb, #185FA5 var(--tm), #fff)">' + comRS(gH.ok) + '</div>' +
+      '<div class="rt-sub">Sobre o faturado da equipe no mês: <b>' + comRS(gH.fat) + '</b> · ' + Math.round(gH.pct) + '% da sua meta · taxa ' + (gH.taxa * 100).toFixed(2).replace('.', ',') + '%' + (gH.prev ? ' · <b>+' + comRS(gH.prev) + '</b> previstos a faturar' : '') + '</div>' : '') +
+    '<div class="rt-sub">Abaixo, a comissão e os prêmios de cada vendedor (garantidos/conciliados) · clique num vendedor para ver o detalhe</div><table class="rt-tab"><thead><tr><th></th><th>Vendedor</th><th>Prêmios</th><th>Comissão</th></tr></thead><tbody>' +
     pr.map(function(x, i) { return '<tr onclick="rtVer(\'' + x.vn + '\')"><td>' + rtAvatarSvg(RT.avatares[x.vn], 28) + '</td><td class="rt-forte">' + (i < 3 && x.g ? ['🥇', '🥈', '🥉'][i] + ' ' : '') + rtEsc(rtNome(x.vn)) + (x.p ? '<div class="rt-cinza" style="font-size:11.5px;font-weight:400;white-space:nowrap">+' + premRS(Math.round(x.p)) + ' previsto</div>' : '') + '</td><td class="rt-forte" style="white-space:nowrap">' + premRS(x.t) + '</td><td class="rt-forte" style="color:color-mix(in srgb, #185FA5 var(--tm), #fff);white-space:nowrap">' + premRS(Math.round(x.c)) + '</td></tr>'; }).join('') +
     '</tbody></table></div>';
   return premHtml + rtChecksEquipe() + '<div class="rt-card"><div class="rt-pix">EQUIPE NA ROTA</div><div class="rt-sub">Fase pelo valor <b>entregue</b>, estrelas das outras metas e a mais atrasada.</div>' +
