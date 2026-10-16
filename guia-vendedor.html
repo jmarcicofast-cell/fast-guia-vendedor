@@ -24511,7 +24511,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   }
   function fixEl(el){
     var st = el.getAttribute && el.getAttribute('style');
-    if (!st || el.closest && el.closest('svg, canvas, #rota-root, .tema-pop, [class^="msn-"], [class*=" msn-"]')) return;
+    if (!st || el.closest && el.closest('svg, canvas, #rota-root, .tema-pop, .ag-wrap, .ag-confete, .ag-volta, [class^="msn-"], [class*=" msn-"]')) return;
     var n = convCss(st); if (n !== st) el.setAttribute('style', n);
   }
   function fixArvore(root){
@@ -24655,6 +24655,520 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   embrulhar('entrarComoUsuario', sbMontar);
   embrulhar('navAplicarOrdemSalva', function(){ if (document.body.classList.contains('sb-on')) sbMontar(); });
   embrulhar('doLogout', function(){ document.body.classList.remove('sb-on', 'sb-aberto'); });
+})();
+</script>
+<!-- ══ ÁGUIA FAST — mascote que comemora as conquistas do vendedor ══ -->
+<style id="aguia-css">
+.ag-wrap { position: fixed; right: 18px; bottom: 14px; z-index: 99980; display: flex; align-items: flex-end; gap: 10px; pointer-events: none; font-family: var(--font, system-ui, sans-serif); }
+.ag-wrap.ag-off { display: none; }
+.ag-bird { width: 92px; height: 100px; pointer-events: auto; cursor: pointer; position: relative; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+.ag-bird svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 10px rgba(0,0,0,.25)); }
+.ag-bird:focus-visible { outline: 2px solid var(--acc); outline-offset: 4px; border-radius: 12px; }
+.ag-sombra { position: absolute; left: 22%; right: 22%; bottom: 2px; height: 8px; border-radius: 50%; background: rgba(0,0,0,.18); filter: blur(2px); }
+.ag-mini .ag-bird { width: 58px; height: 64px; }
+
+/* partes */
+.ag-svg .corpo { transform-origin: 60px 120px; }
+.ag-svg .cabeca { transform-origin: 60px 64px; }
+.ag-svg .asaE { transform-origin: 38px 72px; }
+.ag-svg .asaD { transform-origin: 82px 72px; }
+.ag-svg .olhos { transform-origin: 60px 42px; }
+.ag-svg .oculos, .ag-svg .chapeu { opacity: 0; transition: opacity .25s; }
+.ag-wrap.ag-festa .ag-svg .chapeu, .ag-wrap.ag-top .ag-svg .oculos { opacity: 1; }
+
+/* parado: respira e pisca */
+.ag-svg .corpo { animation: agRespira 2.6s ease-in-out infinite; }
+.ag-svg .olhos { animation: agPisca 5.2s infinite; }
+@keyframes agRespira { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+@keyframes agPisca { 0%, 46%, 50%, 100% { transform: scaleY(1); } 48% { transform: scaleY(.1); } }
+
+/* acenar */
+.ag-wrap.ag-acena .asaD { animation: agAcena .45s ease-in-out 5 alternate; }
+@keyframes agAcena { from { transform: rotate(-10deg); } to { transform: rotate(-75deg); } }
+.ag-wrap.ag-acena .cabeca { animation: agInclina 1.2s ease-in-out 2 alternate; }
+@keyframes agInclina { from { transform: rotate(0); } to { transform: rotate(8deg); } }
+
+/* dancinha */
+.ag-wrap.ag-danca .corpo { animation: agDanca .5s ease-in-out 8 alternate; }
+.ag-wrap.ag-danca .asaE { animation: agAsaE .25s ease-in-out 16 alternate; }
+.ag-wrap.ag-danca .asaD { animation: agAsaD .25s ease-in-out 16 alternate; }
+@keyframes agDanca { 0% { transform: translateY(0) rotate(-9deg); } 50% { transform: translateY(-12px) rotate(0deg); } 100% { transform: translateY(0) rotate(9deg); } }
+@keyframes agAsaE { from { transform: rotate(10deg); } to { transform: rotate(45deg); } }
+@keyframes agAsaD { from { transform: rotate(-10deg); } to { transform: rotate(-45deg); } }
+
+/* comemoração grande: pula, bate as asas, gira */
+.ag-wrap.ag-voa .corpo { animation: agVoa 1.6s cubic-bezier(.3,.7,.4,1) 3; }
+.ag-wrap.ag-voa .asaE { animation: agAsaE .14s linear 34 alternate; }
+.ag-wrap.ag-voa .asaD { animation: agAsaD .14s linear 34 alternate; }
+@keyframes agVoa { 0% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-34px) rotate(-6deg); } 55% { transform: translateY(-38px) rotate(360deg); } 80% { transform: translateY(-6px) rotate(360deg); } 100% { transform: translateY(0) rotate(360deg); } }
+
+/* aponta (lembrete) */
+.ag-wrap.ag-aponta .asaE { animation: agAponta .6s ease-out forwards; }
+.ag-wrap.ag-aponta .cabeca { animation: agOlhaLado .6s ease-out forwards; }
+@keyframes agAponta { to { transform: rotate(78deg) translateY(-4px); } }
+@keyframes agOlhaLado { to { transform: rotate(-10deg) translateX(-2px); } }
+
+/* positivo (joinha) */
+.ag-wrap.ag-joia .corpo { animation: agPulinho .35s ease-out 2 alternate; }
+.ag-wrap.ag-joia .asaD { animation: agJoia .4s ease-out forwards; }
+@keyframes agPulinho { to { transform: translateY(-8px); } }
+@keyframes agJoia { to { transform: rotate(-110deg); } }
+
+/* balão (notificação) */
+.ag-balao { pointer-events: auto; position: relative; max-width: 300px; min-width: 220px; background: var(--surface, #fff); color: var(--txt, #111); border: 1px solid var(--line, #e5e5e5); border-radius: 16px; padding: 12px 14px 12px; box-shadow: 0 14px 40px rgba(0,0,0,.28); margin-bottom: 46px; transform-origin: 100% 100%; animation: agBalaoIn .35s cubic-bezier(.2,1.4,.4,1); }
+.ag-balao::after { content: ""; position: absolute; right: -8px; bottom: 18px; width: 14px; height: 14px; background: inherit; border-right: 1px solid var(--line, #e5e5e5); border-top: 1px solid var(--line, #e5e5e5); transform: rotate(45deg); }
+.ag-balao.sai { animation: agBalaoOut .25s ease-in forwards; }
+@keyframes agBalaoIn { from { opacity: 0; transform: scale(.6) translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes agBalaoOut { to { opacity: 0; transform: scale(.85) translateY(8px); } }
+.ag-balao .t { font-weight: 800; font-size: 14px; line-height: 1.25; margin: 0 18px 3px 0; }
+.ag-balao .x { font-size: 12.8px; line-height: 1.45; color: var(--txt-2, #444); }
+.ag-balao .x b { color: var(--txt, #111); }
+.ag-balao .fechar { position: absolute; top: 6px; right: 8px; border: none; background: none; color: var(--muted, #888); font-size: 15px; cursor: pointer; line-height: 1; padding: 2px; }
+.ag-balao .acoes { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.ag-balao .acoes button { border: 1px solid var(--line, #ddd); background: var(--surface-2, #f6f6f6); color: var(--txt, #111); border-radius: 9px; padding: 6px 10px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.ag-balao .acoes button.pri { background: var(--acc, #C41E1E); border-color: var(--acc, #C41E1E); color: #fff; }
+.ag-balao .barra { height: 6px; border-radius: 6px; background: var(--surface-3, #eee); margin-top: 9px; overflow: hidden; }
+.ag-balao .barra i { display: block; height: 100%; border-radius: 6px; background: var(--acc, #C41E1E); transition: width .8s ease; }
+.ag-balao.grande { border: 2px solid var(--acc, #C41E1E); }
+.ag-balao .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.ag-balao .kpis div { background: var(--surface-2, #f6f6f6); border-radius: 10px; padding: 7px 9px; font-size: 11px; color: var(--muted, #888); }
+.ag-balao .kpis b { display: block; font-size: 15px; color: var(--txt, #111); }
+.ag-balao .cfg { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line, #eee); font-size: 11.5px; }
+.ag-balao .cfg button { border: none; background: none; color: var(--muted, #888); cursor: pointer; padding: 0; font-size: 11.5px; text-decoration: underline; font-family: inherit; }
+
+/* aba para trazer a águia de volta */
+.ag-volta { position: fixed; right: 0; bottom: 120px; z-index: 99979; display: none; border: 1px solid var(--line, #ddd); border-right: none; border-radius: 12px 0 0 12px; background: var(--surface, #fff); padding: 8px 8px 6px 10px; cursor: pointer; font-size: 22px; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+.ag-volta.on { display: block; }
+
+/* confete */
+.ag-confete { position: fixed; inset: 0; pointer-events: none; z-index: 99985; overflow: hidden; }
+.ag-confete i { position: absolute; top: -14px; width: 9px; height: 14px; border-radius: 2px; opacity: .95; animation: agCai linear forwards; }
+@keyframes agCai { to { transform: translate3d(var(--dx), 105vh, 0) rotate(var(--r)); } }
+
+@media (max-width: 900px) {
+  .ag-wrap { right: 10px; bottom: 10px; }
+  .ag-bird { width: 64px; height: 70px; }
+  .ag-balao { max-width: calc(100vw - 100px); min-width: 0; margin-bottom: 34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ag-svg *, .ag-balao, .ag-confete i { animation: none !important; }
+}
+</style>
+
+<div class="ag-wrap ag-off" id="ag-wrap" aria-live="polite">
+  <div class="ag-bird" id="ag-bird" role="button" tabindex="0" aria-label="Águia FAST — ver meu resumo">
+    <div class="ag-sombra"></div>
+    <svg class="ag-svg" viewBox="0 0 120 130" aria-hidden="true">
+      <g class="corpo">
+        <!-- cauda -->
+        <path d="M46 108 L40 126 L52 118 L60 128 L68 118 L80 126 L74 108 Z" fill="#5A1A10"/>
+        <!-- asa esquerda (de quem olha) -->
+        <g class="asaE">
+          <path d="M40 66 C22 70 14 88 18 106 C22 100 26 99 28 104 C30 97 34 97 36 101 C38 94 42 92 44 96 Z" fill="#9E1717"/>
+          <path d="M40 66 C30 72 26 84 28 96" stroke="#7A0F0F" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+        <!-- asa direita -->
+        <g class="asaD">
+          <path d="M80 66 C98 70 106 88 102 106 C98 100 94 99 92 104 C90 97 86 97 84 101 C82 94 78 92 76 96 Z" fill="#9E1717"/>
+          <path d="M80 66 C90 72 94 84 92 96" stroke="#7A0F0F" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+        <!-- corpo -->
+        <ellipse cx="60" cy="88" rx="27" ry="29" fill="#C41E1E"/>
+        <ellipse cx="60" cy="94" rx="17" ry="20" fill="#F4E3D0"/>
+        <!-- losango FAST no peito -->
+        <polygon points="60,82 69,91 60,100 51,91" fill="#C41E1E"/>
+        <path d="M56.5 91 L59.5 87 L62.5 91 L59.5 95 Z" fill="#fff"/>
+        <!-- pés -->
+        <path d="M48 114 l-4 6 M48 114 l0 7 M48 114 l4 6" stroke="#F2A93B" stroke-width="3" stroke-linecap="round"/>
+        <path d="M72 114 l-4 6 M72 114 l0 7 M72 114 l4 6" stroke="#F2A93B" stroke-width="3" stroke-linecap="round"/>
+        <!-- cabeça -->
+        <g class="cabeca">
+          <path d="M60 14 C78 14 86 28 86 42 C86 58 75 66 60 66 C45 66 34 58 34 42 C34 28 42 14 60 14 Z" fill="#FFFFFF"/>
+          <path d="M44 20 C48 12 54 10 58 14 C58 8 66 6 68 13 C72 9 78 12 78 19 C70 16 52 15 44 20 Z" fill="#FFFFFF"/>
+          <path d="M36 50 C40 60 50 66 60 66 C70 66 80 60 84 50 C78 58 70 61 60 61 C50 61 42 58 36 50 Z" fill="#E8E1D8"/>
+          <!-- sobrancelhas -->
+          <path d="M43 32 Q48.5 27.5 55 30.5" stroke="#5A1A10" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+          <path d="M77 32 Q71.5 27.5 65 30.5" stroke="#5A1A10" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+          <g class="olhos">
+            <ellipse cx="50" cy="42" rx="6" ry="7" fill="#1C1C1C"/>
+            <ellipse cx="70" cy="42" rx="6" ry="7" fill="#1C1C1C"/>
+            <circle cx="52" cy="39.5" r="2.2" fill="#fff"/>
+            <circle cx="72" cy="39.5" r="2.2" fill="#fff"/>
+          </g>
+          <ellipse cx="42" cy="51" rx="4.5" ry="2.6" fill="#F6A6A6" opacity=".55"/><ellipse cx="78" cy="51" rx="4.5" ry="2.6" fill="#F6A6A6" opacity=".55"/>
+          <!-- bico -->
+          <path d="M51 49 C54 45 66 45 69 49 C69 55 65 60 60 64 C58 60 53 56 51 49 Z" fill="#F7B733"/>
+          <path d="M60 64 C62 61 63 59 63 57 C61 58 59 58 57 57" fill="#E0951E"/>
+          <path d="M53 51 C57 53 63 53 67 51" stroke="#C97D12" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <!-- óculos escuros (meta batida) -->
+          <g class="oculos">
+            <path d="M40 37 h20 v4 c0 6 -4 9 -9 9 c-6 0 -11 -3 -11 -9 Z" fill="#111"/>
+            <path d="M60 37 h20 v4 c0 6 -5 9 -11 9 c-5 0 -9 -3 -9 -9 Z" fill="#111"/>
+            <path d="M40 37 h40" stroke="#111" stroke-width="2.5"/>
+            <path d="M44 40 l5 0" stroke="#fff" stroke-width="1.6" opacity=".6" stroke-linecap="round"/>
+            <path d="M64 40 l5 0" stroke="#fff" stroke-width="1.6" opacity=".6" stroke-linecap="round"/>
+          </g>
+          <!-- chapéu de festa -->
+          <g class="chapeu">
+            <path d="M50 18 L64 -8 L76 16 Z" fill="#FFD23F"/>
+            <path d="M53 12 L72 8 M57 4 L69 1" stroke="#C41E1E" stroke-width="3"/>
+            <circle cx="64" cy="-9" r="4" fill="#C41E1E"/>
+          </g>
+        </g>
+      </g>
+    </svg>
+  </div>
+</div>
+<button type="button" class="ag-volta" id="ag-volta" title="Chamar a Águia FAST">🦅</button>
+
+<script>
+(function(){
+  'use strict';
+  var EQUIPE = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
+  var wrap = document.getElementById('ag-wrap'), bird = document.getElementById('ag-bird'), volta = document.getElementById('ag-volta');
+  var AG = { user: null, base: null, fila: [], ocupado: false, timer: null, animTimer: null, ultimoBalao: null, saudou: false };
+
+  /* ── preferências (neste aparelho) ── */
+  function VD(){ try { return (typeof vendedores !== 'undefined' && vendedores) || {}; } catch(e) { return {}; } }
+  function lsGet(k){ try { return localStorage.getItem(k); } catch(e) { return null; } }
+  function lsSet(k, v){ try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch(e) {} }
+  function escondida(){ return lsGet('fgv_ag_oculta') === '1'; }
+  function silencio(){ return lsGet('fgv_ag_som') !== '1'; }
+
+  /* ── utilitários ── */
+  function hojeStr(d){ d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  function segundaStr(){ var d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return hojeStr(d); }
+  function brNum(x){ return parseFloat(String(x || '0').replace('R$ ', '').replace(/\./g, '').replace(',', '.')) || 0; }
+  function rs(n){ return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 }); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+  function nomeDe(vn){ return (VD()[vn] && vendedores[vn].nome) || vn; }
+  function primeiroNome(vn){ var n = String(nomeDe(vn)).split(' ')[0]; return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase(); }
+  function valorPed(p){
+    if (p.itens && p.itens.length) return p.itens.reduce(function(s, it){ return s + (Number(it.qtd) || 0) * (Number(it.vUnit) || 0); }, 0);
+    return Number(p.vTotal || 0);
+  }
+  function ehGestora(vn){ var v = VD()[vn]; return !!(v && (v.tipo === 'gestora' || v.tipo === 'administrativo')); }
+  function jaFoi(chave){ return lsGet('fgv_ag_' + AG.user + '_' + chave) === '1'; }
+  function marca(chave){ lsSet('fgv_ag_' + AG.user + '_' + chave, '1'); }
+
+  /* ── números do vendedor (vêm do Ranking: pedidos e ligações de todos) ── */
+  function numeros(vn){
+    var R = window.RANK || { ped: {}, lig: {} };
+    var peds = (R.ped[vn] || []).filter(function(p){ return p && p.data && p.status !== 'cancelado' && !p.excluido; });
+    var hoje = hojeStr(), seg = segundaStr(), mes = hoje.slice(0, 7);
+    var n = { pedHoje: 0, vHoje: 0, vSem: 0, vMes: 0, pedTotal: peds.length, ligHoje: 0 };
+    peds.forEach(function(p){
+      var v = valorPed(p);
+      if (p.data === hoje) { n.pedHoje++; n.vHoje += v; }
+      if (p.data >= seg && p.data <= hoje) n.vSem += v;
+      if (p.data.slice(0, 7) === mes) n.vMes += v;
+    });
+    n.ligHoje = Number(((R.lig || {})[vn] || {})[hoje] || 0);
+    var v = (VD()[vn]) || {};
+    n.metaMes = brNum(v.meta); n.metaSem = brNum(v.metaSemana);
+    n.pctMes = n.metaMes > 0 ? n.vMes / n.metaMes * 100 : 0;
+    n.pctSem = n.metaSem > 0 ? n.vSem / n.metaSem * 100 : 0;
+    var g = (vn === AG.user && window._minhaGestaoTempo) || null;
+    n.metaLig = g ? ((g.ligManha != null ? +g.ligManha : 15) + (g.ligTarde != null ? +g.ligTarde : 35)) : 50;
+    return n;
+  }
+  function posicaoMes(vn){
+    var lista = EQUIPE.filter(function(k){ return VD()[k]; }).map(function(k){ return { vn: k, p: numeros(k).pctMes }; });
+    lista.sort(function(a, b){ return b.p - a.p; });
+    for (var i = 0; i < lista.length; i++) if (lista[i].vn === vn) return { pos: i + 1, lista: lista };
+    return { pos: 0, lista: lista };
+  }
+  function liderDoDia(){
+    var best = null, bv = 0;
+    EQUIPE.forEach(function(k){ if (!(VD()[k])) return; var v = numeros(k).vHoje; if (v > bv) { bv = v; best = k; } });
+    return best;
+  }
+
+  /* ── animações ── */
+  var ANIMS = ['ag-acena', 'ag-danca', 'ag-voa', 'ag-aponta', 'ag-joia', 'ag-festa', 'ag-top'];
+  function anima(cls, ms, extras){
+    clearTimeout(AG.animTimer);
+    ANIMS.forEach(function(c){ wrap.classList.remove(c); });
+    void wrap.offsetWidth;
+    if (cls) wrap.classList.add(cls);
+    (extras || []).forEach(function(c){ wrap.classList.add(c); });
+    AG.animTimer = setTimeout(function(){ ANIMS.forEach(function(c){ wrap.classList.remove(c); }); }, ms || 4000);
+  }
+  function confete(qtd){
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var box = document.createElement('div'); box.className = 'ag-confete';
+    var cores = ['#C41E1E', '#FFD23F', '#FFFFFF', '#F7B733', '#E63946', '#1C1C1C'];
+    for (var i = 0; i < (qtd || 90); i++) {
+      var c = document.createElement('i');
+      c.style.left = (Math.random() * 100) + 'vw';
+      c.style.background = cores[i % cores.length];
+      c.style.setProperty('--dx', ((Math.random() - .5) * 240) + 'px');
+      c.style.setProperty('--r', (Math.random() * 900 - 450) + 'deg');
+      c.style.animationDuration = (2.2 + Math.random() * 2) + 's';
+      c.style.animationDelay = (Math.random() * .6) + 's';
+      if (i % 3 === 0) { c.style.width = '7px'; c.style.height = '7px'; c.style.borderRadius = '50%'; }
+      box.appendChild(c);
+    }
+    document.body.appendChild(box);
+    setTimeout(function(){ box.remove(); }, 5200);
+  }
+  function som(tipo){
+    if (silencio()) return;
+    try {
+      var A = window.AudioContext || window.webkitAudioContext; if (!A) return;
+      var ctx = AG.ctx || (AG.ctx = new A());
+      var notas = tipo === 'grande' ? [523, 659, 784, 1047] : [659, 880];
+      notas.forEach(function(f, i){
+        var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + i * 0.11;
+        o.type = 'triangle'; o.frequency.value = f; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+        o.start(t); o.stop(t + 0.25);
+      });
+    } catch(e) {}
+  }
+
+  /* ── balão / fila de notificações ── */
+  function fecharBalao(){
+    var b = AG.ultimoBalao; AG.ultimoBalao = null;
+    clearTimeout(AG.timer);
+    if (b) { b.classList.add('sai'); setTimeout(function(){ b.remove(); proximo(); }, 240); }
+    else proximo();
+  }
+  function proximo(){
+    AG.ocupado = false;
+    if (AG.fila.length) setTimeout(mostrarDaFila, 500);
+  }
+  function mostrarDaFila(){
+    if (AG.ocupado || !AG.fila.length) return;
+    if (escondida() && !AG.fila[0].forcar) {
+      // águia escondida: só a aba pisca; o evento fica guardado para quando ela voltar
+      volta.textContent = '🦅' + (AG.fila.length > 1 ? ' ' + AG.fila.length : '');
+      return;
+    }
+    var ev = AG.fila.shift(); AG.ocupado = true;
+    var b = document.createElement('div');
+    b.className = 'ag-balao' + (ev.grande ? ' grande' : '');
+    b.setAttribute('role', 'status');
+    b.innerHTML = '<button type="button" class="fechar" aria-label="Fechar">✕</button>' +
+      '<div class="t">' + ev.titulo + '</div><div class="x">' + (ev.texto || '') + '</div>' +
+      (ev.barra != null ? '<div class="barra"><i style="width:0%"></i></div>' : '') +
+      (ev.html || '') +
+      (ev.acoes && ev.acoes.length ? '<div class="acoes">' + ev.acoes.map(function(a, i){ return '<button type="button" data-i="' + i + '"' + (a.pri ? ' class="pri"' : '') + '>' + esc(a.rot) + '</button>'; }).join('') + '</div>' : '');
+    wrap.insertBefore(b, bird);
+    AG.ultimoBalao = b;
+    b.querySelector('.fechar').onclick = fecharBalao;
+    b.querySelectorAll('.acoes button').forEach(function(btn){
+      btn.onclick = function(){ var a = ev.acoes[+btn.dataset.i]; try { a.fn && a.fn(); } catch(e) {} if (!a.manter) fecharBalao(); };
+    });
+    if (ev.barra != null) setTimeout(function(){ var i = b.querySelector('.barra i'); if (i) i.style.width = Math.min(100, ev.barra) + '%'; }, 120);
+    if (ev.ligar) try { ev.ligar(b); } catch(e) {}
+    anima(ev.anim || 'ag-acena', ev.grande ? 5200 : 3500, ev.extras);
+    if (ev.confete) confete(ev.confete);
+    if (ev.som) som(ev.som);
+    b.addEventListener('mouseenter', function(){ clearTimeout(AG.timer); });
+    b.addEventListener('mouseleave', function(){ AG.timer = setTimeout(fecharBalao, 2500); });
+    AG.timer = setTimeout(fecharBalao, ev.dura || (ev.grande ? 11000 : 7000));
+  }
+  function avisar(ev){
+    AG.fila.push(ev);
+    if (AG.fila.length > 6) AG.fila.splice(1, AG.fila.length - 6);
+    if (!AG.ocupado) mostrarDaFila();
+  }
+  window.aguiaAvisar = avisar;
+  function irAba(id){ var b = document.querySelector('.nav-btn[data-nav-id="' + id + '"]'); if (b && typeof showTab === 'function') showTab(id, b); }
+
+  /* ── resumo ao clicar na águia ── */
+  function resumo(){
+    if (!AG.user) return;
+    if (AG.ultimoBalao) { fecharBalao(); return; }
+    var vn = AG.user, frase;
+    var cfg = '<div class="cfg"><button type="button" data-cfg="som">' + (silencio() ? '🔈 Ligar som' : '🔇 Desligar som') + '</button><button type="button" data-cfg="esconde">Esconder a águia</button></div>';
+    var ligar = function(b){
+      b.querySelectorAll('[data-cfg]').forEach(function(x){
+        x.onclick = function(){
+          if (x.dataset.cfg === 'som') { lsSet('fgv_ag_som', silencio() ? '1' : null); x.textContent = silencio() ? '🔈 Ligar som' : '🔇 Desligar som'; if (!silencio()) som('pequeno'); }
+          else { fecharBalao(); esconder(true); }
+        };
+      });
+    };
+    if (ehGestora(vn)) {
+      var tot = { v: 0, lig: 0, ped: 0 }, metaT = 0, vMes = 0;
+      EQUIPE.forEach(function(k){ if (!(VD()[k])) return; var n = numeros(k); tot.v += n.vHoje; tot.lig += n.ligHoje; tot.ped += n.pedHoje; metaT += n.metaMes; vMes += n.vMes; });
+      var lid = liderDoDia();
+      avisar({ forcar: true, titulo: 'Oi, ' + esc(primeiroNome(vn)) + '! Assim está a equipe hoje 🦅', anim: 'ag-acena', dura: 14000,
+        html: '<div class="kpis"><div>Vendido hoje<b>' + rs(tot.v) + '</b></div><div>Pedidos hoje<b>' + tot.ped + '</b></div><div>Ligações hoje<b>' + tot.lig + '</b></div><div>Mês da equipe<b>' + (metaT ? Math.round(vMes / metaT * 100) + '%' : rs(vMes)) + '</b></div></div>' +
+          (lid ? '<div class="x" style="margin-top:8px">🥇 Liderando hoje: <b>' + esc(nomeDe(lid)) + '</b></div>' : '') + cfg,
+        acoes: [{ rot: 'Ver ranking', pri: true, fn: function(){ irAba('reconhecimento'); } }], ligar: ligar });
+      return;
+    }
+    var n = numeros(vn), pos = posicaoMes(vn).pos;
+    var falta = Math.max(0, n.metaMes - n.vMes);
+    if (n.pctMes >= 100) frase = 'Meta do mês batida! Agora é recorde 🚀';
+    else if (n.ligHoje < n.metaLig) frase = 'Faltam <b>' + (n.metaLig - n.ligHoje) + ' ligações</b> pra meta de hoje. Bora!';
+    else frase = 'Ligações do dia em dia! Faltam <b>' + rs(falta) + '</b> pra meta do mês.';
+    avisar({ forcar: true, titulo: 'E aí, ' + esc(primeiroNome(vn)) + '! 🦅', texto: frase, anim: 'ag-acena', dura: 14000, barra: n.pctMes,
+      html: '<div class="kpis"><div>Vendido hoje<b>' + rs(n.vHoje) + '</b></div><div>Ligações hoje<b>' + n.ligHoje + ' / ' + n.metaLig + '</b></div><div>Mês<b>' + Math.round(n.pctMes) + '%</b></div><div>Ranking do mês<b>' + (pos ? pos + 'º' : '—') + '</b></div></div>' + cfg,
+      acoes: [{ rot: 'Lançar ligações', pri: true, fn: function(){ irAba('rota'); } }, { rot: 'Minhas metas', fn: function(){ irAba('minhasmetas'); } }], ligar: ligar });
+  }
+  bird.addEventListener('click', resumo);
+  bird.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); resumo(); } });
+
+  function esconder(sim){
+    lsSet('fgv_ag_oculta', sim ? '1' : null);
+    wrap.classList.toggle('ag-off', !!sim || !AG.user);
+    volta.classList.toggle('on', !!sim && !!AG.user);
+    if (!sim) { volta.textContent = '🦅'; if (AG.fila.length) setTimeout(mostrarDaFila, 300); }
+  }
+  volta.onclick = function(){ esconder(false); anima('ag-acena', 3000); };
+
+  /* ── regras: o que a águia comemora ── */
+  function avaliar(){
+    if (!AG.user || !window.RANK || !RANK.ped) return;
+    var vn = AG.user;
+    if (ehGestora(vn)) return avaliarGestora();
+    if (!RANK.ped[vn]) return;              // ainda carregando
+    var n = numeros(vn), hoje = hojeStr(), mes = hoje.slice(0, 7), sem = segundaStr();
+    var nome = esc(primeiroNome(vn));
+
+    if (!AG.base) {
+      AG.base = { pedTotal: n.pedTotal, ligHoje: n.ligHoje, pos: posicaoMes(vn).pos };
+      if (!AG.saudou) {
+        AG.saudou = true;
+        var h = new Date().getHours(), oi = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+        var falta = Math.max(0, n.metaMes - n.vMes);
+        avisar({ titulo: oi + ', ' + nome + '! 🦅', anim: 'ag-acena',
+          texto: n.metaMes ? 'Você está em <b>' + Math.round(n.pctMes) + '%</b> da meta do mês' + (falta ? ' — faltam <b>' + rs(falta) + '</b>.' : '. Meta batida! 🏆') : 'Bora fazer um dia daqueles!',
+          barra: n.metaMes ? n.pctMes : null });
+      }
+      return;
+    }
+
+    // 1) pedido novo lançado
+    if (n.pedTotal > AG.base.pedTotal) {
+      var novos = n.pedTotal - AG.base.pedTotal;
+      avisar({ titulo: novos > 1 ? novos + ' pedidos lançados! 💥' : 'Pedido lançado! 💥', anim: 'ag-danca', som: 'pequeno', confete: 30,
+        texto: 'Hoje você já vendeu <b>' + rs(n.vHoje) + '</b> em ' + n.pedHoje + ' pedido' + (n.pedHoje === 1 ? '' : 's') + '. Segue o ritmo, ' + nome + '!' });
+    }
+    // 2) ligações lançadas / meta do dia
+    if (n.ligHoje > AG.base.ligHoje) {
+      if (n.ligHoje >= n.metaLig && !jaFoi('lig_' + hoje)) {
+        marca('lig_' + hoje);
+        avisar({ titulo: 'Meta de ligações batida! 📞🔥', anim: 'ag-danca', som: 'pequeno', confete: 50, extras: ['ag-festa'],
+          texto: '<b>' + n.ligHoje + ' ligações</b> hoje — a meta era ' + n.metaLig + '. Isso é disciplina!' });
+      } else if (n.ligHoje < n.metaLig) {
+        avisar({ titulo: 'Ligações lançadas ✔️', anim: 'ag-joia', barra: n.ligHoje / n.metaLig * 100,
+          texto: '<b>' + n.ligHoje + '</b> de ' + n.metaLig + ' hoje. Faltam ' + (n.metaLig - n.ligHoje) + '!' });
+      }
+    }
+    // 3) meta da semana
+    if (n.metaSem > 0 && n.pctSem >= 100 && !jaFoi('sem_' + sem)) {
+      marca('sem_' + sem);
+      avisar({ titulo: 'Meta da semana batida! 🎯', anim: 'ag-danca', som: 'grande', confete: 80, extras: ['ag-festa'], grande: true,
+        texto: rs(n.vSem) + ' na semana. Que semana, ' + nome + '!' });
+    }
+    // 4) marcos da meta do mês
+    if (n.metaMes > 0) {
+      [[100, 'META DO MÊS BATIDA! 🏆', 'Você chegou lá, ' + nome + '! <b>' + rs(n.vMes) + '</b> no mês. A águia tá orgulhosa!', 'ag-voa', 160, ['ag-top', 'ag-festa']],
+       [75, '75% da meta do mês! 🔥', 'Falta só <b>' + rs(n.metaMes - n.vMes) + '</b>. Reta final!', 'ag-danca', 70, ['ag-festa']],
+       [50, 'Metade da meta! 💪', 'Já são <b>' + rs(n.vMes) + '</b>. A segunda metade é mais rápida!', 'ag-danca', 50, []],
+       [25, '25% da meta ✨', 'Começou bem! Bora pros 50%.', 'ag-joia', 0, []]].some(function(m){
+        if (n.pctMes >= m[0]) {
+          if (!jaFoi('mes' + m[0] + '_' + mes)) {
+            // marca todos os marcos menores também, pra não comemorar em sequência
+            [25, 50, 75, 100].forEach(function(x){ if (x <= m[0]) marca('mes' + x + '_' + mes); });
+            avisar({ titulo: m[1], texto: m[2], anim: m[3], confete: m[4], extras: m[5], grande: m[0] >= 75, som: m[0] >= 75 ? 'grande' : 'pequeno', barra: n.pctMes,
+              acoes: m[0] === 100 ? [{ rot: 'Ver ranking', pri: true, fn: function(){ irAba('reconhecimento'); } }] : null });
+          }
+          return true;
+        }
+        return false;
+      });
+    }
+    // 5) subiu no ranking do mês
+    var pr = posicaoMes(vn);
+    if (pr.pos && AG.base.pos && pr.pos < AG.base.pos && n.pctMes > 0) {
+      var passou = pr.lista[pr.pos] ? nomeDe(pr.lista[pr.pos].vn) : null;
+      avisar({ titulo: 'Subiu pro ' + pr.pos + 'º lugar! 📈', anim: pr.pos === 1 ? 'ag-voa' : 'ag-danca', confete: pr.pos === 1 ? 120 : 40, extras: pr.pos === 1 ? ['ag-top'] : [], grande: pr.pos <= 3, som: 'pequeno',
+        texto: (passou ? 'Você passou <b>' + esc(passou) + '</b> no ranking do mês. ' : '') + (pr.pos === 1 ? 'Lá no topo! 👑' : 'Bora buscar o ' + (pr.pos - 1) + 'º!'),
+        acoes: [{ rot: 'Ver ranking', pri: true, fn: function(){ irAba('reconhecimento'); } }] });
+    }
+    // 6) primeiro lugar do dia
+    if (n.vHoje > 0 && liderDoDia() === vn && !jaFoi('lider_' + hoje)) {
+      marca('lider_' + hoje);
+      avisar({ titulo: 'Você é o 1º do dia! 🥇', anim: 'ag-danca', extras: ['ag-top'], confete: 60, som: 'pequeno',
+        texto: '<b>' + rs(n.vHoje) + '</b> hoje — ninguém vendeu mais que você até agora.' });
+    }
+    AG.base = { pedTotal: n.pedTotal, ligHoje: n.ligHoje, pos: pr.pos };
+  }
+
+  // gestora: comemora as conquistas da equipe
+  function avaliarGestora(){
+    var hoje = hojeStr(), mes = hoje.slice(0, 7);
+    var carregado = EQUIPE.every(function(k){ return !(VD()[k]) || RANK.ped[k]; });
+    if (!carregado) return;
+    var agora = {};
+    EQUIPE.forEach(function(k){ if (VD()[k]) agora[k] = numeros(k); });
+    if (!AG.base) {
+      AG.base = { ped: {} };
+      Object.keys(agora).forEach(function(k){ AG.base.ped[k] = agora[k].pedTotal; });
+      if (!AG.saudou) {
+        AG.saudou = true;
+        var h = new Date().getHours(), oi = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+        avisar({ titulo: oi + ', ' + esc(primeiroNome(AG.user)) + '! 🦅', anim: 'ag-acena', texto: 'Vou te avisar quando a equipe bater metas. Clique em mim pra ver o resumo do dia.' });
+      }
+      return;
+    }
+    Object.keys(agora).forEach(function(k){
+      var n = agora[k];
+      if (n.pedTotal > (AG.base.ped[k] || 0)) {
+        var vlr = n.vHoje;
+        avisar({ titulo: esc(primeiroNome(k)) + ' lançou pedido 💥', anim: 'ag-joia', dura: 5000, texto: 'Já são <b>' + rs(vlr) + '</b> hoje.' });
+      }
+      AG.base.ped[k] = n.pedTotal;
+      if (n.metaMes > 0 && n.pctMes >= 100 && !jaFoi('eq100_' + k + '_' + mes)) {
+        marca('eq100_' + k + '_' + mes);
+        avisar({ titulo: esc(nomeDe(k)) + ' bateu a meta do mês! 🏆', anim: 'ag-voa', extras: ['ag-top'], confete: 120, grande: true, som: 'grande',
+          texto: '<b>' + rs(n.vMes) + '</b> de ' + rs(n.metaMes) + '. Vale um parabéns!',
+          acoes: [{ rot: 'Mandar parabéns', pri: true, fn: function(){ try { if (typeof msnAbrir === 'function' && window.MSN && MSN.eu) msnAbrir(msnConv(MSN.eu, k)); else if (typeof msnAlternarLista === 'function') msnAlternarLista(); } catch(e) {} } }] });
+      }
+    });
+  }
+
+  // lembrete: a Rota da Meta já abre o aviso das 12h/18h — a águia só aponta para ele (sem aviso repetido)
+  function lembrete(){
+    if (!AG.user || AG.ocupado) return;
+    if (document.querySelector('.rt-lembrete') && !AG.apontando) { AG.apontando = true; anima('ag-aponta', 6000); setTimeout(function(){ AG.apontando = false; }, 60000); }
+  }
+
+  var deb = null;
+  function agendar(){ clearTimeout(deb); deb = setTimeout(function(){ try { avaliar(); } catch(e) { console.warn('aguia', e); } }, 1200); }
+  window.aguiaAvaliar = agendar;
+
+  // passeios aleatórios quando a tela está parada (só animação, sem balão)
+  setInterval(function(){
+    if (!AG.user || AG.ocupado || document.hidden) return;
+    var r = Math.random();
+    if (r < .35) anima('ag-acena', 2600); else if (r < .5) anima('ag-joia', 1600);
+  }, 75000);
+  setInterval(function(){ try { lembrete(); } catch(e) {} }, 5000);
+
+  /* ── liga com o guia ── */
+  function embrulhar(nome, depois, antes){
+    var orig = window[nome]; if (typeof orig !== 'function') return;
+    window[nome] = function(){ if (antes) try { antes.apply(this, arguments); } catch(e) {} var r = orig.apply(this, arguments); try { depois && depois.apply(this, arguments); } catch(e) { console.warn('aguia', e); } return r; };
+  }
+  embrulhar('renderRanking', agendar);
+  embrulhar('entrarComoUsuario', function(user){
+    AG.user = user; AG.base = null; AG.saudou = false; AG.fila = [];
+    esconder(escondida());
+    agendar();
+  });
+  embrulhar('doLogout', function(){
+    AG.user = null; AG.base = null; AG.fila = [];
+    if (AG.ultimoBalao) { AG.ultimoBalao.remove(); AG.ultimoBalao = null; }
+    AG.ocupado = false;
+    wrap.classList.add('ag-off'); volta.classList.remove('on');
+  });
 })();
 </script>
 </body>
