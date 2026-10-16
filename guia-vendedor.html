@@ -24682,6 +24682,27 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 @keyframes agRespira { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
 @keyframes agPisca { 0%, 46%, 50%, 100% { transform: scaleY(1); } 48% { transform: scaleY(.1); } }
 
+/* dormindo: encolhida, asas fechadas, cabeça baixa e "Zzz" */
+.ag-svg .fechados { opacity: 0; }
+.ag-svg .asaE, .ag-svg .asaD, .ag-svg .cabeca { transition: transform .7s cubic-bezier(.4,0,.2,1); }
+.ag-wrap.ag-dorme .olhos { opacity: 0; animation: none; }
+.ag-wrap.ag-dorme .fechados { opacity: 1; }
+.ag-wrap.ag-dorme .corpo { animation: agSono 3.8s ease-in-out infinite; }
+.ag-wrap.ag-dorme .asaE { transform: translate(6px, 4px) rotate(-96deg) scale(.6); }
+.ag-wrap.ag-dorme .sobr { opacity: 0; }
+.ag-svg .sobr { transition: opacity .4s; }
+.ag-wrap.ag-dorme .asaD { transform: translate(-6px, 4px) rotate(96deg) scale(.6); }
+.ag-wrap.ag-dorme .cabeca { transform: rotate(14deg) translate(2px, 9px); }
+@keyframes agSono { 0%, 100% { transform: translateY(8px) scale(.95, .9); } 50% { transform: translateY(6px) scale(.97, .94); } }
+.ag-zzz { position: absolute; right: 2px; top: -6px; width: 34px; height: 44px; pointer-events: none; opacity: 0; transition: opacity .4s; font-family: 'Archivo', var(--font, system-ui), sans-serif; font-weight: 900; color: var(--muted, #888); }
+.ag-wrap.ag-dorme .ag-zzz { opacity: 1; }
+.ag-zzz span { position: absolute; left: 4px; bottom: 0; opacity: 0; animation: agZ 3s ease-out infinite; }
+.ag-zzz span:nth-child(1) { font-size: 11px; }
+.ag-zzz span:nth-child(2) { font-size: 14px; animation-delay: 1s; }
+.ag-zzz span:nth-child(3) { font-size: 18px; animation-delay: 2s; }
+@keyframes agZ { 0% { opacity: 0; transform: translate(0, 0) rotate(-10deg); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(18px, -38px) rotate(12deg); } }
+.ag-wrap:not(.ag-dorme) .ag-zzz span { animation-play-state: paused; }
+
 /* acenar */
 .ag-wrap.ag-acena .asaD { animation: agAcena .45s ease-in-out 5 alternate; }
 @keyframes agAcena { from { transform: rotate(0deg); } to { transform: rotate(-38deg); } }
@@ -24782,6 +24803,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 <div class="ag-wrap ag-off" id="ag-wrap" aria-live="polite">
   <div class="ag-bird" id="ag-bird" role="button" tabindex="0" aria-label="Águia FAST — ver meu resumo">
     <div class="ag-sombra"></div>
+    <div class="ag-zzz" aria-hidden="true"><span>z</span><span>z</span><span>Z</span></div>
     <svg class="ag-svg" viewBox="0 0 120 130" aria-hidden="true">
       <defs>
         <linearGradient id="agCorpo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A2C1A"/><stop offset="1" stop-color="#2A170C"/></linearGradient>
@@ -24831,9 +24853,13 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
             <circle cx="52.4" cy="40.6" r=".9" fill="#fff"/>
             <circle cx="69.4" cy="40.6" r=".9" fill="#fff"/>
           </g>
+          <g class="fechados">
+            <path d="M44 42.5 C47.5 45.5 53 45.5 56.5 42.5" stroke="#2A1A10" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <path d="M76 42.5 C72.5 45.5 67 45.5 63.5 42.5" stroke="#2A1A10" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          </g>
           <!-- sobrancelhas de quem veio pra ganhar -->
-          <path d="M39 34 L58 38.5 L57 41.5 L40 37.5 Z" fill="#2A1A10"/>
-          <path d="M81 34 L62 38.5 L63 41.5 L80 37.5 Z" fill="#2A1A10"/>
+          <g class="sobr"><path d="M39 34 L58 38.5 L57 41.5 L40 37.5 Z" fill="#2A1A10"/>
+          <path d="M81 34 L62 38.5 L63 41.5 L80 37.5 Z" fill="#2A1A10"/></g>
           <!-- bico em gancho -->
           <path d="M51 46 C55 42.5 66 42.5 70 46.5 C72.5 52 70 58.5 63.5 63 C63 59 62 56.5 60 56 C55.5 55.5 52 51.5 51 46 Z" fill="url(#agBico)"/>
           <path d="M63.5 63 C66 59 66.2 56.2 64.2 53.6 L61.6 57.8 Z" fill="#B87400"/>
@@ -24930,7 +24956,16 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 
   /* ── animações ── */
   var ANIMS = ['ag-acena', 'ag-danca', 'ag-voa', 'ag-aponta', 'ag-joia', 'ag-festa', 'ag-top'];
+  var SONO_MS = 25000;
+  function acordar(){ wrap.classList.remove('ag-dorme'); agendarSono(); }
+  function agendarSono(){
+    clearTimeout(AG.sonoTimer);
+    AG.sonoTimer = setTimeout(function(){ if (!AG.ocupado && !AG.ultimoBalao) wrap.classList.add('ag-dorme'); else agendarSono(); }, SONO_MS);
+  }
+  window.aguiaDormir = function(){ clearTimeout(AG.sonoTimer); wrap.classList.add('ag-dorme'); };
+  bird.addEventListener('mouseenter', function(){ if (wrap.classList.contains('ag-dorme')) { wrap.classList.remove('ag-dorme'); agendarSono(); } });
   function anima(cls, ms, extras){
+    wrap.classList.remove('ag-dorme'); agendarSono();
     clearTimeout(AG.animTimer);
     ANIMS.forEach(function(c){ wrap.classList.remove(c); });
     void wrap.offsetWidth;
@@ -25209,7 +25244,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 
   // passeios aleatórios quando a tela está parada (só animação, sem balão)
   setInterval(function(){
-    if (!AG.user || AG.ocupado || document.hidden) return;
+    if (!AG.user || AG.ocupado || document.hidden || wrap.classList.contains('ag-dorme')) return;
     var r = Math.random();
     if (r < .35) anima('ag-acena', 2600); else if (r < .5) anima('ag-joia', 1600);
   }, 75000);
