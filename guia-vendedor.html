@@ -8470,6 +8470,13 @@ function rankIntervalo(per) {
   else de = ate.slice(0, 8) + '01';
   return { de: de, ate: ate };
 }
+// Meta usada no Ranking (e na Águia): a que a gestora edita em Minhas Metas; se não houver, a do cadastro.
+function rankMetaPessoa(vn, per) {
+  var campo = per === 'semana' ? 'metaSemanalPorPessoa' : 'metaMensalPorPessoa';
+  try { if (typeof ckMetaPessoa === 'function') { var m = ckMetaPessoa(vn, campo); if (m > 0) return m; } } catch (e) {}
+  var v = (vendedores && vendedores[vn]) || {};
+  return parseFloat(String((per === 'semana' ? v.metaSemana : v.meta) || '0').replace('R$ ', '').replace(/\./g, '').replace(',', '.')) || 0;
+}
 function rankSet(campo, valor, btn) {
   RANK[campo] = valor;
   if (btn && btn.parentNode) btn.parentNode.querySelectorAll('.qf-btn').forEach(function(b) { b.classList.toggle('active', b === btn); });
@@ -8498,7 +8505,7 @@ function renderRanking(allPedidos, allLigacoes) {
     var total = peds.reduce(function(s,p){ return s+getValor(p); },0);
     var lig = 0, lm = RANK.lig[vn] || {};
     Object.keys(lm).forEach(function(d) { if (d >= iv.de && d <= iv.ate) lig += Number(lm[d]) || 0; });
-    var meta = per === 'mes' ? brNum(vendedores[vn].meta) : per === 'semana' ? brNum(vendedores[vn].metaSemana) : 0;
+    var meta = per === 'dia' ? 0 : rankMetaPessoa(vn, per);
     var pct = meta > 0 ? Math.round((total/meta)*100) : 0;
     return { vn: vn, nome: vendedores[vn].nome, total: total, meta: meta, pct: pct, cargas: peds.length, lig: lig };
   });
@@ -24935,7 +24942,8 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     });
     n.ligHoje = Number(((R.lig || {})[vn] || {})[hoje] || 0);
     var v = (VD()[vn]) || {};
-    n.metaMes = brNum(v.meta); n.metaSem = brNum(v.metaSemana);
+    n.metaMes = (typeof rankMetaPessoa === 'function') ? rankMetaPessoa(vn, 'mes') : brNum(v.meta);
+    n.metaSem = (typeof rankMetaPessoa === 'function') ? rankMetaPessoa(vn, 'semana') : brNum(v.metaSemana);
     n.pctMes = n.metaMes > 0 ? n.vMes / n.metaMes * 100 : 0;
     n.pctSem = n.metaSem > 0 ? n.vSem / n.metaSem * 100 : 0;
     var g = (vn === AG.user && window._minhaGestaoTempo) || null;
@@ -25256,6 +25264,8 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     window[nome] = function(){ if (antes) try { antes.apply(this, arguments); } catch(e) {} var r = orig.apply(this, arguments); try { depois && depois.apply(this, arguments); } catch(e) { console.warn('aguia', e); } return r; };
   }
   embrulhar('renderRanking', agendar);
+  // quando a gestora muda as metas em Minhas Metas, o Ranking se atualiza na hora
+  embrulhar('mmRenderTudo', function(){ try { if (window.RANK && RANK.ped) renderRanking(null, null); } catch(e) {} });
   embrulhar('entrarComoUsuario', function(user){
     AG.user = user; AG.base = null; AG.saudou = false; AG.fila = [];
     esconder(escondida());
