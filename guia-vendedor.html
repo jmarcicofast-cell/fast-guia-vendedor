@@ -1857,16 +1857,6 @@
       </div>
     </div>
 
-    <!-- PÓDIO DIÁRIO — VALOR + CARGAS -->
-    <div style="background:#fff;border:1.5px solid #E2E0D8;border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1.25rem;">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#7A4A00;margin-bottom:12px;">🏆 Pódio do Dia — <span id="podio-dia-data">hoje</span></div>
-      <div style="max-width:420px;">
-        <div id="podio-dia-valor" style="display:flex;flex-direction:column;gap:6px;">
-          <div style="font-size:12px;color:#aaa;">Carregando...</div>
-        </div>
-      </div>
-    </div>
-
     <!-- PLANILHA DE IMPORTAÇÃO EM MASSA -->
     <div id="planilha-import" style="display:none;background:#fff;border:1.5px solid #185FA5;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px;">
@@ -2826,8 +2816,21 @@
 
     <!-- PÓDIO -->
     <div style="margin-bottom:1.5rem;">
-      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">🏅 TOP 3 - TELEVENDAS</h2>
-      <p style="font-size:12px;color:#aaa;">Baseado no % de atingimento da meta do mês. Atualizado em tempo real.</p>
+      <h2 style="font-size:15px;font-weight:600;color:#1C1C1C;margin-bottom:4px;">🏅 Ranking — Televendas</h2>
+      <p id="rank-sub" style="font-size:12px;color:#aaa;">Este mês · % de atingimento da meta · atualizado em tempo real.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;align-items:center;">
+        <div id="rank-periodo" style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="qf-btn" onclick="rankSet('periodo','dia',this)">Hoje</button>
+          <button class="qf-btn" onclick="rankSet('periodo','semana',this)">Semana</button>
+          <button class="qf-btn active" onclick="rankSet('periodo','mes',this)">Mês</button>
+        </div>
+        <div id="rank-crit" style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="qf-btn active" id="rank-crit-pct" data-crit="pct" onclick="rankSet('crit','pct',this)">% da meta</button>
+          <button class="qf-btn" data-crit="valor" onclick="rankSet('crit','valor',this)">Vendido</button>
+          <button class="qf-btn" data-crit="cargas" onclick="rankSet('crit','cargas',this)">Cargas</button>
+          <button class="qf-btn" data-crit="lig" onclick="rankSet('crit','lig',this)">Ligações</button>
+        </div>
+      </div>
     </div>
 
     <!-- FOTOS DA EQUIPE (admin) -->
@@ -3170,8 +3173,8 @@
         <div id="ev-vendas-mes-body"></div>
       </div>
 
-      <!-- RANKING POR MÊS -->
-      <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
+      <!-- RANKING POR MÊS — agora só na aba Ranking -->
+      <div style="display:none;background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">🥇 Meu Lugar no Ranking — Por Mês</div>
         <div id="ev-ranking-mes-body"><div style="font-size:12.5px;color:#aaa;text-align:center;padding:1rem;">Carregando...</div></div>
       </div>
@@ -4439,7 +4442,8 @@
     <span class="ck-savestatus" id="ck-savestatus"></span>
   </div>
 
-  <div class="ck-panel">
+  <div class="ck-panel" style="font-size:13px;color:#666;">🏅 O ranking da equipe (dia, semana e mês) agora fica na aba <a href="#" onclick="showTab('reconhecimento',document.querySelector('[data-nav-id=reconhecimento]'));return false;" style="color:#C41E1E;font-weight:700;">Ranking</a>.</div>
+  <div class="ck-panel" style="display:none;">
     <h3 id="ck-rank-title">Ranking do dia</h3>
     <div class="ck-period" id="ck-period">
       <div class="ck-mode">
@@ -8385,7 +8389,7 @@ function listenFotosVendedores(){
     vendedorFotos = snap.val() || {};
     renderFotosAdminPreviews();
     if (typeof _rankingDadosGlobais !== 'undefined' && _rankingDadosGlobais.pedidos){
-      renderRanking(_rankingDadosGlobais.pedidos, {});
+      renderRanking(_rankingDadosGlobais.pedidos, null);
     }
   });
 }
@@ -8527,9 +8531,13 @@ function listenRanking() {
       allPedidos[vn] = snap.val() ? Object.values(snap.val()).filter(function(p){ return !p.excluido; }) : [];
       renderRanking(allPedidos, allLigacoes);
       renderPremiacoes(allPedidos);
-      renderPodioDia(allPedidos);
       _rankingDadosGlobais.pedidos = allPedidos;
-      if (typeof renderEvRankingMes === 'function') renderEvRankingMes();
+    });
+    dbRef('ligacoes/' + vn).on('value', function(snap) {
+      var dados = (snap && snap.val()) || {}, mapa = {};
+      Object.keys(dados).forEach(function(k) { var l = dados[k]; if (l && l.data) mapa[l.data] = (mapa[l.data] || 0) + (Number(l.qtd) || 0); });
+      allLigacoes[vn] = mapa;
+      renderRanking(allPedidos, allLigacoes);
     });
   });
 }
@@ -8580,8 +8588,31 @@ function renderPodioDiaBloco(elId, ordenado, campo) {
   }).join('');
 }
 
+// ══ RANKING ÚNICO — Hoje / Semana / Mês, por % da meta, vendido, cargas ou ligações.
+// Substitui o Pódio do Dia (Pedidos), o "Meu lugar no ranking" (Evolução) e o
+// ranking do Check-in. Ligações vêm da Rota da Meta (base 'ligacoes').
+var RANK = { periodo: 'mes', crit: 'pct', ped: {}, lig: {} };
+function rankDataStr(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function rankIntervalo(per) {
+  var hoje = new Date(), de, ate = rankDataStr(hoje);
+  if (per === 'dia') de = ate;
+  else if (per === 'semana') { var seg = new Date(hoje); seg.setDate(hoje.getDate() - ((hoje.getDay() + 6) % 7)); de = rankDataStr(seg); }
+  else de = ate.slice(0, 8) + '01';
+  return { de: de, ate: ate };
+}
+function rankSet(campo, valor, btn) {
+  RANK[campo] = valor;
+  if (btn && btn.parentNode) btn.parentNode.querySelectorAll('.qf-btn').forEach(function(b) { b.classList.toggle('active', b === btn); });
+  renderRanking(RANK.ped, RANK.lig);
+}
 function renderRanking(allPedidos, allLigacoes) {
-  var mesAtual = new Date().toISOString().slice(0,7);
+  RANK.ped = allPedidos || RANK.ped; RANK.lig = allLigacoes || RANK.lig;
+  var per = RANK.periodo, iv = rankIntervalo(per);
+  var crit = RANK.crit;
+  if (crit === 'pct' && per === 'dia') crit = 'valor';   // não existe meta diária por vendedor aqui
+  var critBtnPct = document.getElementById('rank-crit-pct');
+  if (critBtnPct) critBtnPct.style.display = per === 'dia' ? 'none' : '';
+  if (RANK.crit === 'pct' && per === 'dia') document.querySelectorAll('#rank-crit .qf-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.crit === 'valor'); });
 
   function getValor(p) {
     if (p.itens && p.itens.length > 0) {
@@ -8589,41 +8620,49 @@ function renderRanking(allPedidos, allLigacoes) {
     }
     return Number(p.vTotal||0);
   }
+  function brNum(x) { return parseFloat(String(x||'0').replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0; }
+  var fmt = function(n) { return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:0, maximumFractionDigits:0}); };
 
-  var dados = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].map(function(vn) {
-    var peds = (allPedidos[vn]||[]).filter(function(p){
-      return p.data && p.data.startsWith(mesAtual) && p.status !== 'cancelado';
-    });
+  var dados = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].filter(function(vn) { return vendedores[vn]; }).map(function(vn) {
+    var peds = (RANK.ped[vn]||[]).filter(function(p){ return p.data && p.data >= iv.de && p.data <= iv.ate && p.status !== 'cancelado'; });
     var total = peds.reduce(function(s,p){ return s+getValor(p); },0);
-    var metaRaw = (vendedores[vn].meta||'0').replace('R$ ','').replace(/\./g,'').replace(',','.');
-    var metaMes = parseFloat(metaRaw) || 0;
-    var pct = metaMes > 0 ? Math.round((total/metaMes)*100) : 0;
-    return { vn: vn, nome: vendedores[vn].nome, total: total, meta: metaMes, pct: pct };
-  }).sort(function(a,b){ return b.pct - a.pct; });
+    var lig = 0, lm = RANK.lig[vn] || {};
+    Object.keys(lm).forEach(function(d) { if (d >= iv.de && d <= iv.ate) lig += Number(lm[d]) || 0; });
+    var meta = per === 'mes' ? brNum(vendedores[vn].meta) : per === 'semana' ? brNum(vendedores[vn].metaSemana) : 0;
+    var pct = meta > 0 ? Math.round((total/meta)*100) : 0;
+    return { vn: vn, nome: vendedores[vn].nome, total: total, meta: meta, pct: pct, cargas: peds.length, lig: lig };
+  });
+  var chave = { pct: 'pct', valor: 'total', cargas: 'cargas', lig: 'lig' }[crit];
+  dados.sort(function(a,b){ return (b[chave] - a[chave]) || (b.total - a.total); });
+  function principal(d) {
+    if (crit === 'pct') return d.pct + '%';
+    if (crit === 'cargas') return d.cargas + (d.cargas === 1 ? ' carga' : ' cargas');
+    if (crit === 'lig') return d.lig + ' lig.';
+    return fmt(d.total);
+  }
+  function secundario(d) { return crit === 'valor' ? d.cargas + (d.cargas === 1 ? ' carga' : ' cargas') : fmt(d.total); }
+
+  var sub = document.getElementById('rank-sub');
+  if (sub) sub.textContent = ({ dia: 'Hoje', semana: 'Esta semana (seg. a hoje)', mes: 'Este mês' })[per] + ' · ' +
+    ({ pct: '% de atingimento da meta', valor: 'valor vendido', cargas: 'nº de cargas', lig: 'ligações lançadas na Rota da Meta' })[crit] + ' · atualizado em tempo real.';
 
   var medalhas = ['🥇','🥈','🥉'];
   var cores = ['#FFD700','#C0C0C0','#CD7F32'];
-  var alturas = ['160px','130px','110px'];
-  var bgs = ['#FFF8E1','#F5F5F5','#FBE9E9'];
 
-  // Render pódio
   var podio = document.getElementById('rank-podio');
   if (podio) {
-    // Order: 2nd, 1st, 3rd for visual podium effect
     var order = dados.length >= 3 ? [dados[1], dados[0], dados[2]] : dados;
     var heights = dados.length >= 3 ? ['130px','160px','110px'] : ['130px'];
     var podiumCores = dados.length >= 3 ? ['#C0C0C0','#FFD700','#CD7F32'] : ['#FFD700'];
     var podiumMed = dados.length >= 3 ? ['🥈','🥇','🥉'] : ['🥇'];
-
     podio.innerHTML = order.map(function(d, i) {
-      var fmtBRL = 'R$ ' + Number(d.total).toLocaleString('pt-BR',{minimumFractionDigits:0});
       var posLabel = i === 1 ? '1º' : (i === 0 ? '2º' : '3º');
       return '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;max-width:200px;">' +
         '<div style="font-size:32px;">' + podiumMed[i] + '</div>' +
         avatarHTML(d.vn, d.nome, 52) +
         '<div style="font-size:14px;font-weight:700;color:#1C1C1C;">' + d.nome + '</div>' +
-        '<div style="font-size:20px;font-weight:700;color:' + podiumCores[i] + ';">' + d.pct + '%</div>' +
-        '<div style="font-size:11px;color:#888;">' + fmtBRL + '</div>' +
+        '<div style="font-size:20px;font-weight:700;color:' + podiumCores[i] + ';">' + principal(d) + '</div>' +
+        '<div style="font-size:11px;color:#888;">' + secundario(d) + '</div>' +
         '<div style="width:100%;background:' + podiumCores[i] + ';border-radius:8px 8px 0 0;height:' + heights[i] + ';display:flex;align-items:flex-start;justify-content:center;padding-top:10px;">' +
           '<span style="font-size:11px;font-weight:600;color:' + (i===1?'#7A5500':'#333') + ';">' + posLabel + '</span>' +
         '</div>' +
@@ -8631,38 +8670,34 @@ function renderRanking(allPedidos, allLigacoes) {
     }).join('');
   }
 
-  // Render cards
   var cards = document.getElementById('rank-cards');
   if (cards) {
     cards.innerHTML = dados.map(function(d, i) {
-      var fmtBRL = 'R$ ' + Number(d.total).toLocaleString('pt-BR',{minimumFractionDigits:0});
-      var fmtMeta = 'R$ ' + Number(d.meta).toLocaleString('pt-BR',{minimumFractionDigits:0});
       var falta = Math.max(0, d.meta - d.total);
-      var fmtFalta = 'R$ ' + Number(falta).toLocaleString('pt-BR',{minimumFractionDigits:0});
       var barW = Math.min(d.pct, 100);
       var barCor = d.pct >= 100 ? '#2E7D32' : d.pct >= 80 ? '#E65100' : '#C41E1E';
       var medalhaOuPos = medalhas[i] || ('#' + (i+1));
-      var corBorda = cores[i] || '#E2E0D8';
+      var corBorda = (i === 0 && currentUser === d.vn) ? '#C41E1E' : (cores[i] || (currentUser === d.vn ? '#C41E1E' : '#E2E0D8'));
       var corPct = cores[i] || '#1C1C1C';
+      var rodape = d.meta > 0
+        ? '<div style="background:#F1EFE8;border-radius:20px;height:8px;overflow:hidden;margin-bottom:5px;"><div style="height:100%;border-radius:20px;background:' + barCor + ';width:' + barW + '%;transition:width .5s;"></div></div>' +
+          '<div style="font-size:11px;color:#888;">' + (falta > 0 ? 'Falta ' + fmt(falta) + ' para bater a meta' + (per === 'semana' ? ' da semana' : '') : '✅ Meta batida!') + '</div>'
+        : '<div style="font-size:11px;color:#888;">' + d.cargas + (d.cargas === 1 ? ' carga' : ' cargas') + ' · ' + d.lig + ' ligações</div>';
       return '<div style="background:#fff;border:2px solid ' + corBorda + ';border-radius:12px;padding:1.1rem 1.25rem;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
           '<div style="display:flex;align-items:center;gap:10px;">' +
             '<span style="font-size:' + (medalhas[i] ? '24px' : '15px') + ';' + (medalhas[i] ? '' : 'font-weight:700;color:#888;min-width:24px;text-align:center;') + '">' + medalhaOuPos + '</span>' +
             avatarHTML(d.vn, d.nome, 40) +
             '<div>' +
-              '<div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + d.nome + '</div>' +
-              '<div style="font-size:11px;color:#888;">Meta: ' + fmtMeta + '</div>' +
+              '<div style="font-size:15px;font-weight:700;color:#1C1C1C;">' + d.nome + (currentUser === d.vn ? ' <span style="font-size:11px;color:#C41E1E;">(você)</span>' : '') + '</div>' +
+              '<div style="font-size:11px;color:#888;">' + (d.meta > 0 ? 'Meta: ' + fmt(d.meta) : secundario(d)) + '</div>' +
             '</div>' +
           '</div>' +
           '<div style="text-align:right;">' +
-            '<div style="font-size:22px;font-weight:700;color:' + corPct + ';">' + d.pct + '%</div>' +
-            '<div style="font-size:12px;color:#888;">' + fmtBRL + '</div>' +
+            '<div style="font-size:22px;font-weight:700;color:' + corPct + ';">' + principal(d) + '</div>' +
+            '<div style="font-size:12px;color:#888;">' + (crit === 'pct' ? fmt(d.total) : (d.meta > 0 ? d.pct + '% da meta' : '')) + '</div>' +
           '</div>' +
-        '</div>' +
-        '<div style="background:#F1EFE8;border-radius:20px;height:8px;overflow:hidden;margin-bottom:5px;">' +
-          '<div style="height:100%;border-radius:20px;background:' + barCor + ';width:' + barW + '%;transition:width .5s;"></div>' +
-        '</div>' +
-        '<div style="font-size:11px;color:#888;">' + (falta > 0 ? 'Falta ' + fmtFalta + ' para bater a meta' : '✅ Meta batida!') + '</div>' +
+        '</div>' + rodape +
       '</div>';
     }).join('');
   }
