@@ -2705,6 +2705,7 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
         <div id="rank-crit" style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="qf-btn active" id="rank-crit-pct" data-crit="pct" onclick="rankSet('crit','pct',this)">% da meta</button>
           <button class="qf-btn" data-crit="valor" onclick="rankSet('crit','valor',this)">Vendido</button>
+          <button class="qf-btn" data-crit="fat" onclick="rankSet('crit','fat',this)" title="Pedidos faturados ou entregues — igual à Rota da Meta">Faturado</button>
           <button class="qf-btn" data-crit="cargas" onclick="rankSet('crit','cargas',this)">Cargas</button>
           <button class="qf-btn" data-crit="lig" onclick="rankSet('crit','lig',this)">Ligações</button>
         </div>
@@ -2723,7 +2724,7 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
     </div>
 
     <!-- CARDS DETALHADOS -->
-    <div id="rank-cards" style="display:grid;gap:12px;margin-bottom:2rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));"></div>
+    <div id="rank-cards" style="display:grid;gap:12px;margin-bottom:2rem;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));"></div>
 
     <!-- PREMIAÇÕES DO MÊS — agora ficam na Rota da Meta (calculadas pelos pedidos) -->
     <div style="display:none;background:var(--ink);border-radius:14px;padding:1.5rem;">
@@ -8503,25 +8504,31 @@ function renderRanking(allPedidos, allLigacoes) {
   var dados = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].filter(function(vn) { return vendedores[vn]; }).map(function(vn) {
     var peds = (RANK.ped[vn]||[]).filter(function(p){ return p.data && p.data >= iv.de && p.data <= iv.ate && p.status !== 'cancelado'; });
     var total = peds.reduce(function(s,p){ return s+getValor(p); },0);
+    // faturado = pedidos faturados ou entregues (mesma regra da Rota da Meta)
+    var fat = peds.reduce(function(s,p){ return s + ((p.status === 'faturado' || p.status === 'entregue') ? getValor(p) : 0); },0);
     var lig = 0, lm = RANK.lig[vn] || {};
     Object.keys(lm).forEach(function(d) { if (d >= iv.de && d <= iv.ate) lig += Number(lm[d]) || 0; });
     var meta = per === 'dia' ? 0 : rankMetaPessoa(vn, per);
     var pct = meta > 0 ? Math.round((total/meta)*100) : 0;
-    return { vn: vn, nome: vendedores[vn].nome, total: total, meta: meta, pct: pct, cargas: peds.length, lig: lig };
+    return { vn: vn, nome: vendedores[vn].nome, total: total, fat: fat, meta: meta, pct: pct, pctFat: meta > 0 ? Math.round((fat/meta)*100) : 0, cargas: peds.length, lig: lig };
   });
-  var chave = { pct: 'pct', valor: 'total', cargas: 'cargas', lig: 'lig' }[crit];
+  var chave = { pct: 'pct', valor: 'total', fat: 'fat', cargas: 'cargas', lig: 'lig' }[crit];
   dados.sort(function(a,b){ return (b[chave] - a[chave]) || (b.total - a.total); });
   function principal(d) {
     if (crit === 'pct') return d.pct + '%';
     if (crit === 'cargas') return d.cargas + (d.cargas === 1 ? ' carga' : ' cargas');
     if (crit === 'lig') return d.lig + ' lig.';
+    if (crit === 'fat') return fmt(d.fat);
     return fmt(d.total);
   }
-  function secundario(d) { return crit === 'valor' ? d.cargas + (d.cargas === 1 ? ' carga' : ' cargas') : fmt(d.total); }
+  function secundario(d) {
+    if (crit === 'fat') return 'de ' + fmt(d.total) + ' lançado';
+    return crit === 'valor' ? d.cargas + (d.cargas === 1 ? ' carga' : ' cargas') : fmt(d.total);
+  }
 
   var sub = document.getElementById('rank-sub');
   if (sub) sub.textContent = ({ dia: 'Hoje', semana: 'Esta semana (seg. a hoje)', mes: 'Este mês' })[per] + ' · ' +
-    ({ pct: '% de atingimento da meta', valor: 'valor vendido', cargas: 'nº de cargas', lig: 'ligações lançadas na Rota da Meta' })[crit] + ' · atualizado em tempo real.';
+    ({ pct: '% de atingimento da meta', valor: 'valor vendido', fat: 'valor faturado (faturados + entregues, como na Rota da Meta)', cargas: 'nº de cargas', lig: 'ligações lançadas na Rota da Meta' })[crit] + ' · atualizado em tempo real.';
 
   var medalhas = ['🥇','🥈','🥉'];
   var cores = ['#FFD700','#C0C0C0','#CD7F32'];
@@ -8550,29 +8557,30 @@ function renderRanking(allPedidos, allLigacoes) {
   var cards = document.getElementById('rank-cards');
   if (cards) {
     cards.innerHTML = dados.map(function(d, i) {
-      var falta = Math.max(0, d.meta - d.total);
-      var barW = Math.min(d.pct, 100);
-      var barCor = d.pct >= 100 ? '#2E7D32' : d.pct >= 80 ? '#E65100' : '#C41E1E';
+      var base = crit === 'fat' ? d.fat : d.total, pctB = crit === 'fat' ? d.pctFat : d.pct;
+      var falta = Math.max(0, d.meta - base);
+      var barW = Math.min(pctB, 100);
+      var barCor = pctB >= 100 ? '#2E7D32' : pctB >= 80 ? '#E65100' : '#C41E1E';
       var medalhaOuPos = medalhas[i] || ('#' + (i+1));
       var corBorda = (i === 0 && currentUser === d.vn) ? '#C41E1E' : (cores[i] || (currentUser === d.vn ? '#C41E1E' : '#E2E0D8'));
       var corPct = cores[i] || '#1C1C1C';
       var rodape = d.meta > 0
         ? '<div style="background:var(--surface-3);border-radius:20px;height:8px;overflow:hidden;margin-bottom:5px;"><div style="height:100%;border-radius:20px;background:' + barCor + ';width:' + barW + '%;transition:width .5s;"></div></div>' +
-          '<div style="font-size:11px;color:var(--muted);">' + (falta > 0 ? 'Falta ' + fmt(falta) + ' para bater a meta' + (per === 'semana' ? ' da semana' : '') : '✅ Meta batida!') + '</div>'
+          '<div style="font-size:11px;color:var(--muted);">' + (falta > 0 ? 'Falta ' + fmt(falta) + (crit === 'fat' ? ' faturar' : '') + ' para bater a meta' + (per === 'semana' ? ' da semana' : '') : '✅ Meta batida!') + '</div>'
         : '<div style="font-size:11px;color:var(--muted);">' + d.cargas + (d.cargas === 1 ? ' carga' : ' cargas') + ' · ' + d.lig + ' ligações</div>';
       return '<div style="background:var(--surface);border:2px solid ' + corBorda + ';border-radius:12px;padding:1.1rem 1.25rem;">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
-          '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
             '<span style="font-size:' + (medalhas[i] ? '24px' : '15px') + ';' + (medalhas[i] ? '' : 'font-weight:700;color:var(--muted);min-width:24px;text-align:center;') + '">' + medalhaOuPos + '</span>' +
             avatarHTML(d.vn, d.nome, 40) +
-            '<div>' +
-              '<div style="font-size:15px;font-weight:700;color:var(--txt);">' + d.nome + (currentUser === d.vn ? ' <span style="font-size:11px;color:var(--acc-txt);">(você)</span>' : '') + '</div>' +
-              '<div style="font-size:11px;color:var(--muted);">' + (d.meta > 0 ? 'Meta: ' + fmt(d.meta) : secundario(d)) + '</div>' +
+            '<div style="min-width:0;">' +
+              '<div style="font-size:15px;font-weight:700;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + d.nome + (currentUser === d.vn ? ' <span style="font-size:11px;color:var(--acc-txt);">(você)</span>' : '') + '</div>' +
+              '<div style="font-size:11px;color:var(--muted);white-space:nowrap;">' + (d.meta > 0 ? 'Meta: ' + fmt(d.meta) : secundario(d)) + '</div>' +
             '</div>' +
           '</div>' +
-          '<div style="text-align:right;">' +
-            '<div style="font-size:22px;font-weight:700;color:' + corPct + ';">' + principal(d) + '</div>' +
-            '<div style="font-size:12px;color:var(--muted);">' + (crit === 'pct' ? fmt(d.total) : (d.meta > 0 ? d.pct + '% da meta' : '')) + '</div>' +
+          '<div style="text-align:right;flex-shrink:0;">' +
+            '<div style="font-size:20px;font-weight:800;color:' + corPct + ';white-space:nowrap;">' + principal(d) + '</div>' +
+            '<div style="font-size:12px;color:var(--muted);white-space:nowrap;">' + (crit === 'pct' ? fmt(d.total) : (d.meta > 0 ? pctB + (crit === 'fat' ? '% faturado' : '% da meta') : '')) + '</div>' +
           '</div>' +
         '</div>' + rodape +
       '</div>';
