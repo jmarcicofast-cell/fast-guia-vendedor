@@ -24661,7 +24661,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 <style id="aguia-css">
 .ag-wrap { position: fixed; right: 18px; bottom: 14px; z-index: 99980; display: flex; align-items: flex-end; gap: 10px; pointer-events: none; font-family: var(--font, system-ui, sans-serif); }
 .ag-wrap.ag-off { display: none; }
-.ag-bird { width: 92px; height: 100px; pointer-events: auto; cursor: pointer; position: relative; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+.ag-bird { width: 104px; height: 112px; pointer-events: auto; cursor: pointer; position: relative; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
 .ag-bird svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 10px rgba(0,0,0,.25)); }
 .ag-bird:focus-visible { outline: 2px solid var(--acc); outline-offset: 4px; border-radius: 12px; }
 .ag-sombra { position: absolute; left: 22%; right: 22%; bottom: 2px; height: 8px; border-radius: 50%; background: rgba(0,0,0,.18); filter: blur(2px); }
@@ -24670,8 +24670,8 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 /* partes */
 .ag-svg .corpo { transform-origin: 60px 120px; }
 .ag-svg .cabeca { transform-origin: 60px 64px; }
-.ag-svg .asaE { transform-origin: 38px 72px; }
-.ag-svg .asaD { transform-origin: 82px 72px; }
+.ag-svg .asaE { transform-origin: 42px 72px; }
+.ag-svg .asaD { transform-origin: 78px 72px; }
 .ag-svg .olhos { transform-origin: 60px 42px; }
 .ag-svg .oculos, .ag-svg .chapeu { opacity: 0; transition: opacity .25s; }
 .ag-wrap.ag-festa .ag-svg .chapeu, .ag-wrap.ag-top .ag-svg .oculos { opacity: 1; }
@@ -24684,7 +24684,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 
 /* acenar */
 .ag-wrap.ag-acena .asaD { animation: agAcena .45s ease-in-out 5 alternate; }
-@keyframes agAcena { from { transform: rotate(-10deg); } to { transform: rotate(-75deg); } }
+@keyframes agAcena { from { transform: rotate(0deg); } to { transform: rotate(-38deg); } }
 .ag-wrap.ag-acena .cabeca { animation: agInclina 1.2s ease-in-out 2 alternate; }
 @keyframes agInclina { from { transform: rotate(0); } to { transform: rotate(8deg); } }
 
@@ -24693,8 +24693,8 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 .ag-wrap.ag-danca .asaE { animation: agAsaE .25s ease-in-out 16 alternate; }
 .ag-wrap.ag-danca .asaD { animation: agAsaD .25s ease-in-out 16 alternate; }
 @keyframes agDanca { 0% { transform: translateY(0) rotate(-9deg); } 50% { transform: translateY(-12px) rotate(0deg); } 100% { transform: translateY(0) rotate(9deg); } }
-@keyframes agAsaE { from { transform: rotate(10deg); } to { transform: rotate(45deg); } }
-@keyframes agAsaD { from { transform: rotate(-10deg); } to { transform: rotate(-45deg); } }
+@keyframes agAsaE { from { transform: rotate(18deg) scaleY(.9); } to { transform: rotate(-22deg) scaleY(1.05); } }
+@keyframes agAsaD { from { transform: rotate(-18deg) scaleY(.9); } to { transform: rotate(22deg) scaleY(1.05); } }
 
 /* comemoração grande: pula, bate as asas, gira */
 .ag-wrap.ag-voa .corpo { animation: agVoa 1.6s cubic-bezier(.3,.7,.4,1) 3; }
@@ -24705,14 +24705,38 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 /* aponta (lembrete) */
 .ag-wrap.ag-aponta .asaE { animation: agAponta .6s ease-out forwards; }
 .ag-wrap.ag-aponta .cabeca { animation: agOlhaLado .6s ease-out forwards; }
-@keyframes agAponta { to { transform: rotate(78deg) translateY(-4px); } }
+@keyframes agAponta { to { transform: rotate(-28deg) translateX(-4px); } }
 @keyframes agOlhaLado { to { transform: rotate(-10deg) translateX(-2px); } }
 
 /* positivo (joinha) */
 .ag-wrap.ag-joia .corpo { animation: agPulinho .35s ease-out 2 alternate; }
 .ag-wrap.ag-joia .asaD { animation: agJoia .4s ease-out forwards; }
 @keyframes agPulinho { to { transform: translateY(-8px); } }
-@keyframes agJoia { to { transform: rotate(-110deg); } }
+@keyframes agJoia { 0% { transform: rotate(0); } 50% { transform: rotate(-34deg); } 100% { transform: rotate(-26deg); } }
+
+/* palco: entrada em tela cheia nas grandes vitórias */
+.ag-palco { position: fixed; inset: 0; z-index: 100020; display: grid; place-items: center; background: radial-gradient(circle at 50% 45%, rgba(20,8,4,.55), rgba(0,0,0,.82)); cursor: pointer; animation: agPalcoIn .3s ease-out; overflow: hidden; }
+.ag-palco.sai { animation: agPalcoOut .4s ease-in forwards; }
+@keyframes agPalcoIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes agPalcoOut { to { opacity: 0; } }
+.ag-palco .raios { position: absolute; width: 170vmax; height: 170vmax; left: 50%; top: 45%; margin: -85vmax 0 0 -85vmax; background: repeating-conic-gradient(from 0deg, rgba(255,210,63,.22) 0deg 8deg, transparent 8deg 20deg); animation: agGira 14s linear infinite; mask-image: radial-gradient(circle, #000 0 12%, transparent 34%); -webkit-mask-image: radial-gradient(circle, #000 0 12%, transparent 34%); }
+@keyframes agGira { to { transform: rotate(360deg); } }
+.ag-palco .flash { position: absolute; inset: 0; background: #fff; animation: agFlash .5s ease-out forwards; pointer-events: none; }
+@keyframes agFlash { from { opacity: .85; } to { opacity: 0; } }
+.ag-palco .cena { position: relative; text-align: center; color: #fff; padding: 0 20px; }
+.ag-palco .grande { width: min(300px, 58vw); height: min(325px, 63vw); margin: 0 auto -6px; animation: agMergulho .9s cubic-bezier(.2,1.3,.35,1) both; }
+.ag-palco .grande svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 18px 30px rgba(0,0,0,.6)); }
+.ag-palco .grande .asaE { animation: agAsaE .16s linear 30 alternate; }
+.ag-palco .grande .asaD { animation: agAsaD .16s linear 30 alternate; }
+.ag-palco .grande .chapeu, .ag-palco .grande .oculos { opacity: 1; }
+@keyframes agMergulho { 0% { transform: translateY(-120vh) scale(.4) rotate(-25deg); } 70% { transform: translateY(12px) scale(1.06) rotate(4deg); } 100% { transform: none; } }
+.ag-palco h2 { font-family: 'Archivo', var(--font, system-ui), sans-serif; font-weight: 900; font-size: clamp(30px, 6.4vw, 64px); line-height: 1; letter-spacing: -.01em; text-transform: uppercase; margin: 0; color: #FFD23F; text-shadow: 0 4px 0 #8E0F0F, 0 10px 30px rgba(0,0,0,.6); animation: agImpacto .55s cubic-bezier(.2,1.6,.4,1) .45s both; }
+.ag-palco p { font-size: clamp(14px, 2vw, 19px); margin: 12px 0 0; color: #fff; font-weight: 600; opacity: .95; animation: agSobe .5s ease-out .8s both; }
+.ag-palco small { display: block; margin-top: 18px; font-size: 12px; opacity: .6; animation: agSobe .5s ease-out 1.2s both; }
+@keyframes agImpacto { from { opacity: 0; transform: scale(2.4); } to { opacity: 1; transform: none; } }
+@keyframes agSobe { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.ag-tremor { animation: agTremor .45s linear; }
+@keyframes agTremor { 0%,100% { transform: none; } 20% { transform: translate(-5px, 3px); } 40% { transform: translate(5px, -3px); } 60% { transform: translate(-4px, -2px); } 80% { transform: translate(3px, 2px); } }
 
 /* balão (notificação) */
 .ag-balao { pointer-events: auto; position: relative; max-width: 300px; min-width: 220px; background: var(--surface, #fff); color: var(--txt, #111); border: 1px solid var(--line, #e5e5e5); border-radius: 16px; padding: 12px 14px 12px; box-shadow: 0 14px 40px rgba(0,0,0,.28); margin-bottom: 46px; transform-origin: 100% 100%; animation: agBalaoIn .35s cubic-bezier(.2,1.4,.4,1); }
@@ -24751,7 +24775,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   .ag-balao { max-width: calc(100vw - 100px); min-width: 0; margin-bottom: 34px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ag-svg *, .ag-balao, .ag-confete i { animation: none !important; }
+  .ag-svg *, .ag-balao, .ag-confete i, .ag-palco *, .ag-tremor { animation: none !important; }
 }
 </style>
 
@@ -24759,60 +24783,73 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   <div class="ag-bird" id="ag-bird" role="button" tabindex="0" aria-label="Águia FAST — ver meu resumo">
     <div class="ag-sombra"></div>
     <svg class="ag-svg" viewBox="0 0 120 130" aria-hidden="true">
+      <defs>
+        <linearGradient id="agCorpo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4A2C1A"/><stop offset="1" stop-color="#2A170C"/></linearGradient>
+        <linearGradient id="agAsa" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5A3720"/><stop offset="1" stop-color="#24140A"/></linearGradient>
+        <linearGradient id="agBico" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC93C"/><stop offset="1" stop-color="#E89A00"/></linearGradient>
+        <linearGradient id="agCapa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E02424"/><stop offset="1" stop-color="#8E0F0F"/></linearGradient>
+      </defs>
       <g class="corpo">
-        <!-- cauda -->
-        <path d="M46 108 L40 126 L52 118 L60 128 L68 118 L80 126 L74 108 Z" fill="#5A1A10"/>
+        <!-- capa FAST -->
+        <path d="M44 70 C36 95 33 112 28 125 L43 117 L51 127 L60 117 L69 127 L77 117 L92 125 C87 112 84 95 76 70 Z" fill="url(#agCapa)"/>
+        <path d="M50 80 C48 96 47 108 46 118 M70 80 C72 96 73 108 74 118" stroke="#7A0C0C" stroke-width="1.6" fill="none" opacity=".7"/>
         <!-- asa esquerda (de quem olha) -->
         <g class="asaE">
-          <path d="M40 66 C22 70 14 88 18 106 C22 100 26 99 28 104 C30 97 34 97 36 101 C38 94 42 92 44 96 Z" fill="#9E1717"/>
-          <path d="M40 66 C30 72 26 84 28 96" stroke="#7A0F0F" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M42 72 C32 60 20 50 4 38 L11 51 L0 53 L11 61 L2 67 L15 71 L8 80 L23 80 C30 82 36 80 42 78 Z" fill="url(#agAsa)"/>
+          <path d="M40 72 L12 52 M40 74 L13 62 M40 76 L17 72" stroke="#7B4E2C" stroke-width="1.4" stroke-linecap="round"/>
         </g>
         <!-- asa direita -->
         <g class="asaD">
-          <path d="M80 66 C98 70 106 88 102 106 C98 100 94 99 92 104 C90 97 86 97 84 101 C82 94 78 92 76 96 Z" fill="#9E1717"/>
-          <path d="M80 66 C90 72 94 84 92 96" stroke="#7A0F0F" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M78 72 C88 60 100 50 116 38 L109 51 L120 53 L109 61 L118 67 L105 71 L112 80 L97 80 C90 82 84 80 78 78 Z" fill="url(#agAsa)"/>
+          <path d="M80 72 L108 52 M80 74 L107 62 M80 76 L103 72" stroke="#7B4E2C" stroke-width="1.4" stroke-linecap="round"/>
         </g>
-        <!-- corpo -->
-        <ellipse cx="60" cy="88" rx="27" ry="29" fill="#C41E1E"/>
-        <ellipse cx="60" cy="94" rx="17" ry="20" fill="#F4E3D0"/>
-        <!-- losango FAST no peito -->
-        <polygon points="60,82 69,91 60,100 51,91" fill="#C41E1E"/>
-        <path d="M56.5 91 L59.5 87 L62.5 91 L59.5 95 Z" fill="#fff"/>
-        <!-- pés -->
-        <path d="M48 114 l-4 6 M48 114 l0 7 M48 114 l4 6" stroke="#F2A93B" stroke-width="3" stroke-linecap="round"/>
-        <path d="M72 114 l-4 6 M72 114 l0 7 M72 114 l4 6" stroke="#F2A93B" stroke-width="3" stroke-linecap="round"/>
+        <!-- tronco -->
+        <path d="M42 68 C39 92 45 112 60 117 C75 112 81 92 78 68 C70 62 50 62 42 68 Z" fill="url(#agCorpo)"/>
+        <path d="M47 100 l4 4 l4 -4 M65 100 l4 4 l4 -4 M54 108 l6 4 l6 -4" stroke="#6B4428" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <!-- escudo FAST no peito -->
+        <path d="M60 76 L73 80 L71 96 C69 102 65 106 60 108 C55 106 51 102 49 96 L47 80 Z" fill="#C41E1E" stroke="#FFFFFF" stroke-width="1.6"/>
+        <path d="M60 84 L67 92 L60 100 L53 92 Z" fill="#FFFFFF"/>
+        <path d="M60 88 L63.5 92 L60 96 L56.5 92 Z" fill="#C41E1E"/>
+        <!-- garras -->
+        <g stroke-linecap="round">
+          <path d="M52 114 L52 120" stroke="#F5B400" stroke-width="4"/>
+          <path d="M68 114 L68 120" stroke="#F5B400" stroke-width="4"/>
+          <path d="M52 120 l-5 5 M52 120 l0 6 M52 120 l5 5 M68 120 l-5 5 M68 120 l0 6 M68 120 l5 5" stroke="#F5B400" stroke-width="3"/>
+          <path d="M47 125 l-1.5 1.5 M52 126 l0 2 M57 125 l1.5 1.5 M63 125 l-1.5 1.5 M68 126 l0 2 M73 125 l1.5 1.5" stroke="#111" stroke-width="2"/>
+        </g>
         <!-- cabeça -->
         <g class="cabeca">
-          <path d="M60 14 C78 14 86 28 86 42 C86 58 75 66 60 66 C45 66 34 58 34 42 C34 28 42 14 60 14 Z" fill="#FFFFFF"/>
-          <path d="M44 20 C48 12 54 10 58 14 C58 8 66 6 68 13 C72 9 78 12 78 19 C70 16 52 15 44 20 Z" fill="#FFFFFF"/>
-          <path d="M36 50 C40 60 50 66 60 66 C70 66 80 60 84 50 C78 58 70 61 60 61 C50 61 42 58 36 50 Z" fill="#E8E1D8"/>
-          <!-- sobrancelhas -->
-          <path d="M43 32 Q48.5 27.5 55 30.5" stroke="#5A1A10" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-          <path d="M77 32 Q71.5 27.5 65 30.5" stroke="#5A1A10" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+          <path d="M40 31 L27 21 L41 25 L33 13 L47 21 L46 11 L55 21 Z" fill="#F2EEE8"/>
+          <path d="M60 21 C73 21 83 28 85 40 C87 51 80 61 70 65 L50 65 C40 61 33 51 35 40 C37 28 47 21 60 21 Z" fill="#FFFFFF"/>
+          <path d="M37 50 C42 59 50 64 60 64 C70 64 78 59 83 50 C79 61 70 66 60 66 C50 66 41 61 37 50 Z" fill="#DCD6CC"/>
+          <path d="M43 61 L47 70 L51 63 L55 71 L60 64 L65 71 L69 63 L73 70 L77 61 Z" fill="#FFFFFF"/>
           <g class="olhos">
-            <ellipse cx="50" cy="42" rx="6" ry="7" fill="#1C1C1C"/>
-            <ellipse cx="70" cy="42" rx="6" ry="7" fill="#1C1C1C"/>
-            <circle cx="52" cy="39.5" r="2.2" fill="#fff"/>
-            <circle cx="72" cy="39.5" r="2.2" fill="#fff"/>
+            <path d="M43 42 C46 37.5 53 37.5 57 41 C53 45.5 47.5 46 43 42 Z" fill="#F5B400"/>
+            <path d="M77 42 C74 37.5 67 37.5 63 41 C67 45.5 72.5 46 77 42 Z" fill="#F5B400"/>
+            <circle cx="51.5" cy="41.6" r="2.7" fill="#111"/>
+            <circle cx="68.5" cy="41.6" r="2.7" fill="#111"/>
+            <circle cx="52.4" cy="40.6" r=".9" fill="#fff"/>
+            <circle cx="69.4" cy="40.6" r=".9" fill="#fff"/>
           </g>
-          <ellipse cx="42" cy="51" rx="4.5" ry="2.6" fill="#F6A6A6" opacity=".55"/><ellipse cx="78" cy="51" rx="4.5" ry="2.6" fill="#F6A6A6" opacity=".55"/>
-          <!-- bico -->
-          <path d="M51 49 C54 45 66 45 69 49 C69 55 65 60 60 64 C58 60 53 56 51 49 Z" fill="#F7B733"/>
-          <path d="M60 64 C62 61 63 59 63 57 C61 58 59 58 57 57" fill="#E0951E"/>
-          <path d="M53 51 C57 53 63 53 67 51" stroke="#C97D12" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-          <!-- óculos escuros (meta batida) -->
+          <!-- sobrancelhas de quem veio pra ganhar -->
+          <path d="M39 34 L58 38.5 L57 41.5 L40 37.5 Z" fill="#2A1A10"/>
+          <path d="M81 34 L62 38.5 L63 41.5 L80 37.5 Z" fill="#2A1A10"/>
+          <!-- bico em gancho -->
+          <path d="M51 46 C55 42.5 66 42.5 70 46.5 C72.5 52 70 58.5 63.5 63 C63 59 62 56.5 60 56 C55.5 55.5 52 51.5 51 46 Z" fill="url(#agBico)"/>
+          <path d="M63.5 63 C66 59 66.2 56.2 64.2 53.6 L61.6 57.8 Z" fill="#B87400"/>
+          <path d="M53.5 50.5 C57.5 53.5 63 53.6 68.5 49.5" stroke="#A86A00" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <circle cx="56" cy="47" r=".9" fill="#A86A00"/>
+          <!-- óculos escuros -->
           <g class="oculos">
-            <path d="M40 37 h20 v4 c0 6 -4 9 -9 9 c-6 0 -11 -3 -11 -9 Z" fill="#111"/>
-            <path d="M60 37 h20 v4 c0 6 -5 9 -11 9 c-5 0 -9 -3 -9 -9 Z" fill="#111"/>
-            <path d="M40 37 h40" stroke="#111" stroke-width="2.5"/>
-            <path d="M44 40 l5 0" stroke="#fff" stroke-width="1.6" opacity=".6" stroke-linecap="round"/>
-            <path d="M64 40 l5 0" stroke="#fff" stroke-width="1.6" opacity=".6" stroke-linecap="round"/>
+            <path d="M39 37 L59 39 L57 45.5 C56 48 53 49 50 48.5 C45 48 41 45 39 41 Z" fill="#0B0B0B"/>
+            <path d="M81 37 L61 39 L63 45.5 C64 48 67 49 70 48.5 C75 48 79 45 81 41 Z" fill="#0B0B0B"/>
+            <path d="M57 39.5 L63 39.5" stroke="#0B0B0B" stroke-width="2.4"/>
+            <path d="M43 40.5 l6 .8 M65 41.3 l6 -.8" stroke="#fff" stroke-width="1.5" opacity=".55" stroke-linecap="round"/>
           </g>
-          <!-- chapéu de festa -->
+          <!-- coroa (grandes vitórias) -->
           <g class="chapeu">
-            <path d="M50 18 L64 -8 L76 16 Z" fill="#FFD23F"/>
-            <path d="M53 12 L72 8 M57 4 L69 1" stroke="#C41E1E" stroke-width="3"/>
-            <circle cx="64" cy="-9" r="4" fill="#C41E1E"/>
+            <path d="M45 22 L46 6 L53 14 L60 1 L67 14 L74 6 L75 22 Z" fill="#FFD23F" stroke="#B88A00" stroke-width="1.4" stroke-linejoin="round"/>
+            <circle cx="60" cy="16" r="2.6" fill="#C41E1E"/><circle cx="51" cy="18" r="1.8" fill="#C41E1E"/><circle cx="69" cy="18" r="1.8" fill="#C41E1E"/>
           </g>
         </g>
       </g>
@@ -24927,6 +24964,23 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     } catch(e) {}
   }
 
+  /* ── palco épico ── */
+  function palco(titulo, sub, depois){
+    var p = document.createElement('div'); p.className = 'ag-palco'; p.setAttribute('role', 'alert');
+    var svg = bird.querySelector('svg').outerHTML.replace(/id="ag/g, 'id="agP').replace(/url\(#ag/g, 'url(#agP');
+    p.innerHTML = '<div class="raios"></div><div class="flash"></div><div class="cena"><div class="grande">' + svg + '</div><h2>' + titulo + '</h2>' + (sub ? '<p>' + sub + '</p>' : '') + '<small>toque para continuar</small></div>';
+    document.body.appendChild(p);
+    var main = document.querySelector('.tab-content.active');
+    if (main) { main.classList.remove('ag-tremor'); void main.offsetWidth; setTimeout(function(){ main.classList.add('ag-tremor'); }, 600); setTimeout(function(){ main.classList.remove('ag-tremor'); }, 1200); }
+    setTimeout(function(){ confete(200); }, 650);
+    som('grande');
+    var fechou = false;
+    function fechar(){ if (fechou) return; fechou = true; p.classList.add('sai'); setTimeout(function(){ p.remove(); depois && depois(); }, 380); }
+    p.addEventListener('click', fechar);
+    setTimeout(fechar, 5200);
+  }
+  window.aguiaPalco = palco;
+
   /* ── balão / fila de notificações ── */
   function fecharBalao(){
     var b = AG.ultimoBalao; AG.ultimoBalao = null;
@@ -24946,6 +25000,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       return;
     }
     var ev = AG.fila.shift(); AG.ocupado = true;
+    if (ev.epico && !ev._palcoFeito) { ev._palcoFeito = true; ev.confete = 0; palco(ev.epico[0], ev.epico[1], function(){ AG.fila.unshift(ev); AG.ocupado = false; mostrarDaFila(); }); return; }
     var b = document.createElement('div');
     b.className = 'ag-balao' + (ev.grande ? ' grande' : '');
     b.setAttribute('role', 'status');
@@ -25037,7 +25092,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
         var h = new Date().getHours(), oi = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
         var falta = Math.max(0, n.metaMes - n.vMes);
         avisar({ titulo: oi + ', ' + nome + '! 🦅', anim: 'ag-acena',
-          texto: n.metaMes ? 'Você está em <b>' + Math.round(n.pctMes) + '%</b> da meta do mês' + (falta ? ' — faltam <b>' + rs(falta) + '</b>.' : '. Meta batida! 🏆') : 'Bora fazer um dia daqueles!',
+          texto: n.metaMes ? 'Você está em <b>' + Math.round(n.pctMes) + '%</b> da meta do mês' + (falta ? ' — faltam <b>' + rs(falta) + '</b>.' : '. Meta batida! 🏆') : 'Hoje é dia de caçar resultado. Bora!',
           barra: n.metaMes ? n.pctMes : null });
       }
       return;
@@ -25046,15 +25101,15 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     // 1) pedido novo lançado
     if (n.pedTotal > AG.base.pedTotal) {
       var novos = n.pedTotal - AG.base.pedTotal;
-      avisar({ titulo: novos > 1 ? novos + ' pedidos lançados! 💥' : 'Pedido lançado! 💥', anim: 'ag-danca', som: 'pequeno', confete: 30,
-        texto: 'Hoje você já vendeu <b>' + rs(n.vHoje) + '</b> em ' + n.pedHoje + ' pedido' + (n.pedHoje === 1 ? '' : 's') + '. Segue o ritmo, ' + nome + '!' });
+      avisar({ titulo: novos > 1 ? novos + ' pedidos lançados! 💥' : 'PEDIDO NA CONTA! 💥', anim: 'ag-danca', som: 'pequeno', confete: 30,
+        texto: 'Hoje já são <b>' + rs(n.vHoje) + '</b> em ' + n.pedHoje + ' pedido' + (n.pedHoje === 1 ? '' : 's') + '. Não para, ' + nome + '!' });
     }
     // 2) ligações lançadas / meta do dia
     if (n.ligHoje > AG.base.ligHoje) {
       if (n.ligHoje >= n.metaLig && !jaFoi('lig_' + hoje)) {
         marca('lig_' + hoje);
-        avisar({ titulo: 'Meta de ligações batida! 📞🔥', anim: 'ag-danca', som: 'pequeno', confete: 50, extras: ['ag-festa'],
-          texto: '<b>' + n.ligHoje + ' ligações</b> hoje — a meta era ' + n.metaLig + '. Isso é disciplina!' });
+        avisar({ titulo: 'META DE LIGAÇÕES ESMAGADA! 📞🔥', anim: 'ag-danca', som: 'pequeno', confete: 50, extras: ['ag-festa'],
+          texto: '<b>' + n.ligHoje + ' ligações</b> hoje — a meta era ' + n.metaLig + '. Isso é garra!' });
       } else if (n.ligHoje < n.metaLig) {
         avisar({ titulo: 'Ligações lançadas ✔️', anim: 'ag-joia', barra: n.ligHoje / n.metaLig * 100,
           texto: '<b>' + n.ligHoje + '</b> de ' + n.metaLig + ' hoje. Faltam ' + (n.metaLig - n.ligHoje) + '!' });
@@ -25063,20 +25118,21 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     // 3) meta da semana
     if (n.metaSem > 0 && n.pctSem >= 100 && !jaFoi('sem_' + sem)) {
       marca('sem_' + sem);
-      avisar({ titulo: 'Meta da semana batida! 🎯', anim: 'ag-danca', som: 'grande', confete: 80, extras: ['ag-festa'], grande: true,
+      avisar({ epico: ['Semana dominada!', rs(n.vSem) + ' na semana'], titulo: 'Meta da semana batida! 🎯', anim: 'ag-danca', som: 'grande', confete: 80, extras: ['ag-festa'], grande: true,
         texto: rs(n.vSem) + ' na semana. Que semana, ' + nome + '!' });
     }
     // 4) marcos da meta do mês
     if (n.metaMes > 0) {
       [[100, 'META DO MÊS BATIDA! 🏆', 'Você chegou lá, ' + nome + '! <b>' + rs(n.vMes) + '</b> no mês. A águia tá orgulhosa!', 'ag-voa', 160, ['ag-top', 'ag-festa']],
-       [75, '75% da meta do mês! 🔥', 'Falta só <b>' + rs(n.metaMes - n.vMes) + '</b>. Reta final!', 'ag-danca', 70, ['ag-festa']],
-       [50, 'Metade da meta! 💪', 'Já são <b>' + rs(n.vMes) + '</b>. A segunda metade é mais rápida!', 'ag-danca', 50, []],
+       [75, '75% — RETA FINAL! 🔥', 'Falta só <b>' + rs(n.metaMes - n.vMes) + '</b>. Reta final!', 'ag-danca', 70, ['ag-festa']],
+       [50, 'METADE DA META! 💪', 'Já são <b>' + rs(n.vMes) + '</b>. A segunda metade é mais rápida!', 'ag-danca', 50, []],
        [25, '25% da meta ✨', 'Começou bem! Bora pros 50%.', 'ag-joia', 0, []]].some(function(m){
         if (n.pctMes >= m[0]) {
           if (!jaFoi('mes' + m[0] + '_' + mes)) {
             // marca todos os marcos menores também, pra não comemorar em sequência
             [25, 50, 75, 100].forEach(function(x){ if (x <= m[0]) marca('mes' + x + '_' + mes); });
             avisar({ titulo: m[1], texto: m[2], anim: m[3], confete: m[4], extras: m[5], grande: m[0] >= 75, som: m[0] >= 75 ? 'grande' : 'pequeno', barra: n.pctMes,
+              epico: m[0] === 100 ? ['Meta batida!', esc(primeiroNome(vn)) + ' voou alto: ' + rs(n.vMes) + ' no mês 🦅'] : null,
               acoes: m[0] === 100 ? [{ rot: 'Ver ranking', pri: true, fn: function(){ irAba('reconhecimento'); } }] : null });
           }
           return true;
@@ -25088,14 +25144,14 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     var pr = posicaoMes(vn);
     if (pr.pos && AG.base.pos && pr.pos < AG.base.pos && n.pctMes > 0) {
       var passou = pr.lista[pr.pos] ? nomeDe(pr.lista[pr.pos].vn) : null;
-      avisar({ titulo: 'Subiu pro ' + pr.pos + 'º lugar! 📈', anim: pr.pos === 1 ? 'ag-voa' : 'ag-danca', confete: pr.pos === 1 ? 120 : 40, extras: pr.pos === 1 ? ['ag-top'] : [], grande: pr.pos <= 3, som: 'pequeno',
+      avisar({ epico: pr.pos === 1 ? ['1º lugar!', esc(primeiroNome(vn)) + ' está no topo do ranking do mês 👑'] : null, titulo: 'Subiu pro ' + pr.pos + 'º lugar! 📈', anim: pr.pos === 1 ? 'ag-voa' : 'ag-danca', confete: pr.pos === 1 ? 120 : 40, extras: pr.pos === 1 ? ['ag-top'] : [], grande: pr.pos <= 3, som: 'pequeno',
         texto: (passou ? 'Você passou <b>' + esc(passou) + '</b> no ranking do mês. ' : '') + (pr.pos === 1 ? 'Lá no topo! 👑' : 'Bora buscar o ' + (pr.pos - 1) + 'º!'),
         acoes: [{ rot: 'Ver ranking', pri: true, fn: function(){ irAba('reconhecimento'); } }] });
     }
     // 6) primeiro lugar do dia
     if (n.vHoje > 0 && liderDoDia() === vn && !jaFoi('lider_' + hoje)) {
       marca('lider_' + hoje);
-      avisar({ titulo: 'Você é o 1º do dia! 🥇', anim: 'ag-danca', extras: ['ag-top'], confete: 60, som: 'pequeno',
+      avisar({ titulo: 'DONO DO DIA! 🥇', anim: 'ag-danca', extras: ['ag-top'], confete: 60, som: 'pequeno',
         texto: '<b>' + rs(n.vHoje) + '</b> hoje — ninguém vendeu mais que você até agora.' });
     }
     AG.base = { pedTotal: n.pedTotal, ligHoje: n.ligHoje, pos: pr.pos };
@@ -25127,7 +25183,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       AG.base.ped[k] = n.pedTotal;
       if (n.metaMes > 0 && n.pctMes >= 100 && !jaFoi('eq100_' + k + '_' + mes)) {
         marca('eq100_' + k + '_' + mes);
-        avisar({ titulo: esc(nomeDe(k)) + ' bateu a meta do mês! 🏆', anim: 'ag-voa', extras: ['ag-top'], confete: 120, grande: true, som: 'grande',
+        avisar({ epico: [esc(primeiroNome(k)) + ' bateu a meta!', rs(n.vMes) + ' no mês 🦅'], titulo: esc(nomeDe(k)) + ' bateu a meta do mês! 🏆', anim: 'ag-voa', extras: ['ag-top'], confete: 120, grande: true, som: 'grande',
           texto: '<b>' + rs(n.vMes) + '</b> de ' + rs(n.metaMes) + '. Vale um parabéns!',
           acoes: [{ rot: 'Mandar parabéns', pri: true, fn: function(){ try { if (typeof msnAbrir === 'function' && window.MSN && MSN.eu) msnAbrir(msnConv(MSN.eu, k)); else if (typeof msnAlternarLista === 'function') msnAlternarLista(); } catch(e) {} } }] });
       }
