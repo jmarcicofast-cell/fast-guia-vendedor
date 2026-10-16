@@ -778,7 +778,10 @@ body.sb-on #main-nav:hover::-webkit-scrollbar-thumb { background: var(--sb-line)
 /* ── MENU LATERAL ── */
 :root { --sb-w: 236px; }
 body.sb-on header, body.sb-on #vendedor-banner { display: none !important; }
-body.sb-on { padding-left: var(--sb-w); }
+body.sb-on { padding-left: var(--sb-w); transition: padding-left .18s ease; }
+body.sb-arrastando { transition: none; }
+body.sb-on #main-nav { transition: width .18s ease, transform .18s ease; }
+body.sb-arrastando #main-nav { transition: none; }
 body.sb-on #main-nav {
   position: fixed; left: 0; top: 0; bottom: 0; width: var(--sb-w); z-index: 900;
   display: flex !important; flex-direction: column; align-items: stretch; gap: 2px;
@@ -810,11 +813,43 @@ body.sb-on #main-nav .nav-btn.active::before { content: ""; position: absolute; 
 .sb-btn:hover { color: var(--sb-act-txt); background: var(--sb-act-bg); }
 .sb-sair { padding: 5px 10px; width: auto; font-size: 12px; }
 .sb-topbar { display: none; }
+/* menu ajustável: largura (arrastar a borda), só ícones ou escondido */
+.sb-recolher { margin-left: auto; width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; border: 1px solid var(--sb-line); background: transparent; color: var(--sb-txt); cursor: pointer; font-size: 14px; line-height: 1; display: grid; place-items: center; }
+.sb-recolher:hover { color: var(--sb-act-txt); background: var(--sb-act-bg); }
+.sb-alca { display: none; }
+body.sb-on .sb-alca { display: block; position: fixed; top: 0; bottom: 0; left: calc(var(--sb-w) - 4px); width: 8px; cursor: col-resize; z-index: 901; }
+body.sb-on .sb-alca::after { content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 2px; background: transparent; transition: background .15s; }
+body.sb-on .sb-alca:hover::after, body.sb-arrastando .sb-alca::after { background: var(--acc); }
+body.sb-arrastando, body.sb-arrastando * { cursor: col-resize !important; user-select: none !important; }
+body.sb-on .sb-btn .ic { flex-shrink: 0; }
+body.sb-mini { --sb-w: 68px; }
+body.sb-mini #main-nav { padding: 0 8px 12px !important; }
+body.sb-mini #main-nav .nav-btn { font-size: 0 !important; justify-content: center; padding: 10px 0 !important; gap: 0; }
+body.sb-mini #main-nav .nav-btn svg { width: 19px; height: 19px; }
+body.sb-mini #main-nav .nav-btn > span { position: absolute; top: 6px; right: 8px; }
+body.sb-mini #main-nav .nav-btn.active::before { left: -8px; }
+body.sb-mini .sb-brand { flex-direction: column; padding: 14px 0 12px !important; margin: 0 -8px 8px; gap: 8px; }
+body.sb-mini .sb-brand > div, body.sb-mini .sb-btn .lb, body.sb-mini .sb-user > div { display: none; }
+body.sb-mini .sb-recolher { margin: 0; }
+body.sb-mini .sb-btn { justify-content: center; padding: 8px 0; }
+body.sb-mini .sb-user { justify-content: center; padding: 0; }
+body.sb-oculto { --sb-w: 0px; }
+body.sb-oculto #main-nav { transform: translateX(-100%); }
+body.sb-oculto .sb-alca { display: none !important; }
+.sb-mostrar { display: none; }
+body.sb-on.sb-oculto .sb-mostrar { display: grid; place-items: center; position: fixed; top: 12px; left: 12px; z-index: 10001; width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--sb-line); background: var(--sb-bg); color: var(--sb-act-txt); font-size: 18px; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+:root[data-tema="vermelho"] body.sb-on.sb-oculto .sb-mostrar { color: #fff; }
+body.sb-on.sb-oculto { padding-top: 0; }
+body.sb-on.sb-oculto .tab-content.active { padding-top: 44px; }
 body.sb-on .msn-lanc, body.sb-on .msn-lista { left: calc(var(--sb-w) + 16px) !important; }
 body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 
 @media (max-width: 900px) {
-  body.sb-on { padding-left: 0; padding-top: 56px; }
+  body.sb-on { padding-left: 0; padding-top: 56px; --sb-w: 236px !important; }
+  body.sb-on .sb-alca, body.sb-on .sb-recolher, body.sb-on.sb-oculto .sb-mostrar { display: none !important; }
+  body.sb-oculto #main-nav { transform: translateX(-100%); }
+  body.sb-oculto.sb-aberto #main-nav { transform: none; }
+  body.sb-on.sb-oculto .tab-content.active { padding-top: 0; }
   body.sb-on #main-nav { transform: translateX(-100%); transition: transform .22s ease; box-shadow: 0 0 40px rgba(0,0,0,.35); }
   body.sb-on.sb-aberto #main-nav { transform: none; }
   body.sb-on .sb-topbar { display: flex; position: fixed; top: 0; left: 0; right: 0; height: 56px; z-index: 899; align-items: center; gap: 12px; padding: 0 14px; background: var(--sb-bg); border-bottom: 1px solid var(--sb-line); }
@@ -2659,6 +2694,7 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
     <!-- PÓDIO -->
     <div style="margin-bottom:1.5rem;">
       <h2 style="font-size:15px;font-weight:600;color:var(--txt);margin-bottom:4px;">🏅 Ranking — Televendas</h2>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 4px;">🎁 As premiações do mês ficam na <a href="#" onclick="showTab('rota',document.getElementById('nav-rota'));return false;" style="font-weight:700;">Rota da Meta</a>.</p>
       <p id="rank-sub" style="font-size:12px;color:var(--faint);">Este mês · % de atingimento da meta · atualizado em tempo real.</p>
       <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;align-items:center;">
         <div id="rank-periodo" style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -2689,8 +2725,8 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
     <!-- CARDS DETALHADOS -->
     <div id="rank-cards" style="display:grid;gap:12px;margin-bottom:2rem;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));"></div>
 
-    <!-- PREMIAÇÕES DO MÊS -->
-    <div style="background:var(--ink);border-radius:14px;padding:1.5rem;">
+    <!-- PREMIAÇÕES DO MÊS — agora ficam na Rota da Meta (calculadas pelos pedidos) -->
+    <div style="display:none;background:var(--ink);border-radius:14px;padding:1.5rem;">
       <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#FAC775;margin-bottom:1rem;">🎁 Premiações do Mês</div>
 
       <div style="font-size:12px;color:var(--faint);margin:-0.5rem 0 1rem;">Campanhas vigentes · Atacado · Outubro/2026</div>
@@ -24540,11 +24576,12 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     var nav = document.getElementById('main-nav'); if (!nav) return;
     document.body.classList.add('sb-on');
     if (!nav.querySelector('.sb-brand')) {
-      var br = document.createElement('div'); br.className = 'sb-brand'; br.innerHTML = LOGO;
+      var br = document.createElement('div'); br.className = 'sb-brand';
+      br.innerHTML = LOGO + '<button type="button" class="sb-recolher" title="Recolher / esconder o menu" onclick="sbAlternar(event)">‹</button>';
       nav.insertBefore(br, nav.firstChild);
       var ft = document.createElement('div'); ft.className = 'sb-foot';
-      ft.innerHTML = '<button type="button" class="sb-btn" onclick="temaAbrir(event)">🎨 Estilo do guia</button>' +
-        '<div class="sb-user"><div style="min-width:0"><div class="hi">Conectado como</div><div class="nm" id="sb-nome"></div></div><button type="button" class="sb-btn sb-sair" onclick="doLogout()">Sair</button></div>';
+      ft.innerHTML = '<button type="button" class="sb-btn" title="Estilo do guia" onclick="temaAbrir(event)"><span class="ic">🎨</span><span class="lb">Estilo do guia</span></button>' +
+        '<div class="sb-user"><div style="min-width:0"><div class="hi">Conectado como</div><div class="nm" id="sb-nome"></div></div><button type="button" class="sb-btn sb-sair" title="Sair" onclick="doLogout()">Sair</button></div>';
       nav.appendChild(ft);
       var tb = document.createElement('div'); tb.className = 'sb-topbar';
       tb.innerHTML = '<button type="button" aria-label="Abrir menu" onclick="document.body.classList.toggle(\'sb-aberto\')">☰</button><div class="sb-brand">' + LOGO + '</div>';
@@ -24552,13 +24589,65 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       var veu = document.createElement('div'); veu.className = 'sb-veu'; veu.onclick = function(){ document.body.classList.remove('sb-aberto'); };
       document.body.appendChild(veu);
       nav.addEventListener('click', function(e){ if (e.target.closest('.nav-btn')) document.body.classList.remove('sb-aberto'); });
+      var alca = document.createElement('div'); alca.className = 'sb-alca'; alca.title = 'Arraste para ajustar a largura · dois cliques recolhem';
+      document.body.appendChild(alca);
+      alca.addEventListener('mousedown', sbArrastarInicio);
+      alca.addEventListener('dblclick', function(){ sbModo(document.body.classList.contains('sb-mini') ? 'normal' : 'mini'); });
+      var mo = document.createElement('button'); mo.type = 'button'; mo.className = 'sb-mostrar'; mo.title = 'Mostrar o menu'; mo.textContent = '☰';
+      mo.onclick = function(){ sbModo('normal'); };
+      document.body.appendChild(mo);
+      sbCarregarPreferencia();
     }
+    // dica com o nome da aba (útil no modo só ícones)
+    nav.querySelectorAll('.nav-btn').forEach(function(b){ if (!b.title) b.title = b.textContent.trim(); });
     // o rodapé fica sempre no fim, mesmo depois de reordenar as abas
     var ft2 = nav.querySelector('.sb-foot'); if (ft2) nav.appendChild(ft2);
     var nm = document.getElementById('vb-nome-text'), alvo = document.getElementById('sb-nome');
     if (nm && alvo) alvo.textContent = nm.textContent;
   }
   window.sbMontar = sbMontar;
+
+  /* ── largura e modo do menu (salvos neste aparelho) ── */
+  var SB_MIN = 180, SB_MAX = 380;
+  function sbSalvar(k, v){ try { localStorage.setItem(k, v); } catch(e) {} }
+  function sbLer(k){ try { return localStorage.getItem(k); } catch(e) { return null; } }
+  function sbLargura(px){ px = Math.max(SB_MIN, Math.min(SB_MAX, Math.round(px))); raiz.style.setProperty('--sb-w', px + 'px'); return px; }
+  function sbModo(m){
+    var b = document.body;
+    b.classList.toggle('sb-mini', m === 'mini');
+    b.classList.toggle('sb-oculto', m === 'oculto');
+    var bt = document.querySelector('.sb-recolher');
+    if (bt) { bt.textContent = m === 'mini' ? '›' : '‹'; bt.title = m === 'mini' ? 'Expandir o menu (clique) · esconder de vez (Shift+clique)' : 'Recolher para só ícones (clique) · esconder de vez (Shift+clique)'; }
+    sbSalvar('fgv_sb_modo', m);
+  }
+  window.sbModo = sbModo;
+  window.sbAlternar = function(ev){
+    if (ev && ev.shiftKey) return sbModo('oculto');
+    sbModo(document.body.classList.contains('sb-mini') ? 'normal' : 'mini');
+  };
+  function sbCarregarPreferencia(){
+    var w = parseInt(sbLer('fgv_sb_w'), 10); if (w) sbLargura(w);
+    sbModo(sbLer('fgv_sb_modo') || 'normal');
+  }
+  function sbArrastarInicio(e){
+    e.preventDefault();
+    var b = document.body; b.classList.add('sb-arrastando');
+    function mover(ev){
+      var x = ev.clientX;
+      if (x < 40) { sbModo('oculto'); return; }
+      if (x < 120) { if (!b.classList.contains('sb-mini')) sbModo('mini'); return; }
+      if (b.classList.contains('sb-mini') || b.classList.contains('sb-oculto')) sbModo('normal');
+      sbSalvar('fgv_sb_w', sbLargura(x));
+    }
+    function soltar(){ b.classList.remove('sb-arrastando'); document.removeEventListener('mousemove', mover); document.removeEventListener('mouseup', soltar); }
+    document.addEventListener('mousemove', mover); document.addEventListener('mouseup', soltar);
+  }
+  // atalho: Ctrl + \ recolhe/expande o menu
+  document.addEventListener('keydown', function(e){
+    if ((e.ctrlKey || e.metaKey) && e.key === '\\' && document.body.classList.contains('sb-on')) {
+      e.preventDefault(); sbModo(document.body.classList.contains('sb-oculto') ? 'normal' : 'oculto');
+    }
+  });
   function embrulhar(nome, depois){
     var orig = window[nome]; if (typeof orig !== 'function') return;
     window[nome] = function(){ var r = orig.apply(this, arguments); try { depois(); } catch(e) { console.warn('tema', e); } return r; };
