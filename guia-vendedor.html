@@ -3532,7 +3532,7 @@
           </div>
           <div>
             <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Ligações no mês</label>
-            <input id="adm-ligacoes" type="text" placeholder="Meta: 600" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
+            <input id="adm-ligacoes" type="text" readonly title="Automático — soma das ligações lançadas na Rota da Meta" placeholder="Meta: 600" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;" onfocus="this.style.borderColor='#C41E1E'" onblur="this.style.borderColor='#E2E0D8'">
           </div>
           <div>
             <label style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Ticket Médio (R$)</label>
@@ -3559,21 +3559,12 @@
         </div>
       </div>
 
-      <!-- LIGAÇÕES DIÁRIAS -->
+      <!-- LIGAÇÕES DIÁRIAS (só leitura — lançamento é na Rota da Meta) -->
       <div style="background:#fff;border:1px solid #E8E6E1;border-radius:12px;padding:1.25rem;">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📞 Registrar Ligações do Dia</div>
-        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-          <div class="ped-field" style="flex:1;min-width:130px;">
-            <label>Data</label>
-            <input type="date" id="adm-lig-data" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
-          </div>
-          <div class="ped-field" style="flex:1;min-width:130px;">
-            <label>Qtd. de Ligações</label>
-            <input type="number" id="adm-lig-qtd" placeholder="Ex: 45" style="width:100%;padding:7px 10px;border:1.5px solid #E2E0D8;border-radius:6px;font-size:13px;outline:none;">
-          </div>
-          <div style="display:flex;align-items:flex-end;">
-            <button onclick="adicionarLigacaoAdmin()" style="padding:8px 16px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Registrar</button>
-          </div>
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C41E1E;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #F0EEEA;">📞 Ligações do Mês</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12.5px;color:#666;">
+          <span>As ligações são lançadas na <b>Rota da Meta</b> — pelo vendedor ou por você.</span>
+          <button onclick="abrirLigacoesNaRota(adminVendedor)" style="padding:8px 14px;border-radius:6px;border:none;background:#C41E1E;color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">📞 Lançar na Rota da Meta</button>
         </div>
         <div id="adm-lig-box" style="background:#F8F7F3;border-radius:8px;padding:12px;">
           <div style="font-size:12px;color:#aaa;text-align:center;">Selecione um vendedor para ver o histórico.</div>
@@ -9692,6 +9683,13 @@ function renderLigacoesAdmin(vendNome) {
       }).join('');
     }
   });
+}
+
+// Ligações: o único lugar de lançamento é a Rota da Meta (vendedor ou Juliana).
+function abrirLigacoesNaRota(vn) {
+  var btn = document.getElementById('nav-rota');
+  if (btn) showTab('rota', btn);
+  setTimeout(function() { try { if (vn && typeof rtVer === 'function' && rtJoga(vn)) rtVer(vn); } catch (e) {} }, 250);
 }
 
 function adicionarLigacaoAdmin() {
@@ -18780,7 +18778,7 @@ function ckAplicarPermissoes(){
    Para cada vendedor e cada dia: nº de pedidos lançados (não cancelados) e a
    soma em R$ desses pedidos, pela data do pedido. Ligações e propostas
    continuam sendo lançadas no check-in. */
-var CKP = { ped: {}, ligado: false };
+var CKP = { ped: {}, lig: {}, ligado: false };
 function ckLigarPedidos(){
   if (CKP.ligado) return;
   CKP.ligado = true;
@@ -18788,6 +18786,13 @@ function ckLigarPedidos(){
     dbRef('pedidos/' + vn).on('value', function(snap){
       var v = (snap && snap.val()) || {};
       CKP.ped[vn] = Object.keys(v).map(function(k){ return v[k]; }).filter(function(p){ return p && !p.excluido && p.status !== 'cancelado' && p.data; });
+      ckPedidosAtualizados();
+    });
+    // ligações vêm da Rota da Meta (base 'ligacoes'), o check-in só mostra
+    dbRef('ligacoes/' + vn).on('value', function(snap){
+      var dados = (snap && snap.val()) || {}, mapa = {};
+      Object.keys(dados).forEach(function(k){ var l = dados[k]; if (l && l.data) mapa[l.data] = (mapa[l.data] || 0) + ckNum(l.qtd); });
+      CKP.lig[vn] = mapa;
       ckPedidosAtualizados();
     });
   });
@@ -18805,7 +18810,9 @@ function ckAplicarPedidosNasLinhas(data){
   // dias com pedido no mês passado e neste mês entram mesmo sem check-in preenchido
   var desde = ckMesAnteriorStr() + '-01', ate = ckToday();
   CK_EQUIPE.forEach(function(vn){
-    (CKP.ped[vn] || []).forEach(function(p){
+    var diasComMovimento = (CKP.ped[vn] || []).map(function(p){ return { data: p.data }; })
+      .concat(Object.keys(CKP.lig[vn] || {}).map(function(d){ return { data: d }; }));
+    diasComMovimento.forEach(function(p){
       if (p.data < desde || p.data > ate || !vendedores[vn]) return;
       var dia = data.dias[p.data] || (data.dias[p.data] = { rows: CK_EQUIPE.filter(function(k){ return vendedores[k]; }).map(function(k){ return { nome: vendedores[k].nome, ligacoes: 0, propostas: 0, vendasN: 0, vendidoR: 0 }; }) });
       dia.rows = dia.rows || [];
@@ -18816,7 +18823,10 @@ function ckAplicarPedidosNasLinhas(data){
   Object.keys(data.dias).forEach(function(d){
     ((data.dias[d] && data.dias[d].rows) || []).forEach(function(r){
       var vn = nomeParaVn[ckNormNome(r.nome)];
-      if (!vn || !CKP.ped[vn]) return;
+      if (!vn) return;
+      // dia com lançamento na Rota da Meta manda; dias antigos sem lançamento mantêm o valor do check-in
+      if (CKP.lig[vn] && CKP.lig[vn][d] != null) r.ligacoes = CKP.lig[vn][d];
+      if (!CKP.ped[vn]) return;
       var s = ckVendasDoDia(vn, d);
       r.vendasN = s.n; r.vendidoR = s.v;
     });
@@ -19112,7 +19122,7 @@ function ckRenderTable(){
     if (admin){
       tr.innerHTML =
         '<td><input class="ck-nome" data-i="'+i+'" data-f="nome" value="'+row.nome+'"></td>' +
-        '<td><input type="number" min="0" data-i="'+i+'" data-f="ligacoes" value="'+row.ligacoes+'"></td>' +
+        '<td class="num" title="Lançado na Rota da Meta">'+ckNum(row.ligacoes)+' <span style="font-size:10px;color:#2E7D32;">auto</span></td>' +
         '<td><input type="number" min="0" data-i="'+i+'" data-f="propostas" value="'+row.propostas+'"></td>' +
         '<td class="num" title="Calculado automaticamente pelos pedidos lançados nesse dia">'+ckNum(row.vendasN)+' <span style="font-size:10px;color:#2E7D32;">auto</span></td>' +
         '<td class="num" title="Calculado automaticamente pelos pedidos lançados nesse dia">'+ckFmtBRL(row.vendidoR)+' <span style="font-size:10px;color:#2E7D32;">auto</span></td>' +
