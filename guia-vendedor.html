@@ -739,14 +739,41 @@ a { color: var(--acc-txt); }
 table { color: var(--txt); }
 hr { border-color: var(--line); }
 * { scrollbar-color: var(--line-strong) transparent; }
+/* barras de rolagem discretas (sem vermelho) em qualquer estilo */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent !important; }
+::-webkit-scrollbar-thumb { background: var(--line-strong) !important; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--faint) !important; background-clip: padding-box; }
+::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+nav, #main-nav { scrollbar-color: var(--line-strong) transparent !important; }
+/* menu lateral: a barra só aparece quando o mouse está no menu */
+body.sb-on #main-nav { scrollbar-width: thin; scrollbar-color: transparent transparent !important; }
+body.sb-on #main-nav:hover { scrollbar-color: var(--sb-line) transparent !important; }
+body.sb-on #main-nav::-webkit-scrollbar { width: 6px; }
+body.sb-on #main-nav::-webkit-scrollbar-thumb { background: transparent !important; }
+body.sb-on #main-nav:hover::-webkit-scrollbar-thumb { background: var(--sb-line) !important; background-clip: padding-box; }
 
 /* cartões e chips comuns */
 .card, .meta-card, .ck-panel, .mm-card, .page-section > div[style*="border-radius:12px"], .page-section > div[style*="border-radius:14px"] { border-radius: var(--radius) !important; }
-.card, .meta-card, .ck-panel { box-shadow: var(--card-shadow); }
+.card, .meta-card, .ck-panel, .mm-panel, .mm-hero, .mm-ed, .ab-card, .ca-card, .pr-card, .pr-client-card, .qd-card, .qz-card, .sg-card { box-shadow: var(--card-shadow); border-radius: var(--radius) !important; }
 .qf-btn { background: var(--surface) !important; color: var(--txt-2) !important; border: 1px solid var(--line) !important; font-weight: 600; }
 .qf-btn:hover { border-color: var(--acc) !important; color: var(--acc-txt) !important; }
 .qf-btn.active { background: var(--acc) !important; border-color: var(--acc) !important; color: #fff !important; }
 :root[data-tema="vermelho"] .qf-btn { border-color: #111 !important; border-radius: 4px; }
+
+/* ── CARTÕES: cada estilo dá o seu acabamento aos blocos brancos do guia ── */
+.tab-content :is([style*="background:var(--surface)"], [style*="background: var(--surface)"])[style*="border-radius"]:not(:is([style*="background:var(--surface)"], [style*="background: var(--surface)"])[style*="border-radius"] *):not(button):not(input):not(select):not(span) {
+  border-radius: var(--radius) !important;
+  box-shadow: var(--card-shadow);
+}
+:root[data-tema="vermelho"] .tab-content :is([style*="background:var(--surface)"], [style*="background: var(--surface)"])[style*="border-radius"]:not(:is([style*="background:var(--surface)"], [style*="background: var(--surface)"])[style*="border-radius"] *):not(button):not(input):not(select):not(span),
+:root[data-tema="vermelho"] .card, :root[data-tema="vermelho"] .meta-card, :root[data-tema="vermelho"] .ck-panel, :root[data-tema="vermelho"] .mm-panel, :root[data-tema="vermelho"] .mm-hero, :root[data-tema="vermelho"] .mm-ed, :root[data-tema="vermelho"] .ab-card, :root[data-tema="vermelho"] .ca-card, :root[data-tema="vermelho"] .pr-card, :root[data-tema="vermelho"] .pr-client-card, :root[data-tema="vermelho"] .qd-card, :root[data-tema="vermelho"] .qz-card, :root[data-tema="vermelho"] .sg-card {
+  border: 1.5px solid #111 !important;
+  box-shadow: 4px 4px 0 #111 !important;
+  border-radius: 4px !important;
+}
+:root[data-tema="vermelho"] .tab-content h1, :root[data-tema="vermelho"] .tab-content h2 { font-weight: 800 !important; letter-spacing: -.01em; }
+:root[data-tema="vermelho"] .tab-content button[style*="background:var(--acc)"], :root[data-tema="vermelho"] .tab-content button[style*="background: var(--acc)"] { border-radius: 4px !important; }
 
 /* ── MENU LATERAL ── */
 :root { --sb-w: 236px; }
