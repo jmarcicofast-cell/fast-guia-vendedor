@@ -3359,6 +3359,7 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
       <button class="qf-btn" id="admsub-btn-tempo" onclick="showAdminSub('tempo',this)">⏱️ Gestão de Tempo</button>
       <button class="qf-btn" id="admsub-btn-antonio" onclick="showAdminSub('antonio',this)">🎧 Antônio — Escuta</button>
       <button class="qf-btn" id="admsub-btn-confpn" onclick="showAdminSub('confpn',this)">🔎 Conferir Chamado em Lote</button>
+      <button class="qf-btn" id="admsub-btn-acessos" style="display:none;" onclick="showAdminSub('acessos',this)">🔐 Acessos</button>
     </div>
 
     <div id="admsub-avaliacao" class="admsub-content active">
@@ -3622,6 +3623,11 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
       </div>
 
       <div id="confpn-resultado" style="margin-top:1.25rem;"></div>
+    </div>
+
+    <!-- ACESSOS (logins e páginas) — Juliana e quem gerencia acessos -->
+    <div id="admsub-acessos" class="admsub-content">
+      <div id="ac-box"></div>
     </div>
 
   </div>
@@ -10101,6 +10107,11 @@ window.addEventListener('DOMContentLoaded', function() {
   function prosseguirComLogin() {
     if (jaProsseguiu) return;
     jaProsseguiu = true;
+    // Primeiro carrega os acessos (Gestão > Acessos) e só depois entra
+    if (typeof acCarregar === 'function') acCarregar(prosseguirDepoisDosAcessos);
+    else prosseguirDepoisDosAcessos();
+  }
+  function prosseguirDepoisDosAcessos() {
     console.log('Firebase pronto. firebaseOK:', firebaseOK);
     // Importante: só tenta entrar automaticamente (ou recarregar os dados de uma
     // sessao ja aberta) DEPOIS que sabemos se o Firebase conectou ou nao. Fazer
@@ -14678,8 +14689,15 @@ function doLogin() {
   const error = document.getElementById('login-error');
   if (!vendedores[user] && typeof caLoginUnidade === 'function' && caLoginUnidade(user, pass)) { error.textContent = ''; return; }
   const v = vendedores[user];
-  if (!v || v.senha.toUpperCase() !== pass) {
-    error.textContent = 'Usuário ou senha incorretos.';
+  if (!v || String(v.senha).toUpperCase() !== pass) {
+    error.textContent = (!v && typeof AC !== 'undefined' && !AC.carregado)
+      ? 'Carregando os acessos… tente de novo em alguns segundos.'
+      : 'Usuário ou senha incorretos.';
+    document.getElementById('login-pass').value = '';
+    return;
+  }
+  if (v.bloqueado) {
+    error.textContent = 'Acesso desativado. Fale com a gestão.';
     document.getElementById('login-pass').value = '';
     return;
   }
@@ -14765,6 +14783,8 @@ function navSetupDragDrop(){
 function entrarComoUsuario(user) {
   const v = vendedores[user];
   if (!v) return;
+  if (v.bloqueado) { try { localStorage.removeItem('fgv_session_user'); } catch(e) {} return; }
+  if (typeof acResetarPaginas === 'function') acResetarPaginas();
   currentUser = user;
   if (!firebaseOK) {
     var fw = document.getElementById('firebase-warning');
@@ -14893,6 +14913,8 @@ function entrarComoUsuario(user) {
       credBox.style.display = 'none';
     }
   }
+  // Acessos: páginas liberadas/bloqueadas pela gestão (Gestão > Acessos)
+  try { if (typeof acAplicarPaginas === 'function') acAplicarPaginas(user); } catch(e) { console.warn('acessos', e); }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -17523,6 +17545,7 @@ function doLogout() {
   try { liderAoSair(); } catch(e) {}
   try { if (typeof msnEncerrar === 'function') msnEncerrar(); } catch(e) {}
   currentUser = null;
+  try { if (typeof acResetarPaginas === 'function') acResetarPaginas(); } catch(e) {}
   try { localStorage.removeItem('fgv_session_user'); } catch(e) {}
   if (window._rampaConnWatcher) { clearInterval(window._rampaConnWatcher); window._rampaConnWatcher = null; }
   document.getElementById('login-screen').style.display = 'flex';
@@ -17767,7 +17790,7 @@ function checkAdminAccess(nome) {
     if (rampaNav) rampaNav.style.display = 'flex';
     if (checkinNav) checkinNav.style.display = 'flex';
     // Load all vendedores from Firebase
-    Promise.all(['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'].map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
+    Promise.all(Object.keys(vendedores).filter(function(n) { return vendedores[n].tipo !== 'administrativo' && vendedores[n].tipo !== 'gestora'; }).map(function(n) { return new Promise(function(res) { fbLoad(n, res); }); }))
       .then(function() {
         adminSelect('PEDRO', document.getElementById('abtn-PEDRO'));
         renderAdminResumo();
@@ -18043,6 +18066,7 @@ function showAdminSub(name, btn) {
   document.querySelectorAll('#tab-admin .admsub-nav .qf-btn').forEach(function(b){ b.classList.remove('active'); });
   document.getElementById('admsub-' + name).classList.add('active');
   btn.classList.add('active');
+  if (name === 'acessos' && typeof acRender === 'function') acRender();
   if (name === 'tempo') {
     var atbtn = document.getElementById('atbtn-' + adminVendedor);
     admTempoSelect(adminVendedor, atbtn);
@@ -25433,5 +25457,549 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   window.addEventListener('focus', checar);
 })();
 </script>
+<!-- ══════════════════════════════════════════════════════════════
+     ACESSOS — gestão de logins e páginas (aba Gestão > Acessos)
+     Quem gerencia: Juliana (sempre) e o administrativo (pode ser
+     ligado/desligado por usuário, só a Juliana muda isso).
+     Firebase: acessos/usuarios/{LOGIN} = { nome, senha, tipo, lider, bloqueado,
+                 gerenciaAcessos, paginas:{navId:true|false}, criado, atualizadoPor, atualizadoEm }
+               acessos/unidades/{LOGIN} = { nome, senha, unidade, veTudo, direcao, bloqueado, criado, ... }
+     O que está no Firebase vale por cima do que está fixo no código.
+     Página sem regra = segue o padrão do perfil (como sempre foi).
+     ══════════════════════════════════════════════════════════════ -->
+<style>
+  .ac-top { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:1rem; }
+  .ac-top h2 { font-size:16px; font-weight:600; color:var(--txt); margin:0 0 2px; }
+  .ac-top p { font-size:12px; color:var(--muted); margin:0; max-width:560px; }
+  .ac-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .ac-search { padding:7px 10px; border:1px solid var(--line); border-radius:8px; font-size:13px; background:var(--surface); color:var(--txt); min-width:200px; }
+  .ac-btn { padding:7px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--txt); font-size:12.5px; font-weight:600; cursor:pointer; }
+  .ac-btn:hover { border-color:var(--line-strong); }
+  .ac-btn.pri { background:var(--acc); border-color:var(--acc); color:#fff; }
+  .ac-btn.min { padding:4px 9px; font-size:11.5px; }
+  .ac-btn.perigo { color:var(--acc-txt); }
+  .ac-sec { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:1.25rem 0 .5rem; }
+  .ac-lista { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface); }
+  .ac-linha { display:grid; grid-template-columns: minmax(150px,1.4fr) minmax(110px,.9fr) minmax(110px,.9fr) minmax(120px,1fr) auto; gap:10px; align-items:center; padding:10px 12px; border-top:1px solid var(--line); font-size:13px; color:var(--txt); }
+  .ac-linha:first-child { border-top:none; }
+  .ac-linha.off { opacity:.55; }
+  .ac-nome { font-weight:600; }
+  .ac-login { font-family:monospace; font-size:11.5px; color:var(--muted); }
+  .ac-tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; background:var(--surface-2); color:var(--txt-2); white-space:nowrap; }
+  .ac-tag.ok { background:#E6F4EA; color:#1B5E20; }
+  .ac-tag.off { background:#FBE9E9; color:#7A0000; }
+  .ac-tag.ger { background:#E6F1FB; color:#0C447C; }
+  .ac-senha { font-family:monospace; font-size:12px; cursor:pointer; user-select:all; }
+  .ac-senha.esc { filter:blur(4px); }
+  .ac-pags { font-size:11.5px; color:var(--muted); }
+  .ac-bt { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  .ac-vazio { padding:1rem; text-align:center; font-size:12.5px; color:var(--faint); }
+  @media (max-width: 760px) {
+    .ac-linha { grid-template-columns: 1fr auto; }
+    .ac-linha > .ac-c-perfil, .ac-linha > .ac-c-senha, .ac-linha > .ac-c-pags { grid-column:1 / -1; }
+    .ac-bt { grid-column:1 / -1; justify-content:flex-start; }
+  }
+  /* modal */
+  .ac-fundo { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:2147483000; display:flex; align-items:flex-start; justify-content:center; padding:24px 12px; overflow:auto; }
+  .ac-modal { background:var(--surface); color:var(--txt); border-radius:12px; width:100%; max-width:640px; padding:18px 18px 14px; box-shadow:0 10px 40px rgba(0,0,0,.25); }
+  .ac-modal h3 { font-size:15px; margin:0 0 12px; }
+  .ac-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; }
+  @media (max-width: 560px) { .ac-grid { grid-template-columns:1fr; } }
+  .ac-campo label { display:block; font-size:11.5px; font-weight:600; color:var(--muted); margin-bottom:3px; }
+  .ac-campo input, .ac-campo select { width:100%; box-sizing:border-box; padding:7px 9px; border:1px solid var(--line); border-radius:7px; font-size:13px; background:var(--surface); color:var(--txt); }
+  .ac-campo input[readonly] { background:var(--surface-2); color:var(--muted); }
+  .ac-chk { display:flex; align-items:center; gap:8px; font-size:12.5px; margin-top:4px; }
+  .ac-chk small { color:var(--muted); }
+  .ac-pg-tit { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:16px 0 6px; flex-wrap:wrap; }
+  .ac-pg-tit b { font-size:13px; }
+  .ac-pg-tit span { font-size:11.5px; color:var(--muted); }
+  .ac-pg { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; border-top:1px solid var(--line); font-size:12.5px; }
+  .ac-pg .pad { font-size:11px; color:var(--faint); margin-left:6px; }
+  .ac-seg { display:inline-flex; border:1px solid var(--line); border-radius:7px; overflow:hidden; flex-shrink:0; }
+  .ac-seg button { border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:600; padding:4px 9px; cursor:pointer; border-left:1px solid var(--line); }
+  .ac-seg button:first-child { border-left:none; }
+  .ac-seg button.on { background:var(--surface-2); color:var(--txt); }
+  .ac-seg button.on.lib { background:#E6F4EA; color:#1B5E20; }
+  .ac-seg button.on.blq { background:#FBE9E9; color:#7A0000; }
+  .ac-erro { color:var(--acc-txt); font-size:12px; min-height:16px; margin-top:8px; }
+  .ac-rodape { display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
+</style>
+<script>
+var AC = { dados: null, carregado: false, ouvindo: false, baseV: null, baseU: null, busca: '', form: null, admCarregado: false };
+
+/* páginas do menu, na ordem do menu */
+var AC_PAGINAS = [
+  ['minhasmetas', 'Minhas Metas'], ['tabela', 'Tabela de Produtos'], ['empresa', 'Empresa'], ['pedidos', 'Pedidos'],
+  ['clientes', 'Base de Clientes'], ['abastecimento', 'Pedidos abertos'], ['central', 'Central Abast.'],
+  ['shopping', 'Shopping de Preços'], ['treinamentos', 'Treinamentos'], ['reconhecimento', 'Ranking'],
+  ['rota', 'Rota da Meta'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
+  ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['parana', 'Plano PR'], ['checkin', 'Check-in Diário']
+];
+var AC_PERFIS = [
+  ['novo', 'Vendedor(a) novo(a)'], ['veterana', 'Vendedor(a) veterano(a)'], ['', 'Vendedor(a)'], ['administrativo', 'Administrativo']
+];
+var AC_CAMPOS_V = ['senha', 'nome', 'tipo', 'lider', 'bloqueado', 'gerenciaAcessos', 'paginas'];
+var AC_CAMPOS_U = ['senha', 'nome', 'unidade', 'veTudo', 'direcao', 'bloqueado'];
+
+function acEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+function acSemAcento(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function acNormLogin(s) { return acSemAcento(s).trim().toUpperCase().replace(/\s+/g, ' '); }
+function acPerfilNome(t, key) {
+  if (key === 'JULIANA' || t === 'gestora') return 'Gestora';
+  for (var i = 0; i < AC_PERFIS.length; i++) if (AC_PERFIS[i][0] === (t || '')) return AC_PERFIS[i][1];
+  return 'Vendedor(a)';
+}
+
+/* ── guarda como cada login está no código, pra poder voltar ao padrão ── */
+function acGuardarBase() {
+  if (AC.baseV) return;
+  AC.baseV = {}; AC.baseU = {};
+  Object.keys(vendedores).forEach(function(k) {
+    var b = {}; AC_CAMPOS_V.forEach(function(c) { if (vendedores[k][c] !== undefined) b[c] = vendedores[k][c]; });
+    AC.baseV[k] = b;
+  });
+  if (typeof CA_UNIDADES !== 'undefined') Object.keys(CA_UNIDADES).forEach(function(k) {
+    var b = {}; AC_CAMPOS_U.forEach(function(c) { if (CA_UNIDADES[k][c] !== undefined) b[c] = CA_UNIDADES[k][c]; });
+    AC.baseU[k] = b;
+  });
+}
+
+function acRestaurar(obj, base, campos) {
+  campos.forEach(function(c) { if (base[c] !== undefined) obj[c] = base[c]; else delete obj[c]; });
+}
+
+/* aplica o que está no Firebase por cima dos logins do código */
+function acAplicarDados() {
+  acGuardarBase();
+  var d = AC.dados || {}, us = d.usuarios || {}, un = d.unidades || {};
+  // 1) volta tudo ao padrão do código e tira os criados pelo painel
+  Object.keys(vendedores).forEach(function(k) {
+    if (AC.baseV[k]) acRestaurar(vendedores[k], AC.baseV[k], AC_CAMPOS_V);
+    else if (vendedores[k]._acNovo) delete vendedores[k];
+  });
+  if (typeof CA_UNIDADES !== 'undefined') Object.keys(CA_UNIDADES).forEach(function(k) {
+    if (AC.baseU[k]) acRestaurar(CA_UNIDADES[k], AC.baseU[k], AC_CAMPOS_U);
+    else if (CA_UNIDADES[k]._acNovo) delete CA_UNIDADES[k];
+  });
+  // 2) aplica o que foi definido no painel
+  Object.keys(us).forEach(function(k) {
+    var o = us[k]; if (!o) return;
+    var v = vendedores[k];
+    if (!v) {
+      if (typeof CA_UNIDADES !== 'undefined' && CA_UNIDADES[k]) return; // login já usado por unidade
+      var adm = o.tipo === 'administrativo';
+      v = vendedores[k] = { _acNovo: true, nome: o.nome || k, senha: o.senha || '', tipo: o.tipo || '',
+        meta: adm ? '' : 'R$ 80.000', realizado: adm ? '' : 'R$ 0', pedidos: '0', ticket: adm ? '' : 'R$ 0', pct: 0,
+        obs: adm ? '' : ('Bem-vindo(a), ' + (o.nome || k) + '! Seus dados serão atualizados pela gestão.'), credenciais: [] };
+    }
+    AC_CAMPOS_V.forEach(function(c) {
+      if (o[c] === undefined || o[c] === null) return;
+      if (k === 'JULIANA' && (c === 'nome' || c === 'tipo' || c === 'bloqueado' || c === 'gerenciaAcessos')) return; // a gestora não pode ser travada
+      v[c] = o[c];
+    });
+    if (!v.tipo) delete v.tipo;
+    if (!v.lider) delete v.lider;
+  });
+  if (typeof CA_UNIDADES !== 'undefined') Object.keys(un).forEach(function(k) {
+    var o = un[k]; if (!o) return;
+    if (vendedores[k] && !CA_UNIDADES[k]) return;
+    var u = CA_UNIDADES[k];
+    if (!u) u = CA_UNIDADES[k] = { _acNovo: true, nome: o.nome || k, senha: o.senha || '', unidade: o.unidade || '' };
+    AC_CAMPOS_U.forEach(function(c) { if (o[c] !== undefined && o[c] !== null) u[c] = o[c]; });
+    ['veTudo', 'direcao', 'bloqueado'].forEach(function(c) { if (!u[c]) delete u[c]; });
+  });
+  // 3) quem está logado e foi desativado sai na hora
+  try {
+    if (currentUser && (!vendedores[currentUser] || vendedores[currentUser].bloqueado)) {
+      alert('Seu acesso ao guia foi desativado pela gestão.');
+      doLogout(); return;
+    }
+    if (typeof CA !== 'undefined' && CA.unid && CA.unid.key && (!CA_UNIDADES[CA.unid.key] || CA_UNIDADES[CA.unid.key].bloqueado)) {
+      alert('O acesso desta unidade foi desativado.');
+      doLogout(); return;
+    }
+    if (currentUser) acAplicarPaginas(currentUser);
+  } catch (e) { console.warn('acessos', e); }
+  if (document.getElementById('ac-box') && document.getElementById('admsub-acessos') && document.getElementById('admsub-acessos').classList.contains('active')) acRender();
+}
+
+/* carrega acessos/ do Firebase (fica ouvindo) e chama cb na primeira resposta */
+function acCarregar(cb) {
+  var chamou = false;
+  function seguir() { if (chamou) return; chamou = true; if (cb) try { cb(); } catch (e) { console.warn(e); } }
+  if (AC.ouvindo) { seguir(); return; }
+  AC.ouvindo = true;
+  setTimeout(seguir, 3500);
+  try {
+    dbRef('acessos').on('value', function(snap) {
+      AC.dados = (snap && snap.val()) || {};
+      AC.carregado = true;
+      acAplicarDados();
+      seguir();
+    });
+  } catch (e) { console.warn('acessos: não carregou', e); seguir(); }
+}
+
+/* ── regras de página ── */
+function acPadrao(key, navId) {
+  var v = vendedores[key]; if (!v) return false;
+  var jul = key === 'JULIANA';
+  if (navId === 'negociacoes' || navId === 'evolucao') return false;
+  if (v.tipo === 'administrativo') {
+    if (navId === 'central') return caUsuarioLiberado(key);
+    return (typeof AB_NAV_ADM !== 'undefined') && AB_NAV_ADM.indexOf(navId) !== -1;
+  }
+  switch (navId) {
+    case 'clientes': return jul;
+    case 'central': return caUsuarioLiberado(key);
+    case 'quiz': return (typeof qzTemAcesso === 'function') && qzTemAcesso(key);
+    case 'admin': case 'rampa': case 'checkin': return jul || !!v.lider;
+    case 'parana': return jul || key === 'ELIZIANE';
+    default: return true;
+  }
+}
+function acRegra(key, navId) { var v = vendedores[key]; var p = v && v.paginas; return (p && typeof p[navId] === 'boolean') ? p[navId] : null; }
+function acVe(key, navId) { var r = acRegra(key, navId); return r === null ? acPadrao(key, navId) : r; }
+function acPodeGerenciar(key) {
+  key = key || currentUser;
+  if (key === 'JULIANA') return true;
+  var v = vendedores[key]; if (!v || v.bloqueado) return false;
+  return v.gerenciaAcessos !== undefined ? !!v.gerenciaAcessos : v.tipo === 'administrativo';
+}
+
+function acMexerNav(b, mostrar) {
+  if (!b.hasAttribute('data-ac-orig')) b.setAttribute('data-ac-orig', b.style.display || '__');
+  b.style.display = mostrar ? 'flex' : 'none';
+}
+/* desfaz o que o painel mudou no menu (antes de entrar com outro usuário) */
+function acResetarPaginas() {
+  document.querySelectorAll('#main-nav .nav-btn[data-ac-orig]').forEach(function(b) {
+    var o = b.getAttribute('data-ac-orig'); b.style.display = (o === '__') ? '' : o; b.removeAttribute('data-ac-orig');
+  });
+  document.querySelectorAll('#tab-admin .admsub-nav .qf-btn[data-ac-sub]').forEach(function(b) { b.style.display = ''; b.removeAttribute('data-ac-sub'); });
+  var bAc = document.getElementById('admsub-btn-acessos'); if (bAc) bAc.style.display = 'none';
+}
+
+/* aplica as regras do painel no menu de quem entrou */
+function acAplicarPaginas(key) {
+  acResetarPaginas();
+  var v = vendedores[key]; if (!v) return;
+  var p = v.paginas || {};
+  Object.keys(p).forEach(function(id) {
+    if (typeof p[id] !== 'boolean') return;
+    var b = document.querySelector('#main-nav .nav-btn[data-nav-id="' + id + '"]');
+    if (b) acMexerNav(b, p[id]);
+  });
+  // Gestão > Acessos para quem gerencia; se a Gestão não é do perfil, só a sub-aba Acessos aparece
+  var podeGer = acPodeGerenciar(key);
+  var bAc = document.getElementById('admsub-btn-acessos');
+  if (bAc) bAc.style.display = podeGer ? '' : 'none';
+  var gestaoCompleta = acVe(key, 'admin');
+  if (podeGer && !gestaoCompleta) {
+    var nav = document.getElementById('nav-admin'); if (nav) acMexerNav(nav, true);
+    document.querySelectorAll('#tab-admin .admsub-nav .qf-btn').forEach(function(b) {
+      if (b.id !== 'admsub-btn-acessos') { b.style.display = 'none'; b.setAttribute('data-ac-sub', '1'); }
+    });
+    if (bAc) { try { showAdminSub('acessos', bAc); } catch (e) {} }
+  } else if (!podeGer) {
+    var ativo = document.getElementById('admsub-acessos');
+    if (ativo && ativo.classList.contains('active')) { var b1 = document.getElementById('admsub-btn-avaliacao'); if (b1) showAdminSub('avaliacao', b1); }
+  }
+  // páginas da gestão liberadas para quem não é gestora: carrega os dados da equipe
+  if (key !== 'JULIANA' && !v.lider) {
+    if (p.admin === true && !AC.admCarregado) {
+      AC.admCarregado = true;
+      var nomes = Object.keys(vendedores).filter(function(n) { return vendedores[n].tipo !== 'administrativo' && vendedores[n].tipo !== 'gestora'; });
+      Promise.all(nomes.map(function(n) { return new Promise(function(res) { try { fbLoad(n, res); } catch (e) { res(); } }); }))
+        .then(function() { try { adminSelect('PEDRO', document.getElementById('abtn-PEDRO')); renderAdminResumo(); } catch (e) {} });
+    }
+    if (p.rampa === true) { try { listenRampaNovos(); } catch (e) {} }
+  }
+  // se a aba aberta agora ficou bloqueada, vai para a primeira liberada
+  var aberta = document.querySelector('#main-nav .nav-btn.active');
+  if (aberta && aberta.style.display === 'none') {
+    var prox = Array.prototype.find.call(document.querySelectorAll('#main-nav .nav-btn[data-nav-id]'), function(b) { return b.style.display !== 'none'; });
+    if (prox) showTab(prox.dataset.navId, prox);
+  }
+}
+
+/* ══ TELA ══ */
+function acListaUsuarios() {
+  return Object.keys(vendedores).map(function(k) { return { k: k, v: vendedores[k] }; })
+    .sort(function(a, b) {
+      if (a.k === 'JULIANA') return -1; if (b.k === 'JULIANA') return 1;
+      var ga = a.v.tipo === 'administrativo' ? 1 : 0, gb = b.v.tipo === 'administrativo' ? 1 : 0;
+      if (ga !== gb) return ga - gb;
+      return String(a.v.nome).localeCompare(String(b.v.nome), 'pt-BR');
+    });
+}
+function acResumoPaginas(k) {
+  var lib = 0, extra = [], blq = [];
+  AC_PAGINAS.forEach(function(p) {
+    if (acVe(k, p[0])) lib++;
+    var r = acRegra(k, p[0]);
+    if (r === true && !acPadrao(k, p[0])) extra.push(p[1]);
+    if (r === false && acPadrao(k, p[0])) blq.push(p[1]);
+  });
+  var t = lib + ' de ' + AC_PAGINAS.length + ' páginas';
+  if (extra.length) t += ' · +' + extra.join(', ');
+  if (blq.length) t += ' · sem ' + blq.join(', ');
+  return t;
+}
+function acTogglarSenha(el) { el.classList.toggle('esc'); }
+
+function acRender() {
+  var box = document.getElementById('ac-box'); if (!box) return;
+  if (!acPodeGerenciar()) { box.innerHTML = '<div class="ac-vazio">Você não tem permissão para gerenciar acessos.</div>'; return; }
+  var q = acSemAcento(AC.busca).toLowerCase();
+  function bate(k, nome) { return !q || acSemAcento(k + ' ' + nome).toLowerCase().indexOf(q) !== -1; }
+  var linhas = acListaUsuarios().filter(function(x) { return bate(x.k, x.v.nome); }).map(function(x) {
+    var k = x.k, v = x.v, jul = k === 'JULIANA', off = !!v.bloqueado;
+    var tags = '<span class="ac-tag">' + acEsc(acPerfilNome(v.tipo, k)) + '</span>';
+    if (v.lider) tags += ' <span class="ac-tag">Líder</span>';
+    if (acPodeGerenciar(k)) tags += ' <span class="ac-tag ger">Gerencia acessos</span>';
+    var podeMexer = !jul || currentUser === 'JULIANA';
+    var bts = '';
+    if (podeMexer) bts += '<button class="ac-btn min" onclick="acAbrir(\'' + acEsc(k) + '\')">Editar</button>';
+    if (!jul) bts += '<button class="ac-btn min' + (off ? '' : ' perigo') + '" onclick="acAtivar(\'' + acEsc(k) + '\',' + (off ? 'true' : 'false') + ')">' + (off ? 'Reativar' : 'Desativar') + '</button>';
+    if (v._acNovo) bts += '<button class="ac-btn min perigo" onclick="acExcluir(\'' + acEsc(k) + '\')">Excluir</button>';
+    return '<div class="ac-linha' + (off ? ' off' : '') + '">' +
+      '<div><div class="ac-nome">' + acEsc(v.nome) + '</div><div class="ac-login">login: ' + acEsc(k) + '</div></div>' +
+      '<div class="ac-c-status"><span class="ac-tag ' + (off ? 'off' : 'ok') + '">' + (off ? 'Desativado' : 'Ativo') + '</span></div>' +
+      '<div class="ac-c-perfil">' + tags + '</div>' +
+      '<div class="ac-c-senha">' + (podeMexer ? '<span class="ac-senha esc" title="Clique para ver" onclick="acTogglarSenha(this)">' + acEsc(v.senha) + '</span>' : '<span class="ac-pags">—</span>') +
+        '<div class="ac-pags">' + acEsc(acResumoPaginas(k)) + '</div></div>' +
+      '<div class="ac-bt">' + bts + '</div>' +
+    '</div>';
+  }).join('');
+
+  var unids = (typeof CA_UNIDADES !== 'undefined') ? Object.keys(CA_UNIDADES).filter(function(k) { return bate(k, CA_UNIDADES[k].nome + ' ' + CA_UNIDADES[k].unidade); }) : [];
+  var linhasU = unids.sort(function(a, b) { return String(CA_UNIDADES[a].nome).localeCompare(String(CA_UNIDADES[b].nome), 'pt-BR'); }).map(function(k) {
+    var u = CA_UNIDADES[k], off = !!u.bloqueado;
+    var tags = '<span class="ac-tag">' + acEsc(u.direcao ? 'Direção (só leitura)' : (u.unidade || 'Unidade')) + '</span>';
+    if (u.veTudo) tags += ' <span class="ac-tag">Vê todas as unidades</span>';
+    var bts = '<button class="ac-btn min" onclick="acAbrirUnid(\'' + acEsc(k) + '\')">Editar</button>' +
+      '<button class="ac-btn min' + (off ? '' : ' perigo') + '" onclick="acAtivarUnid(\'' + acEsc(k) + '\',' + (off ? 'true' : 'false') + ')">' + (off ? 'Reativar' : 'Desativar') + '</button>';
+    if (u._acNovo) bts += '<button class="ac-btn min perigo" onclick="acExcluirUnid(\'' + acEsc(k) + '\')">Excluir</button>';
+    return '<div class="ac-linha' + (off ? ' off' : '') + '">' +
+      '<div><div class="ac-nome">' + acEsc(u.nome) + '</div><div class="ac-login">login: ' + acEsc(k) + '</div></div>' +
+      '<div class="ac-c-status"><span class="ac-tag ' + (off ? 'off' : 'ok') + '">' + (off ? 'Desativado' : 'Ativo') + '</span></div>' +
+      '<div class="ac-c-perfil">' + tags + '</div>' +
+      '<div class="ac-c-senha"><span class="ac-senha esc" title="Clique para ver" onclick="acTogglarSenha(this)">' + acEsc(u.senha) + '</span><div class="ac-pags">Só a Central de Abastecimento</div></div>' +
+      '<div class="ac-bt">' + bts + '</div>' +
+    '</div>';
+  }).join('');
+
+  var aviso = AC.carregado ? '' : '<div class="ac-erro">Ainda conectando ao banco de dados — alterações podem não ser salvas.</div>';
+  box.innerHTML =
+    '<div class="ac-top"><div><h2>🔐 Acessos ao Guia</h2>' +
+      '<p>Todos os logins do guia. Inclua pessoas, troque senha, desative ou reative e escolha quais páginas cada um vê. As mudanças valem na hora, inclusive para quem já está logado.</p></div>' +
+      '<div class="ac-actions"><input class="ac-search" id="ac-busca" placeholder="Buscar nome ou login…" value="' + acEsc(AC.busca) + '" oninput="AC.busca=this.value;acRender();var e=document.getElementById(\'ac-busca\');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length);}">' +
+      '<button class="ac-btn pri" onclick="acAbrir(null)">+ Novo acesso</button></div></div>' + aviso +
+    '<div class="ac-sec">Equipe e administrativo</div>' +
+    '<div class="ac-lista">' + (linhas || '<div class="ac-vazio">Nenhum login encontrado.</div>') + '</div>' +
+    '<div class="ac-top" style="margin-top:1.25rem;margin-bottom:0;"><div class="ac-sec" style="margin:0;">Outras unidades — Central de Abastecimento</div>' +
+      '<button class="ac-btn min" onclick="acAbrirUnid(null)">+ Nova unidade</button></div>' +
+    '<div class="ac-lista" style="margin-top:.5rem;">' + (linhasU || '<div class="ac-vazio">Nenhuma unidade encontrada.</div>') + '</div>';
+}
+
+/* ── gravação ── */
+function acLimpar(o) { var r = {}; Object.keys(o).forEach(function(k) { if (o[k] !== undefined) r[k] = o[k]; }); return r; }
+function acGravar(caminho, obj) {
+  var p = (obj === null) ? dbRef(caminho).set(null) : dbRef(caminho).set(acLimpar(obj));
+  return Promise.resolve(p).then(function() {
+    if (!firebaseOK) { // modo offline: aplica direto neste aparelho
+      AC.dados = AC.dados || {};
+      var partes = caminho.split('/'); var grupo = partes[1], chave = partes[2];
+      AC.dados[grupo] = AC.dados[grupo] || {};
+      if (obj === null) delete AC.dados[grupo][chave]; else AC.dados[grupo][chave] = acLimpar(obj);
+      try { lsSet('acessos', AC.dados); } catch (e) {}
+      acAplicarDados();
+    }
+  });
+}
+function acRegistroAtual(k) {
+  var v = vendedores[k] || {}, salvo = ((AC.dados || {}).usuarios || {})[k] || {};
+  var r = { nome: v.nome, senha: v.senha, tipo: v.tipo || '', lider: !!v.lider, bloqueado: !!v.bloqueado,
+    paginas: v.paginas || null, criado: !!(v._acNovo || salvo.criado) };
+  if (v.gerenciaAcessos !== undefined) r.gerenciaAcessos = !!v.gerenciaAcessos;
+  return r;
+}
+function acCarimbo(r) { r.atualizadoPor = currentUser || ''; r.atualizadoEm = new Date().toISOString(); return r; }
+
+function acAtivar(k, ativar) {
+  if (!acPodeGerenciar() || k === 'JULIANA') return;
+  if (k === currentUser && !ativar) { alert('Você não pode desativar o seu próprio acesso.'); return; }
+  var v = vendedores[k]; if (!v) return;
+  if (!ativar && !confirm('Desativar o acesso de ' + v.nome + '? A pessoa sai do guia na hora e não consegue mais entrar.')) return;
+  var r = acRegistroAtual(k); r.bloqueado = !ativar;
+  acGravar('acessos/usuarios/' + k, acCarimbo(r)).catch(function(e) { alert('Não consegui salvar: ' + (e && e.message || e)); });
+}
+function acExcluir(k) {
+  var v = vendedores[k]; if (!v || !v._acNovo || !acPodeGerenciar()) return;
+  if (!confirm('Excluir o login ' + k + ' (' + v.nome + ')? Os pedidos e dados lançados por ele continuam salvos.')) return;
+  acGravar('acessos/usuarios/' + k, null).catch(function(e) { alert('Não consegui excluir: ' + (e && e.message || e)); });
+}
+
+/* ── modal de usuário ── */
+function acFechar() { var f = document.getElementById('ac-fundo'); if (f) f.remove(); AC.form = null; }
+function acModal(html) {
+  var velho = document.getElementById('ac-fundo'); if (velho) velho.remove();
+  var f = document.createElement('div'); f.id = 'ac-fundo'; f.className = 'ac-fundo';
+  f.innerHTML = '<div class="ac-modal" onclick="event.stopPropagation()">' + html + '</div>';
+  f.onclick = acFechar;
+  document.body.appendChild(f);
+}
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && document.getElementById('ac-fundo')) acFechar(); });
+
+function acAbrir(k) {
+  if (!acPodeGerenciar()) return;
+  var novo = !k, v = novo ? {} : vendedores[k];
+  if (!novo && !v) return;
+  if (k === 'JULIANA' && currentUser !== 'JULIANA') return;
+  var jul = k === 'JULIANA';
+  AC.form = { k: k, novo: novo, paginas: JSON.parse(JSON.stringify((v && v.paginas) || {})) };
+  var perfis = AC_PERFIS.map(function(p) { return '<option value="' + p[0] + '"' + ((v.tipo || '') === p[0] ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('');
+  var gerAtual = novo ? false : acPodeGerenciar(k);
+  var html = '<h3>' + (novo ? 'Novo acesso' : 'Editar acesso — ' + acEsc(v.nome)) + '</h3>' +
+    '<div class="ac-grid">' +
+      '<div class="ac-campo"><label>Nome</label><input id="ac-f-nome" value="' + acEsc(v.nome || '') + '"' + (jul ? ' readonly' : '') + ' placeholder="Ex.: Ana Paula"></div>' +
+      '<div class="ac-campo"><label>Login (usuário)</label><input id="ac-f-login" value="' + acEsc(k || '') + '"' + (novo ? '' : ' readonly') + ' placeholder="Ex.: ANA PAULA" style="text-transform:uppercase"></div>' +
+      '<div class="ac-campo"><label>Senha</label><input id="ac-f-senha" value="' + acEsc(v.senha || '') + '" placeholder="Ex.: ANA123"></div>' +
+      '<div class="ac-campo"><label>Perfil</label>' + (jul ? '<input value="Gestora" readonly>' : '<select id="ac-f-tipo" onchange="acMudouPerfil()">' + perfis + '</select>') + '</div>' +
+    '</div>' +
+    (jul ? '' :
+      '<label class="ac-chk"><input type="checkbox" id="ac-f-lider"' + (v.lider ? ' checked' : '') + ' onchange="acMudouPerfil()"> Vendedora líder <small>(vê os painéis de gestão; para editar pede liberação)</small></label>' +
+      (currentUser === 'JULIANA'
+        ? '<label class="ac-chk"><input type="checkbox" id="ac-f-ger"' + (gerAtual ? ' checked' : '') + '> Pode gerenciar acessos <small>(vê Gestão &gt; Acessos)</small></label>'
+        : '')) +
+    '<div class="ac-pg-tit"><b>Páginas</b><span>“Padrão” segue o perfil. Use Liberar/Bloquear para mudar só para esta pessoa.</span></div>' +
+    '<div id="ac-f-pags"></div>' +
+    '<div class="ac-erro" id="ac-f-erro"></div>' +
+    '<div class="ac-rodape"><button class="ac-btn" onclick="acFechar()">Cancelar</button><button class="ac-btn pri" onclick="acSalvar()">Salvar</button></div>';
+  acModal(html);
+  acRenderPags();
+  var foco = document.getElementById(novo ? 'ac-f-nome' : 'ac-f-senha'); if (foco) foco.focus();
+}
+
+/* padrão de página para o que está no formulário (perfil/líder podem ter mudado) */
+function acPadraoForm(navId) {
+  var f = AC.form; if (!f) return false;
+  var k = f.k || '__NOVO__';
+  var tipoEl = document.getElementById('ac-f-tipo'), liderEl = document.getElementById('ac-f-lider');
+  var tmpExistia = vendedores[k], tmp = { tipo: tipoEl ? tipoEl.value : (tmpExistia && tmpExistia.tipo), lider: liderEl ? liderEl.checked : !!(tmpExistia && tmpExistia.lider) };
+  var guardado = vendedores[k];
+  vendedores[k] = Object.assign({}, guardado || {}, tmp);
+  if (!vendedores[k].tipo) delete vendedores[k].tipo;
+  var r; try { r = acPadrao(k, navId); } finally { if (guardado) vendedores[k] = guardado; else delete vendedores[k]; }
+  return r;
+}
+function acMudouPerfil() { acRenderPags(); }
+function acRenderPags() {
+  var box = document.getElementById('ac-f-pags'); if (!box || !AC.form) return;
+  var p = AC.form.paginas;
+  box.innerHTML = AC_PAGINAS.map(function(pg) {
+    var id = pg[0], r = (typeof p[id] === 'boolean') ? p[id] : null, pad = acPadraoForm(id);
+    function bt(val, txt, cls) {
+      var on = (r === val);
+      return '<button type="button" class="' + (on ? 'on ' : '') + cls + '" onclick="acSetPag(\'' + id + '\',' + (val === null ? 'null' : val) + ')">' + txt + '</button>';
+    }
+    return '<div class="ac-pg"><div>' + acEsc(pg[1]) + '<span class="pad">padrão: ' + (pad ? 'vê' : 'não vê') + '</span></div>' +
+      '<div class="ac-seg">' + bt(null, 'Padrão', '') + bt(true, 'Liberar', 'lib') + bt(false, 'Bloquear', 'blq') + '</div></div>';
+  }).join('');
+}
+function acSetPag(id, val) {
+  if (!AC.form) return;
+  if (val === null) delete AC.form.paginas[id]; else AC.form.paginas[id] = val;
+  acRenderPags();
+}
+
+function acSalvar() {
+  var f = AC.form; if (!f || !acPodeGerenciar()) return;
+  var erro = document.getElementById('ac-f-erro');
+  var nome = (document.getElementById('ac-f-nome').value || '').trim();
+  var login = acNormLogin(document.getElementById('ac-f-login').value);
+  var senha = (document.getElementById('ac-f-senha').value || '').trim();
+  var tipoEl = document.getElementById('ac-f-tipo');
+  var tipo = f.k === 'JULIANA' ? 'gestora' : (tipoEl ? tipoEl.value : '');
+  if (!nome) { erro.textContent = 'Informe o nome.'; return; }
+  if (!login) { erro.textContent = 'Informe o login.'; return; }
+  if (!/^[A-Z0-9 ]+$/.test(login)) { erro.textContent = 'Use só letras, números e espaço no login.'; return; }
+  if (senha.length < 4) { erro.textContent = 'A senha precisa ter pelo menos 4 caracteres.'; return; }
+  if (f.novo && (vendedores[login] || (typeof CA_UNIDADES !== 'undefined' && CA_UNIDADES[login]) || login === 'MARIA' || login === 'PRISCILLA')) { erro.textContent = 'Já existe um login ' + login + '.'; return; }
+  var k = f.novo ? login : f.k;
+  var r = f.novo ? { criado: true, bloqueado: false } : acRegistroAtual(k);
+  r.nome = nome; r.senha = senha; r.tipo = tipo;
+  if (k !== 'JULIANA') {
+    var liderEl = document.getElementById('ac-f-lider');
+    r.lider = !!(liderEl && liderEl.checked && tipo !== 'administrativo');
+    var gerEl = document.getElementById('ac-f-ger');
+    if (gerEl && currentUser === 'JULIANA') r.gerenciaAcessos = gerEl.checked;
+  } else { r.lider = false; }
+  var pags = {}; Object.keys(f.paginas).forEach(function(id) { if (typeof f.paginas[id] === 'boolean') pags[id] = f.paginas[id]; });
+  r.paginas = Object.keys(pags).length ? pags : null;
+  if (k === currentUser && r.paginas && r.paginas.admin === false && !acPodeGerenciar(k)) { /* nada: segue */ }
+  if (f.novo) r.criadoPor = currentUser || '';
+  acGravar('acessos/usuarios/' + k, acCarimbo(r))
+    .then(function() { acFechar(); })
+    .catch(function(e) { erro.textContent = 'Não consegui salvar: ' + (e && e.message || e); });
+}
+
+/* ── unidades da Central ── */
+function acAbrirUnid(k) {
+  if (!acPodeGerenciar()) return;
+  var novo = !k, u = novo ? {} : CA_UNIDADES[k];
+  if (!novo && !u) return;
+  AC.form = { k: k, novo: novo, unid: true };
+  var html = '<h3>' + (novo ? 'Nova unidade' : 'Editar unidade — ' + acEsc(u.nome)) + '</h3>' +
+    '<div class="ac-grid">' +
+      '<div class="ac-campo"><label>Nome</label><input id="ac-u-nome" value="' + acEsc(u.nome || '') + '" placeholder="Ex.: Fulana — Atacado SP"></div>' +
+      '<div class="ac-campo"><label>Login (usuário)</label><input id="ac-u-login" value="' + acEsc(k || '') + '"' + (novo ? '' : ' readonly') + ' style="text-transform:uppercase"></div>' +
+      '<div class="ac-campo"><label>Senha</label><input id="ac-u-senha" value="' + acEsc(u.senha || '') + '"></div>' +
+      '<div class="ac-campo"><label>Unidade</label><input id="ac-u-unid" value="' + acEsc(u.unidade || '') + '" placeholder="Ex.: Atacado SP"></div>' +
+    '</div>' +
+    '<label class="ac-chk"><input type="checkbox" id="ac-u-tudo"' + (u.veTudo ? ' checked' : '') + '> Vê todas as unidades</label>' +
+    '<label class="ac-chk"><input type="checkbox" id="ac-u-dir"' + (u.direcao ? ' checked' : '') + '> Direção <small>(vê todas as operações e o Painel, sem alterar nada)</small></label>' +
+    '<div class="ac-erro" id="ac-u-erro"></div>' +
+    '<div class="ac-rodape"><button class="ac-btn" onclick="acFechar()">Cancelar</button><button class="ac-btn pri" onclick="acSalvarUnid()">Salvar</button></div>';
+  acModal(html);
+}
+function acRegistroUnid(k) {
+  var u = CA_UNIDADES[k] || {}, salvo = ((AC.dados || {}).unidades || {})[k] || {};
+  return { nome: u.nome, senha: u.senha, unidade: u.unidade || '', veTudo: !!u.veTudo, direcao: !!u.direcao, bloqueado: !!u.bloqueado, criado: !!(u._acNovo || salvo.criado) };
+}
+function acSalvarUnid() {
+  var f = AC.form; if (!f || !acPodeGerenciar()) return;
+  var erro = document.getElementById('ac-u-erro');
+  var nome = (document.getElementById('ac-u-nome').value || '').trim();
+  var login = acNormLogin(document.getElementById('ac-u-login').value);
+  var senha = (document.getElementById('ac-u-senha').value || '').trim();
+  var unid = (document.getElementById('ac-u-unid').value || '').trim();
+  var dir = document.getElementById('ac-u-dir').checked;
+  if (!nome) { erro.textContent = 'Informe o nome.'; return; }
+  if (!login || !/^[A-Z0-9 ]+$/.test(login)) { erro.textContent = 'Login inválido (só letras, números e espaço).'; return; }
+  if (senha.length < 4) { erro.textContent = 'A senha precisa ter pelo menos 4 caracteres.'; return; }
+  if (!unid && !dir) { erro.textContent = 'Informe a unidade (ou marque Direção).'; return; }
+  if (f.novo && (CA_UNIDADES[login] || vendedores[login])) { erro.textContent = 'Já existe um login ' + login + '.'; return; }
+  var k = f.novo ? login : f.k;
+  var r = f.novo ? { criado: true, bloqueado: false, criadoPor: currentUser || '' } : acRegistroUnid(k);
+  r.nome = nome; r.senha = senha; r.unidade = unid; r.veTudo = document.getElementById('ac-u-tudo').checked; r.direcao = dir;
+  acGravar('acessos/unidades/' + k, acCarimbo(r))
+    .then(function() { acFechar(); })
+    .catch(function(e) { erro.textContent = 'Não consegui salvar: ' + (e && e.message || e); });
+}
+function acAtivarUnid(k, ativar) {
+  var u = CA_UNIDADES[k]; if (!u || !acPodeGerenciar()) return;
+  if (!ativar && !confirm('Desativar o login ' + k + ' (' + u.nome + ')? O histórico na Central continua.')) return;
+  var r = acRegistroUnid(k); r.bloqueado = !ativar;
+  acGravar('acessos/unidades/' + k, acCarimbo(r)).catch(function(e) { alert('Não consegui salvar: ' + (e && e.message || e)); });
+}
+function acExcluirUnid(k) {
+  var u = CA_UNIDADES[k]; if (!u || !u._acNovo || !acPodeGerenciar()) return;
+  if (!confirm('Excluir o login ' + k + '?')) return;
+  acGravar('acessos/unidades/' + k, null).catch(function(e) { alert('Não consegui excluir: ' + (e && e.message || e)); });
+}
+</script>
+
 </body>
 </html>
