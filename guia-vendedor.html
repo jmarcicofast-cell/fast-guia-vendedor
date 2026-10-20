@@ -1022,6 +1022,10 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Check-in Diário
   </button>
+  <button class="nav-btn" id="nav-rotina" draggable="true" data-nav-id="rotina" style="display:none;" onclick="showTab('rotina',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/><path d="M8 14l2.5 2.5L16 12"/></svg>
+    Minha Rotina
+  </button>
   <button class="nav-btn active" id="nav-minhasmetas" draggable="true" data-nav-id="minhasmetas" style="display:none;" onclick="showTab('minhasmetas',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
     Minhas Metas
@@ -3631,6 +3635,11 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
     </div>
 
   </div>
+</div>
+
+<!-- ══ MINHA ROTINA (gestora) ══ -->
+<div id="tab-rotina" class="tab-content">
+  <div class="page-section" style="max-width:100%;"><div id="rtn-box"></div></div>
 </div>
 
 <!-- ══ RAMPA DOS NOVOS (somente gestora) ══ -->
@@ -18058,6 +18067,7 @@ function showTab(name, btn) {
   if (name === 'sugestoes' && typeof sgInit === 'function') sgInit();
   if (name === 'quiz' && typeof qzInit === 'function') qzInit();
   if (name === 'quadro' && typeof qdInit === 'function') qdInit();
+  if (name === 'rotina' && typeof rtnInit === 'function') rtnInit();
   btn.classList.add('active');
 }
 
@@ -25583,7 +25593,7 @@ var AC_PAGINAS = [
   ['clientes', 'Base de Clientes'], ['abastecimento', 'Pedidos abertos'], ['central', 'Central Abast.'],
   ['shopping', 'Shopping de Preços'], ['treinamentos', 'Treinamentos'], ['reconhecimento', 'Ranking'],
   ['rota', 'Rota da Meta'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
-  ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['parana', 'Plano PR'], ['checkin', 'Check-in Diário']
+  ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['parana', 'Plano PR'], ['checkin', 'Check-in Diário'], ['rotina', 'Minha Rotina']
 ];
 var AC_PERFIS = [
   ['novo', 'Vendedor(a) novo(a)'], ['veterana', 'Vendedor(a) veterano(a)'], ['', 'Vendedor(a)'], ['administrativo', 'Administrativo']
@@ -25720,7 +25730,7 @@ function acPadrao(key, navId) {
     return (typeof AB_NAV_ADM !== 'undefined') && AB_NAV_ADM.indexOf(navId) !== -1;
   }
   switch (navId) {
-    case 'clientes': return jul;
+    case 'clientes': case 'rotina': return jul;
     case 'central': return caUsuarioLiberado(key);
     case 'quiz': return (typeof qzTemAcesso === 'function') && qzTemAcesso(key);
     case 'admin': case 'rampa': case 'checkin': return jul || !!v.lider;
@@ -25755,6 +25765,8 @@ function acAplicarPaginas(key) {
   acResetarPaginas();
   var v = vendedores[key]; if (!v) return;
   var p = v.paginas || {};
+  // páginas que só o painel de acessos controla (sem regra própria no guia)
+  ['rotina'].forEach(function(id) { var b = document.querySelector('#main-nav .nav-btn[data-nav-id="' + id + '"]'); if (b) acMexerNav(b, acVe(key, id)); });
   Object.keys(p).forEach(function(id) {
     if (typeof p[id] !== 'boolean') return;
     var b = document.querySelector('#main-nav .nav-btn[data-nav-id="' + id + '"]');
@@ -26071,6 +26083,329 @@ function acExcluirUnid(k) {
   if (!confirm('Excluir o login ' + k + '?')) return;
   acGravar('acessos/unidades/' + k, null).catch(function(e) { alert('Não consegui excluir: ' + (e && e.message || e)); });
 }
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MINHA ROTINA — rotina da gestora (ajustável)
+     Firebase: rotinaGestora/{USUARIO}/modelo  { blocos:[{id,ini,fim,tit,desc,itens:[{id,txt}]}],
+                                                semana:[{id,dia,txt}], mes:[{id,quando,txt}], lembretes }
+               rotinaGestora/{USUARIO}/dia/{AAAA-MM-DD}   { feito:{id:true}, pessoas:[USUARIO], notas }
+               rotinaGestora/{USUARIO}/semana/{segunda}   { feito:{id:true} }
+               rotinaGestora/{USUARIO}/mes/{AAAA-MM}      { feito:{id:true} }
+     Quem vê: Juliana (pode ser liberada para outra pessoa em Gestão > Acessos).
+     ══════════════════════════════════════════════════════════════ -->
+<style>
+  .rtn-top { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:1rem; }
+  .rtn-top h2 { font-size:17px; font-weight:700; color:var(--txt); margin:0 0 2px; }
+  .rtn-top p { font-size:12.5px; color:var(--muted); margin:0; }
+  .rtn-btn { padding:7px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--txt); font-size:12.5px; font-weight:600; cursor:pointer; }
+  .rtn-btn:hover { border-color:var(--line-strong); }
+  .rtn-btn.pri { background:var(--acc); border-color:var(--acc); color:#fff; }
+  .rtn-btn.min { padding:3px 8px; font-size:11.5px; }
+  .rtn-btn.perigo { color:var(--acc-txt); }
+  .rtn-prog { height:8px; background:var(--surface-2); border-radius:6px; overflow:hidden; margin:6px 0 2px; min-width:220px; }
+  .rtn-prog i { display:block; height:100%; background:var(--acc); border-radius:6px; transition:width .3s; }
+  .rtn-grid { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:16px; align-items:start; }
+  @media (max-width: 900px) { .rtn-grid { grid-template-columns:1fr; } }
+  .rtn-card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .rtn-card h3 { font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; }
+  .rtn-bloco { display:grid; grid-template-columns:78px 1fr; gap:12px; padding:12px 0; border-top:1px solid var(--line); }
+  .rtn-bloco:first-of-type { border-top:none; padding-top:0; }
+  .rtn-hora { font-family:monospace; font-size:13px; font-weight:700; color:var(--txt); }
+  .rtn-hora small { display:block; font-weight:400; color:var(--faint); font-size:11px; }
+  .rtn-bloco.agora { background:var(--acc-soft); margin:0 -14px; padding-left:14px; padding-right:14px; border-radius:8px; }
+  .rtn-bloco.agora .rtn-hora::after { content:'agora'; display:inline-block; margin-top:4px; font-family:inherit; font-size:10px; font-weight:800; color:#fff; background:var(--acc); padding:1px 6px; border-radius:8px; }
+  .rtn-bloco.ok .rtn-tit { color:var(--muted); }
+  .rtn-tit { font-size:14px; font-weight:700; color:var(--txt); }
+  .rtn-desc { font-size:12px; color:var(--muted); margin:1px 0 6px; }
+  .rtn-item { display:flex; gap:9px; align-items:flex-start; padding:4px 0; font-size:13px; color:var(--txt); cursor:pointer; line-height:1.35; }
+  .rtn-item input { margin-top:2px; width:16px; height:16px; accent-color:var(--acc); flex-shrink:0; cursor:pointer; }
+  .rtn-item.ok span { text-decoration:line-through; color:var(--faint); }
+  .rtn-tag { display:inline-block; font-size:10.5px; font-weight:700; color:var(--muted); background:var(--surface-2); padding:1px 7px; border-radius:10px; margin-right:6px; white-space:nowrap; }
+  .rtn-tag.hoje { background:var(--acc-soft); color:var(--acc-txt); }
+  .rtn-pessoas { display:flex; flex-wrap:wrap; gap:6px; }
+  .rtn-chip { border:1px solid var(--line); background:var(--surface); color:var(--txt-2); border-radius:20px; padding:4px 11px; font-size:12px; font-weight:600; cursor:pointer; }
+  .rtn-chip.on { background:var(--acc); border-color:var(--acc); color:#fff; }
+  .rtn-notas { width:100%; box-sizing:border-box; min-height:70px; border:1px solid var(--line); border-radius:8px; padding:8px; font-size:13px; background:var(--surface); color:var(--txt); resize:vertical; font-family:inherit; }
+  .rtn-vazio { font-size:12.5px; color:var(--faint); }
+  /* edição */
+  .rtn-ed-bloco { border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:10px; background:var(--surface); }
+  .rtn-ed-linha { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+  .rtn-ed-linha input[type=text], .rtn-ed-linha input:not([type]), .rtn-ed-linha select { flex:1; min-width:120px; padding:6px 8px; border:1px solid var(--line); border-radius:7px; font-size:13px; background:var(--surface); color:var(--txt); }
+  .rtn-ed-linha input[type=time] { padding:5px 6px; border:1px solid var(--line); border-radius:7px; font-size:13px; background:var(--surface); color:var(--txt); }
+  .rtn-ed-linha .x { border:none; background:none; color:var(--faint); font-size:16px; cursor:pointer; padding:2px 6px; }
+  .rtn-ed-linha .x:hover { color:var(--acc-txt); }
+  .rtn-ed-itens { margin-left:14px; }
+  .rtn-ed-rodape { position:sticky; bottom:0; background:var(--bg, var(--surface)); padding:10px 0; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid var(--line); margin-top:8px; }
+</style>
+<script>
+var RTN = { user: null, modelo: null, dia: {}, semana: {}, mes: {}, editando: false, rasc: null, ouvindoDe: null, refs: [], avisados: {} };
+var RTN_DIAS = [['uteis', 'Todo dia útil'], ['1', 'Segunda'], ['2', 'Terça'], ['3', 'Quarta'], ['4', 'Quinta'], ['5', 'Sexta'], ['6', 'Sábado']];
+
+function rtnId() { return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function rtnEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+function rtnHoje(d) { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function rtnSegunda() { var d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return rtnHoje(d); }
+function rtnMes() { return rtnHoje().slice(0, 7); }
+function rtnMin(h) { var p = String(h || '').split(':'); return (+p[0] || 0) * 60 + (+p[1] || 0); }
+function rtnAgoraMin() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+
+/* rotina sugerida (ponto de partida — tudo pode ser mudado em "Editar rotina") */
+function rtnPadrao() {
+  function b(ini, fim, tit, desc, itens) { return { id: rtnId(), ini: ini, fim: fim, tit: tit, desc: desc, itens: itens.map(function(t) { return { id: rtnId(), txt: t }; }) }; }
+  return {
+    lembretes: true,
+    blocos: [
+      b('08:00', '08:30', 'Leitura do placar', 'Sozinha, antes da equipe começar', ['Rota da Meta e Ranking: quem está abaixo do ritmo (valor, produtos, ligações)', 'Pedidos abertos: o que está travado no administrativo', 'Escolher as 2 pessoas do dia']),
+      b('08:30', '08:45', 'Abertura com a equipe', '15 min, em pé — energia, não bronca', ['Placar de ontem e uma vitória para comemorar', 'Meta do dia de cada um', 'Um foco único do dia']),
+      b('09:00', '11:30', 'Campo: ouvir e acompanhar', 'Bloco sagrado — sem reunião e sem planilha', ['Ouvir ligações das 2 pessoas do dia', 'Feedback na hora: 1 coisa boa + 1 ajuste', 'Acompanhar os novos da rampa']),
+      b('11:30', '12:00', 'Prevenção de danos', 'Destravar, não fazer pelo administrativo', ['Pedidos com problema: conferência, margem, frete', 'Grade da Placo antes das 15h', 'Repassar ao administrativo o que é dele']),
+      b('12:00', '12:15', 'Checagem de meio-dia', '', ['Quem está atrás nas ligações: mensagem individual']),
+      b('14:00', '16:00', 'Produção de ganhos', 'Onde sua experiência vira dinheiro', ['Entrar nas negociações grandes', 'Clientes inativos de peso', 'Carretas']),
+      b('16:00', '17:00', 'Gestão e melhoria', '', ['Metas e ferramentas do guia', 'Assuntos com o Poli', 'Preparar o treinamento de amanhã']),
+      b('17:30', '18:00', 'Fechamento', '', ['Check-in diário: ligações, propostas, vendido', 'Reconhecer quem bateu a meta', 'Perguntar a quem não bateu: o que te travou hoje?'])
+    ],
+    semana: [
+      { id: rtnId(), dia: '1', txt: 'Definir a meta da semana por pessoa e os produtos do foco' },
+      { id: rtnId(), dia: 'uteis', txt: '2 conversas 1:1 de 15 min (o que funciona, o que trava, como posso ajudar)' },
+      { id: rtnId(), dia: '3', txt: 'Checagem de meio de semana — conversa individual com quem está muito atrás' },
+      { id: rtnId(), dia: '5', txt: 'Fechamento da semana e premiação' },
+      { id: rtnId(), dia: '5', txt: 'Treinamento de 20 min sobre o maior erro da semana' }
+    ],
+    mes: [
+      { id: rtnId(), quando: '1ª semana', txt: 'Metas de valor, produtos e ligações cadastradas' },
+      { id: rtnId(), quando: '1ª semana', txt: 'Focos do mês alinhados com o Poli' },
+      { id: rtnId(), quando: 'Meio do mês', txt: 'Projeção — se não chega no ritmo, definir o plano de virada' },
+      { id: rtnId(), quando: 'Fim do mês', txt: 'Avaliação individual e reconhecimento' }
+    ]
+  };
+}
+/* Firebase pode devolver listas como objeto */
+function rtnLista(x) { if (!x) return []; if (Array.isArray(x)) return x.filter(Boolean); return Object.keys(x).map(function(k) { return x[k]; }).filter(Boolean); }
+function rtnNormalizar(m) {
+  if (!m) return null;
+  m.blocos = rtnLista(m.blocos).map(function(b) { b.itens = rtnLista(b.itens); return b; });
+  m.semana = rtnLista(m.semana); m.mes = rtnLista(m.mes);
+  if (m.lembretes === undefined) m.lembretes = true;
+  return m;
+}
+function rtnModelo() { if (!RTN.modelo) RTN.modelo = rtnPadrao(); return RTN.modelo; }
+function rtnBase() { return 'rotinaGestora/' + RTN.user; }
+
+/* ── dados ── */
+function rtnOuvir() {
+  var u = currentUser; if (!u) return;
+  var chave = u + '|' + rtnHoje() + '|' + rtnSegunda() + '|' + rtnMes();
+  if (RTN.ouvindoDe === chave) return;
+  RTN.refs.forEach(function(r) { try { r.off && r.off(); } catch (e) {} });
+  RTN.refs = []; RTN.ouvindoDe = chave; RTN.user = u;
+  RTN.modelo = null; RTN.dia = {}; RTN.semana = {}; RTN.mes = {};
+  function ouvir(caminho, campo, norm) {
+    var r = dbRef(rtnBase() + caminho); RTN.refs.push(r);
+    r.on('value', function(snap) {
+      var v = (snap && snap.val()) || null;
+      RTN[campo] = norm ? norm(v) : (v || {});
+      // primeira vez: grava a rotina sugerida para os ids das tarefas ficarem fixos
+      if (campo === 'modelo' && !RTN.modelo) { RTN.modelo = rtnPadrao(); rtnGravar('/modelo', RTN.modelo); }
+      if (!RTN.editando) rtnRender();
+    });
+  }
+  ouvir('/modelo', 'modelo', rtnNormalizar);
+  ouvir('/dia/' + rtnHoje(), 'dia');
+  ouvir('/semana/' + rtnSegunda(), 'semana');
+  ouvir('/mes/' + rtnMes(), 'mes');
+}
+function rtnGravar(caminho, valor) {
+  return Promise.resolve(dbRef(rtnBase() + caminho).set(valor)).catch(function(e) { alert('Não consegui salvar: ' + (e && e.message || e)); });
+}
+function rtnMarcar(escopo, id, ok) {
+  var obj = RTN[escopo] = RTN[escopo] || {};
+  obj.feito = obj.feito || {};
+  if (ok) obj.feito[id] = true; else delete obj.feito[id];
+  var cam = escopo === 'dia' ? '/dia/' + rtnHoje() : escopo === 'semana' ? '/semana/' + rtnSegunda() : '/mes/' + rtnMes();
+  rtnGravar(cam, JSON.parse(JSON.stringify(obj)));
+  rtnRender();
+}
+function rtnTogglePessoa(k) {
+  var p = (RTN.dia.pessoas || []).slice(), i = p.indexOf(k);
+  if (i >= 0) p.splice(i, 1); else p.push(k);
+  RTN.dia.pessoas = p;
+  rtnGravar('/dia/' + rtnHoje(), JSON.parse(JSON.stringify(RTN.dia)));
+  rtnRender();
+}
+var _rtnNotaT = null;
+function rtnNota(v) {
+  RTN.dia.notas = v;
+  clearTimeout(_rtnNotaT);
+  _rtnNotaT = setTimeout(function() { rtnGravar('/dia/' + rtnHoje(), JSON.parse(JSON.stringify(RTN.dia))); }, 700);
+}
+
+/* ── tela ── */
+function rtnInit() { rtnOuvir(); rtnRender(); }
+function rtnFeito(escopo, id) { return !!(((RTN[escopo] || {}).feito || {})[id]); }
+function rtnSemanaDeHoje(it) { var wd = new Date().getDay(); return it.dia === 'uteis' ? (wd >= 1 && wd <= 5) : String(wd) === String(it.dia); }
+function rtnNomeDia(d) { for (var i = 0; i < RTN_DIAS.length; i++) if (RTN_DIAS[i][0] === String(d)) return RTN_DIAS[i][1]; return ''; }
+function rtnEquipe() {
+  return Object.keys(vendedores).filter(function(k) { var v = vendedores[k]; return v && !v.bloqueado && v.tipo !== 'administrativo' && v.tipo !== 'gestora' && k !== RTN.user; })
+    .sort(function(a, b) { return String(vendedores[a].nome).localeCompare(String(vendedores[b].nome), 'pt-BR'); });
+}
+
+function rtnRender() {
+  var box = document.getElementById('rtn-box'); if (!box) return;
+  if (RTN.editando) return rtnRenderEdicao();
+  var m = rtnModelo(), agora = rtnAgoraMin();
+  var total = 0, feitos = 0;
+  var blocos = m.blocos.slice().sort(function(a, b) { return rtnMin(a.ini) - rtnMin(b.ini); });
+  var htmlBlocos = blocos.map(function(b) {
+    var itensOk = 0;
+    var itens = b.itens.map(function(it) {
+      total++; var ok = rtnFeito('dia', it.id); if (ok) { feitos++; itensOk++; }
+      return '<label class="rtn-item' + (ok ? ' ok' : '') + '"><input type="checkbox"' + (ok ? ' checked' : '') + ' onchange="rtnMarcar(\'dia\',\'' + it.id + '\',this.checked)"><span>' + rtnEsc(it.txt) + '</span></label>';
+    }).join('');
+    var ehAgora = agora >= rtnMin(b.ini) && agora < rtnMin(b.fim || b.ini) ;
+    var completo = b.itens.length && itensOk === b.itens.length;
+    return '<div class="rtn-bloco' + (ehAgora ? ' agora' : '') + (completo ? ' ok' : '') + '">' +
+      '<div class="rtn-hora">' + rtnEsc(b.ini) + (b.fim ? '<small>até ' + rtnEsc(b.fim) + '</small>' : '') + '</div>' +
+      '<div><div class="rtn-tit">' + (completo ? '✅ ' : '') + rtnEsc(b.tit) + '</div>' + (b.desc ? '<div class="rtn-desc">' + rtnEsc(b.desc) + '</div>' : '') + itens + '</div></div>';
+  }).join('') || '<div class="rtn-vazio">Nenhum bloco no dia. Clique em “Editar rotina” para montar.</div>';
+
+  var semana = m.semana.slice().sort(function(a, b) { var ha = rtnSemanaDeHoje(a) ? 0 : 1, hb = rtnSemanaDeHoje(b) ? 0 : 1; return ha - hb; }).map(function(it) {
+    var ok = rtnFeito('semana', it.id), hoje = rtnSemanaDeHoje(it);
+    return '<label class="rtn-item' + (ok ? ' ok' : '') + '"><input type="checkbox"' + (ok ? ' checked' : '') + ' onchange="rtnMarcar(\'semana\',\'' + it.id + '\',this.checked)"><span><span class="rtn-tag' + (hoje ? ' hoje' : '') + '">' + rtnEsc(rtnNomeDia(it.dia)) + '</span>' + rtnEsc(it.txt) + '</span></label>';
+  }).join('') || '<div class="rtn-vazio">Nada para a semana.</div>';
+
+  var mes = m.mes.map(function(it) {
+    var ok = rtnFeito('mes', it.id);
+    return '<label class="rtn-item' + (ok ? ' ok' : '') + '"><input type="checkbox"' + (ok ? ' checked' : '') + ' onchange="rtnMarcar(\'mes\',\'' + it.id + '\',this.checked)"><span>' + (it.quando ? '<span class="rtn-tag">' + rtnEsc(it.quando) + '</span>' : '') + rtnEsc(it.txt) + '</span></label>';
+  }).join('') || '<div class="rtn-vazio">Nada para o mês.</div>';
+
+  var pessoasSel = RTN.dia.pessoas || [];
+  var pessoas = rtnEquipe().map(function(k) {
+    var on = pessoasSel.indexOf(k) >= 0;
+    return '<button type="button" class="rtn-chip' + (on ? ' on' : '') + '" onclick="rtnTogglePessoa(\'' + rtnEsc(k) + '\')">' + rtnEsc(vendedores[k].nome) + '</button>';
+  }).join('');
+
+  var pct = total ? Math.round(feitos / total * 100) : 0;
+  var dataTxt = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+  var foco = document.activeElement && document.activeElement.id === 'rtn-notas';
+  box.innerHTML =
+    '<div class="rtn-top"><div><h2>🗓️ Minha Rotina</h2><p style="text-transform:capitalize;">' + rtnEsc(dataTxt) + '</p>' +
+      '<div class="rtn-prog"><i style="width:' + pct + '%"></i></div><p>' + feitos + ' de ' + total + ' do dia feitos · zera toda manhã</p></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="rtn-btn" onclick="rtnAlternarLembretes()">' + (m.lembretes ? '🔔 Lembretes ligados' : '🔕 Lembretes desligados') + '</button>' +
+      '<button class="rtn-btn pri" onclick="rtnEditar()">✏️ Editar rotina</button></div></div>' +
+    '<div class="rtn-grid"><div><div class="rtn-card"><h3>Hoje</h3>' + htmlBlocos + '</div></div>' +
+    '<div><div class="rtn-card"><h3>Pessoas do dia</h3><div class="rtn-pessoas">' + (pessoas || '<span class="rtn-vazio">Sem equipe.</span>') + '</div>' +
+      '<p class="rtn-vazio" style="margin:8px 0 0;">Quem mais precisa de você hoje. Zera amanhã.</p></div>' +
+    '<div class="rtn-card"><h3>Esta semana</h3>' + semana + '</div>' +
+    '<div class="rtn-card"><h3>Este mês</h3>' + mes + '</div>' +
+    '<div class="rtn-card"><h3>Anotações do dia</h3><textarea class="rtn-notas" id="rtn-notas" placeholder="Combinados, feedbacks dados, o que levar pro Poli…" oninput="rtnNota(this.value)">' + rtnEsc(RTN.dia.notas || '') + '</textarea></div>' +
+    '</div></div>';
+  if (foco) { var t = document.getElementById('rtn-notas'); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }
+}
+
+function rtnAlternarLembretes() {
+  var m = JSON.parse(JSON.stringify(rtnModelo()));
+  m.lembretes = !m.lembretes;
+  RTN.modelo = m; rtnGravar('/modelo', m); rtnRender();
+}
+
+/* ── edição ── */
+function rtnEditar() { RTN.rasc = JSON.parse(JSON.stringify(rtnModelo())); RTN.editando = true; rtnRender(); }
+function rtnCancelar() { RTN.editando = false; RTN.rasc = null; rtnRender(); }
+function rtnSalvar() {
+  var m = RTN.rasc; if (!m) return;
+  m.blocos = m.blocos.filter(function(b) { return (b.tit || '').trim(); }).map(function(b) {
+    b.tit = b.tit.trim(); b.desc = (b.desc || '').trim();
+    b.itens = b.itens.filter(function(it) { return (it.txt || '').trim(); }).map(function(it) { it.txt = it.txt.trim(); return it; });
+    return b;
+  }).sort(function(a, b) { return rtnMin(a.ini) - rtnMin(b.ini); });
+  m.semana = m.semana.filter(function(it) { return (it.txt || '').trim(); });
+  m.mes = m.mes.filter(function(it) { return (it.txt || '').trim(); });
+  RTN.modelo = m; RTN.editando = false; RTN.rasc = null;
+  rtnGravar('/modelo', m); rtnRender();
+}
+function rtnRestaurar() {
+  if (!confirm('Voltar para a rotina sugerida? O que você editou será substituído.')) return;
+  RTN.rasc = rtnPadrao(); rtnRenderEdicao();
+}
+/* lê o que está digitado antes de redesenhar */
+function rtnLerForm() {
+  var m = RTN.rasc; if (!m) return;
+  document.querySelectorAll('#rtn-box [data-rf]').forEach(function(el) {
+    var p = el.dataset.rf.split('.'), alvo;
+    if (p[0] === 'b') { alvo = m.blocos[+p[1]]; if (p[2] === 'i') { alvo = alvo.itens[+p[3]]; alvo.txt = el.value; } else alvo[p[2]] = el.value; }
+    else if (p[0] === 's') m.semana[+p[1]][p[2]] = el.value;
+    else if (p[0] === 'm') m.mes[+p[1]][p[2]] = el.value;
+  });
+}
+function rtnEd(acao, a, b) {
+  rtnLerForm();
+  var m = RTN.rasc;
+  if (acao === 'novoBloco') m.blocos.push({ id: rtnId(), ini: '09:00', fim: '10:00', tit: '', desc: '', itens: [{ id: rtnId(), txt: '' }] });
+  if (acao === 'tiraBloco' && confirm('Remover o bloco “' + (m.blocos[a].tit || 'sem título') + '”?')) m.blocos.splice(a, 1);
+  if (acao === 'novoItem') m.blocos[a].itens.push({ id: rtnId(), txt: '' });
+  if (acao === 'tiraItem') m.blocos[a].itens.splice(b, 1);
+  if (acao === 'sobeItem' && b > 0) { var it = m.blocos[a].itens.splice(b, 1)[0]; m.blocos[a].itens.splice(b - 1, 0, it); }
+  if (acao === 'novoSem') m.semana.push({ id: rtnId(), dia: 'uteis', txt: '' });
+  if (acao === 'tiraSem') m.semana.splice(a, 1);
+  if (acao === 'novoMes') m.mes.push({ id: rtnId(), quando: '', txt: '' });
+  if (acao === 'tiraMes') m.mes.splice(a, 1);
+  rtnRenderEdicao();
+}
+function rtnRenderEdicao() {
+  var box = document.getElementById('rtn-box'), m = RTN.rasc; if (!box || !m) return;
+  var blocos = m.blocos.map(function(b, i) {
+    var itens = b.itens.map(function(it, j) {
+      return '<div class="rtn-ed-linha"><span style="color:var(--faint);">☐</span><input data-rf="b.' + i + '.i.' + j + '" value="' + rtnEsc(it.txt) + '" placeholder="Tarefa">' +
+        (j > 0 ? '<button class="x" title="Subir" onclick="rtnEd(\'sobeItem\',' + i + ',' + j + ')">↑</button>' : '') +
+        '<button class="x" title="Remover tarefa" onclick="rtnEd(\'tiraItem\',' + i + ',' + j + ')">✕</button></div>';
+    }).join('');
+    return '<div class="rtn-ed-bloco">' +
+      '<div class="rtn-ed-linha"><input type="time" data-rf="b.' + i + '.ini" value="' + rtnEsc(b.ini) + '"> até <input type="time" data-rf="b.' + i + '.fim" value="' + rtnEsc(b.fim) + '">' +
+        '<input data-rf="b.' + i + '.tit" value="' + rtnEsc(b.tit) + '" placeholder="Nome do bloco" style="font-weight:700;">' +
+        '<button class="rtn-btn min perigo" onclick="rtnEd(\'tiraBloco\',' + i + ')">Remover bloco</button></div>' +
+      '<div class="rtn-ed-linha"><input data-rf="b.' + i + '.desc" value="' + rtnEsc(b.desc) + '" placeholder="Observação (opcional)"></div>' +
+      '<div class="rtn-ed-itens">' + itens + '<button class="rtn-btn min" onclick="rtnEd(\'novoItem\',' + i + ')">+ Tarefa</button></div></div>';
+  }).join('');
+  var semana = m.semana.map(function(it, i) {
+    var ops = RTN_DIAS.map(function(d) { return '<option value="' + d[0] + '"' + (String(it.dia) === d[0] ? ' selected' : '') + '>' + d[1] + '</option>'; }).join('');
+    return '<div class="rtn-ed-linha"><select data-rf="s.' + i + '.dia" style="flex:0 0 150px;">' + ops + '</select><input data-rf="s.' + i + '.txt" value="' + rtnEsc(it.txt) + '" placeholder="Tarefa da semana"><button class="x" onclick="rtnEd(\'tiraSem\',' + i + ')">✕</button></div>';
+  }).join('');
+  var mes = m.mes.map(function(it, i) {
+    return '<div class="rtn-ed-linha"><input data-rf="m.' + i + '.quando" value="' + rtnEsc(it.quando) + '" placeholder="Quando (ex.: 1ª semana)" style="flex:0 0 150px;"><input data-rf="m.' + i + '.txt" value="' + rtnEsc(it.txt) + '" placeholder="Tarefa do mês"><button class="x" onclick="rtnEd(\'tiraMes\',' + i + ')">✕</button></div>';
+  }).join('');
+  box.innerHTML =
+    '<div class="rtn-top"><div><h2>✏️ Editar rotina</h2><p>Mude horários, blocos e tarefas. Os blocos são ordenados pelo horário ao salvar. Tarefa em branco é descartada.</p></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="rtn-btn" onclick="rtnRestaurar()">Voltar à rotina sugerida</button><button class="rtn-btn" onclick="rtnCancelar()">Cancelar</button><button class="rtn-btn pri" onclick="rtnLerForm();rtnSalvar()">Salvar rotina</button></div></div>' +
+    '<div class="rtn-card"><h3>Blocos do dia</h3>' + blocos + '<button class="rtn-btn" onclick="rtnEd(\'novoBloco\')">+ Novo bloco</button></div>' +
+    '<div class="rtn-card"><h3>Toda semana</h3>' + semana + '<button class="rtn-btn min" onclick="rtnEd(\'novoSem\')">+ Tarefa da semana</button></div>' +
+    '<div class="rtn-card"><h3>Todo mês</h3>' + mes + '<button class="rtn-btn min" onclick="rtnEd(\'novoMes\')">+ Tarefa do mês</button></div>' +
+    '<div class="rtn-ed-rodape"><button class="rtn-btn" onclick="rtnCancelar()">Cancelar</button><button class="rtn-btn pri" onclick="rtnLerForm();rtnSalvar()">Salvar rotina</button></div>';
+}
+
+/* ── lembretes: no horário de cada bloco a águia avisa (uma vez por bloco, por dia) ── */
+function rtnLembrar() {
+  if (!currentUser || typeof acVe !== 'function' || !acVe(currentUser, 'rotina')) return;
+  rtnOuvir(); // troca de usuário ou virada do dia
+  var m = rtnModelo(); if (!m.lembretes) return;
+  var agora = rtnAgoraMin(), hoje = rtnHoje();
+  m.blocos.forEach(function(b) {
+    var ini = rtnMin(b.ini);
+    if (agora < ini || agora > ini + 10) return;
+    var ch = 'fgv_rtn_aviso_' + currentUser + '_' + hoje + '_' + b.id;
+    try { if (localStorage.getItem(ch)) return; localStorage.setItem(ch, '1'); } catch (e) { if (RTN.avisados[ch]) return; RTN.avisados[ch] = 1; }
+    var pend = b.itens.filter(function(it) { return !rtnFeito('dia', it.id); });
+    var texto = (b.desc ? rtnEsc(b.desc) + '<br>' : '') + pend.map(function(it) { return '• ' + rtnEsc(it.txt); }).join('<br>');
+    var abrir = function() { var btn = document.getElementById('nav-rotina'); if (btn) showTab('rotina', btn); };
+    if (typeof window.aguiaAvisar === 'function') {
+      window.aguiaAvisar({ titulo: '⏰ ' + rtnEsc(b.ini) + ' — ' + rtnEsc(b.tit), anim: 'ag-aponta', som: 'pequeno', texto: texto || 'Hora deste bloco.', dura: 15000,
+        acoes: [{ rot: 'Abrir minha rotina', pri: true, fn: abrir }] });
+    }
+  });
+  var tab = document.getElementById('tab-rotina');
+  if (tab && tab.classList.contains('active') && !RTN.editando && !(document.activeElement && document.activeElement.id === 'rtn-notas')) rtnRender();
+}
+setInterval(function() { try { rtnLembrar(); } catch (e) { console.warn('rotina', e); } }, 30000);
 </script>
 
 </body>
