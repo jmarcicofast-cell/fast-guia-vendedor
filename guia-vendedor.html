@@ -25211,6 +25211,49 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   volta.onclick = function(){ esconder(false); anima('ag-acena', 3000); };
 
   /* ── regras: o que a águia comemora ── */
+  /* ── sub-metas do mês (produtos, ligações, clientes) — vêm da Rota da Meta ── */
+  function rotaPronta(vn){
+    try { return typeof rtCalc === 'function' && window.RT && RT.ckOk && RT.pedOk && RT.pedOk[vn] && RT.ligOk && RT.ligOk[vn] && ckData && ckData.settings; } catch(e) { return false; }
+  }
+  function ligarRota(){ try { if (window.RT && !RT.ligado && typeof rtInit === 'function') rtInit(); } catch(e) {} }
+  function fmtSub(x, v){ try { return rtFmt(x, v); } catch(e) { return String(Math.round(v)); } }
+  /* sub-metas batidas no mês que ainda não foram comemoradas (prefixo separa a tela do vendedor da da gestora) */
+  function submetasNovas(vn, prefixo){
+    if (!rotaPronta(vn)) return [];
+    var mes = hojeStr().slice(0, 7), r, novas = [];
+    try { r = rtCalc(vn); } catch(e) { return []; }
+    (r.met || []).forEach(function(x){
+      if (x.key === 'valor' || !(x.meta > 0)) return;
+      if (x.real >= x.meta) {
+        var ch = prefixo + x.key + '_' + mes;
+        if (!jaFoi(ch)) { marca(ch); novas.push({ rot: (x.lig ? 'Ligações do mês (mínimo)' : x.label), txt: fmtSub(x, x.real) + ' de ' + fmtSub(x, x.meta) }); }
+      }
+      if (x.lig && x.ideal > 0 && x.real >= x.ideal) {
+        var chI = prefixo + 'ligideal_' + mes;
+        if (!jaFoi(chI)) { marca(chI); novas.push({ rot: 'Ligações do mês (ideal)', txt: fmtSub(x, x.real) + ' de ' + fmtSub(x, x.ideal) }); }
+      }
+    });
+    return novas;
+  }
+  function listaSub(novas){ return novas.map(function(n){ return '• <b>' + esc(n.rot) + '</b>: ' + esc(n.txt); }).join('<br>'); }
+  function comemorarSubmetas(vn, nome){
+    var novas = submetasNovas(vn, 'sub_');
+    if (!novas.length) return;
+    var tit = novas.length === 1 ? 'Meta de ' + novas[0].rot + ' batida! 🦅' : novas.length + ' sub-metas batidas! 🦅';
+    avisar({ titulo: esc(tit), anim: 'ag-voa', extras: ['ag-festa'], confete: 90, som: 'grande', grande: true,
+      epico: [novas.length === 1 ? 'Sub-meta batida!' : 'Sub-metas batidas!', esc(primeiroNome(vn)) + ' voou alto 🦅'],
+      texto: listaSub(novas) + '<br>Isso é resultado, ' + nome + '!',
+      acoes: [{ rot: 'Ver na Rota da Meta', pri: true, fn: function(){ irAba('rota'); } }] });
+  }
+  function comemorarSubmetasEquipe(k){
+    var novas = submetasNovas(k, 'eqsub_' + k + '_');
+    if (!novas.length) return;
+    avisar({ titulo: esc(nomeDe(k)) + (novas.length === 1 ? ' bateu a meta de ' + esc(novas[0].rot) + '! 🦅' : ' bateu ' + novas.length + ' sub-metas! 🦅'),
+      anim: 'ag-voa', extras: ['ag-top'], confete: 70, som: 'pequeno',
+      texto: listaSub(novas),
+      acoes: [{ rot: 'Mandar parabéns', pri: true, fn: function(){ try { if (typeof msnAbrir === 'function' && window.MSN && MSN.eu) msnAbrir(msnConv(MSN.eu, k)); else if (typeof msnAlternarLista === 'function') msnAlternarLista(); } catch(e) {} } }] });
+  }
+
   function avaliar(){
     if (!AG.user || !window.RANK || !RANK.ped) return;
     var vn = AG.user;
@@ -25242,7 +25285,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     if (n.ligHoje > AG.base.ligHoje) {
       if (n.ligHoje >= n.metaLig && !jaFoi('lig_' + hoje)) {
         marca('lig_' + hoje);
-        avisar({ titulo: 'META DE LIGAÇÕES ESMAGADA! 📞🔥', anim: 'ag-danca', som: 'pequeno', confete: 50, extras: ['ag-festa'],
+        avisar({ titulo: 'META DE LIGAÇÕES ESMAGADA! 📞🔥', anim: 'ag-voa', som: 'pequeno', confete: 50, extras: ['ag-festa'],
           texto: '<b>' + n.ligHoje + ' ligações</b> hoje — a meta era ' + n.metaLig + '. Isso é garra!' });
       } else if (n.ligHoje < n.metaLig) {
         avisar({ titulo: 'Ligações lançadas ✔️', anim: 'ag-joia', barra: n.ligHoje / n.metaLig * 100,
@@ -25274,6 +25317,9 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
         return false;
       });
     }
+    // 4b) sub-metas do mês (produtos, ligações, clientes)
+    ligarRota();
+    comemorarSubmetas(vn, nome);
     // 5) subiu no ranking do mês
     var pr = posicaoMes(vn);
     if (pr.pos && AG.base.pos && pr.pos < AG.base.pos && n.pctMes > 0) {
@@ -25293,6 +25339,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 
   // gestora: comemora as conquistas da equipe
   function avaliarGestora(){
+    ligarRota();
     var hoje = hojeStr(), mes = hoje.slice(0, 7);
     var carregado = EQUIPE.every(function(k){ return !(VD()[k]) || RANK.ped[k]; });
     if (!carregado) return;
@@ -25321,6 +25368,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
           texto: '<b>' + rs(n.vMes) + '</b> de ' + rs(n.metaMes) + '. Vale um parabéns!',
           acoes: [{ rot: 'Mandar parabéns', pri: true, fn: function(){ try { if (typeof msnAbrir === 'function' && window.MSN && MSN.eu) msnAbrir(msnConv(MSN.eu, k)); else if (typeof msnAlternarLista === 'function') msnAlternarLista(); } catch(e) {} } }] });
       }
+      comemorarSubmetasEquipe(k);
     });
   }
 
@@ -25348,6 +25396,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     window[nome] = function(){ if (antes) try { antes.apply(this, arguments); } catch(e) {} var r = orig.apply(this, arguments); try { depois && depois.apply(this, arguments); } catch(e) { console.warn('aguia', e); } return r; };
   }
   embrulhar('renderRanking', agendar);
+  embrulhar('rtRender', agendar);
   // quando a gestora muda as metas em Minhas Metas, o Ranking se atualiza na hora
   embrulhar('mmRenderTudo', function(){ try { if (window.RANK && RANK.ped) renderRanking(null, null); } catch(e) {} });
   embrulhar('entrarComoUsuario', function(user){
