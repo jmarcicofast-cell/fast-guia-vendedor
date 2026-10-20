@@ -14687,6 +14687,7 @@ function doLogin() {
   if (user === 'MARIA' || user === 'PRISCILLA') user = 'MARIA PRISCILLA';
   const pass  = document.getElementById('login-pass').value.trim().toUpperCase();
   const error = document.getElementById('login-error');
+  if (typeof acChaveDoLogin === 'function') { var _chave = acChaveDoLogin(user); if (_chave) user = _chave; else if (vendedores[user]) user = '#' + user; }
   if (!vendedores[user] && typeof caLoginUnidade === 'function' && caLoginUnidade(user, pass)) { error.textContent = ''; return; }
   const v = vendedores[user];
   if (!v || String(v.senha).toUpperCase() !== pass) {
@@ -25538,7 +25539,27 @@ var AC_PAGINAS = [
 var AC_PERFIS = [
   ['novo', 'Vendedor(a) novo(a)'], ['veterana', 'Vendedor(a) veterano(a)'], ['', 'Vendedor(a)'], ['administrativo', 'Administrativo']
 ];
-var AC_CAMPOS_V = ['senha', 'nome', 'tipo', 'lider', 'bloqueado', 'gerenciaAcessos', 'paginas'];
+var AC_CAMPOS_V = ['senha', 'nome', 'tipo', 'lider', 'bloqueado', 'gerenciaAcessos', 'paginas', 'login'];
+
+/* login que a pessoa digita (pode ter sido corrigido no painel; os dados continuam na chave original) */
+function acLoginDe(k) { var v = vendedores[k]; return (v && v.login) ? v.login : k; }
+/* recebe o que foi digitado no login e devolve a chave do usuário (ou null) */
+function acChaveDoLogin(digitado) {
+  var d = acNormLogin(digitado), ks = Object.keys(vendedores);
+  for (var i = 0; i < ks.length; i++) if (vendedores[ks[i]].login && acNormLogin(vendedores[ks[i]].login) === d) return ks[i];
+  if (vendedores[d] && !vendedores[d].login) return d;
+  if (vendedores[digitado] && !vendedores[digitado].login) return digitado;
+  return null;
+}
+/* login já usado por outra pessoa/unidade? */
+function acLoginEmUso(login, exceto) {
+  if (login === 'MARIA' || login === 'PRISCILLA') return exceto !== 'MARIA PRISCILLA';
+  if (typeof CA_UNIDADES !== 'undefined' && CA_UNIDADES[login]) return true;
+  var ks = Object.keys(vendedores);
+  for (var i = 0; i < ks.length; i++) { if (ks[i] !== exceto && acNormLogin(acLoginDe(ks[i])) === login) return true; }
+  if (vendedores[login] && login !== exceto) return true;
+  return false;
+}
 var AC_CAMPOS_U = ['senha', 'nome', 'unidade', 'veTudo', 'direcao', 'bloqueado'];
 
 function acEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
@@ -25764,7 +25785,7 @@ function acRender() {
     if (!jul) bts += '<button class="ac-btn min' + (off ? '' : ' perigo') + '" onclick="acAtivar(\'' + acEsc(k) + '\',' + (off ? 'true' : 'false') + ')">' + (off ? 'Reativar' : 'Desativar') + '</button>';
     if (v._acNovo) bts += '<button class="ac-btn min perigo" onclick="acExcluir(\'' + acEsc(k) + '\')">Excluir</button>';
     return '<div class="ac-linha' + (off ? ' off' : '') + '">' +
-      '<div><div class="ac-nome">' + acEsc(v.nome) + '</div><div class="ac-login">login: ' + acEsc(k) + '</div></div>' +
+      '<div><div class="ac-nome">' + acEsc(v.nome) + '</div><div class="ac-login">login: ' + acEsc(acLoginDe(k)) + '</div></div>' +
       '<div class="ac-c-status"><span class="ac-tag ' + (off ? 'off' : 'ok') + '">' + (off ? 'Desativado' : 'Ativo') + '</span></div>' +
       '<div class="ac-c-perfil">' + tags + '</div>' +
       '<div class="ac-c-senha">' + (podeMexer ? '<span class="ac-senha esc" title="Clique para ver" onclick="acTogglarSenha(this)">' + acEsc(v.senha) + '</span>' : '<span class="ac-pags">—</span>') +
@@ -25823,6 +25844,7 @@ function acRegistroAtual(k) {
   var r = { nome: v.nome, senha: v.senha, tipo: v.tipo || '', lider: !!v.lider, bloqueado: !!v.bloqueado,
     paginas: v.paginas || null, criado: !!(v._acNovo || salvo.criado) };
   if (v.gerenciaAcessos !== undefined) r.gerenciaAcessos = !!v.gerenciaAcessos;
+  if (v.login && v.login !== k) r.login = v.login;
   return r;
 }
 function acCarimbo(r) { r.atualizadoPor = currentUser || ''; r.atualizadoEm = new Date().toISOString(); return r; }
@@ -25864,7 +25886,7 @@ function acAbrir(k) {
   var html = '<h3>' + (novo ? 'Novo acesso' : 'Editar acesso — ' + acEsc(v.nome)) + '</h3>' +
     '<div class="ac-grid">' +
       '<div class="ac-campo"><label>Nome</label><input id="ac-f-nome" value="' + acEsc(v.nome || '') + '"' + (jul ? ' readonly' : '') + ' placeholder="Ex.: Ana Paula"></div>' +
-      '<div class="ac-campo"><label>Login (usuário)</label><input id="ac-f-login" value="' + acEsc(k || '') + '"' + (novo ? '' : ' readonly') + ' placeholder="Ex.: ANA PAULA" style="text-transform:uppercase"></div>' +
+      '<div class="ac-campo"><label>Login (usuário)</label><input id="ac-f-login" value="' + acEsc(novo ? '' : acLoginDe(k)) + '"' + (jul ? ' readonly' : '') + ' placeholder="Ex.: ANA PAULA" style="text-transform:uppercase">' + (novo || jul ? '' : '<div style="font-size:11px;color:var(--faint);margin-top:3px;">Pode corrigir: pedidos e histórico continuam com ele.</div>') + '</div>' +
       '<div class="ac-campo"><label>Senha</label><input id="ac-f-senha" value="' + acEsc(v.senha || '') + '" placeholder="Ex.: ANA123"></div>' +
       '<div class="ac-campo"><label>Perfil</label>' + (jul ? '<input value="Gestora" readonly>' : '<select id="ac-f-tipo" onchange="acMudouPerfil()">' + perfis + '</select>') + '</div>' +
     '</div>' +
@@ -25926,9 +25948,10 @@ function acSalvar() {
   if (!login) { erro.textContent = 'Informe o login.'; return; }
   if (!/^[A-Z0-9 ]+$/.test(login)) { erro.textContent = 'Use só letras, números e espaço no login.'; return; }
   if (senha.length < 4) { erro.textContent = 'A senha precisa ter pelo menos 4 caracteres.'; return; }
-  if (f.novo && (vendedores[login] || (typeof CA_UNIDADES !== 'undefined' && CA_UNIDADES[login]) || login === 'MARIA' || login === 'PRISCILLA')) { erro.textContent = 'Já existe um login ' + login + '.'; return; }
+  if (acLoginEmUso(login, f.novo ? null : f.k)) { erro.textContent = 'Já existe um login ' + login + '.'; return; }
   var k = f.novo ? login : f.k;
   var r = f.novo ? { criado: true, bloqueado: false } : acRegistroAtual(k);
+  if (!f.novo && k !== 'JULIANA') r.login = (login !== k) ? login : null;
   r.nome = nome; r.senha = senha; r.tipo = tipo;
   if (k !== 'JULIANA') {
     var liderEl = document.getElementById('ac-f-lider');
