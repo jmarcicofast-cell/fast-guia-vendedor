@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Captador FAST — Google Maps → Discador",
+  "short_name": "Captador FAST",
+  "version": "1.0.0",
+  "description": "Captura lojas (nome, telefone, cidade) no Google Maps e manda para a conferência do Discador no Guia do Vendedor.",
+  "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.google.com/maps/*", "https://www.google.com.br/maps/*", "https://maps.google.com/*", "https://maps.google.com.br/*"],
+      "js": ["maps.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://jmarcicofast-cell.github.io/fast-guia-vendedor/*"],
+      "js": ["guia.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

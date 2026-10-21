@@ -1,0 +1,20 @@
+CAPTADOR FAST — Google Maps → Discador do Guia
+
+INSTALAR (uma vez em cada computador)
+1. Descompacte o arquivo captador-fast.zip numa pasta fixa (ex.: Documentos\captador-fast).
+2. No Chrome, abra chrome://extensions
+3. Ligue "Modo do desenvolvedor" (canto superior direito).
+4. Clique em "Carregar sem compactação" e escolha a pasta captador-fast.
+5. Fixe a extensão na barra (ícone de quebra-cabeça → alfinete), se quiser.
+
+USAR
+1. No Google Maps, pesquise, por exemplo: "loja de drywall Joinville".
+2. No canto inferior direito aparece o painel "Captador FAST".
+   - "Capturar os N resultados carregados": pega a lista inteira que está na tela
+     (role a lista do Maps para carregar mais e clique de novo).
+   - Abrindo uma loja: "Capturar esta loja" (pega também cidade, UF e site).
+3. Clique em "Enviar para conferência". O Guia abre no Discador com a conferência:
+   desmarque o que não tem a ver e escolha a lista (a aberta no discador, outra sua ou uma nova).
+   Repetidos, clientes que já estão na agenda e contatos sem telefone já vêm desmarcados.
+
+O Guia precisa estar logado no mesmo Chrome.
