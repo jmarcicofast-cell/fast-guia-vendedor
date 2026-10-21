@@ -99,8 +99,13 @@
       if (e.scrollHeight > e.clientHeight + 20 && /auto|scroll/.test(getComputedStyle(e).overflowY)) return e;
     return null;
   }
+  // usa a seta "Voltar" do próprio Maps (history.back poderia sair do Maps)
+  function botaoVoltar() {
+    var b = [].slice.call(document.querySelectorAll('button[aria-label="Voltar"],button[aria-label="Back"]')).filter(function (x) { return x.offsetParent; })[0];
+    if (b) b.click();
+  }
   async function voltarLista() {
-    for (var t = 0; t < 3 && !itensSalvos().length; t++) { history.back(); for (var w = 0; w < 20 && !itensSalvos().length; w++) await sleep(300); }
+    for (var t = 0; t < 3 && !itensSalvos().length; t++) { botaoVoltar(); for (var w = 0; w < 20 && !itensSalvos().length; w++) await sleep(300); }
     if (itensSalvos().length) await sleep(500); // deixa a lista terminar de desenhar
     return itensSalvos().length > 0;
   }
