@@ -23989,7 +23989,7 @@ function msnChegou(conv, v) {
 }
 function msnEntrou(u) {
   if (!MSN.on || MSN.meuStatus === 'ocupado' || u === MSN.eu || !vendedores[u]) return;
-  msnBalao(msnConv(MSN.eu, u), u, '', 'entrou'); msnSom('entrou');
+  msnBalao(msnConv(MSN.eu, u), u, '', 'entrou');
 }
 function msnMarcarLida(conv) { var u = msnUltima(conv); var ts = Math.max(Date.now(), u ? u.ts : 0); MSN.lidas[conv] = ts; dbRef('chat/lidas/' + MSN.eu + '/' + conv).set(ts); }
 function msnMarcarAbertasLidas() { MSN.abertas.forEach(function(c) { if (msnNaoLidas(c)) msnMarcarLida(c); }); }
