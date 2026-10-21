@@ -73,6 +73,75 @@
     return out;
   }
 
+  // ── lista salva ("Salvos" → uma lista com N lugares) ──
+  // Os cartões da lista salva não mostram telefone: o captador abre loja por loja,
+  // lê a ficha e volta para a lista, até o fim ou até o vendedor clicar em Parar.
+  var LOTE = { rodando: false, parar: false, feitos: 0, total: 0, achados: 0, msg: '' };
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function itensSalvos() {
+    return [].slice.call(document.querySelectorAll('button[aria-label="Adicionar nota"],button[aria-label="Add note"],button[aria-label="Editar nota"],button[aria-label="Edit note"]')).map(function (n) {
+      var c = n;
+      for (var i = 0; i < 6 && c; i++) {
+        c = c.parentElement; if (!c) break;
+        var abre = [].slice.call(c.querySelectorAll('button')).filter(function (b) { return !/nota|note|excluir|delete|remov/i.test(b.getAttribute('aria-label') || '') && limpo(b.innerText).length > 2; })[0];
+        if (abre) return { abre: abre, nome: limpo(abre.innerText.split('\n')[0]) };
+      }
+      return null;
+    }).filter(Boolean);
+  }
+  function nomeLista() {
+    var m = [].slice.call(document.querySelectorAll('div[role="main"]')).map(function (x) { return x.innerText; }).join('\n').match(/^(.+)\n.*?(\d+)\s+lugares/m);
+    return m ? { nome: limpo(m[1]), total: parseInt(m[2], 10) } : { nome: '', total: 0 };
+  }
+  function rolador() {
+    var it = itensSalvos()[0]; if (!it) return null;
+    for (var e = it.abre; e && e !== document.body; e = e.parentElement)
+      if (e.scrollHeight > e.clientHeight + 20 && /auto|scroll/.test(getComputedStyle(e).overflowY)) return e;
+    return null;
+  }
+  async function voltarLista() {
+    for (var t = 0; t < 3 && !itensSalvos().length; t++) { history.back(); for (var w = 0; w < 20 && !itensSalvos().length; w++) await sleep(300); }
+    if (itensSalvos().length) await sleep(500); // deixa a lista terminar de desenhar
+    return itensSalvos().length > 0;
+  }
+  async function carregarAte(k) {
+    var parado = 0;
+    while (itensSalvos().length <= k && parado < 4 && !LOTE.parar) {
+      var n = itensSalvos().length, r = rolador(); if (!r) return false;
+      r.scrollTop = r.scrollHeight; await sleep(900);
+      parado = itensSalvos().length === n ? parado + 1 : 0;
+    }
+    return itensSalvos().length > k;
+  }
+  function mesmoNome(a, b) { a = limpo(a).toUpperCase().slice(0, 14); b = limpo(b).toUpperCase().slice(0, 14); return a && a === b; }
+  async function capturarSalvos() {
+    if (LOTE.rodando) return;
+    var info = nomeLista();
+    LOTE = { rodando: true, parar: false, feitos: 0, total: info.total || itensSalvos().length, achados: 0, msg: '', lista: info.nome };
+    var jaTem = {}; cesta.forEach(function (c) { jaTem[limpo(c.nome).toUpperCase()] = 1; });
+    render();
+    for (var k = 0; !LOTE.parar; k++) {
+      if (!(await voltarLista())) { LOTE.msg = 'Não consegui voltar para a lista.'; break; }
+      if (!(await carregarAte(k))) break; // chegou ao fim da lista
+      var x = itensSalvos()[k]; if (!x) break;
+      LOTE.feitos = k + 1; render();
+      if (jaTem[x.nome.toUpperCase()]) continue;
+      x.abre.scrollIntoView({ block: 'center' }); await sleep(250);
+      (itensSalvos()[k] || x).abre.click();
+      var f = null;
+      for (var w = 0; w < 40 && !LOTE.parar; w++) { await sleep(300); f = lerFicha(); if (f && mesmoNome(f.nome, x.nome)) break; f = null; }
+      if (f) { await sleep(300); f = lerFicha() || f; f.busca = LOTE.lista ? 'Lista: ' + LOTE.lista : ''; adicionarSilencioso(f); LOTE.achados++; jaTem[x.nome.toUpperCase()] = 1; }
+      else adicionarSilencioso({ nome: x.nome, tel: '', categoria: '', endereco: '', cidade: '', uf: '', site: '', link: '', busca: LOTE.lista ? 'Lista: ' + LOTE.lista : '' });
+    }
+    await voltarLista();
+    LOTE.rodando = false; render();
+    aviso(LOTE.parar ? 'Captura interrompida: ' + LOTE.achados + ' lojas na cesta' : 'Lista capturada: ' + LOTE.achados + ' lojas na cesta');
+  }
+  function adicionarSilencioso(c) {
+    var k = chave(c); if (cesta.some(function (x) { return chave(x) === k; })) return;
+    cesta.push(c); try { chrome.storage.local.set({ cesta: cesta }); } catch (e) {}
+  }
+
   // ── cesta ──
   function salvar() { try { chrome.storage.local.set({ cesta: cesta }); } catch (e) {} render(); }
   function adicionar(lst) {
@@ -126,12 +195,17 @@
         ? '<div><div class="f">' + esc(ficha.nome) + '</div><div class="s">' + esc([ficha.categoria, ficha.tel ? fmt(ficha.tel) : 'sem telefone'].filter(Boolean).join(' · ')) + '</div></div>' +
           '<button id="b1">＋ Capturar esta loja</button>'
         : '<div class="s">Abra uma loja no mapa para capturar, ou faça uma busca (ex.: "drywall Joinville").</div>') +
+      (LOTE.rodando
+        ? '<div><b>Capturando a lista…</b><div class="s">' + LOTE.feitos + ' de ' + (LOTE.total || '?') + ' lojas · ' + LOTE.achados + ' com ficha lida</div><div style="height:6px;background:#eee;border-radius:4px;margin-top:6px"><div style="height:6px;border-radius:4px;background:#1F8A5C;width:' + (LOTE.total ? Math.min(100, Math.round(LOTE.feitos / LOTE.total * 100)) : 5) + '%"></div></div><div class="s" style="margin-top:4px">Não mexa nesta aba até terminar.</div></div><button id="b5" style="text-align:center">Parar</button>'
+        : (itensSalvos().length && !ficha ? '<button id="b6">＋ Capturar a lista salva inteira' + (nomeLista().total ? ' (' + nomeLista().total + ' lojas)' : '') + '</button><div class="s">Abre loja por loja para pegar o telefone. Leva uns 3 segundos por loja.</div>' : '')) +
       (feed ? '<button id="b2">＋ Capturar os ' + nLista + ' resultados carregados</button><div class="s">Role a lista do Maps para carregar mais resultados.</div>' : '') +
       '<div class="row"><button class="pri" id="b3"' + (cesta.length ? '' : ' disabled') + '>Enviar ' + cesta.length + ' para conferência</button></div>' +
       (cesta.length ? '<button id="b4" class="s" style="text-align:center">Esvaziar cesta</button>' : '') +
       '</div><div id="av"></div></div>';
     root.getElementById('tg').onclick = function () { aberto = !aberto; render(); };
     var b1 = root.getElementById('b1'); if (b1) b1.onclick = function () { var f = lerFicha(); if (f) adicionar([f]); };
+    var b5 = root.getElementById('b5'); if (b5) b5.onclick = function () { LOTE.parar = true; b5.textContent = 'Parando…'; };
+    var b6 = root.getElementById('b6'); if (b6) b6.onclick = capturarSalvos;
     var b2 = root.getElementById('b2'); if (b2) b2.onclick = function () { adicionar(lerLista()); };
     var b3 = root.getElementById('b3'); if (b3) b3.onclick = enviar;
     var b4 = root.getElementById('b4'); if (b4) b4.onclick = function () { cesta = []; salvar(); };
