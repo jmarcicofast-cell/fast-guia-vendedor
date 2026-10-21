@@ -14,9 +14,10 @@ USAR
    - "Capturar os N resultados carregados": pega a lista inteira que está na tela
      (role a lista do Maps para carregar mais e clique de novo).
    - Abrindo uma loja: "Capturar esta loja" (pega também cidade, UF e site).
-   - Abrindo uma LISTA SALVA (Salvos → ex.: "Lojas de Drywall"): "Capturar a lista salva inteira".
-     O captador abre loja por loja, pega o telefone e volta para a lista. Leva uns 3 segundos
-     por loja; não mexa na aba enquanto ele trabalha. O botão Parar guarda o que já foi lido.
+   - "Ler todas as lojas" (na busca ou numa LISTA SALVA): lê a lista inteira de uma vez e mostra
+     tudo com caixinhas. Filtre, marque só as que interessam e confirme.
+     Na busca o telefone já vem junto. Na lista salva, o captador busca o telefone só das marcadas
+     (uns 3 segundos cada; não mexa na aba enquanto ele trabalha; o botão Parar guarda o que já leu).
 3. Clique em "Enviar para conferência". O Guia abre no Discador com a conferência:
    desmarque o que não tem a ver e escolha a lista (a aberta no discador, outra sua ou uma nova).
    Repetidos, clientes que já estão na agenda e contatos sem telefone já vêm desmarcados.
