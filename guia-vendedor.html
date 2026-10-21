@@ -18765,8 +18765,8 @@ const CK_PRODUTOS = [
   { key: 'laRocha',         label: 'Lã de rocha',       match: function(n){ return n.indexOf('LA DE ROCHA') >= 0; } },
   { key: 'glasroc',         label: 'Glasroc',           match: function(n){ return n.indexOf('GLASROC') >= 0; } },
   { key: 'placaST',         label: 'Placa ST',          match: function(n){ return n.indexOf('PLACA ST') >= 0; } },
-  { key: 'placaRU',         label: 'Placa RU',          match: function(n){ return n.indexOf('PLACA RU') >= 0; } },
-  { key: 'placaVAB',        label: 'Placa VAB (demais)', match: null }, // preenchido por categoria, ver ckClassificarProduto
+  { key: 'placaRU',         label: 'Placa RU',          match: function(n){ return /(^|PLACA )RU\b/.test(n); } }, // "PLACA RU 12,5…" e "RU 15MM 2,40"
+  { key: 'placaVAB',        label: 'Placa VAB (demais)', match: function(n){ return /(^|PLACA )RF\b/.test(n); } }, // RF entra em VAB; as demais VAB vêm pela categoria
   { key: 'perfil',          label: 'Perfil (aço)',      match: null, dinheiro: true } // soma em R$ dos itens da categoria AÇO / AÇO PLACO
 ];
 
@@ -19963,6 +19963,7 @@ function mmDataPedido(p){
 }
 
 function mmValorPedido(p){
+  if (!p || p.status === 'cancelado') return 0;
   var its = itensDoPedido(p);
   if (its.length) return its.reduce(function(s,it){ return s + ckNum(it.qtd)*ckNum(it.vUnit); }, 0);
   if (p.material) return ckNum(p.qtd)*ckNum(p.vUnit);
@@ -20091,6 +20092,18 @@ function mmRenderPeriodo(){
     '</div>';
 }
 
+/* cliente novo/reativado conta UMA vez no mês, mesmo com vários pedidos; cancelado não conta */
+function mmContarClientes(pedidos, inicio, hoje){
+  var nov = {}, ina = {};
+  (pedidos || []).forEach(function(p, i){
+    var d = mmDataPedido(p);
+    if (!d || d < inicio || d > hoje || p.status === 'cancelado') return;
+    var k = ckSemAcento(p.cliente || '') || ('#' + (p.id || i));
+    if (p.tipoCliente === 'novo') nov[k] = 1;
+    if (p.tipoCliente === 'inativo') ina[k] = 1;
+  });
+  return { novos: Object.keys(nov).length, inativos: Object.keys(ina).length };
+}
 function mmRenderClientes(){
   var box = document.getElementById('mm-clientes');
   if (!box) return;
@@ -20100,21 +20113,16 @@ function mmRenderClientes(){
   if (mmSelectedUser === 'EQUIPE'){
     qtdNovos = 0; qtdInativos = 0;
     CK_EQUIPE.forEach(function(p){
-      (mmPedidosEquipe[p]||[]).forEach(function(ped){
-        var d = mmDataPedido(ped);
-        if (!d || d < inicio || d > hoje) return;
-        if (ped.tipoCliente === 'novo') qtdNovos++;
-        if (ped.tipoCliente === 'inativo') qtdInativos++;
-      });
+      var c = mmContarClientes(mmPedidosEquipe[p], inicio, hoje);
+      qtdNovos += c.novos; qtdInativos += c.inativos;
     });
     metaNovos = mmTotalMetaEquipe('metaClientesNovosPorPessoa');
     metaInativos = mmTotalMetaEquipe('metaClientesInativosPorPessoa');
   } else {
     if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável.</div>'; return; }
     var pedidos = mmPedidosEquipe[mmSelectedUser] || [];
-    var pedidosMes = pedidos.filter(function(p){ var d = mmDataPedido(p); return d && d >= inicio && d <= hoje; });
-    qtdNovos = pedidosMes.filter(function(p){ return p.tipoCliente === 'novo'; }).length;
-    qtdInativos = pedidosMes.filter(function(p){ return p.tipoCliente === 'inativo'; }).length;
+    var cc = mmContarClientes(pedidos, inicio, hoje);
+    qtdNovos = cc.novos; qtdInativos = cc.inativos;
     metaNovos = ckMetaPessoa(mmSelectedUser, 'metaClientesNovosPorPessoa');
     metaInativos = ckMetaPessoa(mmSelectedUser, 'metaClientesInativosPorPessoa');
   }
