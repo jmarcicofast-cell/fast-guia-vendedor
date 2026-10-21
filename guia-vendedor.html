@@ -887,6 +887,71 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
   if (c) { document.documentElement.style.setProperty('--acc', c); document.documentElement.style.setProperty('--acc-txt', c); document.documentElement.style.setProperty('--sb-bar', c); }
 } catch(e) { document.documentElement.setAttribute('data-tema', 'escuro'); } })();
 </script>
+<style>
+/* ══ DISCADOR ══ */
+#dc-root{--dc-ok:#1F8A5B}
+.dc-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;margin-bottom:16px}
+.dc-tit{margin:0;font-size:22px;font-weight:700;color:var(--txt)}
+.dc-abas{display:flex;gap:4px;flex-wrap:wrap}
+.dc-aba{background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:6px 14px;cursor:pointer;font:inherit;font-size:13px;font-weight:600}
+.dc-aba.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.dc-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px}
+@media (max-width:900px){.dc-grid{grid-template-columns:minmax(0,1fr)}}
+.dc-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.dc-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:18px;color:var(--txt)}
+.dc-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+.dc-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.dc-lab{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
+#dc-root select,#dc-root input,#dc-root textarea{font:inherit;font-size:14px;color:var(--txt);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+#dc-root textarea{width:100%;resize:vertical}
+#dc-root input[type=checkbox]{width:auto;padding:0}
+.dc-btn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:8px;padding:7px 12px;cursor:pointer;text-decoration:none}
+.dc-btn:hover{background:var(--surface-3)}
+.dc-pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.dc-pri:hover{background:var(--acc);filter:brightness(1.07)}
+.dc-nome{font-size:26px;font-weight:800;line-height:1.15;color:var(--txt)}
+.dc-emp{color:var(--muted);font-size:14px;margin-top:2px}
+.dc-num{font-family:ui-monospace,Consolas,monospace;font-size:28px;font-weight:700;letter-spacing:.02em;user-select:all;color:var(--txt)}
+.dc-ligar{display:inline-flex;align-items:center;gap:10px;background:var(--acc);color:#fff;font-weight:700;font-size:17px;padding:13px 28px;border-radius:999px;text-decoration:none}
+.dc-ligar.live{background:var(--dc-ok)}
+.dc-timer{font-family:ui-monospace,Consolas,monospace;font-size:20px;color:var(--muted)}
+.dc-timer.live{color:var(--dc-ok);font-weight:700}
+.dc-kbd{font-family:ui-monospace,Consolas,monospace;font-size:11px;border:1px solid currentColor;border-radius:4px;padding:0 4px;opacity:.75;font-weight:400}
+.dc-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.dc-res{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dc-resb{display:flex;justify-content:space-between;align-items:center;gap:6px;font:inherit;font-size:13.5px;font-weight:600;text-align:left;background:var(--surface-2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:10px;cursor:pointer}
+.dc-resb:hover{background:var(--surface-3)}
+.dc-resb i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle}
+.dc-auto{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;background:var(--acc-soft);border-radius:8px;padding:10px 12px;font-size:14px}
+.dc-sub{color:var(--muted);font-size:12.5px}
+.dc-vazio{color:var(--muted);font-size:14px;padding:6px 0;line-height:1.6}
+.dc-stats,.dc-tots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
+.dc-tots{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px}
+@media (max-width:640px){.dc-tots{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dc-tots>div{background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:14px}
+.dc-stats b,.dc-tots b{display:block;font-size:22px;font-variant-numeric:tabular-nums;color:var(--txt)}
+.dc-stats span,.dc-tots span{font-size:12px;color:var(--muted)}
+.dc-meta{margin-top:14px}
+.dc-bar{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden;margin-top:6px}
+.dc-bar i{display:block;height:100%;background:var(--acc);border-radius:99px}
+.dc-it{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.dc-it:first-of-type{border-top:0}
+.dc-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.dc-pad button{font-family:ui-monospace,Consolas,monospace;font-size:17px;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--txt);cursor:pointer}
+.dc-pad button:hover{background:var(--surface-3)}
+.dc-scroll{overflow-x:auto}
+.dc-tab{width:100%;border-collapse:collapse;font-size:13.5px;color:var(--txt)}
+.dc-tab th,.dc-tab td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.dc-tab th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.dc-tab td{font-variant-numeric:tabular-nums}
+.dc-chip{display:inline-block;font-size:12px;font-weight:700;border:1px solid;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.dc-filtros{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.dc-filtros button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:999px;padding:4px 12px;cursor:pointer}
+.dc-filtros button.on{background:var(--txt);color:var(--surface);border-color:var(--txt)}
+.dc-passos{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.55;color:var(--txt-2)}
+.dc-passos code{background:var(--surface-3);padding:1px 5px;border-radius:4px;font-size:.9em}
+.dc-toast{display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--txt);color:var(--surface);padding:10px 16px;border-radius:8px;font-size:14px;z-index:9999}
+</style>
 </head>
 <body>
 
@@ -989,6 +1054,10 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
   <button class="nav-btn" id="nav-rota" draggable="true" data-nav-id="rota" onclick="showTab('rota',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
     Rota da Meta
+  </button>
+  <button class="nav-btn" id="nav-discador" draggable="true" data-nav-id="discador" onclick="showTab('discador',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>
+    Discador
   </button>
   <button class="nav-btn" id="nav-quadro" draggable="true" data-nav-id="quadro" onclick="showTab('quadro',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6.5" y="6.5" width="4" height="10" rx="1"/><rect x="13.5" y="6.5" width="4" height="6" rx="1"/></svg>
@@ -2688,6 +2757,10 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 </div>
 
 <!-- ══ RECONHECIMENTO ══ -->
+<div id="tab-discador" class="tab-content">
+  <div class="page-section" style="max-width:100%;"><div id="dc-root"></div></div>
+</div>
+
 <div id="tab-rota" class="tab-content">
   <div class="page-section" style="max-width:100%;"><div id="rota-root"></div></div>
 </div>
@@ -15295,7 +15368,7 @@ function rtInit() {
       dbRef('ligacoes/' + vn).on('value', function(snap) {
         var dados = (snap && snap.val()) || {}, mapa = {};
         var det = {};
-        Object.keys(dados).forEach(function(k) { var l = dados[k]; if (l && l.data) { mapa[l.data] = (mapa[l.data] || 0) + ckNum(l.qtd); if (l.c12 != null || l.c18 != null || l.micro != null) det[l.data] = l; } });
+        Object.keys(dados).forEach(function(k) { var l = dados[k]; if (l && l.data) { mapa[l.data] = (mapa[l.data] || 0) + ckNum(l.qtd); if (l.c12 != null || l.c18 != null || l.micro != null || l.disc != null) det[l.data] = l; } });
         RT.lig[vn] = mapa; RT.ligDet = RT.ligDet || {}; RT.ligDet[vn] = det; RT.ligOk = RT.ligOk || {}; RT.ligOk[vn] = true; rtRender();
       });
     });
@@ -16881,7 +16954,7 @@ function rtCardLigacoes(c, eu, alvoLig) {
   var mVal = RT.ligDraft[mDk] != null ? RT.ligDraft[mDk] : (mTem ? mDet.micro : '');
   var dHoje = rtLigHojeDet(c.vn);
   if (dHoje.micro != null && dHoje.micro !== '') soma += ckNum(dHoje.micro);
-  h += '<div class="rt-lig-sec" style="margin-top:12px">🖥️ MicroSIP <span class="rt-cinza">· a gestão lança</span></div>' +
+  h += '<div class="rt-lig-sec" style="margin-top:12px">🖥️ MicroSIP <span class="rt-cinza">· a gestão lança, só o que foi ligado fora do discador</span></div>' +
     '<div class="rt-lig-lin' + (mTem ? ' feito' : '') + '"><span class="rt-check">' + (mTem ? '✓' : '') + '</span>' +
       '<label for="rt-lig-micro"><span class="rt-forte">🖥️ Ligações do ramal</span><div class="rt-lig-st">' +
         (mTem ? '✓ lançado às ' + rtHoraFmt(mDet.microem) + (mData !== ckToday() ? ' · dia ' + mData.slice(8, 10) + '/' + mData.slice(5, 7) : '') : (podeM ? 'relatório do MicroSIP' : 'ainda não lançado pela gestão')) +
@@ -16889,6 +16962,12 @@ function rtCardLigacoes(c, eu, alvoLig) {
       '</div></label>' +
       '<input id="rt-lig-micro" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0" value="' + rtEsc(mVal) + '"' + (podeM ? '' : ' disabled') +
       ' oninput="rtLigDraft(\'' + c.vn + '\',\'micro|' + mData + '\',this.value)" onfocus="RT.ligFoco=this.id" onblur="RT.ligFoco=null" onkeydown="if(event.key===\'Enter\'){this.blur();rtLigSalvar(\'' + c.vn + '\');}"></div>';
+  // Discador (automático): cada ligação registrada na aba Discador
+  if (dHoje.disc != null && dHoje.disc !== '') soma += ckNum(dHoje.disc);
+  h += '<div class="rt-lig-sec" style="margin-top:12px">☎️ Discador <span class="rt-cinza">· automático</span></div>' +
+    '<div class="rt-lig-lin' + (ckNum(dHoje.disc) > 0 ? ' feito' : '') + '"><span class="rt-check">' + (ckNum(dHoje.disc) > 0 ? '✓' : '') + '</span>' +
+      '<label><span class="rt-forte">☎️ Ligações pelo discador</span><div class="rt-lig-st">' + (ckNum(dHoje.disc) > 0 ? 'última às ' + rtHoraFmt(dHoje.discem) : 'conta sozinho a cada ligação registrada no Discador') + '</div></label>' +
+      '<input type="number" value="' + ckNum(dHoje.disc) + '" disabled></div>';
   var bate = alvoLig > 0 && soma >= alvoLig;
   h += '<div class="rt-lig-tot"><span>Total do dia: <b>' + soma + '</b>' + (alvoLig > 0 ? ' de ' + alvoLig : '') + '</span>' +
     (alvoLig > 0 ? (bate ? '<span class="rt-ok">meta de hoje ✓</span>' : '<span class="rt-cinza">faltam ' + Math.max(0, alvoLig - soma) + '</span>') : '') + '</div>';
@@ -16906,10 +16985,11 @@ function rtLigGravar(vn, valores, dataOpc) {
     var c12 = valores.c12 != null ? valores.c12 : (rec.c12 != null ? ckNum(rec.c12) : null);
     var c18 = valores.c18 != null ? valores.c18 : (rec.c18 != null ? ckNum(rec.c18) : null);
     var micro = valores.micro != null ? valores.micro : (rec.micro != null ? ckNum(rec.micro) : null);
-    // dia antigo lançado só como total (sem checks): o que não é MicroSIP conta como "outros"
-    var outros = temChecks ? ckNum(c12) + ckNum(c18) : Math.max(0, ckNum(rec.qtd) - ckNum(rec.micro));
+    var disc = valores.disc != null ? valores.disc : (rec.disc != null ? ckNum(rec.disc) : null); // discador (automático)
+    // dia antigo lançado só como total (sem checks): o que não é MicroSIP nem discador conta como "outros"
+    var outros = temChecks ? ckNum(c12) + ckNum(c18) : Math.max(0, ckNum(rec.qtd) - ckNum(rec.micro) - ckNum(rec.disc));
     Object.keys(valores).forEach(function(k) { upd[k] = valores[k]; upd[k + 'em'] = agora; upd[k + 'por'] = currentUser; });
-    upd.qtd = outros + ckNum(micro);
+    upd.qtd = outros + ckNum(micro) + ckNum(disc);
     if (typeof ref.update === 'function') return ref.update(upd);
     return ref.set(Object.assign({}, rec, upd)); // modo offline
   });
@@ -18101,6 +18181,7 @@ function showTab(name, btn) {
   if (name === 'checkin') ckInit();
   if (name === 'minhasmetas') mmInit();
   if (name === 'rota' && typeof rtInit === 'function') rtInit();
+  if (name === 'discador' && typeof dcInit === 'function') dcInit();
   if (name === 'shopping' && typeof spInit === 'function') spInit();
   if (name === 'abastecimento' && typeof abInit === 'function') abInit();
   if (name === 'central' && typeof caInit === 'function') caInit();
@@ -26446,6 +26527,323 @@ function rtnLembrar() {
   if (tab && tab.classList.contains('active') && !RTN.editando && !(document.activeElement && document.activeElement.id === 'rtn-notas')) rtnRender();
 }
 setInterval(function() { try { rtnLembrar(); } catch (e) { console.warn('rotina', e); } }, 30000);
+
+// ══ DISCADOR — liga pelo MicroSIP (link tel:), em sequência, e registra cada ligação ══
+// Firebase: discador/listas/{id} · discador/dias/{VN}/{AAAA_MM_DD} = {itens:[...]} · discador/estado/{VN} = {posicoes, retornos}
+// Cada ligação registrada atualiza o campo 'disc' do dia em ligacoes/{VN} (soma no total do dia da Rota da Meta).
+var DC_RES = [
+  { k: 'atendeu',  t: 'Atendeu',         cor: '#1F8A5B', at: true },
+  { k: 'pedido',   t: 'Pedido fechado',  cor: '#E07A1F', at: true },
+  { k: 'retornar', t: 'Retornar depois', cor: '#2F6FB3', at: true },
+  { k: 'nao',      t: 'Não atendeu',     cor: '#8E939C', at: false },
+  { k: 'caixa',    t: 'Caixa postal',    cor: '#B7791F', at: false },
+  { k: 'errado',   t: 'Número errado',   cor: '#C2413B', at: false }
+];
+var DC_RESMAP = {}; DC_RES.forEach(function(r) { DC_RESMAP[r.k] = r; });
+var DC = { ligado: false, listas: [], itens: [], estado: {}, equipe: {}, listaId: null, avulso: null, call: null, auto: null, pad: '', filtro: 'todos', aba: 'discar', diaKey: null, confirmDel: null };
+
+function dcEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+function dcDig(t) { return String(t || '').replace(/\D/g, ''); }
+function dcTel(t) { var d = dcDig(t);
+  if (d.length === 11) return '(' + d.slice(0,2) + ') ' + d.slice(2,7) + '-' + d.slice(7);
+  if (d.length === 10) return '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6);
+  return d || String(t || ''); }
+function dcHoje() { return ckToday(); }
+function dcKey(d) { return String(d).replace(/-/g, '_'); }
+function dcLs(k, d) { try { var v = localStorage.getItem('fgv_dc_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+function dcLsSet(k, v) { try { localStorage.setItem('fgv_dc_' + k, JSON.stringify(v)); } catch (e) {} }
+function dcPref() { return { esquema: dcLs('esquema', 'tel:'), prefixo: dcLs('prefixo', ''), auto: dcLs('auto', true), espera: dcLs('espera', 4) }; }
+function dcHref(t) { var p = dcPref(); return p.esquema + p.prefixo + dcDig(t); }
+function dcClock(s) { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+function dcDur(s) { s = Math.round(s || 0); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + 'h ' : '') + m + 'm ' + String(x).padStart(2, '0') + 's'; }
+function dcGestao() { return currentUser === 'JULIANA' || (typeof ehLider === 'function' && ehLider()) || !!(vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora'); }
+function dcAviso(m) { var t = document.getElementById('dc-toast'); if (!t) return; t.textContent = m; t.style.display = 'block'; clearTimeout(dcAviso.h); dcAviso.h = setTimeout(function() { t.style.display = 'none'; }, 2600); }
+
+function dcInit() {
+  if (!currentUser) return;
+  if (typeof rtInit === 'function' && !RT.ligado) { try { rtInit(); } catch (e) {} } // carrega metas e ligações da Rota da Meta
+  DC.listaId = DC.listaId || dcLs('lista_' + currentUser, null);
+  var dia = dcKey(dcHoje());
+  if (!DC.ligado || DC.diaKey !== dia || DC.user !== currentUser) {
+    DC.ligado = true; DC.diaKey = dia; DC.user = currentUser;
+    dbRef('discador/listas').on('value', function(snap) {
+      var v = (snap && snap.val()) || {};
+      DC.listas = Object.keys(v).map(function(k) { var l = v[k] || {}; l.id = k; l.contatos = Array.isArray(l.contatos) ? l.contatos.filter(Boolean) : []; return l; })
+        .sort(function(a, b) { return String(b.criado || '').localeCompare(String(a.criado || '')); });
+      dcRender();
+    });
+    dbRef('discador/dias/' + currentUser + '/' + dia).on('value', function(snap) {
+      var v = (snap && snap.val()) || {}; DC.itens = Array.isArray(v.itens) ? v.itens.filter(Boolean) : [];
+      if (!DC.call && !DC.auto) dcRender();
+    });
+    dbRef('discador/estado/' + currentUser).on('value', function(snap) {
+      DC.estado = (snap && snap.val()) || {}; if (!Array.isArray(DC.estado.retornos)) DC.estado.retornos = DC.estado.retornos ? Object.values(DC.estado.retornos) : [];
+      if (!DC.call && !DC.auto) dcRender();
+    });
+    if (dcGestao()) CK_EQUIPE.forEach(function(vn) {
+      dbRef('discador/dias/' + vn + '/' + dia).on('value', function(snap) {
+        var v = (snap && snap.val()) || {}; DC.equipe[vn] = Array.isArray(v.itens) ? v.itens.filter(Boolean) : [];
+        if (DC.aba === 'equipe') dcRender();
+      });
+    });
+  }
+  dcRender();
+}
+
+function dcLista() { return DC.listas.find(function(l) { return l.id === DC.listaId; }); }
+function dcPos() { return ((DC.estado.posicoes || {})[DC.listaId]) || 0; }
+function dcAlvo() {
+  if (DC.avulso) return DC.avulso;
+  var l = dcLista(); if (!l) return null;
+  var c = l.contatos[dcPos()]; return c ? { nome: c.nome, empresa: c.empresa, tel: c.tel, origem: 'lista' } : null;
+}
+function dcResumo(itens) {
+  var at = itens.filter(function(x) { return DC_RESMAP[x.res] && DC_RESMAP[x.res].at; });
+  return { total: itens.length, atendidas: at.length, seg: at.reduce(function(s, x) { return s + (x.dur || 0); }, 0), pedidos: itens.filter(function(x) { return x.res === 'pedido'; }).length };
+}
+function dcMetaHoje() {
+  try {
+    if (typeof rtCalc !== 'function' || !RT.ckOk) return null;
+    var c = rtCalc(currentUser), m = (c.met || []).find(function(x) { return x.lig; });
+    return { alvo: m ? m.alvoHoje : c.ligDia, feitas: c.ligHoje };
+  } catch (e) { return null; }
+}
+
+function dcRender() {
+  var root = document.getElementById('dc-root'); if (!root) return;
+  var abas = [['discar', 'Discar'], ['hist', 'Minhas ligações'], ['listas', 'Listas de clientes']];
+  if (dcGestao()) abas.splice(1, 0, ['equipe', 'Equipe hoje']);
+  abas.push(['config', 'Configurar']);
+  var h = '<div class="dc-head"><h2 class="dc-tit">☎️ Discador</h2><div class="dc-abas">' +
+    abas.map(function(a) { return '<button class="dc-aba' + (DC.aba === a[0] ? ' on' : '') + '" onclick="dcSetAba(\'' + a[0] + '\')">' + a[1] + '</button>'; }).join('') + '</div></div>';
+  h += ({ discar: dcVDiscar, equipe: dcVEquipe, hist: dcVHist, listas: dcVListas, config: dcVConfig })[DC.aba]();
+  h += '<div class="dc-toast" id="dc-toast"></div>';
+  var foco = document.activeElement && document.activeElement.id;
+  var obs = document.getElementById('dc-obs'), quando = document.getElementById('dc-quando');
+  var obsV = obs ? obs.value : '', quandoV = quando ? quando.value : '';
+  root.innerHTML = h;
+  if (obsV && document.getElementById('dc-obs')) document.getElementById('dc-obs').value = obsV;
+  if (quandoV && document.getElementById('dc-quando')) document.getElementById('dc-quando').value = quandoV;
+  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt)$/.test(foco)) document.getElementById(foco).focus();
+}
+function dcSetAba(a) { DC.aba = a; dcPararAuto(true); dcRender(); }
+
+function dcVDiscar() {
+  var a = dcAlvo(), l = dcLista(), r = dcResumo(DC.itens), p = dcPref(), live = !!DC.call;
+  var total = l ? l.contatos.length : 0, pos = dcPos();
+  var meta = dcMetaHoje();
+  var h = '<div class="dc-grid"><div class="dc-col">';
+  h += '<div class="dc-card"><div class="dc-row" style="justify-content:space-between;margin-bottom:12px">' +
+    '<label class="dc-lab" style="flex:1;min-width:200px">Lista em discagem<select id="dc-sel" onchange="dcEscolherLista(this.value)"><option value="">' + (DC.listas.length ? 'Escolha uma lista' : 'Nenhuma lista cadastrada') + '</option>' +
+    DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === DC.listaId ? ' selected' : '') + '>' + dcEsc(x.nome) + ' · ' + x.contatos.length + ' contatos</option>'; }).join('') + '</select></label>' +
+    (l ? '<div class="dc-row"><button class="dc-btn" onclick="dcMover(-1)">Voltar um</button><button class="dc-btn" onclick="dcMover(1)">Pular</button></div>' : '') + '</div>';
+  if (a) {
+    h += '<div class="dc-eyebrow">' + (DC.avulso ? (DC.avulso.retIdx != null ? 'Retorno agendado' : 'Ligação avulsa') : 'Contato ' + (pos + 1) + ' de ' + total) + '</div>' +
+      '<div class="dc-nome">' + dcEsc(a.nome || 'Sem nome') + '</div>' + (a.empresa ? '<div class="dc-emp">' + dcEsc(a.empresa) + '</div>' : '') +
+      (a.obs ? '<div class="dc-emp">Anotação: ' + dcEsc(a.obs) + '</div>' : '') +
+      '<div class="dc-row" style="margin:12px 0"><span class="dc-num" id="dc-num">' + dcEsc(dcTel(a.tel)) + '</span><button class="dc-btn" onclick="dcCopiar()">Copiar</button>' +
+      (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') + '</div>' +
+      '<div class="dc-row" style="gap:16px"><a class="dc-ligar' + (live ? ' live' : '') + '" id="dc-ligar" href="' + dcEsc(dcHref(a.tel)) + '" onclick="dcComecou()">' + (live ? 'Em ligação' : 'Ligar') + ' <span class="dc-kbd">Enter</span></a>' +
+      '<span class="dc-timer' + (live ? ' live' : '') + '" id="dc-timer">' + (live ? dcClock((Date.now() - DC.call.ini) / 1000) : '00:00') + '</span></div>' +
+      '<div class="dc-eyebrow" style="margin-top:16px">Como foi a ligação?</div><div class="dc-res">' +
+      DC_RES.map(function(x, i) { return '<button class="dc-resb" onclick="dcRegistrar(\'' + x.k + '\')"><span><i style="background:' + x.cor + '"></i>' + x.t + '</span><span class="dc-kbd">' + (i + 1) + '</span></button>'; }).join('') + '</div>' +
+      '<div class="dc-row" style="margin-top:10px;align-items:flex-start"><textarea id="dc-obs" rows="2" placeholder="Anotação (opcional): o que o cliente disse, produto, valor…" style="flex:2;min-width:200px"></textarea>' +
+      '<label class="dc-lab" style="flex:1;min-width:170px">Retornar em<input type="datetime-local" id="dc-quando"></label></div>' +
+      (DC.auto ? '<div class="dc-auto">Discando o próximo em <b id="dc-auton">' + DC.auto.n + '</b>s <button class="dc-btn" onclick="dcPararAuto()">Parar</button></div>' : '');
+  } else {
+    h += '<div class="dc-vazio">' + (!DC.listas.length ? 'Cadastre uma lista em <b>Listas de clientes</b> para discar em sequência. Enquanto isso, use o teclado ao lado para um número avulso.'
+      : !l ? 'Escolha uma lista acima para começar.' : 'Lista terminada: ' + total + ' contatos trabalhados. <button class="dc-btn" onclick="dcMover(-' + pos + ')">Recomeçar do início</button>') + '</div>';
+  }
+  h += '</div>';
+  if (l) h += '<div class="dc-sub">Lista: ' + Math.min(pos, total) + ' de ' + total + ' trabalhados · discagem automática ' + (p.auto ? 'ligada (' + p.espera + 's)' : 'desligada') + '</div>';
+  h += '</div><div class="dc-col">';
+  h += '<div class="dc-card"><div class="dc-eyebrow">Meu dia no discador</div><div class="dc-stats">' +
+    '<div><b>' + r.total + '</b><span>ligações</span></div><div><b>' + r.atendidas + '</b><span>atendidas · ' + (r.total ? Math.round(r.atendidas / r.total * 100) : 0) + '%</span></div>' +
+    '<div><b>' + dcDur(r.seg) + '</b><span>tempo falando</span></div><div><b>' + r.pedidos + '</b><span>pedidos fechados</span></div></div>' +
+    (meta && meta.alvo > 0 ? '<div class="dc-meta"><div class="dc-sub">Meta de ligações hoje (Rota da Meta): <b>' + meta.feitas + '</b> de ' + meta.alvo + '</div><div class="dc-bar"><i style="width:' + Math.min(100, Math.round(meta.feitas / meta.alvo * 100)) + '%"></i></div></div>' : '') +
+    '</div>';
+  h += '<div class="dc-card"><div class="dc-eyebrow">Retornos agendados</div>' + dcRetornosHtml() + '</div>';
+  h += '<div class="dc-card"><div class="dc-eyebrow">Ligar para um número</div><div class="dc-row"><input id="dc-pad" inputmode="tel" placeholder="(21) 99999-9999" value="' + dcEsc(DC.pad) + '" oninput="DC.pad=this.value" style="flex:1;min-width:0"><button class="dc-btn dc-pri" onclick="dcUsarPad()">Usar</button></div>' +
+    '<div class="dc-pad">' + ['1','2','3','4','5','6','7','8','9','*','0','⌫'].map(function(k) { return '<button onclick="dcTecla(\'' + k + '\')">' + k + '</button>'; }).join('') + '</div></div>';
+  return h + '</div></div>';
+}
+
+function dcRetornosHtml() {
+  var rs = (DC.estado.retornos || []).map(function(x, i) { return Object.assign({ i: i }, x); })
+    .sort(function(a, b) { return String(a.quando || '9').localeCompare(String(b.quando || '9')); });
+  if (!rs.length) return '<div class="dc-vazio">Nenhum retorno. Ao marcar "Retornar depois", o cliente aparece aqui.</div>';
+  var agora = new Date();
+  return rs.map(function(x) {
+    var venc = x.quando && new Date(x.quando) <= agora;
+    return '<div class="dc-it"><div style="min-width:0"><b>' + dcEsc(x.nome || dcTel(x.tel)) + '</b><div class="dc-sub">' +
+      (x.quando ? '<span style="' + (venc ? 'color:#C2413B;font-weight:600' : '') + '">' + dcEsc(new Date(x.quando).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) + '</span> · ' : '') + dcEsc(dcTel(x.tel)) + '</div></div>' +
+      '<button class="dc-btn" onclick="dcAbrirRetorno(' + x.i + ')">Abrir</button></div>';
+  }).join('');
+}
+
+function dcEscolherLista(id) { DC.listaId = id || null; DC.avulso = null; DC.call = null; dcLsSet('lista_' + currentUser, DC.listaId); dcPararAuto(true); dcRender(); }
+function dcComecou() { if (!DC.call) { DC.call = { ini: Date.now() }; setTimeout(dcRender, 0); } }
+function dcCopiar() {
+  var t = dcDig((dcAlvo() || {}).tel);
+  var sel = function() { var n = document.getElementById('dc-num'); if (!n) return; var r = document.createRange(); r.selectNodeContents(n); var s = getSelection(); s.removeAllRanges(); s.addRange(r); dcAviso('Número selecionado. Use Ctrl+C.'); };
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(function() { dcAviso('Número copiado'); }).catch(sel); else sel();
+}
+function dcSairAvulso() { DC.avulso = null; DC.call = null; dcRender(); }
+function dcAbrirRetorno(i) { var x = DC.estado.retornos[i]; if (!x) return; DC.avulso = Object.assign({}, x, { retIdx: i }); DC.call = null; DC.aba = 'discar'; dcPararAuto(true); dcRender(); }
+function dcTecla(k) { DC.pad = k === '⌫' ? DC.pad.slice(0, -1) : DC.pad + k; var e = document.getElementById('dc-pad'); if (e) e.value = DC.pad; }
+function dcUsarPad() { if (dcDig(DC.pad).length < 8) { dcAviso('Digite o número com DDD'); return; } DC.avulso = { tel: dcDig(DC.pad), nome: '', empresa: '' }; DC.pad = ''; DC.call = null; dcPararAuto(true); dcRender(); }
+
+function dcSalvarEstado(fn) {
+  var e = JSON.parse(JSON.stringify(DC.estado || {})); e = fn(e) || e; DC.estado = e;
+  return Promise.resolve(dbRef('discador/estado/' + currentUser).set(e)).catch(function(err) { dcAviso('Não salvou: ' + (err && err.message)); });
+}
+function dcMover(d) {
+  if (!DC.listaId) return;
+  var tot = (dcLista() || { contatos: [] }).contatos.length, novo = Math.max(0, Math.min(tot, dcPos() + d));
+  DC.call = null; dcPararAuto(true);
+  dcSalvarEstado(function(e) { e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[DC.listaId] = novo; return e; }).then(dcRender);
+  dcRender();
+}
+
+function dcRegistrar(res) {
+  var a = dcAlvo(); if (!a) return;
+  var obsEl = document.getElementById('dc-obs'), qEl = document.getElementById('dc-quando');
+  var obs = obsEl ? obsEl.value.trim() : '', quando = qEl ? qEl.value : '';
+  if (res === 'retornar' && !quando) { dcAviso('Escolha quando retornar.'); if (qEl) qEl.focus(); return; }
+  var dur = DC.call ? Math.round((Date.now() - DC.call.ini) / 1000) : 0;
+  var item = { tel: dcDig(a.tel), nome: a.nome || '', empresa: a.empresa || '', res: res, obs: obs, dur: dur, hora: Date.now(), lista: a.origem === 'lista' ? DC.listaId : null };
+  var eraAvulso = DC.avulso, listaId = DC.listaId, pos = dcPos();
+  DC.call = null; DC.avulso = null;
+  if (obsEl) obsEl.value = ''; if (qEl) qEl.value = '';
+  var hoje = dcHoje(), novos = DC.itens.concat([item]); DC.itens = novos;
+  dbRef('discador/dias/' + currentUser + '/' + dcKey(hoje)).set({ data: hoje, itens: novos })
+    .then(function() { return typeof rtLigGravar === 'function' ? rtLigGravar(currentUser, { disc: novos.length }) : null; })
+    .catch(function(err) { dcAviso('Não salvou a ligação (' + (err && err.message) + '). Tente de novo.'); });
+  dcSalvarEstado(function(e) {
+    var rets = (e.retornos || []).slice();
+    if (eraAvulso && eraAvulso.retIdx != null) rets.splice(eraAvulso.retIdx, 1);
+    if (res === 'retornar') rets.push({ tel: item.tel, nome: item.nome, empresa: item.empresa, obs: obs, quando: quando });
+    e.retornos = rets.slice(-200);
+    if (!eraAvulso && listaId) { e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[listaId] = pos + 1; }
+    return e;
+  });
+  dcAviso(DC_RESMAP[res].t + ' registrado');
+  if (!eraAvulso && dcPref().auto) dcIniciarAuto(); else dcRender();
+}
+
+function dcIniciarAuto() {
+  dcPararAuto(true);
+  if (!dcAlvo()) { dcRender(); return; }
+  DC.auto = { n: dcPref().espera }; dcRender();
+  DC.auto.t = setInterval(function() {
+    if (!DC.auto) return;
+    DC.auto.n--; var el = document.getElementById('dc-auton'); if (el) el.textContent = DC.auto.n;
+    if (DC.auto.n <= 0) { dcPararAuto(true); var b = document.getElementById('dc-ligar'); if (b) b.click(); }
+  }, 1000);
+}
+function dcPararAuto(silencioso) { if (DC.auto && DC.auto.t) clearInterval(DC.auto.t); var tinha = !!DC.auto; DC.auto = null; if (tinha && !silencioso) dcRender(); }
+
+setInterval(function() { if (DC.call) { var t = document.getElementById('dc-timer'); if (t) t.textContent = dcClock((Date.now() - DC.call.ini) / 1000); } }, 1000);
+document.addEventListener('keydown', function(e) {
+  var tab = document.getElementById('tab-discador');
+  if (!tab || !tab.classList.contains('active') || DC.aba !== 'discar') return;
+  var tag = (e.target.tagName || '').toLowerCase(); if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (e.key === 'Enter') { var b = document.getElementById('dc-ligar'); if (b) { e.preventDefault(); dcPararAuto(true); b.click(); } }
+  var n = parseInt(e.key, 10); if (n >= 1 && n <= DC_RES.length && dcAlvo()) { e.preventDefault(); dcRegistrar(DC_RES[n - 1].k); }
+  if (e.key === 'Escape') dcPararAuto();
+});
+
+function dcVEquipe() {
+  var rows = CK_EQUIPE.map(function(vn) { var r = dcResumo(DC.equipe[vn] || []); r.vn = vn; return r; }).sort(function(a, b) { return b.total - a.total; });
+  var t = rows.reduce(function(s, r) { return { total: s.total + r.total, at: s.at + r.atendidas, seg: s.seg + r.seg, ped: s.ped + r.pedidos }; }, { total: 0, at: 0, seg: 0, ped: 0 });
+  return '<div class="dc-tots"><div><b>' + t.total + '</b><span>ligações da equipe hoje</span></div><div><b>' + t.at + '</b><span>atendidas · ' + (t.total ? Math.round(t.at / t.total * 100) : 0) + '%</span></div>' +
+    '<div><b>' + dcDur(t.seg) + '</b><span>tempo falando</span></div><div><b>' + t.ped + '</b><span>pedidos fechados</span></div></div>' +
+    '<div class="dc-card"><div class="dc-scroll"><table class="dc-tab"><thead><tr><th>Vendedor</th><th>Ligações</th><th>Atendidas</th><th>Taxa</th><th>Tempo falando</th><th>Pedidos</th><th>Última</th></tr></thead><tbody>' +
+    rows.map(function(r) {
+      var its = DC.equipe[r.vn] || [], ult = its.length ? new Date(its[its.length - 1].hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
+      return '<tr><td><b>' + dcEsc(rtNome ? rtNome(r.vn) : r.vn) + '</b></td><td>' + r.total + '</td><td>' + r.atendidas + '</td><td>' + (r.total ? Math.round(r.atendidas / r.total * 100) + '%' : '—') + '</td><td>' + dcDur(r.seg) + '</td><td>' + r.pedidos + '</td><td>' + ult + '</td></tr>';
+    }).join('') + '</tbody></table></div><div class="dc-sub" style="margin-top:8px">Só conta o que foi discado por aqui. As ligações do discador já entram sozinhas no total do dia da Rota da Meta.</div></div>';
+}
+
+function dcVHist() {
+  var its = DC.itens.slice().reverse().filter(function(x) { return DC.filtro === 'todos' || x.res === DC.filtro; });
+  var f = [{ k: 'todos', t: 'Todas' }].concat(DC_RES);
+  return '<div class="dc-card"><div class="dc-filtros">' + f.map(function(x) {
+      var n = x.k === 'todos' ? DC.itens.length : DC.itens.filter(function(i) { return i.res === x.k; }).length;
+      return '<button class="' + (DC.filtro === x.k ? 'on' : '') + '" onclick="DC.filtro=\'' + x.k + '\';dcRender()">' + x.t + ' ' + n + '</button>'; }).join('') + '</div>' +
+    (its.length ? '<div class="dc-scroll"><table class="dc-tab"><thead><tr><th>Hora</th><th>Cliente</th><th>Telefone</th><th>Resultado</th><th>Duração</th><th>Anotação</th></tr></thead><tbody>' +
+      its.map(function(x) { var r = DC_RESMAP[x.res] || { t: x.res, cor: '#8E939C' };
+        return '<tr><td>' + new Date(x.hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</td><td>' + dcEsc(x.nome || '—') + (x.empresa ? '<div class="dc-sub">' + dcEsc(x.empresa) + '</div>' : '') + '</td><td style="white-space:nowrap">' + dcEsc(dcTel(x.tel)) + '</td>' +
+          '<td><span class="dc-chip" style="color:' + r.cor + ';border-color:' + r.cor + '">' + r.t + '</span></td><td>' + (x.dur ? dcClock(x.dur) : '—') + '</td><td>' + dcEsc(x.obs) + '</td></tr>'; }).join('') + '</tbody></table></div>'
+    : '<div class="dc-vazio">Nenhuma ligação registrada hoje' + (DC.filtro !== 'todos' ? ' com esse resultado' : '') + '.</div>') + '</div>';
+}
+
+function dcParse(txt) {
+  var out = [];
+  String(txt || '').split(/\r?\n/).forEach(function(line) {
+    if (!line.trim()) return;
+    var parts = line.split(/[;\t]/).map(function(s) { return s.replace(/^"|"$/g, '').trim(); });
+    if (parts.length === 1) parts = line.split(',').map(function(s) { return s.trim(); });
+    var iT = parts.findIndex(function(p) { var d = dcDig(p); return d.length >= 8 && d.length <= 13 && /^[\d\s()+\-.]+$/.test(p); });
+    if (iT < 0) return;
+    var rest = parts.filter(function(_, i) { return i !== iT; }).filter(Boolean);
+    out.push({ nome: rest[0] || '', empresa: rest[1] || '', tel: dcDig(parts[iT]) });
+  });
+  return out;
+}
+function dcVListas() {
+  return '<div class="dc-grid"><div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Nova lista</div>' +
+    '<label class="dc-lab">Nome da lista<input id="dc-lnome" placeholder="Ex.: Reativação lojistas SP — outubro"></label>' +
+    '<label class="dc-lab" style="margin-top:10px">Um contato por linha: nome, loja e telefone separados por ponto e vírgula ou tabulação. Pode colar direto do Excel.' +
+    '<textarea id="dc-ltxt" rows="9" oninput="dcPrevia()" placeholder="Carlos Souza; Casa do Drywall; (11) 98765-4321&#10;Marina Lopes; Gesso &amp; Cia; 21 3344-5566"></textarea></label>' +
+    '<div class="dc-row" style="margin-top:10px"><label class="dc-btn" for="dc-lfile">Abrir arquivo .csv</label><input type="file" id="dc-lfile" accept=".csv,.txt" style="display:none" onchange="dcArquivo(this)"><span class="dc-sub" id="dc-prev"></span></div>' +
+    '<button class="dc-btn dc-pri" style="margin-top:12px" onclick="dcSalvarLista()">Salvar lista</button></div></div>' +
+    '<div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Listas da equipe</div>' +
+    (DC.listas.length ? DC.listas.map(function(l) {
+      return '<div class="dc-it"><div style="min-width:0"><b>' + dcEsc(l.nome) + '</b><div class="dc-sub">' + l.contatos.length + ' contatos · ' + (l.criadoPor ? dcEsc(rtNome ? rtNome(l.criadoPor) : l.criadoPor) + ' · ' : '') + (l.criado ? new Date(l.criado).toLocaleDateString('pt-BR') : '') + '</div></div>' +
+        '<div class="dc-row"><button class="dc-btn" onclick="dcEscolherLista(\'' + dcEsc(l.id) + '\');dcSetAba(\'discar\')">Discar</button>' +
+        (dcGestao() || l.criadoPor === currentUser ? '<button class="dc-btn" onclick="dcExcluirLista(\'' + dcEsc(l.id) + '\')">' + (DC.confirmDel === l.id ? 'Confirmar exclusão' : 'Excluir') + '</button>' : '') + '</div></div>';
+    }).join('') : '<div class="dc-vazio">Nenhuma lista ainda. A lista salva aqui fica disponível para toda a equipe; cada vendedor avança no seu próprio ritmo.</div>') +
+    '</div></div></div>';
+}
+function dcPrevia() { var n = dcParse((document.getElementById('dc-ltxt') || {}).value).length; var e = document.getElementById('dc-prev'); if (e) e.textContent = n ? n + ' contatos reconhecidos' : ''; }
+function dcArquivo(inp) { var f = inp.files[0]; if (!f) return; var r = new FileReader(); r.onload = function() { document.getElementById('dc-ltxt').value = r.result; var nm = document.getElementById('dc-lnome'); if (!nm.value) nm.value = f.name.replace(/\.\w+$/, ''); dcPrevia(); }; r.readAsText(f); }
+function dcSalvarLista() {
+  var nome = (document.getElementById('dc-lnome').value || '').trim(), contatos = dcParse(document.getElementById('dc-ltxt').value);
+  if (!nome) { dcAviso('Dê um nome para a lista'); return; }
+  if (!contatos.length) { dcAviso('Nenhum telefone reconhecido. Confira o formato.'); return; }
+  var id = 'l' + Date.now().toString(36);
+  dbRef('discador/listas/' + id).set({ nome: nome, contatos: contatos.slice(0, 5000), criado: Date.now(), criadoPor: currentUser }).then(function() {
+    dcAviso('Lista salva com ' + contatos.length + ' contatos'); dcEscolherLista(id); DC.aba = 'discar'; dcRender();
+  }).catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
+}
+function dcExcluirLista(id) {
+  if (DC.confirmDel !== id) { DC.confirmDel = id; dcRender(); return; }
+  DC.confirmDel = null; dbRef('discador/listas/' + id).remove().then(function() { dcAviso('Lista excluída'); });
+}
+
+function dcVConfig() {
+  var p = dcPref();
+  return '<div class="dc-grid"><div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Preparar o computador (uma vez)</div><ol class="dc-passos">' +
+    '<li><b>MicroSIP como discador do Windows.</b> No MicroSIP, clique na seta do canto superior direito → <b>Configurações</b> e marque a opção para tratar links <code>tel:</code> e <code>sip:</code>. Depois, em <b>Configurações do Windows → Aplicativos → Aplicativos padrão</b>, procure <code>TEL</code> e escolha o MicroSIP.</li>' +
+    '<li><b>Teste.</b> Em Discar, use o teclado para ligar para o seu celular. Na primeira vez o Chrome pergunta se pode abrir o MicroSIP: marque <b>Sempre permitir</b> e confirme. Sem isso a discagem automática para a cada ligação.</li>' +
+    '<li><b>Gravação.</b> Nas Configurações do MicroSIP, ative a gravação de chamadas e escolha a pasta. O arquivo sai com data, hora e número, então dá para achar qualquer ligação pelo histórico.</li>' +
+    '<li><b>Ritmo.</b> <span class="dc-kbd">Enter</span> liga, a conversa acontece no MicroSIP, e as teclas <span class="dc-kbd">1</span> a <span class="dc-kbd">6</span> marcam o resultado. O próximo número é discado sozinho depois da contagem.</li>' +
+    '</ol></div></div><div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Preferências deste computador</div>' +
+    '<label class="dc-lab">Tipo de link que abre o MicroSIP<select id="dc-cesq"><option value="tel:"' + (p.esquema === 'tel:' ? ' selected' : '') + '>tel: (padrão)</option><option value="sip:"' + (p.esquema === 'sip:' ? ' selected' : '') + '>sip:</option><option value="callto:"' + (p.esquema === 'callto:' ? ' selected' : '') + '>callto:</option></select></label>' +
+    '<label class="dc-lab" style="margin-top:10px">Prefixo de discagem (se a central exigir)<input id="dc-cpre" value="' + dcEsc(p.prefixo) + '" placeholder="vazio"></label>' +
+    '<label class="dc-row" style="margin-top:12px;gap:8px"><input type="checkbox" id="dc-cauto"' + (p.auto ? ' checked' : '') + '> Discar o próximo cliente automaticamente</label>' +
+    '<label class="dc-lab" style="margin-top:10px">Segundos de espera antes do próximo<input type="number" id="dc-cesp" min="1" max="30" value="' + p.espera + '" style="width:100px"></label>' +
+    '<button class="dc-btn dc-pri" style="margin-top:14px" onclick="dcSalvarConfig()">Salvar preferências</button></div></div></div>';
+}
+function dcSalvarConfig() {
+  dcLsSet('esquema', document.getElementById('dc-cesq').value);
+  dcLsSet('prefixo', document.getElementById('dc-cpre').value.replace(/[^\d*#+]/g, ''));
+  dcLsSet('auto', document.getElementById('dc-cauto').checked);
+  dcLsSet('espera', Math.max(1, Math.min(30, parseInt(document.getElementById('dc-cesp').value, 10) || 4)));
+  dcAviso('Preferências salvas');
+}
+
 </script>
 
 </body>
