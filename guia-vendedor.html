@@ -25029,6 +25029,11 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 .ag-balao .x b { color: var(--txt, #111); }
 .ag-balao .fechar { position: absolute; top: 6px; right: 8px; border: none; background: none; color: var(--muted, #888); font-size: 15px; cursor: pointer; line-height: 1; padding: 2px; }
 .ag-balao .acoes { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.ag-balao .ag-bat { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line, #ddd); }
+.ag-balao .ag-bat-t { font-weight: 800; font-size: 12.5px; margin-bottom: 4px; }
+.ag-balao .ag-bt { font-size: 12.5px; line-height: 1.5; margin-bottom: 3px; }
+.ag-balao .ag-bt span { display: inline-block; margin-right: 8px; }
+.ag-balao .ag-bt small { color: var(--muted, #888); }
 .ag-balao .ag-hist { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; max-height: 260px; overflow: auto; }
 .ag-balao .ag-hist-it { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid var(--line, #ddd); border-radius: 10px; font-size: 12.5px; }
 .ag-balao .ag-hist-it small { display: block; color: var(--muted, #888); font-weight: 400; }
@@ -25385,7 +25390,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       var lid = liderDoDia();
       avisar({ forcar: true, titulo: 'Oi, ' + esc(primeiroNome(vn)) + '! Assim está a equipe hoje 🦅', anim: 'ag-acena', dura: 14000,
         html: '<div class="kpis"><div>Vendido hoje<b>' + rs(tot.v) + '</b></div><div>Pedidos hoje<b>' + tot.ped + '</b></div><div>Ligações hoje<b>' + tot.lig + '</b></div><div>Mês da equipe<b>' + (metaT ? Math.round(vMes / metaT * 100) + '%' : rs(vMes)) + '</b></div></div>' +
-          (lid ? '<div class="x" style="margin-top:8px">🥇 Liderando hoje: <b>' + esc(nomeDe(lid)) + '</b></div>' : '') + cfg,
+          (lid ? '<div class="x" style="margin-top:8px">🥇 Liderando hoje: <b>' + esc(nomeDe(lid)) + '</b></div>' : '') + htmlBatidas(EQUIPE.filter(function(k){ return VD()[k]; }), true) + cfg,
         acoes: [{ rot: 'Ver ranking', pri: true, fn: function(){ irAba('reconhecimento'); } }, { rot: '🏆 Conquistas de hoje (' + conquistasDe().length + ')', fn: function(){ setTimeout(mostrarConquistas, 300); } }], ligar: ligar });
       return;
     }
@@ -25395,7 +25400,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     else if (n.ligHoje < n.metaLig) frase = 'Faltam <b>' + (n.metaLig - n.ligHoje) + ' ligações</b> pra meta de hoje. Bora!';
     else frase = 'Ligações do dia em dia! Faltam <b>' + rs(falta) + '</b> pra meta do mês.';
     avisar({ forcar: true, titulo: 'E aí, ' + esc(primeiroNome(vn)) + '! 🦅', texto: frase, anim: 'ag-acena', dura: 14000, barra: n.pctMes,
-      html: '<div class="kpis"><div>Vendido hoje<b>' + rs(n.vHoje) + '</b></div><div>Ligações hoje<b>' + n.ligHoje + ' / ' + n.metaLig + '</b></div><div>Mês<b>' + Math.round(n.pctMes) + '%</b></div><div>Ranking do mês<b>' + (pos ? pos + 'º' : '—') + '</b></div></div>' + cfg,
+      html: '<div class="kpis"><div>Vendido hoje<b>' + rs(n.vHoje) + '</b></div><div>Ligações hoje<b>' + n.ligHoje + ' / ' + n.metaLig + '</b></div><div>Mês<b>' + Math.round(n.pctMes) + '%</b></div><div>Ranking do mês<b>' + (pos ? pos + 'º' : '—') + '</b></div></div>' + htmlBatidas([vn], false) + cfg,
       acoes: [{ rot: 'Lançar ligações', pri: true, fn: function(){ irAba('rota'); } }, { rot: 'Minhas metas', fn: function(){ irAba('minhasmetas'); } }, { rot: '🏆 Conquistas de hoje (' + conquistasDe().length + ')', fn: function(){ setTimeout(mostrarConquistas, 300); } }], ligar: ligar });
   }
   bird.addEventListener('click', resumo);
@@ -25433,6 +25438,24 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       }
     });
     return novas;
+  }
+  /* metas do DIA já batidas (alvo de hoje da Rota da Meta: o que falta do mês ÷ dias úteis que restam) */
+  function batidasHoje(vn){
+    if (!rotaPronta(vn)) return null;
+    var r; try { r = rtCalc(vn); } catch(e) { return null; }
+    return (r.met || []).filter(function(x){ return x.alvoHoje > 0 && x.hoje > 0 && x.hoje >= x.alvoHoje; })
+      .map(function(x){ return { rot: x.key === 'valor' ? 'Vendido' : x.label, txt: fmtSub(x, x.hoje) + ' de ' + fmtSub(x, x.alvoHoje) }; });
+  }
+  function htmlBatidas(lista, gestao){
+    var linhas = [], semDados = false;
+    lista.forEach(function(vn){
+      var b = batidasHoje(vn); if (b === null) { semDados = true; return; }
+      if (!b.length) return;
+      linhas.push(gestao ? '<div class="ag-bt"><b>' + esc(primeiroNome(vn)) + '</b> ' + b.map(function(x){ return '<span>✅ ' + esc(x.rot) + ' <small>' + esc(x.txt) + '</small></span>'; }).join('') + '</div>'
+        : b.map(function(x){ return '<div class="ag-bt"><span>✅ ' + esc(x.rot) + ' <small>' + esc(x.txt) + '</small></span></div>'; }).join(''));
+    });
+    var corpo = linhas.length ? linhas.join('') : '<div class="x">' + (semDados ? 'Carregando as metas do dia…' : gestao ? 'Ninguém bateu meta do dia ainda.' : 'Nenhuma meta do dia batida ainda. Bora!') + '</div>';
+    return '<div class="ag-bat"><div class="ag-bat-t">' + (gestao ? '✅ Já bateram hoje' : '✅ Você já bateu hoje') + '</div>' + corpo + '</div>';
   }
   function listaSub(novas){ return novas.map(function(n){ return '• <b>' + esc(n.rot) + '</b>: ' + esc(n.txt); }).join('<br>'); }
   function comemorarSubmetas(vn, nome){
