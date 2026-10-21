@@ -16965,50 +16965,26 @@ function rtHoraAgora() { var d = new Date(); return d.getHours() + d.getMinutes(
 function rtHoraFmt(ts) { if (!ts) return ''; var d = new Date(ts); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 function rtLigPodeEditar(vn) { return vn === currentUser || currentUser === 'JULIANA'; }
 function rtCardLigacoes(c, eu, alvoLig) {
-  var det = rtLigHojeDet(c.vn), pode = rtLigPodeEditar(c.vn), agora = rtHoraAgora(), util = rtDiaUtilHoje();
-  RT.ligDraft = RT.ligDraft || {};
+  // Ligações não são mais lançadas à mão: contam sozinhas pelo Discador (só as atendidas).
+  // Lançamentos manuais antigos do dia (checks 12h/18h e MicroSIP) continuam somando, só para leitura.
+  var dHoje = rtLigHojeDet(c.vn), soma = 0;
   var h = '<div class="rt-card rt-lig"><div class="rt-pix">📞 ' + (eu ? 'MINHAS LIGAÇÕES DE HOJE' : 'LIGAÇÕES DE HOJE') + '</div>' +
-    '<div class="rt-lig-sec">💬 WhatsApp e outros <span class="rt-cinza">· ' + (eu ? 'você lança' : 'o vendedor lança') + '</span></div>' +
-    '<div class="rt-sub">' + (eu ? 'Lance as ligações por WhatsApp e outros meios em cada período. As do MicroSIP a gestão lança.' : 'Checks lançados pelo vendedor hoje (WhatsApp e outros).') + '</div>';
-  var soma = 0;
-  RT_CHECKS.forEach(function(ck) {
-    var id = 'rt-lig-' + ck.k, salvo = det[ck.k], tem = salvo != null && salvo !== '';
-    var dk = c.vn + '|' + ck.k, val = RT.ligDraft[dk] != null ? RT.ligDraft[dk] : (tem ? salvo : '');
-    if (tem) soma += ckNum(salvo);
-    var atrasado = !tem && util && agora >= ck.hora;
-    var st = tem ? '✓ lançado às ' + rtHoraFmt(det[ck.k + 'em']) + (det[ck.k + 'por'] && det[ck.k + 'por'] !== c.vn ? ' (pela gestão)' : '')
-      : atrasado ? '<span class="rt-atras">⏰ pendente — já passou das ' + ck.hora + 'h</span>'
-      : 'lance às ' + ck.hora + 'h';
-    h += '<div class="rt-lig-lin' + (tem ? ' feito' : atrasado ? ' pend' : '') + '"><span class="rt-check">' + (tem ? '✓' : atrasado ? '!' : '') + '</span>' +
-      '<label for="' + id + '"><span class="rt-forte">' + ck.ico + ' ' + ck.rot + '</span><div class="rt-lig-st">' + ck.desc + ' · ' + st + '</div></label>' +
-      '<input id="' + id + '" type="number" inputmode="numeric" min="0" max="999" step="1" placeholder="0" value="' + rtEsc(val) + '"' + (pode ? '' : ' disabled') +
-      ' oninput="rtLigDraft(\'' + c.vn + '\',\'' + ck.k + '\',this.value)" onfocus="RT.ligFoco=this.id" onblur="RT.ligFoco=null" onkeydown="if(event.key===\'Enter\'){this.blur();rtLigSalvar(\'' + c.vn + '\');}"></div>';
-  });
-  // MicroSIP (gestão)
-  var podeM = rtPodeMicro(), mData = (podeM && RT.microData) || ckToday(), mDet = rtLigDet(c.vn, mData);
-  var mTem = mDet.micro != null && mDet.micro !== '', mDk = c.vn + '|micro|' + mData;
-  var mVal = RT.ligDraft[mDk] != null ? RT.ligDraft[mDk] : (mTem ? mDet.micro : '');
-  var dHoje = rtLigHojeDet(c.vn);
-  if (dHoje.micro != null && dHoje.micro !== '') soma += ckNum(dHoje.micro);
-  h += '<div class="rt-lig-sec" style="margin-top:12px">🖥️ MicroSIP <span class="rt-cinza">· a gestão lança, só o que foi ligado fora do discador</span></div>' +
-    '<div class="rt-lig-lin' + (mTem ? ' feito' : '') + '"><span class="rt-check">' + (mTem ? '✓' : '') + '</span>' +
-      '<label for="rt-lig-micro"><span class="rt-forte">🖥️ Ligações do ramal</span><div class="rt-lig-st">' +
-        (mTem ? '✓ lançado às ' + rtHoraFmt(mDet.microem) + (mData !== ckToday() ? ' · dia ' + mData.slice(8, 10) + '/' + mData.slice(5, 7) : '') : (podeM ? 'relatório do MicroSIP' : 'ainda não lançado pela gestão')) +
-        (podeM ? ' · dia <input type="date" value="' + mData + '" max="' + ckToday() + '" onchange="RT.microData=this.value;rtRender()" style="font-size:12px;padding:1px 4px;border:1px solid var(--line);border-radius:4px;width:auto;">' : '') +
-      '</div></label>' +
-      '<input id="rt-lig-micro" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0" value="' + rtEsc(mVal) + '"' + (podeM ? '' : ' disabled') +
-      ' oninput="rtLigDraft(\'' + c.vn + '\',\'micro|' + mData + '\',this.value)" onfocus="RT.ligFoco=this.id" onblur="RT.ligFoco=null" onkeydown="if(event.key===\'Enter\'){this.blur();rtLigSalvar(\'' + c.vn + '\');}"></div>';
-  // Discador (automático): para a meta só contam as ATENDIDAS
+    '<div class="rt-sub">As ligações contam sozinhas pelo <b>Discador</b>: só as atendidas entram na meta. Não há mais lançamento manual.</div>';
   var dAt = dHoje.discAt != null ? ckNum(dHoje.discAt) : ckNum(dHoje.disc), dTot = ckNum(dHoje.disc);
   soma += dAt;
-  h += '<div class="rt-lig-sec" style="margin-top:12px">☎️ Discador <span class="rt-cinza">· automático, só as atendidas contam</span></div>' +
-    '<div class="rt-lig-lin' + (dAt > 0 ? ' feito' : '') + '"><span class="rt-check">' + (dAt > 0 ? '✓' : '') + '</span>' +
-      '<label><span class="rt-forte">☎️ Atendidas pelo discador</span><div class="rt-lig-st">' + (dTot > 0 ? dAt + ' de ' + dTot + ' ligações atendidas · última às ' + rtHoraFmt(dHoje.discem) : 'conta sozinho a cada ligação atendida no Discador') + '</div></label>' +
-      '<input type="number" value="' + dAt + '" disabled></div>';
+  h += '<div class="rt-lig-lin' + (dAt > 0 ? ' feito' : '') + '"><span class="rt-check">' + (dAt > 0 ? '✓' : '') + '</span>' +
+    '<label><span class="rt-forte">☎️ Atendidas pelo discador</span><div class="rt-lig-st">' + (dTot > 0 ? dAt + ' de ' + dTot + ' ligações atendidas · última às ' + rtHoraFmt(dHoje.discem) : 'nenhuma ligação pelo discador ainda hoje') + '</div></label>' +
+    '<input type="number" value="' + dAt + '" disabled></div>';
+  var antigos = ckNum(dHoje.c12) + ckNum(dHoje.c18) + ckNum(dHoje.micro);
+  if (antigos > 0) {
+    soma += antigos;
+    h += '<div class="rt-lig-lin feito"><span class="rt-check">✓</span><label><span class="rt-forte">📝 Lançadas à mão hoje</span><div class="rt-lig-st">antes da mudança para o discador</div></label>' +
+      '<input type="number" value="' + antigos + '" disabled></div>';
+  }
   var bate = alvoLig > 0 && soma >= alvoLig;
   h += '<div class="rt-lig-tot"><span>Total do dia: <b>' + soma + '</b>' + (alvoLig > 0 ? ' de ' + alvoLig : '') + '</span>' +
     (alvoLig > 0 ? (bate ? '<span class="rt-ok">meta de hoje ✓</span>' : '<span class="rt-cinza">faltam ' + Math.max(0, alvoLig - soma) + '</span>') : '') + '</div>';
-  if (pode || podeM) h += '<button type="button" class="rt-lig-btn" onclick="rtLigSalvar(\'' + c.vn + '\')">Salvar ligações</button><div class="rt-lig-msg" id="rt-lig-msg"></div>';
+  if (eu) h += '<button type="button" class="rt-lig-btn" onclick="showTab(\'discador\',document.getElementById(\'nav-discador\'))">Abrir o Discador</button>';
   return h + '</div>';
 }
 function rtLigDraft(vn, k, v) { RT.ligDraft = RT.ligDraft || {}; RT.ligDraft[vn + '|' + k] = v; }
@@ -17069,22 +17045,16 @@ function rtLigSalvar(vn) {
 }
 // Visão da gestão: quem já lançou cada check hoje
 function rtChecksEquipe() {
-  var agora = rtHoraAgora(), util = rtDiaUtilHoje();
-  var cel = function(det, ck) {
-    var v = det[ck.k];
-    if (v != null && v !== '') return '<td class="rt-forte" style="white-space:nowrap">' + ckNum(v) + ' <span class="rt-cinza" style="font-size:11.5px">' + rtHoraFmt(det[ck.k + 'em']) + '</span></td>';
-    return '<td style="white-space:nowrap"' + (util && agora >= ck.hora ? ' class="rt-atras">⏰ pendente' : ' class="rt-cinza">—') + '</td>';
-  };
-  return '<div class="rt-card rt-lig"><div class="rt-pix">📞 CHECKS DE LIGAÇÕES · HOJE</div>' +
-    '<table class="rt-tab"><thead><tr><th>Vendedor</th><th>💬 12h</th><th>💬 18h</th><th>🖥️ MicroSIP</th><th>Total</th></tr></thead><tbody>' +
+  return '<div class="rt-card rt-lig"><div class="rt-pix">📞 LIGAÇÕES DO DISCADOR · HOJE</div>' +
+    '<table class="rt-tab"><thead><tr><th>Vendedor</th><th>Atendidas</th><th>Tentativas</th><th>Taxa</th><th>Última</th></tr></thead><tbody>' +
     CK_EQUIPE.map(function(vn) {
-      var det = rtLigHojeDet(vn), tot = ckNum(det.c12) + ckNum(det.c18) + ckNum(det.micro);
-      var celM = (det.micro != null && det.micro !== '') ? '<td class="rt-forte">' + ckNum(det.micro) + '</td>' : '<td class="rt-cinza">—</td>';
-      return '<tr onclick="rtVer(\'' + vn + '\')"><td class="rt-forte">' + rtEsc(rtNome(vn)) + '</td>' + cel(det, RT_CHECKS[0]) + cel(det, RT_CHECKS[1]) + celM + '<td class="rt-forte">' + (det.c12 != null || det.c18 != null || det.micro != null ? tot : '—') + '</td></tr>';
-    }).join('') + '</tbody></table><div class="rt-sub">💬 = WhatsApp e outros (o vendedor lança) · 🖥️ = MicroSIP (você lança). ⏰ = já passou do horário e o vendedor ainda não lançou. Clique no nome para lançar o MicroSIP ou corrigir.</div></div>';
+      var det = rtLigHojeDet(vn), tot = ckNum(det.disc), at = det.discAt != null ? ckNum(det.discAt) : tot;
+      return '<tr onclick="rtVer(\'' + vn + '\')"><td class="rt-forte">' + rtEsc(rtNome(vn)) + '</td><td class="rt-forte">' + at + '</td><td>' + tot + '</td><td>' + (tot ? Math.round(at / tot * 100) + '%' : '—') + '</td><td class="rt-cinza">' + (det.discem ? rtHoraFmt(det.discem) : '—') + '</td></tr>';
+    }).join('') + '</tbody></table><div class="rt-sub">Só as atendidas contam para a meta de ligações. Os números vêm sozinhos do Discador.</div></div>';
 }
 // Lembrete: às 12h e às 18h (dias úteis), se o check ainda não foi lançado, abre um aviso com o campo
 function rtLembreteLigacoes() {
+  return; // desativado: ligações agora contam sozinhas pelo Discador, sem lançamento manual
   if (!currentUser || !rtJoga(currentUser) || !rtDiaUtilHoje()) return;
   if (!(RT.ligOk && RT.ligOk[currentUser])) return;
   if (document.querySelector('.rt-lembrete')) return;
