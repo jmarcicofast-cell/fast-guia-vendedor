@@ -26687,6 +26687,7 @@ function dcVDiscar() {
       '<input class="dc-emp dc-edit" value="' + dcEsc(a.empresa || '') + '" placeholder="Empresa / loja ✎" title="Clique para editar" onchange="dcEditar(\'empresa\', this.value)" onkeydown="if(event.key===\'Enter\')this.blur()">' +
       (a.obs ? '<div class="dc-emp">Anotação: ' + dcEsc(a.obs) + '</div>' : '') +
       '<div class="dc-row" style="margin:12px 0"><span class="dc-num" id="dc-num">' + dcEsc(dcTel(a.tel)) + '</span><button class="dc-btn" onclick="dcCopiar()">Copiar</button>' +
+      (DC.avulso && l ? '<button class="dc-btn" onclick="dcSalvarAvulsoNaLista()">+ Salvar na lista ' + dcEsc(l.nome) + '</button>' : '') +
       (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') + '</div>' +
       '<div class="dc-row" style="gap:12px 16px">' + dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live) +
       '<span class="dc-timer' + (live ? ' live' : '') + '" id="dc-timer">' + dcClock(dcSeg()) + '</span>' +
@@ -26698,7 +26699,7 @@ function dcVDiscar() {
       (DC.auto ? '<div class="dc-auto">Discando o próximo em <b id="dc-auton">' + DC.auto.n + '</b>s <button class="dc-btn" onclick="dcPararAuto()">Parar</button></div>' : '');
   } else {
     h += '<div class="dc-vazio">' + (!DC.listas.length ? 'Cadastre uma lista em <b>Listas de clientes</b> para discar em sequência. Enquanto isso, use o teclado ao lado para um número avulso.'
-      : !l ? 'Escolha uma lista acima para começar.' : 'Lista terminada: ' + total + ' contatos trabalhados. <button class="dc-btn" onclick="dcMover(-' + pos + ')">Recomeçar do início</button>') + '</div>';
+      : !l ? 'Escolha uma lista acima para começar.' : 'Lista terminada: ' + total + ' contatos trabalhados. Os clientes que você adicionar entram aqui na sequência. <button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button> <button class="dc-btn" onclick="dcMover(-' + pos + ')">Recomeçar do início</button>') + '</div>';
   }
   h += '</div>';
   if (l) h += '<div class="dc-sub">Lista: ' + Math.min(pos, total) + ' de ' + total + ' trabalhados · discagem automática ' + (p.auto ? 'ligada (' + p.espera + 's)' : 'desligada') + '</div>';
@@ -26854,16 +26855,19 @@ function dcParse(txt) {
   return out;
 }
 function dcVListas() {
-  return '<div class="dc-grid"><div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Nova lista</div>' +
-    '<label class="dc-lab">Nome da lista<input id="dc-lnome" placeholder="Ex.: Reativação lojistas SP — outubro"></label>' +
+  var dest = DC.listaDestino && DC.listas.some(function(x) { return x.id === DC.listaDestino; }) ? DC.listaDestino : '';
+  return '<div class="dc-grid"><div class="dc-col"><div class="dc-card" id="dc-form-lista"><div class="dc-eyebrow">' + (dest ? 'Adicionar clientes' : 'Nova lista') + '</div>' +
+    '<label class="dc-lab">Salvar em<select id="dc-ldest" onchange="DC.listaDestino=this.value;dcRender()"><option value="">Criar uma lista nova</option>' +
+    DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === dest ? ' selected' : '') + '>Adicionar à lista ' + dcEsc(x.nome) + ' (' + x.contatos.length + ')</option>'; }).join('') + '</select></label>' +
+    (dest ? '' : '<label class="dc-lab" style="margin-top:10px">Nome da lista<input id="dc-lnome" placeholder="Ex.: Reativação lojistas SP — outubro"></label>') +
     '<label class="dc-lab" style="margin-top:10px">Um contato por linha: nome, loja e telefone separados por ponto e vírgula ou tabulação. Pode colar direto do Excel.' +
     '<textarea id="dc-ltxt" rows="9" oninput="dcPrevia()" placeholder="Carlos Souza; Casa do Drywall; (11) 98765-4321&#10;Marina Lopes; Gesso &amp; Cia; 21 3344-5566"></textarea></label>' +
     '<div class="dc-row" style="margin-top:10px"><label class="dc-btn" for="dc-lfile">Abrir arquivo .csv</label><input type="file" id="dc-lfile" accept=".csv,.txt" style="display:none" onchange="dcArquivo(this)"><span class="dc-sub" id="dc-prev"></span></div>' +
-    '<button class="dc-btn dc-pri" style="margin-top:12px" onclick="dcSalvarLista()">Salvar lista</button></div></div>' +
+    '<button class="dc-btn dc-pri" style="margin-top:12px" onclick="dcSalvarLista()">' + (dest ? 'Adicionar à lista' : 'Salvar lista') + '</button></div></div>' +
     '<div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Listas da equipe</div>' +
     (DC.listas.length ? DC.listas.map(function(l) {
       return '<div class="dc-it"><div style="min-width:0"><b>' + dcEsc(l.nome) + '</b><div class="dc-sub">' + l.contatos.length + ' contatos · ' + (l.criadoPor ? dcEsc(rtNome ? rtNome(l.criadoPor) : l.criadoPor) + ' · ' : '') + (l.criado ? new Date(l.criado).toLocaleDateString('pt-BR') : '') + '</div></div>' +
-        '<div class="dc-row"><button class="dc-btn" onclick="dcEscolherLista(\'' + dcEsc(l.id) + '\');dcSetAba(\'discar\')">Discar</button>' +
+        '<div class="dc-row"><button class="dc-btn" onclick="dcEscolherLista(\'' + dcEsc(l.id) + '\');dcSetAba(\'discar\')">Discar</button><button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button>' +
         (dcGestao() || l.criadoPor === currentUser ? '<button class="dc-btn" onclick="dcExcluirLista(\'' + dcEsc(l.id) + '\')">' + (DC.confirmDel === l.id ? 'Confirmar exclusão' : 'Excluir') + '</button>' : '') + '</div></div>' + dcTabelaContatos(l);
     }).join('') : '<div class="dc-vazio">Nenhuma lista ainda. A lista salva aqui fica disponível para toda a equipe; cada vendedor avança no seu próprio ritmo.</div>') +
     '</div></div></div>';
@@ -26892,6 +26896,18 @@ function dcDiscarDaqui(id, i) {
 function dcPrevia() { var n = dcParse((document.getElementById('dc-ltxt') || {}).value).length; var e = document.getElementById('dc-prev'); if (e) e.textContent = n ? n + ' contatos reconhecidos' : ''; }
 function dcArquivo(inp) { var f = inp.files[0]; if (!f) return; var r = new FileReader(); r.onload = function() { document.getElementById('dc-ltxt').value = r.result; var nm = document.getElementById('dc-lnome'); if (!nm.value) nm.value = f.name.replace(/\.\w+$/, ''); dcPrevia(); }; r.readAsText(f); }
 function dcSalvarLista() {
+  var destEl = document.getElementById('dc-ldest'), dest = destEl ? destEl.value : '';
+  if (dest) {
+    var l = DC.listas.find(function(x) { return x.id === dest; }), novos = dcParse(document.getElementById('dc-ltxt').value);
+    if (!l) { dcAviso('Lista não encontrada'); return; }
+    if (!novos.length) { dcAviso('Nenhum telefone reconhecido. Confira o formato.'); return; }
+    var r = dcJuntar(l, novos); if (!r.add) { dcAviso('Esses números já estão na lista'); return; }
+    dcGravarContatos(l, r.contatos).then(function() {
+      dcAviso(r.add + ' cliente' + (r.add > 1 ? 's' : '') + ' adicionado' + (r.add > 1 ? 's' : '') + (r.rep ? ' · ' + r.rep + ' repetido' + (r.rep > 1 ? 's' : '') + ' ignorado' + (r.rep > 1 ? 's' : '') : ''));
+      document.getElementById('dc-ltxt').value = ''; dcPrevia();
+    });
+    return;
+  }
   var nome = (document.getElementById('dc-lnome').value || '').trim(), contatos = dcParse(document.getElementById('dc-ltxt').value);
   if (!nome) { dcAviso('Dê um nome para a lista'); return; }
   if (!contatos.length) { dcAviso('Nenhum telefone reconhecido. Confira o formato.'); return; }
@@ -26899,6 +26915,24 @@ function dcSalvarLista() {
   dbRef('discador/listas/' + id).set({ nome: nome, contatos: contatos.slice(0, 5000), criado: Date.now(), criadoPor: currentUser }).then(function() {
     dcAviso('Lista salva com ' + contatos.length + ' contatos'); dcEscolherLista(id); DC.aba = 'discar'; dcRender();
   }).catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
+}
+// junta contatos novos no fim da lista, sem repetir telefone (a fila de quem já discou não muda)
+function dcJuntar(l, novos) {
+  var tem = {}; l.contatos.forEach(function(c) { tem[dcMicroNum(c.tel)] = 1; });
+  var add = 0, rep = 0, out = l.contatos.slice();
+  novos.forEach(function(c) { var k = dcMicroNum(c.tel); if (tem[k]) { rep++; return; } tem[k] = 1; out.push(c); add++; });
+  return { contatos: out.slice(0, 5000), add: add, rep: rep };
+}
+function dcGravarContatos(l, contatos) {
+  l.contatos = contatos;
+  return Promise.resolve(dbRef('discador/listas/' + l.id + '/contatos').set(contatos)).catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); throw e; });
+}
+function dcAddNaLista(id) { DC.listaDestino = id; DC.aba = 'listas'; dcRender(); setTimeout(function() { var t = document.getElementById('dc-ltxt'); if (t) { t.scrollIntoView({ block: 'center' }); t.focus(); } }, 50); }
+function dcSalvarAvulsoNaLista() {
+  var a = DC.avulso, l = dcLista(); if (!a || !l) return;
+  var r = dcJuntar(l, [{ nome: a.nome || '', empresa: a.empresa || '', tel: dcDig(a.tel) }]);
+  if (!r.add) { dcAviso('Esse número já está na lista ' + l.nome); return; }
+  dcGravarContatos(l, r.contatos).then(function() { dcAviso('Adicionado à lista ' + l.nome); });
 }
 function dcExcluirLista(id) {
   if (DC.confirmDel !== id) { DC.confirmDel = id; dcRender(); return; }
