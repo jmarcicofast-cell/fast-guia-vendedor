@@ -930,6 +930,14 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .dc-ct tr.feito td{opacity:.5}
 .dc-ct tr.prox td{background:rgba(31,138,92,.08)}
 .dc-mini{padding:3px 10px;font-size:12px}
+.dc-ag-lista{max-height:340px;overflow:auto;margin:0 -4px}
+.dc-ag-it{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--line,#eee)}
+.dc-ag-tel{font-family:ui-monospace,Consolas,monospace;font-size:13px;margin-top:2px}
+.dc-ag-tag{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#C2413B;border:1px solid #C2413B;border-radius:4px;padding:0 4px}
+.dc-assumir{border-color:#B7791F;color:#B7791F;font-weight:600}
+.dc-hist{margin-top:4px;font-size:12px}.dc-hist summary{cursor:pointer;color:var(--muted)}
+.dc-hist-it{border-left:2px solid var(--line,#ddd);padding:2px 0 4px 8px;margin-top:4px}
+.dc-link{background:none;border:0;color:var(--dc-ok);cursor:pointer;font-size:12px;text-decoration:underline;padding:0 2px}
 #dc-salvar.sujo{box-shadow:0 0 0 3px rgba(31,138,92,.35)}
 .dc-edit:hover{border-color:var(--muted)}
 .dc-edit:focus{border-color:var(--dc-ok);border-style:solid;background:var(--card,#fff)}
@@ -26638,6 +26646,7 @@ function dcInit() {
       DC.estado = (snap && snap.val()) || {}; if (!Array.isArray(DC.estado.retornos)) DC.estado.retornos = DC.estado.retornos ? Object.values(DC.estado.retornos) : [];
       if (!DC.call && !DC.auto) dcRender();
     });
+    dcAgInit();
     if (dcGestao()) CK_EQUIPE.forEach(function(vn) {
       dbRef('discador/dias/' + vn + '/' + dia).on('value', function(snap) {
         var v = (snap && snap.val()) || {}; DC.equipe[vn] = Array.isArray(v.itens) ? v.itens.filter(Boolean) : [];
@@ -26649,7 +26658,37 @@ function dcInit() {
 }
 
 function dcLista() { return DC.listas.find(function(l) { return l.id === DC.listaId; }); }
-function dcPos() { return ((DC.estado.posicoes || {})[DC.listaId]) || 0; }
+var DC_ASSUMIR_DIAS = 10;
+// status de um contato da lista da equipe: livre, meu (assumido por mim), outro (com outro vendedor) ou ganho (pedido fechado)
+function dcEqStatus(c) {
+  if (!c) return 'livre';
+  if (c.ganhoPor) return 'ganho';
+  if (c.dono && c.assumidoEm && Date.now() - c.assumidoEm < DC_ASSUMIR_DIAS * 864e5) return c.dono === currentUser ? 'meu' : 'outro';
+  return 'livre'; // sem dono ou passou dos 10 dias: volta sozinho para a lista
+}
+function dcEqPrazo(c) { var d = Math.ceil((c.assumidoEm + DC_ASSUMIR_DIAS * 864e5 - Date.now()) / 864e5); return d <= 1 ? 'volta para a equipe amanhã' : 'volta para a equipe em ' + d + ' dias'; }
+function dcPos() {
+  var p = ((DC.estado.posicoes || {})[DC.listaId]) || 0, l = dcLista();
+  if (l && l.equipe) while (p < l.contatos.length && /outro|ganho/.test(dcEqStatus(l.contatos[p]))) p++;
+  return p;
+}
+function dcAssumir(i) {
+  var l = (DC.todasListas || []).find(function(x) { return x.equipe; }); if (!l || !l.contatos[i]) return;
+  var st = dcEqStatus(l.contatos[i]);
+  if (st === 'outro') { dcAviso('Outro vendedor já assumiu este cliente'); return; }
+  if (st === 'ganho') { dcAviso('Este cliente já fechou pedido'); return; }
+  Promise.resolve(dbRef('discador/listas/' + l.id + '/contatos/' + i).transaction(function(c) {
+    if (!c) return c;
+    if (c.ganhoPor || (c.dono && c.dono !== currentUser && c.assumidoEm && Date.now() - c.assumidoEm < DC_ASSUMIR_DIAS * 864e5)) return; // alguém foi mais rápido
+    c.dono = currentUser; c.assumidoEm = Date.now(); return c;
+  })).then(function(r) { dcAviso(r && r.committed === false ? 'Outro vendedor assumiu antes' : 'Cliente assumido por ' + DC_ASSUMIR_DIAS + ' dias'); })
+    .catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
+}
+function dcLiberar(i) {
+  var l = (DC.todasListas || []).find(function(x) { return x.equipe; }); if (!l || !l.contatos[i] || l.contatos[i].dono !== currentUser) return;
+  Promise.resolve(dbRef('discador/listas/' + l.id + '/contatos/' + i).update({ dono: null, assumidoEm: null })).then(function() { dcAviso('Cliente devolvido para a equipe'); });
+}
+function dcEqIdx(a) { var l = dcLista(); if (!l || !l.equipe || !a || DC.avulso) return -1; return dcPos(); }
 function dcAlvo() {
   if (DC.avulso) return DC.avulso;
   var l = dcLista(); if (!l) return null;
@@ -26679,10 +26718,15 @@ function dcRender() {
   var foco = document.activeElement && document.activeElement.id;
   var obs = document.getElementById('dc-obs'), quando = document.getElementById('dc-quando');
   var obsV = obs ? obs.value : '', quandoV = quando ? quando.value : '';
+  var agT = document.getElementById('dc-ag-tel'), agC = document.getElementById('dc-ag-cont'), agTV = agT && agT.value, agCV = agC && agC.value;
+  var oeEl = document.getElementById('dc-obsed'), oeV = oeEl ? oeEl.value : null;
   root.innerHTML = h;
+  if (oeV != null && document.getElementById('dc-obsed')) document.getElementById('dc-obsed').value = oeV;
+  if (agTV != null && document.getElementById('dc-ag-tel')) document.getElementById('dc-ag-tel').value = agTV;
+  if (agCV != null && document.getElementById('dc-ag-cont')) document.getElementById('dc-ag-cont').value = agCV;
   if (obsV && document.getElementById('dc-obs')) document.getElementById('dc-obs').value = obsV;
   if (quandoV && document.getElementById('dc-quando')) document.getElementById('dc-quando').value = quandoV;
-  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt)$/.test(foco)) document.getElementById(foco).focus();
+  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
 }
 function dcSetAba(a) { DC.aba = a; dcPararAuto(true); dcRender(); }
 
@@ -26701,7 +26745,10 @@ function dcVDiscar() {
       '<input class="dc-emp dc-edit" value="' + dcEsc(a.empresa || '') + '" id="dc-eemp" placeholder="Empresa / loja ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
       (a.obs ? '<div class="dc-emp">Anotação: ' + dcEsc(a.obs) + '</div>' : '') +
       '<div class="dc-row" style="margin-top:8px"><button class="dc-btn dc-pri" id="dc-salvar" onclick="dcSalvarCard()">✓ Salvar alterações</button>' +
-      (dcLista() && dcLista().equipe && !DC.avulso ? '' : '<button class="dc-btn" onclick="dcParaEquipe(dcAlvo())">👥 Disponibilizar para a equipe</button>') + '</div>' +
+      (dcLista() && dcLista().equipe && !DC.avulso ? (function() { var i = dcPos(), st = dcEqStatus(l.contatos[i]);
+          return st === 'meu' ? '<span class="dc-sub">✋ Assumido por você · ' + dcEqPrazo(l.contatos[i]) + '</span><button class="dc-btn dc-mini" onclick="dcLiberar(' + i + ')">Devolver</button>'
+            : '<button class="dc-btn dc-assumir" onclick="dcAssumir(' + i + ')">✋ Assumir este cliente</button><span class="dc-sub">fica com você por ' + DC_ASSUMIR_DIAS + ' dias</span>'; })()
+        : '<button class="dc-btn" onclick="dcParaEquipe(dcAlvo())">👥 Disponibilizar para a equipe</button>') + '</div>' +
       '<div class="dc-row" style="margin:12px 0"><span class="dc-num" id="dc-num">' + dcEsc(dcTel(a.tel)) + '</span><button class="dc-btn" onclick="dcCopiar()">Copiar</button>' +
       (DC.avulso && l ? '<button class="dc-btn" onclick="dcSalvarAvulsoNaLista()">+ Salvar na lista ' + dcEsc(l.nome) + '</button>' : '') +
       (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') + '</div>' +
@@ -26727,11 +26774,100 @@ function dcVDiscar() {
     (meta && meta.alvo > 0 ? '<div class="dc-meta"><div class="dc-sub">Meta de ligações hoje (Rota da Meta, conta as atendidas do discador): <b>' + meta.feitas + '</b> de ' + meta.alvo + '</div><div class="dc-bar"><i style="width:' + Math.min(100, Math.round(meta.feitas / meta.alvo * 100)) + '%"></i></div></div>' : '') +
     '</div>';
   h += '<div class="dc-card"><div class="dc-eyebrow">Retornos agendados</div>' + dcRetornosHtml() + '</div>';
+  h += dcAgCardHtml();
   h += '<div class="dc-card"><div class="dc-eyebrow">Ligar para um número</div><div class="dc-row"><input id="dc-pad" inputmode="tel" placeholder="(21) 99999-9999" value="' + dcEsc(DC.pad) + '" oninput="DC.pad=this.value" style="flex:1;min-width:0"><button class="dc-btn dc-pri" onclick="dcUsarPad()">Usar</button></div>' +
     '<div class="dc-pad">' + ['1','2','3','4','5','6','7','8','9','*','0','⌫'].map(function(k) { return '<button onclick="dcTecla(\'' + k + '\')">' + k + '</button>'; }).join('') + '</div></div>';
   return h + '</div></div>';
 }
 
+/* ══ AGENDA DE CLIENTES (aba Discar) ══
+   Clientes vêm dos pedidos do vendedor (gestão vê os de todos). Ativo = comprou nos últimos
+   CLI_META_INATIVO_DIAS dias. Telefone: o salvo na agenda (discador/agenda/{VN}/{chave}),
+   senão o da negociação ou de uma lista do discador com a mesma empresa. */
+var DCAG = { ped: {}, neg: {}, tel: {}, busca: '', filtro: 'ativos', editando: null, ligado: false };
+function dcAgChave(nome) { return ckSemAcento(nome).replace(/[^A-Z0-9]+/g, ' ').trim().replace(/ /g, '_').slice(0, 80) || '_'; }
+function dcAgVends() { return dcGestao() ? CK_EQUIPE.slice() : [currentUser]; }
+function dcAgInit() {
+  if (DCAG.ligado === currentUser) return; DCAG.ligado = currentUser;
+  dcAgVends().forEach(function(vn) {
+    dbRef('pedidos/' + vn).on('value', function(snap) { var v = (snap && snap.val()) || {}; DCAG.ped[vn] = Object.keys(v).map(function(k) { return v[k]; }).filter(function(p) { return p && !p.excluido && p.status !== 'cancelado'; }); dcAgRender(); });
+    dbRef('negociacoes/' + vn).on('value', function(snap) { var v = (snap && snap.val()) || {}; DCAG.neg[vn] = Object.keys(v).map(function(k) { return v[k]; }).filter(Boolean); dcAgRender(); });
+    dbRef('discador/agenda/' + vn).on('value', function(snap) { DCAG.tel[vn] = (snap && snap.val()) || {}; dcAgRender(); });
+  });
+}
+function dcAgClientes() {
+  var hoje = dcHoje(), lim = typeof CLI_META_INATIVO_DIAS === 'number' ? CLI_META_INATIVO_DIAS : 60, mapa = {};
+  var telListas = {};
+  (DC.listas || []).forEach(function(l) { l.contatos.forEach(function(c) { if (c.empresa && c.tel) telListas[dcAgChave(c.empresa)] = { tel: c.tel, contato: c.nome || '' }; }); });
+  dcAgVends().forEach(function(vn) {
+    (DCAG.ped[vn] || []).forEach(function(p) {
+      var nome = p.empresa || p.cliente; if (!nome) return;
+      var k = dcAgChave(nome), id = vn + '|' + k, r = mapa[id];
+      if (!r) r = mapa[id] = { vn: vn, k: k, empresa: nome, contato: p.cliente && p.empresa ? p.cliente : '', uf: p.estado || '', ultima: '', n: 0 };
+      r.n++;
+      if (p.data && p.data > r.ultima) { r.ultima = p.data; r.empresa = nome; if (p.empresa && p.cliente) r.contato = p.cliente; if (p.estado) r.uf = p.estado; }
+    });
+    (DCAG.neg[vn] || []).forEach(function(n) {
+      if (!n.empresa) return; var k = dcAgChave(n.empresa), id = vn + '|' + k;
+      if (!mapa[id]) mapa[id] = { vn: vn, k: k, empresa: n.empresa, contato: n.contato || '', uf: n.estado || '', ultima: '', n: 0, neg: true };
+      if (n.telefone && !mapa[id].telNeg) mapa[id].telNeg = n.telefone;
+      if (n.contato && !mapa[id].contato) mapa[id].contato = n.contato;
+    });
+  });
+  return Object.keys(mapa).map(function(id) {
+    var r = mapa[id], salvo = (DCAG.tel[r.vn] || {})[r.k] || {}, lst = telListas[r.k] || {};
+    r.tel = salvo.tel || r.telNeg || lst.tel || '';
+    if (salvo.contato) r.contato = salvo.contato; else if (!r.contato && lst.contato) r.contato = lst.contato;
+    r.dias = r.ultima ? Math.round((new Date(hoje + 'T00:00:00') - new Date(r.ultima + 'T00:00:00')) / 864e5) : null;
+    r.ativo = r.dias !== null && r.dias <= lim;
+    return r;
+  }).sort(function(a, b) { return String(b.ultima).localeCompare(String(a.ultima)) || a.empresa.localeCompare(b.empresa); });
+}
+function dcAgCardHtml() {
+  return '<div class="dc-card"><div class="dc-eyebrow">📒 Agenda de clientes</div>' +
+    '<div class="dc-row" style="gap:6px"><input id="dc-ag-busca" placeholder="Buscar loja, contato, UF ou telefone" value="' + dcEsc(DCAG.busca) + '" oninput="DCAG.busca=this.value;dcAgRender()" style="flex:1;min-width:0"></div>' +
+    '<div class="dc-row" style="gap:6px;margin:8px 0 4px">' + [['ativos', 'Ativos'], ['todos', 'Todos'], ['semtel', 'Sem telefone']].map(function(f) {
+      return '<button class="dc-btn dc-mini' + (DCAG.filtro === f[0] ? ' dc-pri' : '') + '" onclick="DCAG.filtro=\'' + f[0] + '\';dcRender()">' + f[1] + '</button>'; }).join('') + '</div>' +
+    '<div id="dc-ag-lista" class="dc-ag-lista">' + dcAgListaHtml() + '</div></div>';
+}
+function dcAgListaHtml() {
+  var q = ckSemAcento(DCAG.busca), qd = dcDig(DCAG.busca), todos = dcAgClientes();
+  var lst = todos.filter(function(c) {
+    if (DCAG.filtro === 'ativos' && !c.ativo) return false;
+    if (DCAG.filtro === 'semtel' && c.tel) return false;
+    if (!q) return true;
+    return ckSemAcento(c.empresa + ' ' + c.contato + ' ' + c.uf + ' ' + c.vn).indexOf(q) >= 0 || (qd.length >= 3 && dcDig(c.tel).indexOf(qd) >= 0);
+  });
+  if (!todos.length) return '<div class="dc-vazio">Os clientes aparecem aqui assim que houver pedidos lançados no guia.</div>';
+  if (!lst.length) return '<div class="dc-vazio">Nenhum cliente encontrado.</div>';
+  var g = dcGestao();
+  return lst.slice(0, 200).map(function(c) {
+    var id = c.vn + '|' + c.k, ed = DCAG.editando === id, sid = dcEsc(id).replace(/'/g, '');
+    var sub = [c.contato, c.uf, c.dias === null ? (c.neg ? 'em negociação' : '') : (c.dias === 0 ? 'comprou hoje' : 'comprou há ' + c.dias + 'd'), g ? (typeof rtNome === 'function' ? rtNome(c.vn) : c.vn) : ''].filter(Boolean).join(' · ');
+    return '<div class="dc-ag-it"><div style="min-width:0;flex:1"><b>' + dcEsc(c.empresa) + '</b>' + (c.ativo ? '' : ' <span class="dc-ag-tag">inativo</span>') +
+      '<div class="dc-sub">' + dcEsc(sub) + '</div>' +
+      (ed ? '<div class="dc-row" style="gap:6px;margin-top:6px"><input id="dc-ag-tel" inputmode="tel" placeholder="Telefone com DDD" value="' + dcEsc(c.tel ? dcTel(c.tel) : '') + '" style="flex:1;min-width:120px"><input id="dc-ag-cont" placeholder="Contato" value="' + dcEsc(c.contato) + '" style="flex:1;min-width:100px">' +
+        '<button class="dc-btn dc-pri dc-mini" onclick="dcAgSalvar(\'' + sid + '\')">Salvar</button><button class="dc-btn dc-mini" onclick="DCAG.editando=null;dcAgRender()">Cancelar</button></div>'
+        : '<div class="dc-ag-tel">' + (c.tel ? dcEsc(dcTel(c.tel)) : '<span class="dc-sub">sem telefone</span>') + ' <button class="dc-link" onclick="DCAG.editando=\'' + sid + '\';dcAgRender()">' + (c.tel ? 'editar' : '+ telefone') + '</button></div>') +
+      '</div>' + (c.tel && !ed ? '<button class="dc-btn dc-pri dc-mini" onclick="dcAgLigar(\'' + sid + '\')">Ligar</button>' : '') + '</div>';
+  }).join('') + (lst.length > 200 ? '<div class="dc-sub" style="padding:6px">Mostrando 200 de ' + lst.length + '. Use a busca.</div>' : '');
+}
+function dcAgRender() { var e = document.getElementById('dc-ag-lista'); if (e) e.innerHTML = dcAgListaHtml(); }
+function dcAgAchar(id) { return dcAgClientes().find(function(c) { return c.vn + '|' + c.k === id; }); }
+function dcAgSalvar(id) {
+  var c = dcAgAchar(id); if (!c) return;
+  var tel = dcDig((document.getElementById('dc-ag-tel') || {}).value), cont = ((document.getElementById('dc-ag-cont') || {}).value || '').trim();
+  if (tel && tel.length < 10) { dcAviso('Telefone com DDD, por favor'); return; }
+  DCAG.editando = null;
+  Promise.resolve(dbRef('discador/agenda/' + c.vn + '/' + c.k).set({ tel: tel, contato: cont, empresa: c.empresa, por: currentUser, quando: Date.now() }))
+    .then(function() { dcAviso('Salvo na agenda'); }).catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
+  dcAgRender();
+}
+function dcAgLigar(id) {
+  var c = dcAgAchar(id); if (!c || !c.tel) return;
+  DC.avulso = { tel: dcDig(c.tel), nome: c.contato || '', empresa: c.empresa }; DC.call = null; DC.aba = 'discar'; dcPararAuto(true); dcRender();
+  window.scrollTo({ top: (document.getElementById('tab-discador') || document.body).offsetTop, behavior: 'smooth' });
+}
 function dcRetornosHtml() {
   var rs = (DC.estado.retornos || []).map(function(x, i) { return Object.assign({ i: i }, x); })
     .sort(function(a, b) { return String(a.quando || '9').localeCompare(String(b.quando || '9')); });
@@ -26765,7 +26901,7 @@ function dcSalvarCard() {
     dcAviso('Alterações salvas'); dcRender(); return;
   }
   var l = dcLista(), i = dcPos(); if (!l || !l.contatos[i]) return;
-  l.contatos[i].nome = (n ? n.value : '').trim().slice(0, 120); l.contatos[i].empresa = (e ? e.value : '').trim().slice(0, 120); if (obs) l.contatos[i].obs = obs.slice(0, 300);
+  l.contatos[i].nome = (n ? n.value : '').trim().slice(0, 120); l.contatos[i].empresa = (e ? e.value : '').trim().slice(0, 120); if (obs && obs !== (l.contatos[i].obs || '')) { if (l.contatos[i].obs) l.contatos[i].obsHist = (l.contatos[i].obsHist || []).concat([{ txt: l.contatos[i].obs, em: Date.now(), por: currentUser }]).slice(-30); l.contatos[i].obs = obs.slice(0, 1000); }
   dcGravarContatos(l, l.contatos).then(function() { dcAviso('Alterações salvas na lista'); dcRender(); });
 }
 function dcEditar(campo, valor) {
@@ -26801,6 +26937,9 @@ function dcRegistrar(res) {
   var dur = Math.round(dcSeg()), canal = DC.call ? DC.call.canal : dcPref().canal;
   var item = { tel: dcDig(a.tel), nome: a.nome || '', empresa: a.empresa || '', res: res, canal: canal, obs: obs, dur: dur, hora: Date.now(), lista: a.origem === 'lista' ? DC.listaId : null };
   var eraAvulso = DC.avulso, listaId = DC.listaId, pos = dcPos();
+  var lAt = dcLista();
+  if (!eraAvulso && lAt && lAt.equipe && res === 'pedido') // pedido fechado: o cliente fica com quem fechou e sai da roda da equipe
+    dbRef('discador/listas/' + lAt.id + '/contatos/' + pos).update({ ganhoPor: currentUser, ganhoEm: Date.now(), dono: currentUser, assumidoEm: Date.now() });
   DC.call = null; DC.avulso = null;
   if (obsEl) obsEl.value = ''; if (qEl) qEl.value = '';
   var hoje = dcHoje(), novos = DC.itens.concat([item]); DC.itens = novos;
@@ -26859,7 +26998,7 @@ function dcVEquipe() {
 }
 
 function dcVHist() {
-  var its = DC.itens.slice().reverse().filter(function(x) { return DC.filtro === 'todos' || x.res === DC.filtro; });
+  var its = DC.itens.map(function(x, i) { return Object.assign({ _i: i }, x); }).reverse().filter(function(x) { return DC.filtro === 'todos' || x.res === DC.filtro; });
   var f = [{ k: 'todos', t: 'Todas' }].concat(DC_RES);
   return '<div class="dc-card"><div class="dc-filtros">' + f.map(function(x) {
       var n = x.k === 'todos' ? DC.itens.length : DC.itens.filter(function(i) { return i.res === x.k; }).length;
@@ -26867,10 +27006,32 @@ function dcVHist() {
     (its.length ? '<div class="dc-scroll"><table class="dc-tab"><thead><tr><th>Hora</th><th>Cliente</th><th>Telefone</th><th>Resultado</th><th>Duração</th><th>Anotação</th></tr></thead><tbody>' +
       its.map(function(x) { var r = DC_RESMAP[x.res] || { t: x.res, cor: '#8E939C' };
         return '<tr><td>' + new Date(x.hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</td><td>' + dcEsc(x.nome || '—') + (x.empresa ? '<div class="dc-sub">' + dcEsc(x.empresa) + '</div>' : '') + '</td><td style="white-space:nowrap">' + dcEsc(dcTel(x.tel)) + '</td>' +
-          '<td><span class="dc-chip" style="color:' + r.cor + ';border-color:' + r.cor + '">' + r.t + '</span><div class="dc-sub">' + (x.canal === 'wa' ? 'pelo WhatsApp' : 'pelo MicroSIP') + '</div></td><td>' + (x.dur ? dcClock(x.dur) : '—') + '</td><td>' + dcEsc(x.obs) + '</td></tr>'; }).join('') + '</tbody></table></div>'
+          '<td><span class="dc-chip" style="color:' + r.cor + ';border-color:' + r.cor + '">' + r.t + '</span><div class="dc-sub">' + (x.canal === 'wa' ? 'pelo WhatsApp' : 'pelo MicroSIP') + '</div></td><td>' + (x.dur ? dcClock(x.dur) : '—') + '</td><td style="min-width:220px">' + dcObsCelula(x) + '</td></tr>'; }).join('') + '</tbody></table></div>'
     : '<div class="dc-vazio">Nenhuma ligação registrada hoje' + (DC.filtro !== 'todos' ? ' com esse resultado' : '') + '.</div>') + '</div>';
 }
 
+/* anotação editável com histórico: cada edição guarda a versão anterior em obsHist */
+function dcObsCelula(x) {
+  var hist = Array.isArray(x.obsHist) ? x.obsHist : [];
+  if (DC.obsEdit === x._i) return '<textarea id="dc-obsed" rows="3" style="width:100%">' + dcEsc(x.obs || '') + '</textarea>' +
+    '<div class="dc-row" style="gap:6px;margin-top:4px"><button class="dc-btn dc-pri dc-mini" onclick="dcObsSalvar(' + x._i + ')">Salvar</button><button class="dc-btn dc-mini" onclick="DC.obsEdit=null;dcRender()">Cancelar</button></div>';
+  var h = (x.obs ? '<div style="white-space:pre-wrap">' + dcEsc(x.obs) + '</div>' : '<span class="dc-sub">sem anotação</span>') +
+    ' <button class="dc-link" onclick="DC.obsEdit=' + x._i + ';dcRender();setTimeout(function(){var t=document.getElementById(\'dc-obsed\');if(t)t.focus()},0)">' + (x.obs ? '✎ editar' : '+ anotar') + '</button>';
+  if (hist.length) h += '<details class="dc-hist"><summary>Editada ' + hist.length + '× · ver histórico</summary>' + hist.slice().reverse().map(function(v) {
+    return '<div class="dc-hist-it"><span class="dc-sub">' + new Date(v.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + (v.por ? ' · ' + dcEsc(typeof rtNome === 'function' ? rtNome(v.por) : v.por) : '') + ' — antes:</span><div style="white-space:pre-wrap">' + (v.txt ? dcEsc(v.txt) : '<i>(vazia)</i>') + '</div></div>'; }).join('') + '</details>';
+  return h;
+}
+function dcObsSalvar(i) {
+  var t = document.getElementById('dc-obsed'), novo = t ? t.value.trim().slice(0, 1000) : '', it = DC.itens[i];
+  DC.obsEdit = null;
+  if (!it || novo === (it.obs || '')) { dcRender(); return; }
+  var itens = JSON.parse(JSON.stringify(DC.itens)), x = itens[i];
+  x.obsHist = (Array.isArray(x.obsHist) ? x.obsHist : []).concat([{ txt: x.obs || '', em: Date.now(), por: currentUser }]).slice(-30);
+  x.obs = novo; DC.itens = itens; dcRender();
+  var dia = dcHoje();
+  Promise.resolve(dbRef('discador/dias/' + currentUser + '/' + dcKey(dia)).set({ data: dia, itens: itens }))
+    .then(function() { dcAviso('Anotação salva'); }).catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
+}
 function dcParse(txt) {
   var out = [];
   String(txt || '').split(/\r?\n/).forEach(function(line) {
@@ -26912,9 +27073,14 @@ function dcTabelaContatos(l, leitura) {
   return '<div class="dc-ctwrap"><table class="dc-ct"><thead><tr><th>#</th><th>Nome</th><th>Loja</th><th>Telefone</th><th></th></tr></thead><tbody>' +
     l.contatos.map(function(c, i) {
       var ed = function(campo) { if (leitura) return dcEsc(c[campo] || '—'); return '<input class="dc-edit" value="' + dcEsc(c[campo] || '') + '" placeholder="✎" onchange="dcEditarContato(\'' + lid + '\',' + i + ',\'' + campo + '\',this.value)" onkeydown="if(event.key===\'Enter\')this.blur()">'; };
-      return '<tr' + (i < feitos ? ' class="feito"' : (i === feitos ? ' class="prox"' : '')) + '><td>' + (i + 1) + '</td><td>' + ed('nome') + '</td><td>' + ed('empresa') + '</td><td class="tel">' + dcEsc(dcTel(c.tel)) + '</td>' +
+      var st = l.equipe ? dcEqStatus(c) : '', nm = function(v) { return dcEsc(typeof rtNome === 'function' ? rtNome(v) : v); };
+      var stTxt = !l.equipe ? '' : st === 'ganho' ? '<div class="dc-sub">✅ pedido fechado por ' + nm(c.ganhoPor) + '</div>'
+        : st === 'outro' ? '<div class="dc-sub">✋ com ' + nm(c.dono) + ' · ' + dcEqPrazo(c) + '</div>'
+        : st === 'meu' ? '<div class="dc-sub">✋ com você · ' + dcEqPrazo(c) + '</div>'
+        : (c.por ? '<div class="dc-sub">livre · indicado por ' + nm(c.por) + '</div>' : '<div class="dc-sub">livre</div>');
+      return '<tr' + (l.equipe && /outro|ganho/.test(st) ? ' class="feito"' : (i < feitos ? ' class="feito"' : (i === feitos ? ' class="prox"' : ''))) + '><td>' + (i + 1) + '</td><td>' + ed('nome') + stTxt + '</td><td>' + ed('empresa') + '</td><td class="tel">' + dcEsc(dcTel(c.tel)) + '</td>' +
         (leitura ? '<td></td>' : '<td style="white-space:nowrap"><button class="dc-btn dc-mini" title="Discar a partir deste contato" onclick="dcDiscarDaqui(\'' + lid + '\',' + i + ')">Ligar</button>' +
-          (l.equipe ? '' : ' <button class="dc-btn dc-mini" title="Disponibilizar este contato para a equipe" onclick="dcParaEquipe(DC.listas.find(function(x){return x.id===\'' + lid + '\'}).contatos[' + i + '])">👥 Equipe</button>') + '</td>') + '</tr>';
+          (l.equipe ? (st === 'livre' ? ' <button class="dc-btn dc-mini dc-assumir" onclick="dcAssumir(' + i + ')">✋ Assumir</button>' : st === 'meu' ? ' <button class="dc-btn dc-mini" onclick="dcLiberar(' + i + ')">Devolver</button>' : '') : ' <button class="dc-btn dc-mini" title="Disponibilizar este contato para a equipe" onclick="dcParaEquipe(DC.listas.find(function(x){return x.id===\'' + lid + '\'}).contatos[' + i + '])">👥 Equipe</button>') + '</td>') + '</tr>';
     }).join('') + '</tbody></table></div><div class="dc-sub" style="margin:4px 0 14px">' + (leitura ? 'Lista de outro vendedor: só leitura.' : 'Você já trabalhou ' + Math.min(feitos, l.contatos.length) + ' de ' + l.contatos.length + '. Clique no nome ou na loja para editar.') + '</div>';
 }
 // lista única "Contatos da equipe": todos veem e discam; cada um no seu ritmo
