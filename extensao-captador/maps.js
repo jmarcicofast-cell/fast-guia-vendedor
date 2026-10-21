@@ -6,6 +6,7 @@
   window.__captadorFast = true;
 
   var GUIA_URL = 'https://jmarcicofast-cell.github.io/fast-guia-vendedor/guia-vendedor.html#captador';
+  var VERSAO = (function () { try { return chrome.runtime.getManifest().version; } catch (e) { return ''; } })();
   var cesta = [];
   var aberto = true;
 
@@ -194,7 +195,7 @@
       '#av{position:absolute;left:12px;right:12px;bottom:8px;background:#1f2328;color:#fff;border-radius:8px;padding:6px 8px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none}' +
       '.min{width:auto}.min .c{display:none}' +
       '</style>' +
-      '<div class="p' + (aberto ? '' : ' min') + '"><div class="h" id="tg"><span>📥 Captador FAST</span><span>' + cesta.length + (aberto ? ' ▾' : ' ▴') + '</span></div>' +
+      '<div class="p' + (aberto ? '' : ' min') + '"><div class="h" id="tg"><span>📥 Captador FAST <small style="font-weight:400;opacity:.8">v' + VERSAO + '</small></span><span>' + cesta.length + (aberto ? ' ▾' : ' ▴') + '</span></div>' +
       '<div class="c">' +
       (ficha
         ? '<div><div class="f">' + esc(ficha.nome) + '</div><div class="s">' + esc([ficha.categoria, ficha.tel ? fmt(ficha.tel) : 'sem telefone'].filter(Boolean).join(' · ')) + '</div></div>' +
