@@ -25637,16 +25637,9 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     faixa.innerHTML = '<span>🦅 Saiu uma versão nova do guia!' + (nota ? ' <span style="font-weight:400">' + esc(nota) + '</span>' : '') + ' <span id="au-txt"></span></span>' +
       '<button type="button" class="pri" id="au-ja">Atualizar agora</button><button type="button" id="au-dep">Depois</button>';
     document.body.appendChild(faixa);
+    // nunca recarrega sozinho com alguém logado: a pessoa escolhe a hora (não perde a tela em que está)
     document.getElementById('au-ja').onclick = recarregar;
-    document.getElementById('au-dep').onclick = function(){ adiadoAte = Date.now() + 5 * 60000; faixa.remove(); faixa = null; clearInterval(tique); setTimeout(avisar, 5 * 60000 + 500); };
-    var n = ESPERA;
-    clearInterval(tique);
-    tique = setInterval(function(){
-      var t = document.getElementById('au-txt'); if (!t) { clearInterval(tique); return; }
-      if (!podeRecarregar()) { n = ESPERA; t.innerHTML = 'Atualizo quando você terminar de digitar.'; return; }
-      t.innerHTML = 'Atualizando em <b>' + n + 's</b>…';
-      if (n-- <= 0) { clearInterval(tique); recarregar(); }
-    }, 1000);
+    document.getElementById('au-dep').onclick = function(){ faixa.remove(); faixa = null; setTimeout(avisar, 60 * 60000); }; // lembra de novo em 1 hora
   }
   function agendar(){ setTimeout(avisar, 5000); }
 
