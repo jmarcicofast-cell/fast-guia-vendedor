@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guia do Vendedor — Fast Sistemas Construtivos</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#E63946">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Guia FAST">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 
   /* HEADER */
@@ -24809,7 +24817,8 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       br.innerHTML = LOGO + '<button type="button" class="sb-recolher" title="Recolher / esconder o menu" onclick="sbAlternar(event)">‹</button>';
       nav.insertBefore(br, nav.firstChild);
       var ft = document.createElement('div'); ft.className = 'sb-foot';
-      ft.innerHTML = '<button type="button" class="sb-btn" title="Estilo do guia" onclick="temaAbrir(event)"><span class="ic">🎨</span><span class="lb">Estilo do guia</span></button>' +
+      ft.innerHTML = '<button type="button" class="sb-btn" id="sb-instalar" title="Instalar o guia como aplicativo" onclick="appInstalar()" style="display:none"><span class="ic">📱</span><span class="lb">Instalar no celular</span></button>' +
+        '<button type="button" class="sb-btn" title="Estilo do guia" onclick="temaAbrir(event)"><span class="ic">🎨</span><span class="lb">Estilo do guia</span></button>' +
         '<div class="sb-user"><div style="min-width:0"><div class="hi">Conectado como</div><div class="nm" id="sb-nome"></div></div><button type="button" class="sb-btn sb-sair" title="Sair" onclick="doLogout()">Sair</button></div>';
       nav.appendChild(ft);
       var tb = document.createElement('div'); tb.className = 'sb-topbar';
@@ -26871,6 +26880,32 @@ function dcSalvarConfig() {
   dcAviso('Preferências salvas');
 }
 
+
+// ══ APLICATIVO (PWA) — instalar o guia na tela inicial do celular ══
+var appPrompt = null;
+function appInstalado() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+function appIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function appMostrarBotao() { var b = document.getElementById('sb-instalar'); if (b) b.style.display = (!appInstalado() && (appPrompt || appIOS())) ? '' : 'none'; }
+window.addEventListener('beforeinstallprompt', function(e) { e.preventDefault(); appPrompt = e; appMostrarBotao(); });
+window.addEventListener('appinstalled', function() { appPrompt = null; appMostrarBotao(); });
+function appInstalar() {
+  if (appPrompt) { appPrompt.prompt(); appPrompt.userChoice.then(function() { appPrompt = null; appMostrarBotao(); }); return; }
+  var m = document.getElementById('app-ajuda');
+  if (!m) {
+    m = document.createElement('div'); m.id = 'app-ajuda';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:flex-end;justify-content:center;padding:16px';
+    m.innerHTML = '<div style="background:var(--surface);color:var(--txt);border-radius:16px;padding:20px;max-width:420px;width:100%;font-size:15px;line-height:1.55">' +
+      '<div style="font-weight:700;font-size:17px;margin-bottom:8px">Instalar no iPhone</div>' +
+      '<ol style="margin:0;padding-left:1.2em"><li>Abra este guia no <b>Safari</b>.</li><li>Toque em <b>Compartilhar</b> (o quadrado com a seta para cima).</li><li>Escolha <b>Adicionar à Tela de Início</b> e confirme.</li></ol>' +
+      '<button type="button" onclick="this.closest(\'#app-ajuda\').remove()" style="margin-top:14px;width:100%;padding:10px;border:0;border-radius:10px;background:var(--acc);color:#fff;font-weight:700;font-size:15px">Entendi</button></div>';
+    m.onclick = function(e) { if (e.target === m) m.remove(); };
+    document.body.appendChild(m);
+  }
+}
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', function() { navigator.serviceWorker.register('sw.js').catch(function(e) { console.warn('sw', e); }); });
+}
+setTimeout(appMostrarBotao, 1500);
 </script>
 
 </body>
