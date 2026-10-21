@@ -957,6 +957,9 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .dc-num{font-family:ui-monospace,Consolas,monospace;font-size:28px;font-weight:700;letter-spacing:.02em;user-select:all;color:var(--txt)}
 .dc-ligar{display:inline-flex;align-items:center;gap:10px;background:var(--acc);color:#fff;font-weight:700;font-size:17px;padding:13px 28px;border-radius:999px;text-decoration:none}
 .dc-ligar.live{background:var(--dc-ok)}
+.dc-prazo{background:var(--acc-soft);border-radius:8px;padding:10px 12px;margin:-2px 0 14px;font-size:13.5px;color:var(--txt)}
+.dc-prazo.quase{background:color-mix(in srgb, #B7791F 22%, var(--surface))}
+.dc-prazo.venc{background:var(--surface-3)}
 .dc-ligar2{background:var(--surface-2);color:var(--txt);border:1px solid var(--line);font-size:15px;padding:11px 20px}
 .dc-ligar.wa:not(.dc-ligar2){background:#1FA855}
 .dc-ligar2.wa{color:#1FA855;border-color:#1FA855}
@@ -26564,6 +26567,7 @@ setInterval(function() { try { rtnLembrar(); } catch (e) { console.warn('rotina'
 var DC_RES = [
   { k: 'atendeu',  t: 'Atendeu',         cor: '#1F8A5B', at: true },
   { k: 'pedido',   t: 'Pedido fechado',  cor: '#E07A1F', at: true },
+  { k: 'funil',    t: 'Levou para o funil', cor: '#7B4FBF', at: true },
   { k: 'retornar', t: 'Retornar depois', cor: '#2F6FB3', at: true },
   { k: 'nao',      t: 'Não atendeu',     cor: '#8E939C', at: false },
   { k: 'caixa',    t: 'Caixa postal',    cor: '#B7791F', at: false },
@@ -26616,8 +26620,9 @@ function dcInit() {
       DC.todasListas = Object.keys(v).map(function(k) { var l = v[k] || {}; l.id = k; l.contatos = Array.isArray(l.contatos) ? l.contatos.filter(Boolean) : []; return l; })
         .sort(function(a, b) { return (b.equipe ? 1 : 0) - (a.equipe ? 1 : 0) || String(b.criado || '').localeCompare(String(a.criado || '')); });
       // não mistura: cada um disca só as listas que anexou + a lista da equipe
-      DC.listas = DC.todasListas.filter(function(l) { return l.equipe || l.criadoPor === currentUser; });
-      DC.outrasListas = DC.todasListas.filter(function(l) { return !l.equipe && l.criadoPor !== currentUser; });
+      DC.listas = DC.todasListas.filter(function(l) { return l.equipe || l.criadoPor === currentUser || l.para === currentUser; });
+      DC.outrasListas = DC.todasListas.filter(function(l) { return !l.equipe && l.criadoPor !== currentUser && l.para !== currentUser; });
+      dcVerificarPrazos();
       dcRender();
     });
     dbRef('discador/dias/' + currentUser + '/' + dia).on('value', function(snap) {
@@ -26652,6 +26657,7 @@ function dcEqPrazo(c) { var d = Math.ceil((c.assumidoEm + DC_ASSUMIR_DIAS * 864e
 function dcPos() {
   var p = ((DC.estado.posicoes || {})[DC.listaId]) || 0, l = dcLista();
   if (l && l.equipe) while (p < l.contatos.length && /outro|ganho/.test(dcEqStatus(l.contatos[p]))) p++;
+  if (l && l.para) while (p < l.contatos.length && l.contatos[p].repassado) p++;
   return p;
 }
 function dcAssumir(i) {
@@ -26719,8 +26725,9 @@ function dcVDiscar() {
   var h = '<div class="dc-grid"><div class="dc-col">';
   h += '<div class="dc-card"><div class="dc-row" style="justify-content:space-between;margin-bottom:12px">' +
     '<label class="dc-lab" style="flex:1;min-width:200px">Lista em discagem<select id="dc-sel" onchange="dcEscolherLista(this.value)"><option value="">' + (DC.listas.length ? 'Escolha uma lista' : 'Nenhuma lista cadastrada') + '</option>' +
-    DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === DC.listaId ? ' selected' : '') + '>' + dcEsc(x.nome) + ' · ' + x.contatos.length + ' contatos</option>'; }).join('') + '</select></label>' +
+    DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === DC.listaId ? ' selected' : '') + '>' + (x.para ? '🎯 ' : '') + dcEsc(x.nome) + ' · ' + x.contatos.length + ' contatos' + (x.para ? ' · ' + dcPrazoCurto(x) : '') + '</option>'; }).join('') + '</select></label>' +
     (l ? '<div class="dc-row"><button class="dc-btn" onclick="dcMover(-1)">Voltar um</button><button class="dc-btn" onclick="dcMover(1)">Pular</button></div>' : '') + '</div>';
+  if (l && l.para) h += dcPrazoBanner(l);
   if (a) {
     h += '<div class="dc-eyebrow">' + (DC.avulso ? (DC.avulso.retIdx != null ? 'Retorno agendado' : 'Ligação avulsa') : 'Contato ' + (pos + 1) + ' de ' + total) + '</div>' +
       '<input class="dc-nome dc-edit" value="' + dcEsc(a.nome || '') + '" id="dc-enome" placeholder="Nome do contato ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
@@ -27016,6 +27023,11 @@ function dcRegistrar(res) {
   var item = { tel: dcDig(a.tel), nome: a.nome || '', empresa: a.empresa || '', res: res, canal: canal, obs: obs, dur: dur, hora: Date.now(), lista: a.origem === 'lista' ? DC.listaId : null };
   var eraAvulso = DC.avulso, listaId = DC.listaId, pos = dcPos();
   var lAt = dcLista();
+  if (!eraAvulso && lAt && lAt.para && (res === 'pedido' || res === 'funil') && lAt.contatos[pos]) { // lista direcionada: captado dentro do prazo
+    lAt.contatos[pos].funil = { tipo: res === 'pedido' ? 'pedido' : 'negociacao', por: currentUser, em: Date.now() };
+    dbRef('discador/listas/' + lAt.id + '/contatos/' + pos + '/funil').set(lAt.contatos[pos].funil);
+  }
+  if (res === 'funil') dcAbrirNegociacao(a, obs, quando, lAt && !eraAvulso ? lAt.nome : '');
   if (!eraAvulso && lAt && lAt.equipe && res === 'pedido') // pedido fechado: o cliente fica com quem fechou e sai da roda da equipe
     dbRef('discador/listas/' + lAt.id + '/contatos/' + pos).update({ ganhoPor: currentUser, ganhoEm: Date.now(), dono: currentUser, assumidoEm: Date.now() });
   DC.call = null; DC.avulso = null;
@@ -27129,11 +27141,16 @@ function dcVListas() {
     '<label class="dc-lab">Salvar em<select id="dc-ldest" onchange="DC.listaDestino=this.value;dcRender()"><option value="">Criar uma lista nova</option>' +
     DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === dest ? ' selected' : '') + '>Adicionar à lista ' + dcEsc(x.nome) + ' (' + x.contatos.length + ')</option>'; }).join('') + '</select></label>' +
     (dest ? '' : '<label class="dc-lab" style="margin-top:10px">Nome da lista<input id="dc-lnome" placeholder="Ex.: Reativação lojistas SP — outubro"></label>') +
+    (!dest && dcGestao() ? '<div class="dc-row" style="margin-top:10px;align-items:flex-end">' +
+      '<label class="dc-lab" style="flex:2;min-width:160px">Direcionar para<select id="dc-lpara"><option value="">Ninguém (lista minha)</option>' +
+        CK_EQUIPE.map(function(vn) { return '<option value="' + vn + '">' + dcEsc(typeof rtNome === 'function' ? rtNome(vn) : vn) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="dc-lab" style="flex:1;min-width:120px">Prazo de captação (dias)<input type="number" id="dc-lprazo" min="1" max="90" value="7"></label></div>' +
+      '<div class="dc-sub" style="margin-top:6px">Lista direcionada: só o vendedor escolhido disca. O que ele não levar para o funil (negociação aberta ou pedido fechado) dentro do prazo fica livre para a equipe.</div>' : '') +
     '<label class="dc-lab" style="margin-top:10px">Um contato por linha: nome, loja e telefone separados por ponto e vírgula ou tabulação. Pode colar direto do Excel.' +
     '<textarea id="dc-ltxt" rows="9" oninput="dcPrevia()" placeholder="Carlos Souza; Casa do Drywall; (11) 98765-4321&#10;Marina Lopes; Gesso &amp; Cia; 21 3344-5566"></textarea></label>' +
     '<div class="dc-row" style="margin-top:10px"><label class="dc-btn" for="dc-lfile">Abrir arquivo .csv</label><input type="file" id="dc-lfile" accept=".csv,.txt" style="display:none" onchange="dcArquivo(this)"><span class="dc-sub" id="dc-prev"></span></div>' +
     '<button class="dc-btn dc-pri" style="margin-top:12px" onclick="dcSalvarLista()">' + (dest ? 'Adicionar à lista' : 'Salvar lista') + '</button></div></div>' +
-    '<div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Minhas listas</div><div class="dc-sub" style="margin-bottom:6px">Só você vê e disca as listas que anexar. Para passar um contato para todos, use o botão <b>Equipe</b> na linha dele.</div>' +
+    '<div class="dc-col">' + dcDirecionadasHtml() + '<div class="dc-card"><div class="dc-eyebrow">Minhas listas</div><div class="dc-sub" style="margin-bottom:6px">Só você vê e disca as listas que anexar. Para passar um contato para todos, use o botão <b>Equipe</b> na linha dele.</div>' +
     (DC.listas.length ? DC.listas.map(function(l) {
       return '<div class="dc-it"><div style="min-width:0"><b>' + (l.equipe ? '👥 ' : '') + dcEsc(l.nome) + '</b><div class="dc-sub">' + l.contatos.length + ' contatos · ' + (l.equipe ? 'disponível para todos · ' : '') + (l.criadoPor ? dcEsc(rtNome ? rtNome(l.criadoPor) : l.criadoPor) + ' · ' : '') + (l.criado ? new Date(l.criado).toLocaleDateString('pt-BR') : '') + '</div></div>' +
         '<div class="dc-row"><button class="dc-btn" onclick="dcEscolherLista(\'' + dcEsc(l.id) + '\');dcSetAba(\'discar\')">Discar</button><button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button>' +
@@ -27152,7 +27169,7 @@ function dcTabelaContatos(l, leitura) {
     l.contatos.map(function(c, i) {
       var ed = function(campo) { if (leitura) return dcEsc(c[campo] || '—'); return '<input class="dc-edit" value="' + dcEsc(c[campo] || '') + '" placeholder="✎" onchange="dcEditarContato(\'' + lid + '\',' + i + ',\'' + campo + '\',this.value)" onkeydown="if(event.key===\'Enter\')this.blur()">'; };
       var st = l.equipe ? dcEqStatus(c) : '', nm = function(v) { return dcEsc(typeof rtNome === 'function' ? rtNome(v) : v); };
-      var stTxt = !l.equipe ? '' : st === 'ganho' ? '<div class="dc-sub">✅ pedido fechado por ' + nm(c.ganhoPor) + '</div>'
+      var stTxt = !l.equipe ? (l.para ? dcDirStatus(c) : '') : st === 'ganho' ? '<div class="dc-sub">✅ pedido fechado por ' + nm(c.ganhoPor) + '</div>'
         : st === 'outro' ? '<div class="dc-sub">✋ com ' + nm(c.dono) + ' · ' + dcEqPrazo(c) + '</div>'
         : st === 'meu' ? '<div class="dc-sub">✋ com você · ' + dcEqPrazo(c) + '</div>'
         : (c.por ? '<div class="dc-sub">livre · indicado por ' + nm(c.por) + '</div>' : '<div class="dc-sub">livre</div>');
@@ -27205,11 +27222,91 @@ function dcSalvarLista() {
   if (!nome) { dcAviso('Dê um nome para a lista'); return; }
   if (!contatos.length) { dcAviso('Nenhum telefone reconhecido. Confira o formato.'); return; }
   var id = 'l' + Date.now().toString(36);
-  dbRef('discador/listas/' + id).set({ nome: nome, contatos: contatos.slice(0, 5000), criado: Date.now(), criadoPor: currentUser }).then(function() {
+  var obj = { nome: nome, contatos: contatos.slice(0, 5000), criado: Date.now(), criadoPor: currentUser };
+  var paraEl = document.getElementById('dc-lpara'), para = paraEl ? paraEl.value : '';
+  if (para) {
+    var dias = parseInt((document.getElementById('dc-lprazo') || {}).value, 10);
+    if (!(dias >= 1 && dias <= 90)) { dcAviso('Prazo de captação: de 1 a 90 dias'); return; }
+    obj.para = para; obj.prazoDias = dias; obj.inicio = Date.now();
+  }
+  dbRef('discador/listas/' + id).set(obj).then(function() {
+    if (para) { dcAviso('Lista direcionada para ' + (typeof rtNome === 'function' ? rtNome(para) : para) + ' · ' + obj.prazoDias + ' dias de prazo'); DC.aba = 'listas'; dcRender(); return; }
     dcAviso('Lista salva com ' + contatos.length + ' contatos'); dcEscolherLista(id); DC.aba = 'discar'; dcRender();
   }).catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
 }
 // junta contatos novos no fim da lista, sem repetir telefone (a fila de quem já discou não muda)
+// ══ LISTAS DIRECIONADAS — a gestão manda a lista para um vendedor com prazo de captação.
+// Captado = resultado "Levou para o funil" (abre negociação) ou "Pedido fechado" dentro do prazo (contato.funil).
+// Vencido o prazo, o que não foi captado vai para a lista da equipe (livre para quem assumir) e fica marcado repassado.
+function dcFimPrazo(l) { return (l.inicio || l.criado || 0) + (l.prazoDias || 0) * 864e5; }
+function dcCaptados(l) { return l.contatos.filter(function(c) { return c.funil; }).length; }
+function dcPrazoCurto(l) {
+  if (l.encerrada) return 'prazo encerrado';
+  var ms = dcFimPrazo(l) - Date.now(); if (ms <= 0) return 'prazo vencido';
+  var d = ms >= 864e5 ? Math.ceil(ms / 864e5) : 0, hh = Math.ceil(ms / 36e5);
+  return d >= 1 ? 'faltam ' + d + ' dia' + (d > 1 ? 's' : '') : 'faltam ' + Math.max(1, hh) + 'h';
+}
+function dcPrazoBanner(l) {
+  var fim = new Date(dcFimPrazo(l)), quem = typeof rtNome === 'function' ? rtNome(l.criadoPor) : l.criadoPor;
+  var venc = l.encerrada || Date.now() > dcFimPrazo(l);
+  return '<div class="dc-prazo' + (venc ? ' venc' : (dcFimPrazo(l) - Date.now() < 864e5 ? ' quase' : '')) + '">🎯 <b>Lista direcionada</b> por ' + dcEsc(quem) + ' · ' +
+    (venc ? 'prazo encerrado em ' : 'prazo de captação até ') + fim.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ' + fim.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) +
+    ' (' + dcPrazoCurto(l) + ') · ' + dcCaptados(l) + ' de ' + l.contatos.length + ' levados ao funil' +
+    '<div class="dc-sub">' + (venc ? 'Os clientes que não foram para o funil passaram para a equipe.' : 'Quem não for para o funil até lá (negociação aberta ou pedido fechado) fica livre para a equipe.') + '</div></div>';
+}
+function dcDirStatus(c) {
+  if (c.funil) return '<div class="dc-sub">✅ ' + (c.funil.tipo === 'pedido' ? 'pedido fechado' : 'no funil') + (c.funil.em ? ' em ' + new Date(c.funil.em).toLocaleDateString('pt-BR') : '') + '</div>';
+  if (c.repassado) return '<div class="dc-sub">↪ passou para a equipe</div>';
+  return '<div class="dc-sub">aguardando captação</div>';
+}
+function dcDirecionadasHtml() {
+  var ls = (DC.todasListas || []).filter(function(l) { return l.para && (dcGestao() || l.para === currentUser); });
+  if (!ls.length) return '';
+  var nm = function(v) { return dcEsc(typeof rtNome === 'function' ? rtNome(v) : v); };
+  return '<div class="dc-card"><div class="dc-eyebrow">🎯 Listas direcionadas</div>' + ls.map(function(l) {
+    var venc = l.encerrada || Date.now() > dcFimPrazo(l), cap = dcCaptados(l), rep = l.contatos.filter(function(c) { return c.repassado; }).length;
+    var pct = l.contatos.length ? Math.round(cap / l.contatos.length * 100) : 0;
+    return '<div class="dc-it"><div style="min-width:0;flex:1"><b>' + dcEsc(l.nome) + '</b><div class="dc-sub">' + (dcGestao() ? 'para ' + nm(l.para) + ' · ' : '') + l.prazoDias + ' dias · ' + dcPrazoCurto(l) +
+      ' · <b>' + cap + '</b> de ' + l.contatos.length + ' no funil' + (rep ? ' · ' + rep + ' passaram para a equipe' : '') + '</div>' +
+      '<div class="dc-bar"><i style="width:' + pct + '%' + (venc ? ';background:var(--muted)' : '') + '"></i></div></div>' +
+      (l.para === currentUser && !venc ? '<button class="dc-btn" onclick="dcEscolherLista(\'' + dcEsc(l.id) + '\');dcSetAba(\'discar\')">Discar</button>' : '') + '</div>';
+  }).join('') + '</div>';
+}
+// quando o prazo vence, quem estiver com o guia aberto faz o repasse (uma vez só, protegido por transação)
+DC.encerrando = {};
+function dcVerificarPrazos() {
+  (DC.todasListas || []).forEach(function(l) {
+    if (!l.para || !l.prazoDias || l.encerrada || Date.now() <= dcFimPrazo(l) || DC.encerrando[l.id]) return;
+    DC.encerrando[l.id] = true;
+    var ref = dbRef('discador/listas/' + l.id + '/encerrada');
+    var trava = typeof ref.transaction === 'function'
+      ? Promise.resolve(ref.transaction(function(v) { if (v) return; return true; })).then(function(r) { return !r || r.committed !== false; })
+      : Promise.resolve(ref.set(true)).then(function() { return true; });
+    trava.then(function(ganhei) {
+      if (!ganhei) return;
+      var pend = [];
+      var contatos = l.contatos.map(function(c) { if (!c.funil && !c.repassado) { pend.push(c); return Object.assign({}, c, { repassado: true }); } return c; });
+      return Promise.resolve(dbRef('discador/listas/' + l.id).update({ contatos: contatos, encerradaEm: Date.now() })).then(function() {
+        if (!pend.length) return;
+        var novos = pend.map(function(c) { return { nome: c.nome || '', empresa: c.empresa || '', tel: dcDig(c.tel), por: l.para, obs: c.obs || '', origem: 'Lista direcionada: ' + l.nome }; });
+        var eq = (DC.todasListas || []).find(function(x) { return x.equipe; });
+        if (!eq) return dbRef('discador/listas/equipe').set({ nome: 'Contatos da equipe', equipe: true, contatos: novos, criado: Date.now(), criadoPor: l.criadoPor || currentUser });
+        var r = dcJuntar(eq, novos); if (r.add) return dcGravarContatos(eq, r.contatos);
+      });
+    }).catch(function(e) { console.warn('repasse da lista direcionada', e); DC.encerrando[l.id] = false; });
+  });
+}
+setInterval(function() { try { if (DC.ligado) dcVerificarPrazos(); } catch (e) {} }, 5 * 60 * 1000);
+// "Levou para o funil": abre a negociação na aba Negociações (etapa Orçamento enviado)
+function dcAbrirNegociacao(a, obs, quando, listaNome) {
+  var id = 'neg_' + Date.now(), agora = new Date().toISOString();
+  var n = { id: id, empresa: a.empresa || a.nome || dcTel(a.tel), contato: a.nome || '', telefone: dcTel(a.tel), estado: '', valorEstimado: 0, etapa: 'orcamento',
+    proximaAcao: obs || '', proximaData: quando ? String(quando).slice(0, 10) : '', motivoPerda: '', motivoCategoria: '', motivoOutro: '', concorrente: '', valorConcorrente: 0,
+    motivoTravando: '', faltaFechar: '', vendedor: currentUser, origem: 'discador', dataCriacao: agora,
+    historico: [{ data: agora, texto: 'Negociação aberta pelo Discador' + (listaNome ? ' (lista ' + listaNome + ')' : '') + '.' }] };
+  Promise.resolve(dbRef('negociacoes/' + currentUser + '/' + id).set(n)).then(function() { dcAviso('Negociação aberta em Negociações'); })
+    .catch(function(e) { dcAviso('Não abriu a negociação: ' + (e && e.message)); });
+}
 function dcJuntar(l, novos) {
   var tem = {}; l.contatos.forEach(function(c) { tem[dcMicroNum(c.tel)] = 1; });
   var add = 0, rep = 0, out = l.contatos.slice();
