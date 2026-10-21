@@ -25029,6 +25029,10 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 .ag-balao .x b { color: var(--txt, #111); }
 .ag-balao .fechar { position: absolute; top: 6px; right: 8px; border: none; background: none; color: var(--muted, #888); font-size: 15px; cursor: pointer; line-height: 1; padding: 2px; }
 .ag-balao .acoes { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.ag-balao .ag-hist { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; max-height: 260px; overflow: auto; }
+.ag-balao .ag-hist-it { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid var(--line, #ddd); border-radius: 10px; font-size: 12.5px; }
+.ag-balao .ag-hist-it small { display: block; color: var(--muted, #888); font-weight: 400; }
+.ag-balao .ag-hist-it button { flex: none; border: 1px solid var(--acc, #C41E1E); background: transparent; color: var(--acc-txt, #C41E1E); border-radius: 8px; padding: 4px 9px; font: 700 12px var(--font, system-ui), sans-serif; cursor: pointer; }
 .ag-balao .acoes button { border: 1px solid var(--line, #ddd); background: var(--surface-2, #f6f6f6); color: var(--txt, #111); border-radius: 9px; padding: 6px 10px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
 .ag-balao .acoes button.pri { background: var(--acc, #C41E1E); border-color: var(--acc, #C41E1E); color: #fff; }
 .ag-balao .barra { height: 6px; border-radius: 6px; background: var(--surface-3, #eee); margin-top: 9px; overflow: hidden; }
@@ -25326,9 +25330,36 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     b.addEventListener('mouseleave', function(){ AG.timer = setTimeout(fecharBalao, 2500); });
     AG.timer = setTimeout(fecharBalao, ev.dura || (ev.grande ? 11000 : 7000));
   }
+  /* ── conquistas do dia: cada comemoração fica guardada (neste aparelho) para reviver depois ── */
+  function ehConquista(ev){ return !ev.forcar && !ev.replay && !!(ev.confete || ev.epico || ev.som === 'grande'); }
+  function chaveHist(d){ return 'fgv_ag_hist_' + AG.user + '_' + (d || hojeStr()); }
+  function conquistasDe(d){ try { return JSON.parse(lsGet(chaveHist(d)) || '[]'); } catch(e) { return []; } }
+  function guardarConquista(ev){
+    if (!AG.user) return;
+    var c = { em: Date.now() };
+    ['titulo', 'texto', 'html', 'barra', 'anim', 'extras', 'confete', 'som', 'epico', 'grande'].forEach(function(k){ if (ev[k] != null) c[k] = ev[k]; });
+    if (c.html) c.html = String(c.html).replace(/<div class="acoes">[\s\S]*$/, ''); // sem botões antigos
+    var l = conquistasDe(); if (l.some(function(x){ return x.titulo === c.titulo && x.texto === c.texto; })) return;
+    l.push(c); lsSet(chaveHist(), JSON.stringify(l.slice(-40)));
+    // guarda só os últimos 7 dias
+    try { var lim = hojeStr(new Date(Date.now() - 7 * 864e5)); Object.keys(localStorage).forEach(function(k){ var m = k.match(/^fgv_ag_hist_.+_(\d{4}-\d{2}-\d{2})$/); if (m && m[1] < lim) localStorage.removeItem(k); }); } catch(e) {}
+  }
+  function reviver(c){ var ev = JSON.parse(JSON.stringify(c)); ev.forcar = true; ev.replay = true; ev.titulo = '🔁 ' + ev.titulo; delete ev._palcoFeito; avisar(ev); }
+  function mostrarConquistas(){
+    var l = conquistasDe();
+    if (!l.length) { avisar({ forcar: true, replay: true, titulo: 'Nenhuma conquista ainda hoje 🦅', texto: 'Quando você bater uma meta, eu guardo aqui para você reviver quando quiser.', anim: 'ag-aponta', dura: 7000 }); return; }
+    avisar({ forcar: true, replay: true, titulo: '🏆 Suas conquistas de hoje', anim: 'ag-joia', dura: 20000,
+      html: '<div class="ag-hist">' + l.map(function(c, i){
+        return '<div class="ag-hist-it"><div><b>' + c.titulo + '</b><small>' + new Date(c.em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</small></div><button type="button" data-rev="' + i + '">▶ Reviver</button></div>';
+      }).join('') + '</div>',
+      acoes: l.length > 1 ? [{ rot: '▶ Reviver todas', pri: true, fn: function(){ l.forEach(reviver); } }] : [],
+      ligar: function(b){ b.querySelectorAll('[data-rev]').forEach(function(x){ x.onclick = function(){ var c = l[+x.dataset.rev]; fecharBalao(); setTimeout(function(){ reviver(c); }, 300); }; }); } });
+  }
+  window.aguiaConquistas = mostrarConquistas;
   function avisar(ev){
+    if (ehConquista(ev)) try { guardarConquista(ev); } catch(e) {}
     AG.fila.push(ev);
-    if (AG.fila.length > 6) AG.fila.splice(1, AG.fila.length - 6);
+    if (AG.fila.length > 6 && !ev.replay) AG.fila.splice(1, AG.fila.length - 6);
     if (!AG.ocupado) mostrarDaFila();
   }
   window.aguiaAvisar = avisar;
@@ -25355,7 +25386,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       avisar({ forcar: true, titulo: 'Oi, ' + esc(primeiroNome(vn)) + '! Assim está a equipe hoje 🦅', anim: 'ag-acena', dura: 14000,
         html: '<div class="kpis"><div>Vendido hoje<b>' + rs(tot.v) + '</b></div><div>Pedidos hoje<b>' + tot.ped + '</b></div><div>Ligações hoje<b>' + tot.lig + '</b></div><div>Mês da equipe<b>' + (metaT ? Math.round(vMes / metaT * 100) + '%' : rs(vMes)) + '</b></div></div>' +
           (lid ? '<div class="x" style="margin-top:8px">🥇 Liderando hoje: <b>' + esc(nomeDe(lid)) + '</b></div>' : '') + cfg,
-        acoes: [{ rot: 'Ver ranking', pri: true, fn: function(){ irAba('reconhecimento'); } }], ligar: ligar });
+        acoes: [{ rot: 'Ver ranking', pri: true, fn: function(){ irAba('reconhecimento'); } }, { rot: '🏆 Conquistas de hoje (' + conquistasDe().length + ')', fn: function(){ setTimeout(mostrarConquistas, 300); } }], ligar: ligar });
       return;
     }
     var n = numeros(vn), pos = posicaoMes(vn).pos;
@@ -25365,7 +25396,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     else frase = 'Ligações do dia em dia! Faltam <b>' + rs(falta) + '</b> pra meta do mês.';
     avisar({ forcar: true, titulo: 'E aí, ' + esc(primeiroNome(vn)) + '! 🦅', texto: frase, anim: 'ag-acena', dura: 14000, barra: n.pctMes,
       html: '<div class="kpis"><div>Vendido hoje<b>' + rs(n.vHoje) + '</b></div><div>Ligações hoje<b>' + n.ligHoje + ' / ' + n.metaLig + '</b></div><div>Mês<b>' + Math.round(n.pctMes) + '%</b></div><div>Ranking do mês<b>' + (pos ? pos + 'º' : '—') + '</b></div></div>' + cfg,
-      acoes: [{ rot: 'Lançar ligações', pri: true, fn: function(){ irAba('rota'); } }, { rot: 'Minhas metas', fn: function(){ irAba('minhasmetas'); } }], ligar: ligar });
+      acoes: [{ rot: 'Lançar ligações', pri: true, fn: function(){ irAba('rota'); } }, { rot: 'Minhas metas', fn: function(){ irAba('minhasmetas'); } }, { rot: '🏆 Conquistas de hoje (' + conquistasDe().length + ')', fn: function(){ setTimeout(mostrarConquistas, 300); } }], ligar: ligar });
   }
   bird.addEventListener('click', resumo);
   bird.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); resumo(); } });
