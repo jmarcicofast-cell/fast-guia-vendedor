@@ -25597,15 +25597,17 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   var INTERVALO = 60000, ESPERA = 10, QUIETO_MS = 20000;
   var base = null, achouNova = false, adiadoAte = 0, ultimaDigitacao = 0, faixa = null, tique = null;
 
-  function urlCheck(){ return location.origin + location.pathname + '?_v=' + Date.now(); }
-  function assinatura(r){ return r.headers.get('etag') || r.headers.get('last-modified') || r.headers.get('content-length') || ''; }
+  /* Só avisa quando a versão do guia muda de verdade: o número fica em versao.json, que é trocado
+     a cada atualização feita no guia. Republicar outros arquivos do repositório (extensão, ícones)
+     ou o servidor do GitHub mudar cabeçalhos não dispara mais o aviso. */
+  var nota = '';
+  function urlCheck(){ return location.origin + location.pathname.replace(/[^/]*$/, '') + 'versao.json?_v=' + Date.now(); }
   function checar(){
     if (achouNova || document.hidden) return;
-    fetch(urlCheck(), { method: 'HEAD', cache: 'no-store' }).then(function(r){
-      if (!r.ok) return;
-      var a = assinatura(r); if (!a) return;
-      if (base === null) { base = a; return; }
-      if (a !== base) { achouNova = true; avisar(); }
+    fetch(urlCheck(), { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+      if (!j || !j.versao) return;
+      if (base === null) { base = String(j.versao); return; }
+      if (String(j.versao) !== base) { nota = j.nota || ''; achouNova = true; avisar(); }
     }).catch(function(){});
   }
 
@@ -25631,7 +25633,8 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     if (!logado()) { if (podeRecarregar()) recarregar(); else agendar(); return; }
     if (faixa) faixa.remove();
     faixa = document.createElement('div'); faixa.className = 'au-faixa'; faixa.setAttribute('role', 'status');
-    faixa.innerHTML = '<span>🦅 Saiu uma versão nova do guia! <span id="au-txt"></span></span>' +
+    var esc = function(x){ return String(x).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); };
+    faixa.innerHTML = '<span>🦅 Saiu uma versão nova do guia!' + (nota ? ' <span style="font-weight:400">' + esc(nota) + '</span>' : '') + ' <span id="au-txt"></span></span>' +
       '<button type="button" class="pri" id="au-ja">Atualizar agora</button><button type="button" id="au-dep">Depois</button>';
     document.body.appendChild(faixa);
     document.getElementById('au-ja').onclick = recarregar;
