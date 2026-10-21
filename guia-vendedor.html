@@ -919,6 +919,10 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .dc-pri:hover{background:var(--acc);filter:brightness(1.07)}
 .dc-nome{font-size:26px;font-weight:800;line-height:1.15;color:var(--txt)}
 .dc-emp{color:var(--muted);font-size:14px;margin-top:2px}
+.dc-edit{display:block;width:100%;background:transparent;border:1px dashed transparent;border-radius:6px;padding:2px 6px;margin-left:-7px;font-family:inherit;outline:none}
+.dc-edit:hover{border-color:var(--muted)}
+.dc-edit:focus{border-color:var(--dc-ok);border-style:solid;background:var(--card,#fff)}
+.dc-edit::placeholder{color:var(--muted);opacity:.7}
 .dc-num{font-family:ui-monospace,Consolas,monospace;font-size:28px;font-weight:700;letter-spacing:.02em;user-select:all;color:var(--txt)}
 .dc-ligar{display:inline-flex;align-items:center;gap:10px;background:var(--acc);color:#fff;font-weight:700;font-size:17px;padding:13px 28px;border-radius:999px;text-decoration:none}
 .dc-ligar.live{background:var(--dc-ok)}
@@ -26669,7 +26673,8 @@ function dcVDiscar() {
     (l ? '<div class="dc-row"><button class="dc-btn" onclick="dcMover(-1)">Voltar um</button><button class="dc-btn" onclick="dcMover(1)">Pular</button></div>' : '') + '</div>';
   if (a) {
     h += '<div class="dc-eyebrow">' + (DC.avulso ? (DC.avulso.retIdx != null ? 'Retorno agendado' : 'Ligação avulsa') : 'Contato ' + (pos + 1) + ' de ' + total) + '</div>' +
-      '<div class="dc-nome">' + dcEsc(a.nome || 'Sem nome') + '</div>' + (a.empresa ? '<div class="dc-emp">' + dcEsc(a.empresa) + '</div>' : '') +
+      '<input class="dc-nome dc-edit" value="' + dcEsc(a.nome || '') + '" placeholder="Nome do contato ✎" title="Clique para editar" onchange="dcEditar(\'nome\', this.value)" onkeydown="if(event.key===\'Enter\')this.blur()">' +
+      '<input class="dc-emp dc-edit" value="' + dcEsc(a.empresa || '') + '" placeholder="Empresa / loja ✎" title="Clique para editar" onchange="dcEditar(\'empresa\', this.value)" onkeydown="if(event.key===\'Enter\')this.blur()">' +
       (a.obs ? '<div class="dc-emp">Anotação: ' + dcEsc(a.obs) + '</div>' : '') +
       '<div class="dc-row" style="margin:12px 0"><span class="dc-num" id="dc-num">' + dcEsc(dcTel(a.tel)) + '</span><button class="dc-btn" onclick="dcCopiar()">Copiar</button>' +
       (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') + '</div>' +
@@ -26721,6 +26726,14 @@ function dcCopiar() {
   var t = dcMicroNum((dcAlvo() || {}).tel);
   var sel = function() { var n = document.getElementById('dc-num'); if (!n) return; var r = document.createRange(); r.selectNodeContents(n); var s = getSelection(); s.removeAllRanges(); s.addRange(r); dcAviso('Número selecionado. Use Ctrl+C.'); };
   if (navigator.clipboard) navigator.clipboard.writeText(t).then(function() { dcAviso('Número copiado'); }).catch(sel); else sel();
+}
+function dcEditar(campo, valor) {
+  valor = String(valor || '').trim().slice(0, 120);
+  if (DC.avulso) { DC.avulso[campo] = valor; dcAviso('Salvo'); return; }
+  var l = dcLista(), i = dcPos(); if (!l || !l.contatos[i]) return;
+  l.contatos[i][campo] = valor;
+  Promise.resolve(dbRef('discador/listas/' + l.id + '/contatos').set(l.contatos)).then(function() { dcAviso('Salvo na lista'); })
+    .catch(function(err) { dcAviso('Não salvou: ' + (err && err.message)); });
 }
 function dcSairAvulso() { DC.avulso = null; DC.call = null; dcRender(); }
 function dcAbrirRetorno(i) { var x = DC.estado.retornos[i]; if (!x) return; DC.avulso = Object.assign({}, x, { retIdx: i }); DC.call = null; DC.aba = 'discar'; dcPararAuto(true); dcRender(); }
