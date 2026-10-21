@@ -26802,7 +26802,10 @@ function dcAlvo() {
 }
 function dcResumo(itens) {
   var at = itens.filter(function(x) { return DC_RESMAP[x.res] && DC_RESMAP[x.res].at; });
-  return { total: itens.length, atendidas: at.length, seg: at.reduce(function(s, x) { return s + (x.dur || 0); }, 0), pedidos: itens.filter(function(x) { return x.res === 'pedido'; }).length };
+  var wa = itens.filter(function(x) { return x.canal === 'wa'; }).length;
+  // para a meta de ligações: as atendidas + todo contato feito pelo WhatsApp (mesmo sem resposta)
+  var meta = itens.filter(function(x) { return x.canal === 'wa' || (DC_RESMAP[x.res] && DC_RESMAP[x.res].at); }).length;
+  return { total: itens.length, atendidas: at.length, wa: wa, contaMeta: meta, seg: at.reduce(function(s, x) { return s + (x.dur || 0); }, 0), pedidos: itens.filter(function(x) { return x.res === 'pedido'; }).length };
 }
 function dcMetaHoje() {
   try {
@@ -26878,7 +26881,7 @@ function dcVDiscar() {
   h += '<div class="dc-card"><div class="dc-eyebrow">Meu dia no discador</div><div class="dc-stats">' +
     '<div><b>' + r.total + '</b><span>ligações</span></div><div><b>' + r.atendidas + '</b><span>atendidas · ' + (r.total ? Math.round(r.atendidas / r.total * 100) : 0) + '%</span></div>' +
     '<div><b>' + dcDur(r.seg) + '</b><span>tempo falando</span></div><div><b>' + r.pedidos + '</b><span>pedidos fechados</span></div></div>' +
-    (meta && meta.alvo > 0 ? '<div class="dc-meta"><div class="dc-sub">Meta de ligações hoje (Rota da Meta, conta as atendidas do discador): <b>' + meta.feitas + '</b> de ' + meta.alvo + '</div><div class="dc-bar"><i style="width:' + Math.min(100, Math.round(meta.feitas / meta.alvo * 100)) + '%"></i></div></div>' : '') +
+    (meta && meta.alvo > 0 ? '<div class="dc-meta"><div class="dc-sub">Meta de ligações hoje (Rota da Meta: atendidas + contatos pelo WhatsApp): <b>' + meta.feitas + '</b> de ' + meta.alvo + '</div><div class="dc-bar"><i style="width:' + Math.min(100, Math.round(meta.feitas / meta.alvo * 100)) + '%"></i></div></div>' : '') +
     '</div>';
   h += '<div class="dc-card"><div class="dc-eyebrow">Retornos agendados</div>' + dcRetornosHtml() + '</div>';
   h += dcAgCardHtml();
@@ -27165,7 +27168,7 @@ function dcRegistrar(res) {
   if (obsEl) obsEl.value = ''; if (qEl) qEl.value = '';
   var hoje = dcHoje(), novos = DC.itens.concat([item]); DC.itens = novos;
   dbRef('discador/dias/' + currentUser + '/' + dcKey(hoje)).set({ data: hoje, itens: novos })
-    .then(function() { return typeof rtLigGravar === 'function' ? rtLigGravar(currentUser, { disc: novos.length, discAt: dcResumo(novos).atendidas }) : null; })
+    .then(function() { return typeof rtLigGravar === 'function' ? rtLigGravar(currentUser, { disc: novos.length, discAt: dcResumo(novos).contaMeta }) : null; })
     .catch(function(err) { dcAviso('Não salvou a ligação (' + (err && err.message) + '). Tente de novo.'); });
   dcSalvarEstado(function(e) {
     var rets = (e.retornos || []).slice();
@@ -27212,11 +27215,11 @@ function dcVEquipe() {
   var t = rows.reduce(function(s, r) { return { total: s.total + r.total, at: s.at + r.atendidas, seg: s.seg + r.seg, ped: s.ped + r.pedidos }; }, { total: 0, at: 0, seg: 0, ped: 0 });
   return '<div class="dc-tots"><div><b>' + t.total + '</b><span>ligações da equipe hoje</span></div><div><b>' + t.at + '</b><span>atendidas · ' + (t.total ? Math.round(t.at / t.total * 100) : 0) + '%</span></div>' +
     '<div><b>' + dcDur(t.seg) + '</b><span>tempo falando</span></div><div><b>' + t.ped + '</b><span>pedidos fechados</span></div></div>' +
-    '<div class="dc-card"><div class="dc-scroll"><table class="dc-tab"><thead><tr><th>Vendedor</th><th>Ligações</th><th>Atendidas</th><th>Taxa</th><th>Tempo falando</th><th>Pedidos</th><th>Pelo WhatsApp</th><th>Última</th></tr></thead><tbody>' +
+    '<div class="dc-card"><div class="dc-scroll"><table class="dc-tab"><thead><tr><th>Vendedor</th><th>Ligações</th><th>Atendidas</th><th>Taxa</th><th>Tempo falando</th><th>Pedidos</th><th>Pelo WhatsApp</th><th>Contam na meta</th><th>Última</th></tr></thead><tbody>' +
     rows.map(function(r) {
       var its = DC.equipe[r.vn] || [], ult = its.length ? new Date(its[its.length - 1].hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
-      return '<tr><td><b>' + dcEsc(rtNome ? rtNome(r.vn) : r.vn) + '</b></td><td>' + r.total + '</td><td>' + r.atendidas + '</td><td>' + (r.total ? Math.round(r.atendidas / r.total * 100) + '%' : '—') + '</td><td>' + dcDur(r.seg) + '</td><td>' + r.pedidos + '</td><td>' + its.filter(function(x) { return x.canal === 'wa'; }).length + '</td><td>' + ult + '</td></tr>';
-    }).join('') + '</tbody></table></div><div class="dc-sub" style="margin-top:8px">Só conta o que foi discado por aqui. As atendidas pelo discador entram sozinhas na meta de ligações da Rota da Meta; as não atendidas ficam só aqui.</div></div>';
+      return '<tr><td><b>' + dcEsc(rtNome ? rtNome(r.vn) : r.vn) + '</b></td><td>' + r.total + '</td><td>' + r.atendidas + '</td><td>' + (r.total ? Math.round(r.atendidas / r.total * 100) + '%' : '—') + '</td><td>' + dcDur(r.seg) + '</td><td>' + r.pedidos + '</td><td>' + r.wa + '</td><td><b>' + r.contaMeta + '</b></td><td>' + ult + '</td></tr>';
+    }).join('') + '</tbody></table></div><div class="dc-sub" style="margin-top:8px">Só conta o que foi discado por aqui. Entram sozinhas na meta de ligações da Rota da Meta as atendidas e todos os contatos pelo WhatsApp (coluna "Contam na meta"); as demais tentativas ficam só aqui.</div></div>';
 }
 
 function dcVHist() {
