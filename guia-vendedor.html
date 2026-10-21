@@ -26592,7 +26592,9 @@ function dcHoje() { return ckToday(); }
 function dcKey(d) { return String(d).replace(/-/g, '_'); }
 function dcLs(k, d) { try { var v = localStorage.getItem('fgv_dc_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
 function dcLsSet(k, v) { try { localStorage.setItem('fgv_dc_' + k, JSON.stringify(v)); } catch (e) {} }
-function dcPref() { return { esquema: dcLs('esquema', 'tel:'), prefixo: dcLs('prefixo', ''), auto: dcLs('auto', true), espera: dcLs('espera', 4), canal: dcLs('canal', 'micro'), waModo: dcLs('waModo', 'app') }; }
+// espera padrão passou para 10s (21/10/2026): vale também para quem já tinha salvo outro valor
+(function() { if (!dcLs('espera_v10', false)) { dcLsSet('espera', 10); dcLsSet('espera_v10', true); } })();
+function dcPref() { return { esquema: dcLs('esquema', 'tel:'), prefixo: dcLs('prefixo', ''), auto: dcLs('auto', true), espera: dcLs('espera', 10), canal: dcLs('canal', 'micro'), waModo: dcLs('waModo', 'app') }; }
 // MicroSIP: sempre 00 + DDD + número (tira 55 e zeros que já vierem na frente)
 function dcMicroNum(t) { var d = dcDig(t); if ((d.length === 12 || d.length === 13) && d.slice(0, 2) === '55') d = d.slice(2); d = d.replace(/^0+/, ''); return (d.length === 10 || d.length === 11) ? '00' + d : d; }
 function dcHref(t) { var p = dcPref(), pre = String(p.prefixo || '').replace(/^0+$/, ''); return p.esquema + pre + dcMicroNum(t); }
@@ -27009,7 +27011,7 @@ function dcSalvarConfig() {
   dcLsSet('waModo', document.getElementById('dc-cwa').value);
   dcLsSet('prefixo', document.getElementById('dc-cpre').value.replace(/[^\d*#+]/g, ''));
   dcLsSet('auto', document.getElementById('dc-cauto').checked);
-  dcLsSet('espera', Math.max(1, Math.min(30, parseInt(document.getElementById('dc-cesp').value, 10) || 4)));
+  dcLsSet('espera', Math.max(1, Math.min(30, parseInt(document.getElementById('dc-cesp').value, 10) || 10)));
   dcAviso('Preferências salvas');
 }
 
