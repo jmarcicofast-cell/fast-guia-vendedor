@@ -111,15 +111,15 @@
   }
   async function voltarLista() {
     var voltou = false;
-    for (var t = 0; t < 3 && !itensSalvos().length; t++) { voltou = true; botaoVoltar(); for (var w = 0; w < 20 && !itensSalvos().length; w++) await sleep(250); }
-    if (voltou && itensSalvos().length) await sleep(400); // deixa a lista terminar de desenhar
+    for (var t = 0; t < 3 && !itensSalvos().length; t++) { voltou = true; botaoVoltar(); for (var w = 0; w < 50 && !itensSalvos().length; w++) await sleep(100); }
+    if (voltou && itensSalvos().length) await sleep(250); // deixa a lista terminar de desenhar
     return itensSalvos().length > 0;
   }
   async function carregarAte(k) {
     var parado = 0;
     while (itensSalvos().length <= k && parado < 4 && !LOTE.parar) {
       var n = itensSalvos().length, r = rolador(); if (!r) return false;
-      r.scrollTop = r.scrollHeight; await sleep(900);
+      r.scrollTop = r.scrollHeight; await sleep(600);
       parado = itensSalvos().length === n ? parado + 1 : 0;
     }
     return itensSalvos().length > k;
@@ -141,11 +141,13 @@
       LOTE.feitos = ++vistos; render();
       if (quero && vistos >= LOTE.total) LOTE.ultimo = true;
       if (jaTem[x.nome.toUpperCase()]) { if (LOTE.ultimo) break; continue; }
-      x.abre.scrollIntoView({ block: 'center' }); await sleep(150);
+      x.abre.scrollIntoView({ block: 'center' }); await sleep(40);
       (itensSalvos()[k] || x).abre.click();
       var f = null;
-      for (var w = 0; w < 40 && !LOTE.parar; w++) { await sleep(300); f = lerFicha(); if (f && mesmoNome(f.nome, x.nome)) break; f = null; }
-      if (f) { await sleep(200); f = lerFicha() || f; f.busca = LOTE.lista ? 'Lista: ' + LOTE.lista : ''; adicionarSilencioso(f); LOTE.achados++; jaTem[x.nome.toUpperCase()] = 1; }
+      // confere a ficha a cada 120 ms e lê assim que o telefone aparece (sem esperas fixas)
+      for (var w = 0; w < 100 && !LOTE.parar; w++) { await sleep(120); f = lerFicha(); if (f && mesmoNome(f.nome, x.nome)) break; f = null; }
+      if (f && !f.tel) for (var w2 = 0; w2 < 5; w2++) { await sleep(120); var f2 = lerFicha(); if (f2 && f2.tel) { f = f2; break; } }
+      if (f) { f.busca = LOTE.lista ? 'Lista: ' + LOTE.lista : ''; adicionarSilencioso(f); LOTE.achados++; jaTem[x.nome.toUpperCase()] = 1; }
       else adicionarSilencioso({ nome: x.nome, tel: '', categoria: x.categoria || '', endereco: '', cidade: '', uf: '', site: '', link: '', busca: LOTE.lista ? 'Lista: ' + LOTE.lista : '' });
       if (LOTE.ultimo) break;
     }
@@ -263,7 +265,7 @@
           '<button id="b1">＋ Capturar esta loja</button>'
         : '<div class="s">Abra uma loja no mapa para capturar, ou faça uma busca (ex.: "drywall Joinville").</div>') +
       (LOTE.rodando
-        ? '<div><b>Capturando a lista…</b><div class="s">' + LOTE.feitos + ' de ' + (LOTE.total || '?') + ' lojas · ' + LOTE.achados + ' com ficha lida</div><div style="height:6px;background:#eee;border-radius:4px;margin-top:6px"><div style="height:6px;border-radius:4px;background:#1F8A5C;width:' + (LOTE.total ? Math.min(100, Math.round(LOTE.feitos / LOTE.total * 100)) : 5) + '%"></div></div><div class="s" style="margin-top:4px">Não mexa nesta aba até terminar.</div></div><button id="b5" style="text-align:center">Parar</button>'
+        ? '<div><b>Capturando a lista…</b><div class="s">' + LOTE.feitos + ' de ' + (LOTE.total || '?') + ' lojas · ' + LOTE.achados + ' com ficha lida</div><div style="height:6px;background:#eee;border-radius:4px;margin-top:6px"><div style="height:6px;border-radius:4px;background:#1F8A5C;width:' + (LOTE.total ? Math.min(100, Math.round(LOTE.feitos / LOTE.total * 100)) : 5) + '%"></div></div><div class="s" style="margin-top:4px">' + (document.hidden ? '<b style="color:#C2413B">Aba em segundo plano: o Chrome deixa mais lento. Volte para esta aba.</b>' : 'Não mexa nesta aba até terminar.') + '</div></div><button id="b5" style="text-align:center">Parar</button>'
         : ((itensSalvos().length && !ficha) || feed ? '<button id="b7" class="pri">📋 Capturar todas as lojas ' + (feed ? 'da busca' : 'da lista' + (nomeLista().total ? ' (' + nomeLista().total + ')' : '')) + '</button><div class="s">' + (feed ? 'Pega a busca inteira com telefone.' : 'Abre loja por loja para pegar o telefone (uns 3 s cada).') + ' No fim abre a conferência no Guia para você marcar quem vai para o discador.</div>' : '')) +
       '<div class="row"><button class="pri" id="b3"' + (cesta.length ? '' : ' disabled') + '>Enviar ' + cesta.length + ' para conferência</button></div>' +
       (cesta.length ? '<button id="b4" class="s" style="text-align:center">Esvaziar cesta</button>' : '')) +
