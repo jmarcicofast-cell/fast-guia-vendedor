@@ -949,6 +949,10 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 #cap-modal .cap-aviso{font-size:12px;color:#B7791F;margin-top:2px}
 #cap-modal .cap-dest{margin-top:12px;display:flex;flex-direction:column;gap:6px}
 #cap-modal .cap-dest label{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.dc-alerta{border:2px solid #C2413B !important;margin-bottom:14px}
+.dc-selo{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:#C2413B;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:0 5px;margin-left:6px}
+#dc-eq-toast{position:fixed;left:50%;transform:translateX(-50%);top:16px;z-index:9998;background:#fff;color:#1f2328;border:2px solid #C2413B;border-radius:12px;padding:10px 14px;box-shadow:0 8px 30px rgba(0,0,0,.25);font-size:14px;max-width:calc(100% - 32px)}
+#dc-eq-toast button{margin-left:8px;border-radius:8px;border:1px solid #d0d7de;background:#f6f8fa;padding:4px 10px;cursor:pointer;font:inherit}
 .dc-link{background:none;border:0;color:var(--dc-ok);cursor:pointer;font-size:12px;text-decoration:underline;padding:0 2px}
 #dc-salvar.sujo{box-shadow:0 0 0 3px rgba(31,138,92,.35)}
 .dc-edit:hover{border-color:var(--muted)}
@@ -26653,6 +26657,70 @@ function dcEqStatus(c) {
   if (c.dono && c.assumidoEm && Date.now() - c.assumidoEm < DC_ASSUMIR_DIAS * 864e5) return c.dono === currentUser ? 'meu' : 'outro';
   return 'livre'; // sem dono ou passou dos 10 dias: volta sozinho para a lista
 }
+/* Regra do funil: cliente assumido precisa de contato a cada DC_RETORNO_DIAS dias enquanto estiver com o vendedor.
+   Conta a partir do último contato registrado (ou de quando assumiu). */
+var DC_RETORNO_DIAS = 2;
+function dcEqUltimo(c) { return Math.max(c.ultimoContato || 0, c.assumidoEm || 0); }
+function dcEqAtrasado(c) { return dcEqStatus(c) === 'meu' && Date.now() - dcEqUltimo(c) >= DC_RETORNO_DIAS * 864e5; }
+function dcEqPendentes() {
+  var l = (DC.todasListas || []).find(function(x) { return x.equipe; }); if (!l) return [];
+  return l.contatos.map(function(c, i) { return { c: c, i: i }; }).filter(function(x) { return dcEqAtrasado(x.c); });
+}
+function dcEqDiasSem(c) { return Math.floor((Date.now() - dcEqUltimo(c)) / 864e5); }
+// registra o contato em qualquer cliente da equipe que esteja comigo e tenha esse telefone
+function dcEqMarcarContato(tel) {
+  var l = (DC.todasListas || []).find(function(x) { return x.equipe; }), k = dcMicroNum(tel); if (!l || !k) return;
+  l.contatos.forEach(function(c, i) {
+    if (dcMicroNum(c.tel) === k && dcEqStatus(c) === 'meu') { c.ultimoContato = Date.now(); dbRef('discador/listas/' + l.id + '/contatos/' + i).update({ ultimoContato: c.ultimoContato }); }
+  });
+}
+function dcEqAvisoHtml() {
+  var p = dcEqPendentes(); if (!p.length) return '';
+  return '<div class="dc-card dc-alerta"><div class="dc-eyebrow" style="color:#C2413B">⏰ Retorno obrigatório · a cada ' + DC_RETORNO_DIAS + ' dias</div>' +
+    '<div class="dc-sub" style="margin-bottom:6px">' + (p.length === 1 ? 'Este cliente que você assumiu está' : 'Estes ' + p.length + ' clientes que você assumiu estão') + ' sem contato há ' + DC_RETORNO_DIAS + ' dias ou mais.</div>' +
+    p.map(function(x) { var c = x.c;
+      return '<div class="dc-it"><div style="min-width:0"><b>' + dcEsc(c.empresa || c.nome || dcTel(c.tel)) + '</b><div class="dc-sub">' + dcEsc(dcTel(c.tel)) + ' · ' + (c.ultimoContato ? 'último contato há ' + dcEqDiasSem(c) + ' dia(s)' : 'assumido há ' + dcEqDiasSem(c) + ' dia(s), sem ligação') + ' · ' + dcEqPrazo(c) + '</div></div>' +
+        '<button class="dc-btn dc-pri dc-mini" onclick="dcEqLigar(' + x.i + ')">Ligar</button></div>'; }).join('') + '</div>';
+}
+function dcEqLigar(i) {
+  var l = (DC.todasListas || []).find(function(x) { return x.equipe; }); if (!l || !l.contatos[i]) return; var c = l.contatos[i];
+  DC.avulso = { tel: dcDig(c.tel), nome: c.nome || '', empresa: c.empresa || '', obs: c.obs || '' }; DC.call = null; DC.aba = 'discar'; dcPararAuto(true); dcRender();
+}
+// selo no menu e lembrete enquanto o guia está aberto, mesmo fora da aba Discador
+function dcEqLembrete() {
+  if (!currentUser || typeof dbRef !== 'function') return;
+  if (!DC.eqOuvindo) {
+    DC.eqOuvindo = true;
+    dbRef('discador/listas').on('value', function(snap) {
+      var v = (snap && snap.val()) || {};
+      if (!DC.ligado) DC.todasListas = Object.keys(v).map(function(k) { var l = v[k] || {}; l.id = k; l.contatos = Array.isArray(l.contatos) ? l.contatos.filter(Boolean) : []; return l; });
+      dcEqSelo();
+    });
+  }
+  dcEqSelo();
+  var n = dcEqPendentes().length, agora = Date.now();
+  if (n && agora - (DC.eqAvisadoEm || 0) > 2 * 3600e3) { // no máximo a cada 2 horas
+    DC.eqAvisadoEm = agora;
+    var tab = document.getElementById('tab-discador');
+    if (!(tab && tab.classList.contains('active'))) dcEqToast(n);
+  }
+}
+function dcEqSelo() {
+  var b = document.getElementById('nav-discador'); if (!b) return;
+  var n = dcEqPendentes().length, s = b.querySelector('.dc-selo');
+  if (!n) { if (s) s.remove(); return; }
+  if (!s) { s = document.createElement('span'); s.className = 'dc-selo'; b.appendChild(s); }
+  s.textContent = n; s.title = n + ' cliente(s) assumido(s) sem contato há ' + DC_RETORNO_DIAS + '+ dias';
+}
+function dcEqToast(n) {
+  var t = document.getElementById('dc-eq-toast'); if (t) t.remove();
+  t = document.createElement('div'); t.id = 'dc-eq-toast';
+  t.innerHTML = '⏰ <b>' + n + ' cliente' + (n > 1 ? 's' : '') + ' da equipe</b> com você ' + (n > 1 ? 'estão' : 'está') + ' sem contato há ' + DC_RETORNO_DIAS + '+ dias. ' +
+    '<button onclick="var b=document.getElementById(\'nav-discador\');if(b)showTab(\'discador\',b);this.parentNode.remove()">Ver agora</button><button onclick="this.parentNode.remove()">Depois</button>';
+  document.body.appendChild(t);
+}
+setInterval(function() { try { dcEqLembrete(); } catch (e) {} }, 60000);
+setTimeout(function() { try { dcEqLembrete(); } catch (e) {} }, 8000);
 function dcEqPrazo(c) { var d = Math.ceil((c.assumidoEm + DC_ASSUMIR_DIAS * 864e5 - Date.now()) / 864e5); return d <= 1 ? 'volta para a equipe amanhã' : 'volta para a equipe em ' + d + ' dias'; }
 function dcPos() {
   var p = ((DC.estado.posicoes || {})[DC.listaId]) || 0, l = dcLista();
@@ -26722,7 +26790,7 @@ function dcVDiscar() {
   var a = dcAlvo(), l = dcLista(), r = dcResumo(DC.itens), p = dcPref(), live = dcNoAr();
   var total = l ? l.contatos.length : 0, pos = dcPos();
   var meta = dcMetaHoje();
-  var h = '<div class="dc-grid"><div class="dc-col">';
+  var h = dcEqAvisoHtml() + '<div class="dc-grid"><div class="dc-col">';
   h += '<div class="dc-card"><div class="dc-row" style="justify-content:space-between;margin-bottom:12px">' +
     '<label class="dc-lab" style="flex:1;min-width:200px">Lista em discagem<select id="dc-sel" onchange="dcEscolherLista(this.value)"><option value="">' + (DC.listas.length ? 'Escolha uma lista' : 'Nenhuma lista cadastrada') + '</option>' +
     DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === DC.listaId ? ' selected' : '') + '>' + (x.para ? '🎯 ' : '') + dcEsc(x.nome) + ' · ' + x.contatos.length + ' contatos' + (x.para ? ' · ' + dcPrazoCurto(x) : '') + '</option>'; }).join('') + '</select></label>' +
@@ -27044,6 +27112,7 @@ function dcRegistrar(res) {
     if (!eraAvulso && listaId) { e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[listaId] = pos + 1; }
     return e;
   });
+  try { dcEqMarcarContato(item.tel); } catch (e) {}
   dcAviso(DC_RESMAP[res].t + ' registrado');
   if (!eraAvulso && dcPref().auto) dcIniciarAuto(); else dcRender();
 }
@@ -27171,7 +27240,7 @@ function dcTabelaContatos(l, leitura) {
       var st = l.equipe ? dcEqStatus(c) : '', nm = function(v) { return dcEsc(typeof rtNome === 'function' ? rtNome(v) : v); };
       var stTxt = !l.equipe ? (l.para ? dcDirStatus(c) : '') : st === 'ganho' ? '<div class="dc-sub">✅ pedido fechado por ' + nm(c.ganhoPor) + '</div>'
         : st === 'outro' ? '<div class="dc-sub">✋ com ' + nm(c.dono) + ' · ' + dcEqPrazo(c) + '</div>'
-        : st === 'meu' ? '<div class="dc-sub">✋ com você · ' + dcEqPrazo(c) + '</div>'
+        : st === 'meu' ? '<div class="dc-sub">✋ com você · ' + dcEqPrazo(c) + '</div>' + (dcEqAtrasado(c) ? '<div class="dc-sub" style="color:#C2413B;font-weight:600">⏰ sem contato há ' + dcEqDiasSem(c) + ' dia(s): ligue hoje</div>' : '<div class="dc-sub">próximo contato até ' + new Date(dcEqUltimo(c) + DC_RETORNO_DIAS * 864e5).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + '</div>')
         : (c.por ? '<div class="dc-sub">livre · indicado por ' + nm(c.por) + '</div>' : '<div class="dc-sub">livre</div>');
       return '<tr' + (l.equipe && /outro|ganho/.test(st) ? ' class="feito"' : (i < feitos ? ' class="feito"' : (i === feitos ? ' class="prox"' : ''))) + '><td>' + (i + 1) + '</td><td>' + ed('nome') + stTxt + '</td><td>' + ed('empresa') + '</td><td class="tel">' + dcEsc(dcTel(c.tel)) + '</td>' +
         (leitura ? '<td></td>' : '<td style="white-space:nowrap"><button class="dc-btn dc-mini" title="Discar a partir deste contato" onclick="dcDiscarDaqui(\'' + lid + '\',' + i + ')">Ligar</button>' +
