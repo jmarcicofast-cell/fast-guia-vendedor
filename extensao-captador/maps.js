@@ -159,9 +159,10 @@
     var tipo = feed ? 'busca' : 'salva';
     SEL = { ativo: true, tipo: tipo, itens: [], filtro: '', carregando: true }; render();
     // rola até o fim para carregar todos
-    var alvo = tipo === 'busca' ? feed : rolador(), parado = 0, n0 = -1;
-    for (var t = 0; t < 80 && parado < 4 && alvo; t++) {
+    var alvo = tipo === 'busca' ? feed : rolador(), parado = 0, n0 = -1, total = tipo === 'salva' ? nomeLista().total : 0;
+    for (var t = 0; t < 120 && parado < 6 && alvo; t++) {
       var n = tipo === 'busca' ? lerLista().length : itensSalvos().length;
+      if (total && n >= total) break;
       parado = n === n0 ? parado + 1 : 0; n0 = n;
       alvo.scrollTop = alvo.scrollHeight; await sleep(700);
       if (tipo === 'busca' && /chegou ao final|end of the list/i.test(feed.innerText)) break;
