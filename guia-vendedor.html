@@ -16966,12 +16966,13 @@ function rtCardLigacoes(c, eu, alvoLig) {
       '</div></label>' +
       '<input id="rt-lig-micro" type="number" inputmode="numeric" min="0" max="9999" step="1" placeholder="0" value="' + rtEsc(mVal) + '"' + (podeM ? '' : ' disabled') +
       ' oninput="rtLigDraft(\'' + c.vn + '\',\'micro|' + mData + '\',this.value)" onfocus="RT.ligFoco=this.id" onblur="RT.ligFoco=null" onkeydown="if(event.key===\'Enter\'){this.blur();rtLigSalvar(\'' + c.vn + '\');}"></div>';
-  // Discador (automático): cada ligação registrada na aba Discador
-  if (dHoje.disc != null && dHoje.disc !== '') soma += ckNum(dHoje.disc);
-  h += '<div class="rt-lig-sec" style="margin-top:12px">☎️ Discador <span class="rt-cinza">· automático</span></div>' +
-    '<div class="rt-lig-lin' + (ckNum(dHoje.disc) > 0 ? ' feito' : '') + '"><span class="rt-check">' + (ckNum(dHoje.disc) > 0 ? '✓' : '') + '</span>' +
-      '<label><span class="rt-forte">☎️ Ligações pelo discador</span><div class="rt-lig-st">' + (ckNum(dHoje.disc) > 0 ? ckNum(dHoje.discAt) + ' atendida' + (ckNum(dHoje.discAt) === 1 ? '' : 's') + ' · última às ' + rtHoraFmt(dHoje.discem) : 'conta sozinho a cada ligação registrada no Discador') + '</div></label>' +
-      '<input type="number" value="' + ckNum(dHoje.disc) + '" disabled></div>';
+  // Discador (automático): para a meta só contam as ATENDIDAS
+  var dAt = dHoje.discAt != null ? ckNum(dHoje.discAt) : ckNum(dHoje.disc), dTot = ckNum(dHoje.disc);
+  soma += dAt;
+  h += '<div class="rt-lig-sec" style="margin-top:12px">☎️ Discador <span class="rt-cinza">· automático, só as atendidas contam</span></div>' +
+    '<div class="rt-lig-lin' + (dAt > 0 ? ' feito' : '') + '"><span class="rt-check">' + (dAt > 0 ? '✓' : '') + '</span>' +
+      '<label><span class="rt-forte">☎️ Atendidas pelo discador</span><div class="rt-lig-st">' + (dTot > 0 ? dAt + ' de ' + dTot + ' ligações atendidas · última às ' + rtHoraFmt(dHoje.discem) : 'conta sozinho a cada ligação atendida no Discador') + '</div></label>' +
+      '<input type="number" value="' + dAt + '" disabled></div>';
   var bate = alvoLig > 0 && soma >= alvoLig;
   h += '<div class="rt-lig-tot"><span>Total do dia: <b>' + soma + '</b>' + (alvoLig > 0 ? ' de ' + alvoLig : '') + '</span>' +
     (alvoLig > 0 ? (bate ? '<span class="rt-ok">meta de hoje ✓</span>' : '<span class="rt-cinza">faltam ' + Math.max(0, alvoLig - soma) + '</span>') : '') + '</div>';
@@ -16989,11 +16990,13 @@ function rtLigGravar(vn, valores, dataOpc) {
     var c12 = valores.c12 != null ? valores.c12 : (rec.c12 != null ? ckNum(rec.c12) : null);
     var c18 = valores.c18 != null ? valores.c18 : (rec.c18 != null ? ckNum(rec.c18) : null);
     var micro = valores.micro != null ? valores.micro : (rec.micro != null ? ckNum(rec.micro) : null);
-    var disc = valores.disc != null ? valores.disc : (rec.disc != null ? ckNum(rec.disc) : null); // discador (automático)
+    // Discador (automático): para a meta só contam as ligações ATENDIDAS (discAt); disc = todas as tentativas, só informativo
+    var discAtRec = rec.discAt != null ? ckNum(rec.discAt) : (rec.disc != null ? ckNum(rec.disc) : null);
+    var discAt = valores.discAt != null ? valores.discAt : discAtRec;
     // dia antigo lançado só como total (sem checks): o que não é MicroSIP nem discador conta como "outros"
-    var outros = temChecks ? ckNum(c12) + ckNum(c18) : Math.max(0, ckNum(rec.qtd) - ckNum(rec.micro) - ckNum(rec.disc));
+    var outros = temChecks ? ckNum(c12) + ckNum(c18) : Math.max(0, ckNum(rec.qtd) - ckNum(rec.micro) - ckNum(discAtRec));
     Object.keys(valores).forEach(function(k) { upd[k] = valores[k]; upd[k + 'em'] = agora; upd[k + 'por'] = currentUser; });
-    upd.qtd = outros + ckNum(micro) + ckNum(disc);
+    upd.qtd = outros + ckNum(micro) + ckNum(discAt);
     if (typeof ref.update === 'function') return ref.update(upd);
     return ref.set(Object.assign({}, rec, upd)); // modo offline
   });
@@ -26675,7 +26678,7 @@ function dcVDiscar() {
   h += '<div class="dc-card"><div class="dc-eyebrow">Meu dia no discador</div><div class="dc-stats">' +
     '<div><b>' + r.total + '</b><span>ligações</span></div><div><b>' + r.atendidas + '</b><span>atendidas · ' + (r.total ? Math.round(r.atendidas / r.total * 100) : 0) + '%</span></div>' +
     '<div><b>' + dcDur(r.seg) + '</b><span>tempo falando</span></div><div><b>' + r.pedidos + '</b><span>pedidos fechados</span></div></div>' +
-    (meta && meta.alvo > 0 ? '<div class="dc-meta"><div class="dc-sub">Meta de ligações hoje (Rota da Meta): <b>' + meta.feitas + '</b> de ' + meta.alvo + '</div><div class="dc-bar"><i style="width:' + Math.min(100, Math.round(meta.feitas / meta.alvo * 100)) + '%"></i></div></div>' : '') +
+    (meta && meta.alvo > 0 ? '<div class="dc-meta"><div class="dc-sub">Meta de ligações hoje (Rota da Meta, conta as atendidas do discador): <b>' + meta.feitas + '</b> de ' + meta.alvo + '</div><div class="dc-bar"><i style="width:' + Math.min(100, Math.round(meta.feitas / meta.alvo * 100)) + '%"></i></div></div>' : '') +
     '</div>';
   h += '<div class="dc-card"><div class="dc-eyebrow">Retornos agendados</div>' + dcRetornosHtml() + '</div>';
   h += '<div class="dc-card"><div class="dc-eyebrow">Ligar para um número</div><div class="dc-row"><input id="dc-pad" inputmode="tel" placeholder="(21) 99999-9999" value="' + dcEsc(DC.pad) + '" oninput="DC.pad=this.value" style="flex:1;min-width:0"><button class="dc-btn dc-pri" onclick="dcUsarPad()">Usar</button></div>' +
@@ -26781,7 +26784,7 @@ function dcVEquipe() {
     rows.map(function(r) {
       var its = DC.equipe[r.vn] || [], ult = its.length ? new Date(its[its.length - 1].hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
       return '<tr><td><b>' + dcEsc(rtNome ? rtNome(r.vn) : r.vn) + '</b></td><td>' + r.total + '</td><td>' + r.atendidas + '</td><td>' + (r.total ? Math.round(r.atendidas / r.total * 100) + '%' : '—') + '</td><td>' + dcDur(r.seg) + '</td><td>' + r.pedidos + '</td><td>' + its.filter(function(x) { return x.canal === 'wa'; }).length + '</td><td>' + ult + '</td></tr>';
-    }).join('') + '</tbody></table></div><div class="dc-sub" style="margin-top:8px">Só conta o que foi discado por aqui. As ligações do discador já entram sozinhas no total do dia da Rota da Meta.</div></div>';
+    }).join('') + '</tbody></table></div><div class="dc-sub" style="margin-top:8px">Só conta o que foi discado por aqui. As atendidas pelo discador entram sozinhas na meta de ligações da Rota da Meta; as não atendidas ficam só aqui.</div></div>';
 }
 
 function dcVHist() {
