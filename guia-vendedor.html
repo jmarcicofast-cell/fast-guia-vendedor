@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Guia do Vendedor — Fast Sistemas Construtivos</title>
+<title>Guia do Vendedor</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#E63946">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -343,7 +343,7 @@
     display: flex; flex-direction: column; align-items: center; gap: 0;
   }
   .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-  .login-logo-text { font-size: 26px; font-weight: 700; color: var(--txt); letter-spacing: .05em; }
+  .login-logo-text { font-size: 20px; font-weight: 700; color: var(--txt); letter-spacing: .05em; }
   .login-sub { font-size: 12px; color: var(--faint); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 1.75rem; }
   .login-field { width: 100%; margin-bottom: 12px; }
   .login-field label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); display: block; margin-bottom: 5px; font-weight: 600; }
@@ -806,10 +806,10 @@ body.sb-on #main-nav .nav-btn:hover { color: var(--sb-act-txt) !important; backg
 body.sb-on #main-nav .nav-btn.active { color: var(--sb-act-txt) !important; background: var(--sb-act-bg) !important; font-weight: 700; opacity: 1; }
 body.sb-on #main-nav .nav-btn.active::before { content: ""; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--sb-bar); }
 .sb-brand { display: flex; align-items: center; gap: 10px; padding: 18px 8px 16px; margin: 0 -12px 8px; padding-left: 20px; position: sticky; top: 0; background: var(--sb-bg); z-index: 2; border-bottom: 1px solid var(--sb-line); }
-.sb-brand b { width: 34px; height: 34px; border-radius: 10px; background: var(--acc); color: #fff; display: grid; place-items: center; font-size: 15px; font-weight: 800; flex-shrink: 0; }
+.sb-brand b { width: 34px; height: 34px; border-radius: 10px; background: var(--acc); color: #fff; display: grid; place-items: center; font-size: 13px; font-weight: 800; letter-spacing: -.02em; flex-shrink: 0; }
 :root[data-tema="vermelho"] .sb-brand b { background: #111; border-radius: 4px; }
 :root[data-tema="claro"] .sb-brand b { background: #111827; }
-.sb-brand .t1 { font-weight: 800; letter-spacing: .05em; font-size: 15px; color: var(--sb-act-txt); line-height: 1.1; }
+.sb-brand .t1 { font-weight: 800; letter-spacing: .05em; font-size: 13px; color: var(--sb-act-txt); line-height: 1.1; }
 :root[data-tema="vermelho"] .sb-brand .t1, :root[data-tema="vermelho"] .sb-user .nm { color: #fff; }
 .sb-brand .t2 { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--sb-txt); }
 .sb-sec { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--sb-txt); opacity: .7; padding: 10px 12px 4px; }
@@ -1034,9 +1034,9 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
         <path d="M22 30 L28 22 L34 30 L28 38 Z" fill="#fff" opacity="0.9"/>
         <path d="M28 22 L38 22 L34 30 Z" fill="#7A0000" opacity="0.5"/>
       </svg>
-      <div class="login-logo-text">FAST</div>
+      <div class="login-logo-text">GUIA DO VENDEDOR</div>
     </div>
-    <div class="login-sub">Portal do Vendedor</div>
+    <div class="login-sub">Televendas</div>
     <div class="login-field">
       <label>Usuário</label>
       <input type="text" id="login-user" placeholder="Seu nome" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
@@ -1072,8 +1072,8 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
       <path d="M28 22 L38 22 L34 30 Z" fill="#7A0000" opacity="0.5"/>
     </svg>
     <div>
-      <div>FAST</div>
-      <div class="logo-sub">Sistemas Construtivos</div>
+      <div>GUIA</div>
+      <div class="logo-sub">do Vendedor</div>
     </div>
   </div>
   <div class="hdiv"></div>
@@ -7668,7 +7668,7 @@ function prInit(){
 </script>
 
 
-<footer><span>FAST</span> Sistemas Construtivos &nbsp;·&nbsp; Portal do Vendedor</footer>
+<footer><span>Guia do Vendedor</span> &nbsp;·&nbsp; Televendas</footer>
 
 
 
@@ -24981,7 +24981,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   };
 
   /* ── menu lateral ── */
-  var LOGO = '<b>F</b><div><div class="t1">FAST</div><div class="t2">Guia do Vendedor</div></div>';
+  var LOGO = '<b>GV</b><div><div class="t1">GUIA DO VENDEDOR</div><div class="t2">Televendas</div></div>';
   function sbMontar(){
     var nav = document.getElementById('main-nav'); if (!nav) return;
     document.body.classList.add('sb-on');

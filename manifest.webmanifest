@@ -1,7 +1,7 @@
 {
-  "name": "Guia do Vendedor FAST",
-  "short_name": "Guia FAST",
-  "description": "Pedidos, metas, Rota da Meta e discador da equipe de televendas FAST.",
+  "name": "Guia do Vendedor",
+  "short_name": "Guia",
+  "description": "Pedidos, metas, Rota da Meta e discador da equipe de televendas.",
   "lang": "pt-BR",
   "start_url": "./guia-vendedor.html",
   "scope": "./",
