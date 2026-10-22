@@ -19659,10 +19659,14 @@ document.getElementById('ck-rank-ate').addEventListener('change', function(){ ck
 var mmPedidosEquipe = {};
 var mmLigacoesEquipe = {}; // { VENDEDOR: { 'AAAA-MM-DD': qtd } }
 var mmListenersAttached = false;
-var mmSelectedUser = null;
-
+var mmSelectedUser = null, mmDonoSel = null;
+/* 22/10/2026: Minhas Metas é individual. Cada vendedor (inclusive líder) vê só o próprio painel;
+   a visão da equipe e o seletor ficam só para a gestão (Juliana / gestora). */
+function mmPodeVerEquipe(){ return currentUser === 'JULIANA' || !!(vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora'); }
 function mmInit(){
-  if (!mmSelectedUser) mmSelectedUser = ckIsAdmin() ? 'EQUIPE' : ((CK_EQUIPE.indexOf(currentUser) >= 0) ? currentUser : CK_EQUIPE[0]);
+  if (mmDonoSel !== currentUser) { mmSelectedUser = null; mmDonoSel = currentUser; } // trocou o login sem recarregar
+  if (!mmPodeVerEquipe()) mmSelectedUser = currentUser;
+  else if (!mmSelectedUser) mmSelectedUser = 'EQUIPE';
   mmRenderSeletor();
   mmAtualizarTitulo();
   mmAplicarOrdemSalva();
@@ -19710,7 +19714,7 @@ function mmAtualizarTitulo(){
 function mmRenderSeletor(){
   var box = document.getElementById('mm-seletor');
   if (!box) return;
-  if (!ckIsAdmin()){ box.style.display = 'none'; return; }
+  if (!mmPodeVerEquipe()){ box.style.display = 'none'; return; }
   box.style.display = 'flex';
   box.innerHTML = '';
   var opcoes = ['EQUIPE'].concat(CK_EQUIPE);
