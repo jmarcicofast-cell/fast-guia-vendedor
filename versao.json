@@ -1,1 +1,1 @@
-{"versao": "2026-10-22.17", "nota": "Inativos: quem é desmarcado da roda passa na hora os clientes em andamento para o próximo vendedor."}
+{ "versao": "2026-10-22.18", "nota": "Concorrentes: o nome cadastrado também barra a ligação (pula na fila e não deixa ligar)." }
