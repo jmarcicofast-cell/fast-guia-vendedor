@@ -26812,9 +26812,10 @@ function dcInit() {
       DC.todasListas = Object.keys(v).map(function(k) { var l = v[k] || {}; l.id = k; l.contatos = Array.isArray(l.contatos) ? l.contatos.filter(Boolean) : []; return l; })
         .sort(function(a, b) { return (b.equipe ? 1 : 0) - (a.equipe ? 1 : 0) || String(b.criado || '').localeCompare(String(a.criado || '')); });
       // não mistura: cada um disca só as listas que anexou + a lista da equipe
-      DC.listas = DC.todasListas.filter(function(l) { return l.equipe || l.criadoPor === currentUser || l.para === currentUser; });
-      DC.outrasListas = DC.todasListas.filter(function(l) { return !l.equipe && l.criadoPor !== currentUser && l.para !== currentUser; });
+      DC.listas = DC.todasListas.filter(function(l) { return l.inatPara ? l.inatPara === currentUser : (l.equipe || l.criadoPor === currentUser || l.para === currentUser); });
+      DC.outrasListas = DC.todasListas.filter(function(l) { return l.inatPara ? l.inatPara !== currentUser : (!l.equipe && l.criadoPor !== currentUser && l.para !== currentUser); });
       dcVerificarPrazos();
+      try { dcInatVerificar(); } catch (e) {}
       dcRender();
     });
     dbRef('discador/dias/' + currentUser + '/' + dia).on('value', function(snap) {
@@ -26826,6 +26827,7 @@ function dcInit() {
       if (!DC.call && !DC.auto) dcRender();
     });
     dcAgInit();
+    dcInatIni();
     if (dcGestao()) CK_EQUIPE.forEach(function(vn) {
       dbRef('discador/dias/' + vn + '/' + dia).on('value', function(snap) {
         var v = (snap && snap.val()) || {}; DC.equipe[vn] = Array.isArray(v.itens) ? v.itens.filter(Boolean) : [];
@@ -26913,7 +26915,7 @@ function dcEqPrazo(c) { var d = Math.ceil((c.assumidoEm + DC_ASSUMIR_DIAS * 864e
 function dcPos() {
   var p = ((DC.estado.posicoes || {})[DC.listaId]) || 0, l = dcLista();
   if (l && l.equipe) while (p < l.contatos.length && /outro|ganho/.test(dcEqStatus(l.contatos[p]))) p++;
-  if (l && l.para) while (p < l.contatos.length && l.contatos[p].repassado) p++;
+  if (l && (l.para || l.inatPara)) while (p < l.contatos.length && l.contatos[p].repassado) p++;
   // 22/10/2026: quem já atendeu (ou número errado / retorno agendado) não volta para a fila; Não atendeu e Caixa postal voltam, com o histórico
   if (l && !l.equipe) while (p < l.contatos.length && dcResolvido(l.contatos[p]) && !(DC.manual && DC.manual.lista === l.id && DC.manual.p === p)) p++;
   return p;
@@ -27002,11 +27004,11 @@ function dcMetaHoje() {
 function dcRender() {
   var root = document.getElementById('dc-root'); if (!root) return;
   var abas = [['discar', 'Discar'], ['hist', 'Minhas ligações'], ['listas', 'Listas de clientes']];
-  if (dcGestao()) abas.splice(1, 0, ['equipe', 'Equipe hoje']);
+  if (dcGestao()) abas.splice(1, 0, ['equipe', 'Equipe hoje'], ['inativos', 'Inativos']);
   abas.push(['config', 'Configurar']);
   var h = '<div class="dc-head"><h2 class="dc-tit">☎️ Discador</h2><div class="dc-abas">' +
     abas.map(function(a) { return '<button class="dc-aba' + (DC.aba === a[0] ? ' on' : '') + '" onclick="dcSetAba(\'' + a[0] + '\')">' + a[1] + '</button>'; }).join('') + '</div></div>';
-  h += ({ discar: dcVDiscar, equipe: dcVEquipe, hist: dcVHist, listas: dcVListas, config: dcVConfig })[DC.aba]();
+  h += ({ discar: dcVDiscar, equipe: dcVEquipe, inativos: dcVInativos, hist: dcVHist, listas: dcVListas, config: dcVConfig })[DC.aba]();
   h += '<div class="dc-toast" id="dc-toast"></div>';
   var foco = document.activeElement && document.activeElement.id;
   var obs = document.getElementById('dc-obs'), quando = document.getElementById('dc-quando');
@@ -27021,7 +27023,7 @@ function dcRender() {
   if (mesmo && obsV) obsN.value = obsV;
   if (mesmo && quandoV && document.getElementById('dc-quando')) document.getElementById('dc-quando').value = quandoV;
   if (!mesmo && (foco === 'dc-obs' || foco === 'dc-quando')) foco = null;
-  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
+  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed|dci-busca)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
 }
 function dcSetAba(a) { DC.aba = a; dcPararAuto(true); dcRender(); }
 
@@ -27032,9 +27034,10 @@ function dcVDiscar() {
   var h = dcEqAvisoHtml() + '<div class="dc-grid"><div class="dc-col">';
   h += '<div class="dc-card"><div class="dc-row" style="justify-content:space-between;margin-bottom:12px">' +
     '<label class="dc-lab" style="flex:1;min-width:200px">Lista em discagem<select id="dc-sel" onchange="dcEscolherLista(this.value)"><option value="">' + (DC.listas.length ? 'Escolha uma lista' : 'Nenhuma lista cadastrada') + '</option>' +
-    DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === DC.listaId ? ' selected' : '') + '>' + (x.para ? '🎯 ' : '') + dcEsc(x.nome) + ' · ' + x.contatos.length + ' contatos' + (x.para ? ' · ' + dcPrazoCurto(x) : '') + '</option>'; }).join('') + '</select></label>' +
+    DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === DC.listaId ? ' selected' : '') + '>' + (x.para ? '🎯 ' : x.inatPara ? '💤 ' : '') + dcEsc(x.nome) + ' · ' + x.contatos.length + ' contatos' + (x.para ? ' · ' + dcPrazoCurto(x) : '') + '</option>'; }).join('') + '</select></label>' +
     (l ? '<div class="dc-row"><button class="dc-btn" onclick="dcMover(-1)">Voltar um</button><button class="dc-btn" onclick="dcMover(1)">Pular</button></div>' : '') + '</div>';
   if (l && l.para) h += dcPrazoBanner(l);
+  if (l && l.inatPara) h += dcInatBanner(l);
   if (a) {
     h += '<div class="dc-eyebrow">' + (DC.avulso ? (DC.avulso.retIdx != null ? 'Retorno agendado' : 'Ligação avulsa') : 'Contato ' + (pos + 1) + ' de ' + total) + '</div>' +
       '<input class="dc-nome dc-edit" value="' + dcEsc(a.nome || '') + '" id="dc-enome" placeholder="Nome do contato ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
@@ -27407,6 +27410,11 @@ function dcRegistrar(res) {
     lAt.contatos[pos].funil = { tipo: res === 'pedido' ? 'pedido' : 'negociacao', por: currentUser, em: Date.now() };
     dbRef('discador/listas/' + lAt.id + '/contatos/' + pos + '/funil').set(lAt.contatos[pos].funil);
   }
+  if (!eraAvulso && lAt && lAt.inatPara && (res === 'pedido' || res === 'funil') && lAt.contatos[pos] && lAt.contatos[pos].ik) { // inativo levado ao funil: fica com o vendedor
+    var ci = lAt.contatos[pos], fu = { tipo: res === 'pedido' ? 'pedido' : 'negociacao', por: currentUser, em: Date.now() }; ci.funil = fu;
+    dbRef('discador/listas/' + lAt.id + '/contatos/' + pos + '/funil').set(fu);
+    var ri = DCI.recs[ci.ik]; if (ri && ri.status === 'andamento' && ri.vn === currentUser) { ri.k = ri.k || ci.ik; dcInatMarcarCaptado(ri, fu); }
+  }
   if (res === 'funil') dcAbrirNegociacao(a, obs, quando, lAt && !eraAvulso ? lAt.nome : '');
   try { dcMarcarNaLista(lAt, eraAvulso ? -1 : pos, item); } catch (e) { console.warn('discador: marcar contato', e); }
   DC.manual = null;
@@ -27632,7 +27640,7 @@ function dcTabelaContatos(l, leitura) {
     l.contatos.map(function(c, i) {
       var ed = function(campo) { if (leitura) return dcEsc(c[campo] || '—'); return '<input class="dc-edit" value="' + dcEsc(c[campo] || '') + '" placeholder="✎" onchange="dcEditarContato(\'' + lid + '\',' + i + ',\'' + campo + '\',this.value)" onkeydown="if(event.key===\'Enter\')this.blur()">'; };
       var st = l.equipe ? dcEqStatus(c) : '', nm = function(v) { return dcEsc(typeof rtNome === 'function' ? rtNome(v) : v); };
-      var stTxt = !l.equipe ? (l.para ? dcDirStatus(c) : '') : st === 'ganho' ? '<div class="dc-sub">✅ pedido fechado por ' + nm(c.ganhoPor) + '</div>'
+      var stTxt = !l.equipe ? (l.para ? dcDirStatus(c) : l.inatPara ? dcInatStatus(c) : '') : st === 'ganho' ? '<div class="dc-sub">✅ pedido fechado por ' + nm(c.ganhoPor) + '</div>'
         : st === 'outro' ? '<div class="dc-sub">✋ com ' + nm(c.dono) + ' · ' + dcEqPrazo(c) + '</div>'
         : st === 'meu' ? '<div class="dc-sub">✋ com você · ' + dcEqPrazo(c) + '</div>' + (dcEqAtrasado(c) ? '<div class="dc-sub" style="color:#C2413B;font-weight:600">⏰ sem contato há ' + dcEqDiasSem(c) + ' dia(s): ligue hoje</div>' : '<div class="dc-sub">próximo contato até ' + new Date(dcEqUltimo(c) + DC_RETORNO_DIAS * 864e5).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + '</div>')
         : (c.por ? '<div class="dc-sub">livre · indicado por ' + nm(c.por) + '</div>' : '<div class="dc-sub">livre</div>');
@@ -27761,6 +27769,237 @@ function dcVerificarPrazos() {
   });
 }
 setInterval(function() { try { if (DC.ligado) dcVerificarPrazos(); } catch (e) {} }, 5 * 60 * 1000);
+// ══ CLIENTES INATIVOS — a gestão distribui os inativos (sem compra há CLI_META_INATIVO_DIAS dias) ══
+// 1º fica com o vendedor que cadastrou o último pedido do cliente; se em N dias (padrão 4) ele não levar o cliente
+// ao funil (negociação aberta, pedido cadastrado ou resultado "Levou para o funil"/"Pedido fechado" no discador),
+// o cliente passa para o próximo vendedor da roda. Firebase: discador/inativos/{chave} · discador/inatConfig
+// Cada vendedor disca os dele na lista discador/listas/inat_{VN} ("Clientes inativos").
+var DCI = { recs: {}, cfg: {}, ver: 'andamento', busca: '', passando: {} };
+function dcInatCfg() {
+  var c = DCI.cfg || {};
+  return { dias: c.dias >= 1 ? c.dias : 4, lim: c.lim >= 0 ? c.lim : 20, vends: Array.isArray(c.vends) && c.vends.length ? c.vends.filter(function(v) { return CK_EQUIPE.indexOf(v) >= 0; }) : CK_EQUIPE.slice() };
+}
+function dcInatNome(v) { return dcEsc(typeof rtNome === 'function' ? rtNome(v) : v); }
+function dcInatData(ms) { return ms ? new Date(ms).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—'; }
+function dcInatDataStr(s) { if (!s) return '—'; var d = String(s).slice(0, 10).split('-'); return d.length === 3 ? d[2] + '/' + d[1] + '/' + d[0].slice(2) : s; }
+function dcInatFim(r) { return (r.desde || 0) + (r.dias || dcInatCfg().dias) * 864e5; }
+function dcInatFalta(r) {
+  var ms = dcInatFim(r) - Date.now(); if (ms <= 0) return 'prazo vencido';
+  var th = Math.ceil(ms / 36e5), d = Math.floor(th / 24), h = th % 24;
+  return d >= 1 ? 'faltam ' + d + 'd' + (h ? ' ' + h + 'h' : '') : 'faltam ' + Math.max(1, th) + 'h';
+}
+function dcInatIni() {
+  if (DCI.ligado === currentUser) return; DCI.ligado = currentUser;
+  dbRef('discador/inativos').on('value', function(snap) { DCI.recs = (snap && snap.val()) || {}; dcInatVerificar(); if (DC.aba === 'inativos' || DC.aba === 'listas' || DC.aba === 'discar') { if (!DC.call && !DC.auto) dcRender(); } });
+  dbRef('discador/inatConfig').on('value', function(snap) { DCI.cfg = (snap && snap.val()) || {}; if (DC.aba === 'inativos') dcRender(); });
+}
+// clientes da casa juntos por loja (somando todos os vendedores): último pedido, quem cadastrou, telefone
+function dcInatBase() {
+  var lim = typeof CLI_META_INATIVO_DIAS === 'number' ? CLI_META_INATIVO_DIAS : 60, por = {};
+  dcAgClientes().forEach(function(c) {
+    var r = por[c.k];
+    if (!r) r = por[c.k] = { k: c.k, empresa: c.empresa, contato: c.contato || '', tel: c.tel || '', uf: c.uf || '', ultima: '', vn: '', n: 0 };
+    r.n += c.n || 0;
+    if (!r.tel && c.tel) r.tel = c.tel;
+    if (!r.contato && c.contato) r.contato = c.contato;
+    if (!r.uf && c.uf) r.uf = c.uf;
+    if (c.ultima && c.ultima > r.ultima) { r.ultima = c.ultima; r.vn = c.vn; r.empresa = c.empresa; if (c.contato) r.contato = c.contato; }
+  });
+  var hoje = new Date(dcHoje() + 'T00:00:00');
+  return Object.keys(por).map(function(k) { var r = por[k]; r.dias = r.ultima ? Math.round((hoje - new Date(r.ultima + 'T00:00:00')) / 864e5) : null; return r; })
+    .filter(function(r) { return r.ultima && r.dias > lim; })
+    .sort(function(a, b) { return String(b.ultima).localeCompare(String(a.ultima)); });
+}
+function dcInatPendentes() { return dcInatBase().filter(function(r) { return !DCI.recs[r.k]; }); }
+// roda: começa no vendedor dos pedidos e segue a ordem da equipe
+function dcInatFila(primeiro, vends) {
+  var ordem = CK_EQUIPE.filter(function(v) { return vends.indexOf(v) >= 0; });
+  var i = ordem.indexOf(primeiro); if (i < 0) return ordem;
+  return ordem.slice(i).concat(ordem.slice(0, i));
+}
+function dcInatCarga() { var m = {}; Object.keys(DCI.recs).forEach(function(k) { var r = DCI.recs[k]; if (r && r.status === 'andamento' && r.vn) m[r.vn] = (m[r.vn] || 0) + 1; }); return m; }
+
+// ── listas dos vendedores ──
+function dcInatListaAdd(vn, recs) {
+  if (!vn || !recs.length) return Promise.resolve();
+  var id = 'inat_' + vn, l = (DC.todasListas || []).find(function(x) { return x.id === id; });
+  var novos = recs.map(function(r) { return { nome: r.contato || '', empresa: r.empresa || '', tel: dcDig(r.tel), ik: r.k, desde: r.desde, ultima: r.ultima || '' }; });
+  if (!l) return Promise.resolve(dbRef('discador/listas/' + id).set({ nome: 'Clientes inativos', inatPara: vn, criadoPor: currentUser, criado: Date.now(), contatos: novos }));
+  var out = l.contatos.slice(), ja = {};
+  out.forEach(function(c) { if (c.ik && !c.repassado) ja[c.ik] = 1; });
+  novos.forEach(function(n) { if (!ja[n.ik]) out.push(n); });
+  l.contatos = out;
+  return Promise.resolve(dbRef('discador/listas/' + id + '/contatos').set(out));
+}
+function dcInatListaTirar(vn, k, motivo) {
+  var id = 'inat_' + vn, l = (DC.todasListas || []).find(function(x) { return x.id === id; }); if (!l) return Promise.resolve();
+  var ps = [];
+  l.contatos.forEach(function(c, i) { if (c && c.ik === k && !c.repassado) { c.repassado = true; c.repassadoEm = Date.now(); c.motivo = motivo || ''; ps.push(dbRef('discador/listas/' + id + '/contatos/' + i).update({ repassado: true, repassadoEm: Date.now(), motivo: motivo || '' })); } });
+  return Promise.all(ps);
+}
+
+// ── distribuir ──
+function dcInatDistribuir() {
+  var cfg = dcInatCfg(), pend = dcInatPendentes().filter(function(r) { return r.tel; });
+  if (!cfg.vends.length) { dcAviso('Escolha ao menos um vendedor na roda'); return; }
+  if (!pend.length) { dcAviso('Nenhum cliente inativo com telefone para distribuir'); return; }
+  var carga = dcInatCarga(), agora = Date.now(), upd = {}, porVn = {}, n = 0;
+  pend.forEach(function(c) {
+    var dono = cfg.vends.indexOf(c.vn) >= 0 ? c.vn : cfg.vends.slice().sort(function(a, b) { return (carga[a] || 0) - (carga[b] || 0); })[0];
+    if (cfg.lim && (carga[dono] || 0) >= cfg.lim) return; // fica para a próxima distribuição
+    var rec = { k: c.k, empresa: c.empresa, contato: c.contato || '', tel: dcDig(c.tel), uf: c.uf || '', ultima: c.ultima, vnPedidos: c.vn || '',
+      fila: dcInatFila(dono, cfg.vends), pos: 0, vn: dono, desde: agora, dias: cfg.dias, status: 'andamento', passagens: [], criadoPor: currentUser, criadoEm: agora };
+    upd[c.k] = rec; (porVn[dono] = porVn[dono] || []).push(rec); carga[dono] = (carga[dono] || 0) + 1; n++;
+  });
+  if (!n) { dcAviso('Todos os vendedores já estão no limite de ' + cfg.lim + ' clientes em andamento'); return; }
+  Promise.resolve(dbRef('discador/inativos').update(upd)).then(function() {
+    return Promise.all(Object.keys(porVn).map(function(vn) { return dcInatListaAdd(vn, porVn[vn]); }));
+  }).then(function() { dcAviso(n + ' cliente' + (n > 1 ? 's' : '') + ' distribuído' + (n > 1 ? 's' : '') + ' para ' + Object.keys(porVn).length + ' vendedor(es)'); })
+    .catch(function(e) { dcAviso('Não distribuiu: ' + (e && e.message)); });
+}
+
+// ── entrada no funil ──
+function dcInatCaptado(r) {
+  var vn = r.vn, desde = r.desde || 0, dia = dcPerDataStr(new Date(desde));
+  var l = (DC.todasListas || []).find(function(x) { return x.id === 'inat_' + vn; });
+  var c = l && l.contatos.find(function(x) { return x && x.ik === r.k && x.funil && (x.funil.em || 0) >= desde - 6e4; });
+  if (c) return { tipo: c.funil.tipo || 'negociacao', em: c.funil.em };
+  if (DCAG.ped[vn]) { var p = DCAG.ped[vn].find(function(p) { var nm = p.empresa || p.cliente; return nm && dcAgChave(nm) === r.k && p.data && p.data >= dia; }); if (p) return { tipo: 'pedido', em: Date.now() }; }
+  if (dcGestao()) { var outro = null; CK_EQUIPE.some(function(v) { var q = (DCAG.ped[v] || []).find(function(p) { var nm = p.empresa || p.cliente; return nm && dcAgChave(nm) === r.k && p.data && p.data >= dia; }); if (q) outro = v; return !!q; }); if (outro) return { tipo: 'pedido', em: Date.now(), vn: outro }; }
+  if (DCAG.neg[vn]) { var n = DCAG.neg[vn].find(function(n) { return n.empresa && dcAgChave(n.empresa) === r.k && Date.parse(n.dataCriacao || 0) >= desde - 6e4; }); if (n) return { tipo: 'negociacao', em: Date.parse(n.dataCriacao) || Date.now() }; }
+  return null;
+}
+function dcInatPodeAvaliar(r) { return DCAG.ped[r.vn] !== undefined && DCAG.neg[r.vn] !== undefined; }
+function dcInatMarcarCaptado(r, cap) {
+  return Promise.resolve(dbRef('discador/inativos/' + r.k).update({ status: 'captado', captado: { vn: cap.vn || r.vn, tipo: cap.tipo, em: cap.em || Date.now() } }));
+}
+// passa para o próximo da roda (transação: só um navegador faz o repasse)
+function dcInatPassar(r, motivo) {
+  if (DCI.passando[r.k]) return Promise.resolve(); DCI.passando[r.k] = true;
+  var ref = dbRef('discador/inativos/' + r.k), agora = Date.now(), velho = r.vn, novo = null;
+  var mudar = function(cur) {
+    if (!cur || cur.status !== 'andamento' || cur.vn !== r.vn || cur.desde !== r.desde) return;
+    var fila = cur.fila || [], prox = (cur.pos || 0) + 1;
+    cur.passagens = (cur.passagens || []).concat([{ vn: cur.vn, de: cur.desde, ate: agora, motivo: motivo || '' }]).slice(-30);
+    if (prox >= fila.length) { cur.status = 'sem_retorno'; cur.vn = ''; cur.fimEm = agora; novo = null; }
+    else { cur.pos = prox; cur.vn = fila[prox]; cur.desde = agora; novo = cur.vn; }
+    return cur;
+  };
+  var p = typeof ref.transaction === 'function'
+    ? Promise.resolve(ref.transaction(mudar)).then(function(res) { return res && res.committed !== false ? (res.snapshot && res.snapshot.val ? res.snapshot.val() : null) : null; })
+    : Promise.resolve().then(function() { var c = mudar(JSON.parse(JSON.stringify(r))); if (!c) return null; return Promise.resolve(ref.set(c)).then(function() { return c; }); });
+  return p.then(function(c) {
+    if (!c) return;
+    return dcInatListaTirar(velho, r.k, motivo).then(function() { if (c.status === 'andamento' && c.vn) return dcInatListaAdd(c.vn, [c]); });
+  }).catch(function(e) { console.warn('inativos: repasse', e); }).then(function() { DCI.passando[r.k] = false; });
+}
+function dcInatVerificar() {
+  if (!currentUser) return;
+  Object.keys(DCI.recs).forEach(function(k) {
+    var r = DCI.recs[k]; if (!r || r.status !== 'andamento' || !r.vn) return;
+    if (!dcGestao() && r.vn !== currentUser) return;
+    if (!dcInatPodeAvaliar(r)) return;
+    r.k = r.k || k;
+    var cap = dcInatCaptado(r);
+    if (cap) { dcInatMarcarCaptado(r, cap); return; }
+    if (Date.now() > dcInatFim(r)) dcInatPassar(r, 'sem entrada no funil em ' + (r.dias || dcInatCfg().dias) + ' dias');
+  });
+}
+setInterval(function() { try { if (DC.ligado) dcInatVerificar(); } catch (e) {} }, 5 * 60 * 1000);
+
+// ── ações da gestão ──
+function dcInatAcao(acao, k) {
+  var r = DCI.recs[k]; if (!r) return; r.k = r.k || k;
+  if (acao === 'passar') { dcInatPassar(r, 'passado pela gestão').then(function() { dcAviso('Passou para o próximo vendedor'); }); return; }
+  if (acao === 'tirar') {
+    if (DCI.confirma !== 't' + k) { DCI.confirma = 't' + k; dcRender(); return; } DCI.confirma = null;
+    var vn = r.vn;
+    Promise.resolve(dbRef('discador/inativos/' + k).update({ status: 'removido', vn: '', fimEm: Date.now() })).then(function() { return vn ? dcInatListaTirar(vn, k, 'tirado da roda') : null; }).then(function() { dcAviso('Cliente tirado da roda'); });
+    return;
+  }
+  if (acao === 'recomecar') {
+    var cfg = dcInatCfg(), fila = dcInatFila(cfg.vends.indexOf(r.vnPedidos) >= 0 ? r.vnPedidos : cfg.vends[0], cfg.vends), agora = Date.now();
+    var novo = { fila: fila, pos: 0, vn: fila[0], desde: agora, dias: cfg.dias, status: 'andamento', captado: null, fimEm: null };
+    Promise.resolve(dbRef('discador/inativos/' + k).update(novo)).then(function() { return dcInatListaAdd(fila[0], [Object.assign({}, r, novo)]); }).then(function() { dcAviso('Roda recomeçada com ' + rtNome(fila[0])); });
+  }
+}
+function dcInatSalvarCfg() {
+  var g = function(id) { return document.getElementById(id); };
+  var dias = parseInt(g('dci-dias').value, 10), lim = parseInt(g('dci-lim').value, 10);
+  if (!(dias >= 1 && dias <= 30)) { dcAviso('Prazo de retorno: de 1 a 30 dias'); return; }
+  if (!(lim >= 0 && lim <= 500)) { dcAviso('Limite por vendedor: de 0 a 500 (0 = sem limite)'); return; }
+  var vends = CK_EQUIPE.filter(function(v) { var e = g('dci-v-' + v); return e && e.checked; });
+  if (!vends.length) { dcAviso('Marque ao menos um vendedor'); return; }
+  Promise.resolve(dbRef('discador/inatConfig').set({ dias: dias, lim: lim, vends: vends, por: currentUser, em: Date.now() })).then(function() { dcAviso('Regras salvas. Valem para as próximas distribuições e repasses.'); });
+}
+
+// ── telas ──
+function dcInatStatus(c) {
+  var r = c && c.ik ? DCI.recs[c.ik] : null;
+  if (c.repassado) return '<div class="dc-sub">↪ ' + (c.motivo ? dcEsc(c.motivo) : 'passou para o próximo vendedor') + '</div>';
+  if (c.funil || (r && r.status === 'captado' && r.captado && r.captado.vn === currentUser)) return '<div class="dc-sub">✅ no funil · fica com você</div>';
+  if (!r || r.status !== 'andamento') return '<div class="dc-sub">última compra ' + dcInatDataStr(c.ultima) + '</div>';
+  var fim = dcInatFim(r), quase = fim - Date.now() < 864e5;
+  return '<div class="dc-sub">última compra ' + dcInatDataStr(c.ultima) + '</div><div class="dc-sub"' + (quase ? ' style="color:#C2413B;font-weight:600"' : '') + '>⏳ levar ao funil até ' + dcInatData(fim) + ' (' + dcInatFalta(r) + ')</div>';
+}
+function dcInatBanner(l) {
+  var abertos = l.contatos.filter(function(c) { var r = c.ik && DCI.recs[c.ik]; return !c.repassado && !c.funil && r && r.status === 'andamento' && r.vn === l.inatPara; });
+  var prox = abertos.map(function(c) { return dcInatFim(DCI.recs[c.ik]); }).sort()[0];
+  var dias = dcInatCfg().dias;
+  return '<div class="dc-prazo' + (prox && prox - Date.now() < 864e5 ? ' quase' : '') + '">💤 <b>Clientes inativos</b> distribuídos pela gestão · ' + abertos.length + ' aguardando você' +
+    (prox ? ' · o próximo prazo vence em ' + dcInatData(prox) : '') +
+    '<div class="dc-sub">Cada cliente fica com você ' + dias + ' dias. Se ele não entrar no funil nesse prazo (negociação aberta, pedido cadastrado ou "Levou para o funil"), passa para o próximo vendedor.</div></div>';
+}
+function dcVInativos() {
+  if (!dcGestao()) return '<div class="dc-vazio">Só a gestão distribui clientes inativos.</div>';
+  var cfg = dcInatCfg(), lim = typeof CLI_META_INATIVO_DIAS === 'number' ? CLI_META_INATIVO_DIAS : 60;
+  var pend = dcInatPendentes(), comTel = pend.filter(function(r) { return r.tel; }), carga = dcInatCarga();
+  var recs = Object.keys(DCI.recs).map(function(k) { var r = DCI.recs[k]; if (r) r.k = r.k || k; return r; }).filter(Boolean);
+  var cont = { andamento: 0, captado: 0, sem_retorno: 0, removido: 0 }; recs.forEach(function(r) { cont[r.status] = (cont[r.status] || 0) + 1; });
+  var carregando = CK_EQUIPE.some(function(v) { return DCAG.ped[v] === undefined; });
+  var kpi = function(n, t, cor) { return '<div style="flex:1;min-width:110px;background:var(--surface-2,var(--surface));border:1px solid var(--line);border-radius:10px;padding:10px 12px"><div style="font-size:22px;font-weight:700;color:' + (cor || 'var(--txt)') + '">' + n + '</div><div class="dc-sub">' + t + '</div></div>'; };
+  var h = '<div class="dc-card"><div class="dc-eyebrow">💤 Distribuição de clientes inativos</div>' +
+    '<div class="dc-sub" style="margin-bottom:10px">Inativo = sem pedido há mais de ' + lim + ' dias, somando todos os vendedores. O cliente vai primeiro para quem cadastrou o último pedido dele. Se esse vendedor não levar o cliente ao funil em <b>' + cfg.dias + ' dias</b> (negociação aberta, pedido cadastrado ou "Levou para o funil" / "Pedido fechado" no discador), ele passa para o próximo da roda, na ordem da equipe.</div>' +
+    (carregando ? '<div class="dc-sub">Carregando pedidos da equipe…</div>' : '') +
+    '<div class="dc-row" style="gap:8px;margin-bottom:12px">' + kpi(comTel.length, 'para distribuir') + kpi(pend.length - comTel.length, 'sem telefone', '#B7791F') + kpi(cont.andamento, 'em andamento', '#2F6FB3') + kpi(cont.captado, 'no funil', '#1F8A5B') + kpi(cont.sem_retorno, 'sem retorno de ninguém', '#C2413B') + '</div>' +
+    '<button class="dc-btn dc-pri" onclick="dcInatDistribuir()"' + (comTel.length && !carregando ? '' : ' disabled') + '>Distribuir ' + comTel.length + ' cliente' + (comTel.length === 1 ? '' : 's') + '</button>' +
+    (cfg.lim ? '<span class="dc-sub" style="margin-left:8px">até ' + cfg.lim + ' em andamento por vendedor; o que passar fica para a próxima</span>' : '') +
+    (pend.length - comTel.length ? '<div class="dc-sub" style="margin-top:8px">Os sem telefone ficam de fora. Preencha o telefone na <b>Agenda de clientes</b> (aba Discar) e eles entram na próxima distribuição.</div>' : '') + '</div>';
+
+  h += '<div class="dc-grid"><div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Regras da roda</div>' +
+    '<div class="dc-row" style="gap:10px"><label class="dc-lab" style="flex:1;min-width:130px">Prazo para entrar no funil (dias)<input type="number" id="dci-dias" min="1" max="30" value="' + cfg.dias + '"></label>' +
+    '<label class="dc-lab" style="flex:1;min-width:130px">Máximo em andamento por vendedor (0 = sem limite)<input type="number" id="dci-lim" min="0" max="500" value="' + cfg.lim + '"></label></div>' +
+    '<div class="dc-lab" style="margin-top:10px">Vendedores na roda (ordem da equipe)</div><div class="dc-row" style="gap:6px 14px;margin-top:4px">' +
+    CK_EQUIPE.map(function(v) { return '<label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" id="dci-v-' + v + '"' + (cfg.vends.indexOf(v) >= 0 ? ' checked' : '') + '> ' + dcInatNome(v) + (carga[v] ? ' <span class="dc-sub">(' + carga[v] + ')</span>' : '') + '</label>'; }).join('') +
+    '</div><div class="dc-sub" style="margin-top:6px">Se quem cadastrou o pedido não estiver na roda, o cliente começa com quem tem menos clientes em andamento.</div>' +
+    '<button class="dc-btn" style="margin-top:10px" onclick="dcInatSalvarCfg()">Salvar regras</button></div>';
+  // prévia dos que vão ser distribuídos
+  h += '<div class="dc-card"><div class="dc-eyebrow">Aguardando distribuição (' + pend.length + ')</div>' + (pend.length ? '<div class="dc-ctwrap"><table class="dc-ct"><thead><tr><th>Cliente</th><th>Última compra</th><th>Vai para</th><th>Telefone</th></tr></thead><tbody>' +
+    pend.slice(0, 300).map(function(r) { var vai = cfg.vends.indexOf(r.vn) >= 0 ? r.vn : '';
+      return '<tr><td><b>' + dcEsc(r.empresa) + '</b>' + (r.uf ? ' <span class="dc-sub">' + dcEsc(r.uf) + '</span>' : '') + '<div class="dc-sub">pedidos de ' + dcInatNome(r.vn) + '</div></td><td>' + dcInatDataStr(r.ultima) + '<div class="dc-sub">' + r.dias + ' dias</div></td><td>' + (vai ? dcInatNome(vai) : '<span class="dc-sub">quem tiver menos</span>') + '</td><td class="tel">' + (r.tel ? dcEsc(dcTel(r.tel)) : '<span style="color:#B7791F">sem telefone</span>') + '</td></tr>'; }).join('') +
+    '</tbody></table></div>' + (pend.length > 300 ? '<div class="dc-sub">Mostrando 300 de ' + pend.length + '.</div>' : '') : '<div class="dc-vazio">Nenhum cliente inativo fora da roda.</div>') + '</div></div>';
+
+  // acompanhamento
+  var vis = recs.filter(function(r) { return r.status === DCI.ver; });
+  var q = ckSemAcento(DCI.busca || '').trim();
+  if (q) vis = vis.filter(function(r) { return ckSemAcento([r.empresa, r.contato, r.tel, r.vn].join(' ')).indexOf(q) >= 0; });
+  vis.sort(function(a, b) { return DCI.ver === 'andamento' ? dcInatFim(a) - dcInatFim(b) : (b.fimEm || (b.captado && b.captado.em) || 0) - (a.fimEm || (a.captado && a.captado.em) || 0); });
+  h += '<div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Acompanhamento</div><div class="dc-row" style="gap:6px;margin-bottom:8px">' +
+    [['andamento', 'Em andamento'], ['captado', 'No funil'], ['sem_retorno', 'Sem retorno'], ['removido', 'Tirados']].map(function(f) {
+      return '<button class="dc-btn dc-mini' + (DCI.ver === f[0] ? ' dc-pri' : '') + '" onclick="DCI.ver=\'' + f[0] + '\';dcRender()">' + f[1] + ' (' + (cont[f[0]] || 0) + ')</button>'; }).join('') + '</div>' +
+    '<input id="dc-dci-busca" placeholder="Buscar cliente ou vendedor" value="' + dcEsc(DCI.busca || '') + '" oninput="DCI.busca=this.value;clearTimeout(DCI.tb);DCI.tb=setTimeout(dcRender,250)" style="width:100%;margin-bottom:6px">' +
+    (vis.length ? vis.slice(0, 300).map(function(r) {
+      var fila = (r.fila || []).map(function(v, i) { var at = r.status === 'andamento' && i === (r.pos || 0), feito = r.status === 'andamento' ? i < (r.pos || 0) : (r.passagens || []).some(function(p) { return p.vn === v; });
+        return '<span style="' + (at ? 'font-weight:700;color:var(--acc-txt,var(--txt))' : feito ? 'text-decoration:line-through;color:var(--faint)' : 'color:var(--muted)') + '">' + dcInatNome(v) + '</span>'; }).join(' → ');
+      var info = r.status === 'andamento' ? 'com <b>' + dcInatNome(r.vn) + '</b> desde ' + dcInatData(r.desde) + ' · <span' + (dcInatFim(r) - Date.now() < 864e5 ? ' style="color:#C2413B;font-weight:600"' : '') + '>' + dcInatFalta(r) + '</span>'
+        : r.status === 'captado' ? '✅ ' + (r.captado && r.captado.tipo === 'pedido' ? 'pedido' : 'no funil') + ' com <b>' + dcInatNome(r.captado && r.captado.vn) + '</b> em ' + dcInatData(r.captado && r.captado.em)
+        : r.status === 'sem_retorno' ? 'passou por todos sem entrar no funil · ' + dcInatData(r.fimEm) : 'tirado da roda em ' + dcInatData(r.fimEm);
+      var acoes = r.status === 'andamento' ? '<button class="dc-btn dc-mini" onclick="dcInatAcao(\'passar\',\'' + dcEsc(r.k) + '\')">Passar agora</button> <button class="dc-btn dc-mini" onclick="dcInatAcao(\'tirar\',\'' + dcEsc(r.k) + '\')">' + (DCI.confirma === 't' + r.k ? 'Confirmar' : 'Tirar') + '</button>'
+        : (r.status === 'sem_retorno' || r.status === 'removido') ? '<button class="dc-btn dc-mini" onclick="dcInatAcao(\'recomecar\',\'' + dcEsc(r.k) + '\')">Recomeçar roda</button>' : '';
+      return '<div class="dc-it"><div style="min-width:0;flex:1"><b>' + dcEsc(r.empresa) + '</b> <span class="dc-sub">' + dcEsc(dcTel(r.tel)) + ' · última compra ' + dcInatDataStr(r.ultima) + '</span><div class="dc-sub">' + info + '</div><div class="dc-sub" style="margin-top:2px">' + fila + '</div></div><div class="dc-row" style="flex-shrink:0">' + acoes + '</div></div>';
+    }).join('') : '<div class="dc-vazio">Nada aqui.</div>') + '</div></div></div>';
+  return h;
+}
 // "Levou para o funil": abre a negociação na aba Negociações (etapa Orçamento enviado)
 function dcAbrirNegociacao(a, obs, quando, listaNome) {
   var id = 'neg_' + Date.now(), agora = new Date().toISOString();
