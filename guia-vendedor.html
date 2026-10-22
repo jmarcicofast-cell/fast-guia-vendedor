@@ -18782,8 +18782,7 @@ const CK_PRODUTOS = [
   { key: 'laRocha',         label: 'Lã de rocha',       match: function(n){ return n.indexOf('LA DE ROCHA') >= 0; } },
   { key: 'glasroc',         label: 'Glasroc',           match: function(n){ return n.indexOf('GLASROC') >= 0; } },
   { key: 'placaST',         label: 'Placa ST',          match: function(n){ return n.indexOf('PLACA ST') >= 0; } },
-  { key: 'placaRU',         label: 'Placa RU',          match: function(n){ return /(^|PLACA )RU\b/.test(n); } }, // "PLACA RU 12,5…" e "RU 15MM 2,40"
-  { key: 'placaVAB',        label: 'Placa VAB (demais)', match: function(n){ return /(^|PLACA )RF\b/.test(n); } }, // RF entra em VAB; as demais VAB vêm pela categoria
+  { key: 'placaVAB',        label: 'Placa VAB (RU, RF e demais)', match: function(n){ return /(^|PLACA )(RU|RF)\b/.test(n); } }, // RU e RF entram em VAB ("PLACA RU 12,5…", "RU 15MM 2,40"); as demais VAB vêm pela categoria
   { key: 'perfil',          label: 'Perfil (aço)',      match: null, dinheiro: true } // soma em R$ dos itens da categoria AÇO / AÇO PLACO
 ];
 
