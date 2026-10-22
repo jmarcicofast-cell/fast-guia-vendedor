@@ -26922,10 +26922,22 @@ function dcPos() {
   return p;
 }
 var DC_VOLTA = { nao: 1, caixa: 1 }; // resultados que deixam o contato voltar na fila
-function dcResolvido(c) { return !!(c && c.ult && c.ult.res && !DC_VOLTA[c.ult.res]); }
+// tentativas do contato: as gravadas nele + as ligações do dia (Minhas ligações) com o mesmo telefone
+function dcItensPorTel() {
+  if (DC._itMap && DC._itMap.n === DC.itens) return DC._itMap.m;
+  var m = {}; DC.itens.forEach(function(x) { if (!x || !x.tel) return; var k = dcMicroNum(x.tel); (m[k] = m[k] || []).push({ res: x.res, em: x.hora, por: currentUser, obs: x.obs || '' }); });
+  DC._itMap = { n: DC.itens, m: m }; return m;
+}
+function dcTentativas(c) {
+  if (!c) return [];
+  var vistos = {}, out = [];
+  (c.hist || []).concat(dcItensPorTel()[dcMicroNum(c.tel)] || []).forEach(function(h) { if (!h || !h.em || vistos[h.em]) return; vistos[h.em] = 1; out.push(h); });
+  return out.sort(function(a, b) { return a.em - b.em; });
+}
+function dcResolvido(c) { var t = dcTentativas(c), u = t[t.length - 1]; return !!(u && u.res && !DC_VOLTA[u.res]); }
 function dcFaltam(l) { return l ? l.contatos.filter(function(c) { return !dcResolvido(c) && !c.repassado; }).length : 0; }
 function dcHistHtml(a) {
-  var hs = (a.hist || []).slice(-3).reverse(); if (!hs.length) return '';
+  var hs = dcTentativas(a).slice(-3).reverse(); if (!hs.length) return '';
   return '<div class="dc-prev">' + hs.map(function(x, k) {
     var r = DC_RESMAP[x.res] || { t: x.res, cor: '#888' };
     return '<div' + (k ? ' class="dc-sub"' : '') + '><i style="background:' + r.cor + '"></i><b>' + (k ? '' : 'Última tentativa: ') + dcEsc(r.t) + '</b> · ' +
