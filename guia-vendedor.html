@@ -919,6 +919,13 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .dc-pri:hover{background:var(--acc);filter:brightness(1.07)}
 .dc-nome{font-size:26px;font-weight:800;line-height:1.15;color:var(--txt)}
 .dc-emp{color:var(--muted);font-size:14px;margin-top:2px}
+.dc-hist{max-height:320px;overflow:auto}
+.dc-hl{display:grid;grid-template-columns:108px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line,rgba(127,127,127,.18))}
+.dc-hl:first-child{border-top:0}
+.dc-hq{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;line-height:1.4}
+.dc-hq span{display:block}
+.dc-hr{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;border:1px solid currentColor;color:var(--muted)}
+.dc-ho{font-size:14px;margin-top:4px;white-space:pre-wrap;word-break:break-word}
 .dc-prev{margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(183,121,31,.12);border:1px solid rgba(183,121,31,.35);font-size:13px;line-height:1.5}
 .dc-prev i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .dc-edit{display:block;width:100%;background:transparent;border:1px dashed transparent;border-radius:6px;padding:2px 6px;margin-left:-7px;font-family:inherit;outline:none}
@@ -26936,6 +26943,23 @@ function dcTentativas(c) {
 }
 function dcResolvido(c) { var t = dcTentativas(c), u = t[t.length - 1]; return !!(u && u.res && !DC_VOLTA[u.res]); }
 function dcFaltam(l) { return l ? l.contatos.filter(function(c) { return !dcResolvido(c) && !c.repassado; }).length : 0; }
+// card abaixo da discagem: todas as anotações e tentativas do cliente, da mais nova para a mais antiga
+function dcHistCardHtml(a) {
+  var nm = function(v) { return dcEsc(typeof rtNome === 'function' ? rtNome(v) : v); };
+  var fmt = function(t) { var d = new Date(t); return dcEsc(d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })); };
+  var ev = dcTentativas(a).map(function(x) { return { em: x.em, res: x.res, por: x.por, obs: x.obs }; });
+  var txts = {}; ev.forEach(function(x) { if (x.obs) txts[x.obs] = 1; });
+  (a.obsHist || []).forEach(function(x) { if (x && x.txt && x.em && !txts[x.txt]) { txts[x.txt] = 1; ev.push({ em: x.em, por: x.por, obs: x.txt }); } });
+  ev.sort(function(x, y) { return y.em - x.em; });
+  var h = '<div class="dc-card"><div class="dc-eyebrow">Histórico deste cliente' + (ev.length ? ' · ' + ev.length : '') + '</div>';
+  if (!ev.length) return h + '<div class="dc-vazio">Nenhuma anotação ainda. O que você registrar neste cliente aparece aqui, com data e hora.</div></div>';
+  return h + '<div class="dc-hist">' + ev.map(function(x) {
+    var r = x.res && (DC_RESMAP[x.res] || { t: x.res, cor: '#888' });
+    return '<div class="dc-hl"><div class="dc-hq">' + fmt(x.em) + (x.por ? '<span>' + nm(x.por) + '</span>' : '') + '</div><div style="min-width:0">' +
+      (r ? '<span class="dc-hr" style="color:' + r.cor + ';border-color:' + r.cor + '">' + dcEsc(r.t) + '</span>' : '<span class="dc-hr">Anotação</span>') +
+      (x.obs ? '<div class="dc-ho">' + dcEsc(x.obs) + '</div>' : '<div class="dc-sub">sem anotação</div>') + '</div></div>';
+  }).join('') + '</div></div>';
+}
 function dcHistHtml(a) {
   var hs = dcTentativas(a).slice(-3).reverse(); if (!hs.length) return '';
   return '<div class="dc-prev">' + hs.map(function(x, k) {
@@ -26966,7 +26990,7 @@ function dcEqIdx(a) { var l = dcLista(); if (!l || !l.equipe || !a || DC.avulso)
 function dcAlvo() {
   if (DC.avulso) return DC.avulso;
   var l = dcLista(); if (!l) return null;
-  var c = l.contatos[dcPos()]; return c ? { nome: c.nome, empresa: c.empresa, tel: c.tel, obs: c.obs, hist: c.hist || [], origem: 'lista' } : null;
+  var c = l.contatos[dcPos()]; return c ? { nome: c.nome, empresa: c.empresa, tel: c.tel, obs: c.obs, hist: c.hist || [], obsHist: c.obsHist || [], origem: 'lista' } : null;
 }
 // identifica o contato em tela: a anotação digitada só fica no campo enquanto o mesmo contato estiver aberto
 function dcAlvoKey() { var a = dcAlvo(); if (!a) return ''; return (DC.avulso ? 'av:' + (DC.avulso.retIdx != null ? DC.avulso.retIdx : '') : (DC.listaId || '') + ':' + dcPos()) + ':' + dcDig(a.tel); }
@@ -27048,6 +27072,7 @@ function dcVDiscar() {
       : !l ? 'Escolha uma lista acima para começar.' : 'Lista terminada: ' + total + ' contatos trabalhados' + (dcFaltam(l) ? ' · <b>' + dcFaltam(l) + '</b> ainda sem atender (Não atendeu / Caixa postal)' : '') + '. Os clientes que você adicionar entram aqui na sequência. <button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button> <button class="dc-btn" onclick="dcRecomecar()">' + (dcFaltam(l) ? 'Ligar de novo para quem não atendeu' : 'Recomeçar do início') + '</button>') + '</div>';
   }
   h += '</div>';
+  if (a) h += dcHistCardHtml(a);
   if (l) h += '<div class="dc-sub">Lista: ' + Math.min(pos, total) + ' de ' + total + ' trabalhados · discagem automática ' + (p.auto ? 'ligada (' + p.espera + 's)' : 'desligada') + '</div>';
   h += '</div><div class="dc-col">';
   h += '<div class="dc-card"><div class="dc-eyebrow">Meu dia no discador</div><div class="dc-stats">' +
