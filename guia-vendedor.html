@@ -27077,17 +27077,23 @@ function dcEqToast(n) {
 setInterval(function() { try { dcEqLembrete(); } catch (e) {} }, 60000);
 setTimeout(function() { try { dcEqLembrete(); } catch (e) {} }, 8000);
 function dcEqPrazo(c) { var d = Math.ceil((c.assumidoEm + DC_ASSUMIR_DIAS * 864e5 - Date.now()) / 864e5); return d <= 1 ? 'volta para a equipe amanhã' : 'volta para a equipe em ' + d + ' dias'; }
+// contato que a fila não mostra: da equipe com outro/ganho · repassado · já resolvido (22/10/2026) · concorrente bloqueado
+function dcPula(l, c, p) {
+  var man = DC.manual && DC.manual.lista === l.id && DC.manual.p === p;
+  if (l.equipe && /outro|ganho/.test(dcEqStatus(c))) return true;
+  if ((l.para || l.inatPara) && c && c.repassado) return true;
+  if (!l.equipe && dcResolvido(c) && !man) return true;
+  if (dcConcBloq(c)) return true;
+  return false;
+}
 function dcPos() {
   var p = ((DC.estado.posicoes || {})[DC.listaId]) || 0, l = dcLista();
   if (!l) return p;
-  // pula: da equipe com outro/ganho · repassados · já resolvidos (22/10/2026) · concorrentes bloqueados
-  while (p < l.contatos.length) {
-    var c = l.contatos[p], man = DC.manual && DC.manual.lista === l.id && DC.manual.p === p;
-    if (l.equipe && /outro|ganho/.test(dcEqStatus(c))) { p++; continue; }
-    if ((l.para || l.inatPara) && c && c.repassado) { p++; continue; }
-    if (!l.equipe && dcResolvido(c) && !man) { p++; continue; }
-    if (dcConcBloq(c)) { p++; continue; }
-    break;
+  while (p < l.contatos.length && dcPula(l, l.contatos[p], p)) p++;
+  // 22/10/2026: chegou ao fim mas ficou cliente para trás que nunca recebeu ligação (ex.: abriu um cliente do fim da lista
+  // pelo Funil ou pela tabela, ou chegaram clientes novos no meio): volta para ele em vez de dizer que a lista terminou
+  if (p >= l.contatos.length) {
+    for (var i = 0; i < l.contatos.length; i++) { var c = l.contatos[i]; if (!dcPula(l, c, i) && !dcTentativas(c).length) return i; }
   }
   return p;
 }
@@ -27105,7 +27111,7 @@ function dcTentativas(c) {
   return out.sort(function(a, b) { return a.em - b.em; });
 }
 function dcResolvido(c) { var t = dcTentativas(c), u = t[t.length - 1]; return !!(u && u.res && !DC_VOLTA[u.res]); }
-function dcFaltam(l) { return l ? l.contatos.filter(function(c) { return !dcResolvido(c) && !c.repassado && !dcConcBloq(c); }).length : 0; }
+function dcFaltam(l) { return l ? l.contatos.filter(function(c, i) { return !dcPula(l, c, i); }).length : 0; }
 // card abaixo da discagem: todas as anotações e tentativas do cliente, da mais nova para a mais antiga
 function dcHistCardHtml(a) {
   var nm = function(v) { return dcEsc(typeof rtNome === 'function' ? rtNome(v) : v); };
