@@ -1168,10 +1168,6 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
     Rampa dos Novos
   </button>
-  <button class="nav-btn" id="nav-parana" draggable="true" data-nav-id="parana" style="display:none;" onclick="showTab('parana',this)">
-    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 0C17 0 4 12 4 24C4 32.28 9.82 39 17 39C24.18 39 30 32.28 30 24C30 12 17 0 17 0Z"/><circle cx="17" cy="26" r="4.5"/></svg>
-    Plano PR
-  </button>
   <button class="nav-btn" id="nav-checkin" draggable="true" data-nav-id="checkin" style="display:none;" onclick="showTab('checkin',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Check-in Diário
@@ -17869,11 +17865,7 @@ function checkAdminAccess(nome) {
 function checkParanaAccess() {
   const paranaNav = document.getElementById('nav-parana');
   if (!paranaNav) return;
-  if (ehDona() || currentUser === 'BRUNO') {
-    paranaNav.style.display = 'flex';
-  } else {
-    paranaNav.style.display = 'none';
-  }
+  paranaNav.style.display = 'none'; // Plano PR retirado do Atacado BA
 }
 
 function renderEvolucaoVendedor(v) {
@@ -18098,6 +18090,9 @@ function sortTable(col) {
 }
 
 function showTab(name, btn) {
+  if (name === 'parana') { // Plano PR retirado do Atacado BA
+    name = 'minhasmetas'; btn = document.getElementById('nav-minhasmetas') || btn;
+  }
   if (name === 'negociacoes') { // a aba Negociações virou o Funil do Discador
     if (typeof DC !== 'undefined') DC.aba = 'funil';
     name = 'discador'; btn = document.getElementById('nav-discador') || btn;
@@ -18107,7 +18102,6 @@ function showTab(name, btn) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'tabela') renderTable();
-  if (name === 'parana') prInit();
   if (name === 'checkin') ckInit();
   if (name === 'minhasmetas') mmInit();
   if (name === 'rota' && typeof rtInit === 'function') rtInit();
@@ -25817,7 +25811,7 @@ var AC_PAGINAS = [
   ['clientes', 'Base de Clientes'], ['abastecimento', 'Pedidos abertos'], ['central', 'Central Abast.'],
   ['shopping', 'Shopping de Preços'], ['treinamentos', 'Treinamentos'], ['reconhecimento', 'Ranking'],
   ['rota', 'Rota da Meta'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
-  ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['parana', 'Plano PR'], ['checkin', 'Check-in Diário'], ['rotina', 'Minha Rotina']
+  ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['checkin', 'Check-in Diário'], ['rotina', 'Minha Rotina']
 ];
 var AC_PERFIS = [
   ['novo', 'Vendedor(a) novo(a)'], ['veterana', 'Vendedor(a) veterano(a)'], ['', 'Vendedor(a)'], ['administrativo', 'Administrativo']
@@ -25958,7 +25952,7 @@ function acPadrao(key, navId) {
     case 'central': return caUsuarioLiberado(key);
     case 'quiz': return (typeof qzTemAcesso === 'function') && qzTemAcesso(key);
     case 'admin': case 'rampa': case 'checkin': return jul || !!v.lider;
-    case 'parana': return jul || key === 'BRUNO';
+    case 'parana': return false; // Plano PR não existe no Atacado BA
     default: return true;
   }
 }
