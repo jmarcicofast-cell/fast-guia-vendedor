@@ -1,4 +1,4 @@
-// Captador FAST — roda no Guia do Vendedor.
+// Captador do Guia — roda no Guia do Vendedor.
 // Entrega os contatos captados no Google Maps para a página do guia, que abre a conferência.
 (function () {
   var ORIGEM = location.origin;

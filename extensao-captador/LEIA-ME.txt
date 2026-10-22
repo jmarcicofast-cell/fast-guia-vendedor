@@ -1,4 +1,4 @@
-CAPTADOR FAST — Google Maps → Discador do Guia
+CAPTADOR DO GUIA — Google Maps → Discador do Guia
 
 INSTALAR (uma vez em cada computador)
 ATUALIZAR: substitua os arquivos da pasta pelos novos e clique no ícone ↻ do Captador em chrome://extensions
@@ -10,7 +10,7 @@ ATUALIZAR: substitua os arquivos da pasta pelos novos e clique no ícone ↻ do 
 
 USAR
 1. No Google Maps, pesquise, por exemplo: "loja de drywall Joinville".
-2. No canto inferior direito aparece o painel "Captador FAST".
+2. No canto inferior direito aparece o painel "Captador do Guia".
    - "Capturar os N resultados carregados": pega a lista inteira que está na tela
      (role a lista do Maps para carregar mais e clique de novo).
    - Abrindo uma loja: "Capturar esta loja" (pega também cidade, UF e site).

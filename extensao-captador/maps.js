@@ -1,4 +1,4 @@
-// Captador FAST — roda no Google Maps.
+// Captador do Guia — roda no Google Maps.
 // Painel flutuante: captura a loja aberta ou os resultados carregados da busca,
 // junta numa "cesta" e manda para a conferência no Discador do Guia.
 (function () {
@@ -257,7 +257,7 @@
       '.si{display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border-bottom:1px solid #f0f0f0;cursor:pointer}.si.on{background:#eef8f2}' +
       '.si small{display:block;color:#656d76;font-size:11.5px}.si input{margin-top:2px}' +
       '</style>' +
-      '<div class="p' + (aberto ? '' : ' min') + (SEL.ativo ? ' sel' : '') + '"><div class="h" id="tg"><span>📥 Captador FAST <small style="font-weight:400;opacity:.8">v' + VERSAO + '</small></span><span>' + cesta.length + (aberto ? ' ▾' : ' ▴') + '</span></div>' +
+      '<div class="p' + (aberto ? '' : ' min') + (SEL.ativo ? ' sel' : '') + '"><div class="h" id="tg"><span>📥 Captador do Guia <small style="font-weight:400;opacity:.8">v' + VERSAO + '</small></span><span>' + cesta.length + (aberto ? ' ▾' : ' ▴') + '</span></div>' +
       '<div class="c">' +
       (SEL.ativo ? htmlSelecao() : '') +
       (SEL.ativo ? '' : (ficha

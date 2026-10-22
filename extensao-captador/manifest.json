@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Captador FAST — Google Maps → Discador",
-  "short_name": "Captador FAST",
-  "version": "1.4.0",
+  "name": "Captador do Guia — Google Maps → Discador",
+  "short_name": "Captador do Guia",
+  "version": "1.4.1",
   "description": "Captura lojas (nome, telefone, cidade) no Google Maps e manda para a conferência do Discador no Guia do Vendedor.",
   "icons": { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
   "permissions": ["storage"],
