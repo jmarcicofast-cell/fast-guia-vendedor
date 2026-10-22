@@ -26968,6 +26968,8 @@ function dcAlvo() {
   var l = dcLista(); if (!l) return null;
   var c = l.contatos[dcPos()]; return c ? { nome: c.nome, empresa: c.empresa, tel: c.tel, obs: c.obs, hist: c.hist || [], origem: 'lista' } : null;
 }
+// identifica o contato em tela: a anotação digitada só fica no campo enquanto o mesmo contato estiver aberto
+function dcAlvoKey() { var a = dcAlvo(); if (!a) return ''; return (DC.avulso ? 'av:' + (DC.avulso.retIdx != null ? DC.avulso.retIdx : '') : (DC.listaId || '') + ':' + dcPos()) + ':' + dcDig(a.tel); }
 function dcResumo(itens) {
   var at = itens.filter(function(x) { return DC_RESMAP[x.res] && DC_RESMAP[x.res].at; });
   var wa = itens.filter(function(x) { return x.canal === 'wa'; }).length;
@@ -26994,15 +26996,17 @@ function dcRender() {
   h += '<div class="dc-toast" id="dc-toast"></div>';
   var foco = document.activeElement && document.activeElement.id;
   var obs = document.getElementById('dc-obs'), quando = document.getElementById('dc-quando');
-  var obsV = obs ? obs.value : '', quandoV = quando ? quando.value : '';
+  var obsV = obs ? obs.value : '', quandoV = quando ? quando.value : '', kAntes = obs ? obs.getAttribute('data-k') : null;
   var agT = document.getElementById('dc-ag-tel'), agC = document.getElementById('dc-ag-cont'), agTV = agT && agT.value, agCV = agC && agC.value;
   var oeEl = document.getElementById('dc-obsed'), oeV = oeEl ? oeEl.value : null;
   root.innerHTML = h;
   if (oeV != null && document.getElementById('dc-obsed')) document.getElementById('dc-obsed').value = oeV;
   if (agTV != null && document.getElementById('dc-ag-tel')) document.getElementById('dc-ag-tel').value = agTV;
   if (agCV != null && document.getElementById('dc-ag-cont')) document.getElementById('dc-ag-cont').value = agCV;
-  if (obsV && document.getElementById('dc-obs')) document.getElementById('dc-obs').value = obsV;
-  if (quandoV && document.getElementById('dc-quando')) document.getElementById('dc-quando').value = quandoV;
+  var obsN = document.getElementById('dc-obs'), mesmo = obsN && kAntes != null && obsN.getAttribute('data-k') === kAntes;
+  if (mesmo && obsV) obsN.value = obsV;
+  if (mesmo && quandoV && document.getElementById('dc-quando')) document.getElementById('dc-quando').value = quandoV;
+  if (!mesmo && (foco === 'dc-obs' || foco === 'dc-quando')) foco = null;
   if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
 }
 function dcSetAba(a) { DC.aba = a; dcPararAuto(true); dcRender(); }
@@ -27035,7 +27039,7 @@ function dcVDiscar() {
       (live ? '<button class="dc-btn dc-deslig" onclick="dcDesliguei()">Desliguei <span class="dc-kbd">D</span></button>' : (DC.call ? '<span class="dc-sub">Ligação encerrada · marque o resultado</span>' : '')) + '</div>' +
       '<div class="dc-eyebrow" style="margin-top:16px">Como foi a ligação?</div><div class="dc-res">' +
       DC_RES.map(function(x, i) { return '<button class="dc-resb" onclick="dcRegistrar(\'' + x.k + '\')"><span><i style="background:' + x.cor + '"></i>' + x.t + '</span><span class="dc-kbd">' + (i + 1) + '</span></button>'; }).join('') + '</div>' +
-      '<div class="dc-row" style="margin-top:10px;align-items:flex-start"><textarea id="dc-obs" rows="2" placeholder="Anotação (opcional): o que o cliente disse, produto, valor…" style="flex:2;min-width:200px"></textarea>' +
+      '<div class="dc-row" style="margin-top:10px;align-items:flex-start"><textarea id="dc-obs" data-k="' + dcEsc(dcAlvoKey()) + '" rows="2" placeholder="Anotação (opcional): o que o cliente disse, produto, valor…" style="flex:2;min-width:200px"></textarea>' +
       '<div style="flex:1;min-width:170px"><label class="dc-lab">Retornar em<input type="datetime-local" id="dc-quando"></label>' +
       '<button class="dc-btn" style="margin-top:6px;width:100%;border-color:#2F6FB3;color:#2F6FB3;font-weight:600" onclick="dcRegistrar(\'retornar\')">📅 Agendar retorno nesta data</button></div></div>' +
       (DC.auto ? '<div class="dc-auto">Discando o próximo em <b id="dc-auton">' + DC.auto.n + '</b>s <button class="dc-btn dc-pri" onclick="dcPularContagem()">Ligar agora <span class="dc-kbd">Enter</span></button> <button class="dc-btn" onclick="dcPararAuto()">Parar <span class="dc-kbd">Esc</span></button></div>' : '');
