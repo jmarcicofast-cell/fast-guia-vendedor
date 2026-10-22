@@ -4591,6 +4591,17 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .mm-ed-campo { display:flex; flex-direction:column; gap:3px; font-size:12.5px; color:var(--txt-2); }
 .mm-ed-campo input { padding:7px 9px; border:1.5px solid var(--line); border-radius:7px; font-size:14px; width:100%; box-sizing:border-box; }
 .mm-ed-par { display:flex; gap:4px; }
+.mm-ed-prodnome { display:flex; align-items:center; justify-content:space-between; gap:4px; }
+.mm-ed-tirar { border:none; background:none; color:var(--txt-2); cursor:pointer; font-size:12px; padding:0 3px; border-radius:4px; line-height:1.4; }
+.mm-ed-tirar:hover { background:#FDECEA; color:#B71C1C; }
+.mm-ed-termos { font-size:11px; color:var(--txt-2); opacity:.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mm-ed-prods { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+.mm-ed-fora { font-size:12.5px; color:var(--txt-2); display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.mm-ed-chip { border:1.5px dashed #4A148C; background:var(--surface); color:color-mix(in srgb, #4A148C var(--tm), #fff); border-radius:14px; padding:3px 10px; font-size:12px; cursor:pointer; }
+.mm-ed-novo > summary { cursor:pointer; font-weight:600; font-size:13px; color:color-mix(in srgb, #4A148C var(--tm), #fff); }
+.mm-ed-novo-corpo { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px; margin-top:8px; align-items:end; }
+.mm-ed-novo-corpo select { padding:7px; border:1.5px solid var(--line); border-radius:7px; font-size:13px; }
+.mm-ed-previa { grid-column:1 / -1; font-size:12px; color:var(--txt-2); line-height:1.45; }
 .mm-ed-par input { flex:1; min-width:0; }
 .mm-ed-par select { padding:6px; border:1.5px solid var(--line); border-radius:7px; font-size:13px; }
 .mm-ed-rodape { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:4px; }
@@ -15470,11 +15481,12 @@ function rtCalc(vn) {
   if (metaValor > 0) add({ key: 'valor', label: 'Valor', real: valor, hoje: valorHoje, meta: metaValor, din: true });
   // produtos (unidade da meta definida por mês: qtd ou R$)
   var sMes = ckSomarProdutos(peds, ini, hojeStr), sHoje = ckSomarProdutos(peds, hojeStr, hojeStr);
-  var prodTodos = CK_PRODUTOS.map(function(g) {
+  var prodLista = ckProdutosDoMes(mes);
+  var prodTodos = prodLista.map(function(g) {
     var emR = ckUnidProduto(mes, g.key) === 'R$', mt = ckMetaProduto(mes, g.key, vn);
     return { key: g.key, label: g.label, din: emR, prod: true, real: emR ? sMes[g.key].valor : sMes[g.key].qtd, meta: mt > 0 ? mt : 0 };
   });
-  CK_PRODUTOS.forEach(function(g) {
+  prodLista.forEach(function(g) {
     var mt = ckMetaProduto(mes, g.key, vn); if (!(mt > 0)) return;
     var emR = ckUnidProduto(mes, g.key) === 'R$';
     add({ key: g.key, label: g.label, real: emR ? sMes[g.key].valor : sMes[g.key].qtd, hoje: emR ? sHoje[g.key].valor : sHoje[g.key].qtd, meta: mt, din: emR, prod: true });
@@ -17125,13 +17137,14 @@ function rtQuadroProdutos(c) {
 function rtAvisoMetasOutrosMeses(vn) {
   var s = (ckData && ckData.settings) || {}, mesAt = ckMesAtualStr(), achados = [];
   var porMes = s.metaProdutosPorMes || {};
-  function conta(m) { var n = 0; CK_PRODUTOS.forEach(function(g) { if (m && m[g.key] && ckNum(m[g.key][vn]) > 0) n++; }); return n; }
+  var listaAt = ckProdutosDoMes(mesAt);
+  function conta(m) { var n = 0; listaAt.forEach(function(g) { if (m && m[g.key] && ckNum(m[g.key][vn]) > 0) n++; }); return n; }
   Object.keys(porMes).sort().reverse().forEach(function(m) { if (m !== mesAt) { var n = conta(porMes[m]); if (n) achados.push({ m: m, n: n }); } });
   var nAnt = conta(s.metaProdutosMes); if (nAnt) achados.push({ m: 'antigo', n: nAnt });
   var nAt = conta(porMes[mesAt]);
   var nomesMes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   function rot(m) { return m === 'antigo' ? 'cadastro antigo (sem mês)' : nomesMes[+m.slice(5, 7) - 1] + '/' + m.slice(0, 4); }
-  var h = '<div class="rt-aviso" style="margin-bottom:10px;font-size:13.5px;line-height:1.5">📍 As metas vêm de <b>Check-in › Metas de produto</b>, mês <b>' + rot(mesAt) + '</b> (' + nAt + ' de ' + CK_PRODUTOS.length + ' produtos preenchidos para ' + rtEsc(rtNome(vn)) + ').';
+  var h = '<div class="rt-aviso" style="margin-bottom:10px;font-size:13.5px;line-height:1.5">📍 As metas vêm de <b>Check-in › Metas de produto</b>, mês <b>' + rot(mesAt) + '</b> (' + nAt + ' de ' + listaAt.length + ' produtos preenchidos para ' + rtEsc(rtNome(vn)) + ').';
   if (achados.length) {
     h += '<br>Encontrei metas de produto de ' + rtEsc(rtNome(vn)) + ' em: ' + achados.map(function(a) { return '<b>' + rot(a.m) + '</b> (' + a.n + ' produtos)'; }).join(', ') + '.';
     if (currentUser === 'JULIANA') h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' + achados.map(function(a) {
@@ -17147,7 +17160,7 @@ function rtCopiarMetas(vn, origem) {
   s.metaProdutosPorMes = s.metaProdutosPorMes || {};
   var dst = s.metaProdutosPorMes[mesAt] = s.metaProdutosPorMes[mesAt] || {};
   var n = 0;
-  CK_PRODUTOS.forEach(function(g) {
+  ckProdutosDoMes(mesAt).forEach(function(g) {
     var v = src[g.key] && ckNum(src[g.key][vn]);
     if (!(v > 0)) return;
     dst[g.key] = dst[g.key] || {};
@@ -18784,6 +18797,36 @@ const CK_METAS_PRODUTO_SEED = {
   })()
 };
 
+/* ── Lista de produtos da meta, ajustável por mês pela gestão ──
+   settings.produtosMetaPorMes[mes] = { ocultos: {key:true}, extras: {key:{label, termos, ordem}} }
+   Mês sem ajuste próprio herda o ajuste do mês anterior mais recente que tiver;
+   sem nenhum ajuste, vale a lista padrão (CK_PRODUTOS). */
+function ckCfgProdutosDoMes(mes){
+  var por = (ckData && ckData.settings && ckData.settings.produtosMetaPorMes) || {};
+  if (por[mes]) return por[mes];
+  var ant = Object.keys(por).filter(function(m){ return m < mes; }).sort().pop();
+  return ant ? por[ant] : {};
+}
+function ckTermosProduto(t){
+  return String(t || '').split(',').map(function(x){ return ckSemAcento(x).replace(/\s+/g, ' '); }).filter(Boolean);
+}
+function ckProdutosDoMes(mes){
+  var cfg = ckCfgProdutosDoMes(mes || ckMesAtualStr()), ocultos = cfg.ocultos || {}, extras = cfg.extras || {};
+  var lista = CK_PRODUTOS.filter(function(g){ return !ocultos[g.key]; });
+  Object.keys(extras).sort(function(a, b){ return (extras[a].ordem || 0) - (extras[b].ordem || 0); }).forEach(function(k){
+    var e = extras[k]; if (!e || !e.label) return;
+    var termos = ckTermosProduto(e.termos || e.label);
+    lista.push({ key: k, label: e.label, extra: true, termos: e.termos || e.label,
+      match: function(n){ n = n.replace(/\s+/g, ' '); return termos.some(function(t){ return n.indexOf(t) >= 0; }); } });
+  });
+  return lista;
+}
+/* produtos padrão que a gestão tirou da meta neste mês (para poder voltar) */
+function ckProdutosOcultosDoMes(mes){
+  var oc = ckCfgProdutosDoMes(mes).ocultos || {};
+  return CK_PRODUTOS.filter(function(g){ return oc[g.key]; });
+}
+
 function ckMesAtualStr(){ var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
 function ckMesAnteriorStr(){ var d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-1); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
 
@@ -18841,22 +18884,25 @@ function itensDoPedido(p){
 }
 /* Soma qtd e valor (R$) de cada grupo nos pedidos dados */
 function ckSomarProdutos(pedidos, deStr, ateStr){
-  var t = {};
-  CK_PRODUTOS.forEach(function(g){ t[g.key] = { qtd: 0, valor: 0 }; });
+  var t = {}, mesP = String(deStr || '').slice(0, 7) || ckMesAtualStr(), lista = ckProdutosDoMes(mesP);
+  CK_PRODUTOS.concat(lista).forEach(function(g){ t[g.key] = { qtd: 0, valor: 0 }; });
   (pedidos || []).forEach(function(p){
     if (!p || p.excluido || p.status === 'cancelado' || !p.data || p.data < deStr || p.data > ateStr) return;
     itensDoPedido(p).forEach(function(it){
-      var gr = ckClassificarProduto(it.material);
+      var gr = ckClassificarProduto(it.material, lista);
       if (!gr && it.cat === 'aco' && !ckCategoriaDoProduto(it.material)) gr = 'perfil';
-      if (!gr) return;
+      if (!gr || !t[gr]) return;
       t[gr].qtd += ckNum(it.qtd); t[gr].valor += ckNum(it.qtd) * ckNum(it.vUnit);
     });
   });
   return t;
 }
 /* Classifica um item de pedido (it.material) num dos grupos CK_PRODUTOS, ou null */
-function ckClassificarProduto(nomeMaterial){
+function ckClassificarProduto(nomeMaterial, lista){
   var n = ckSemAcento(nomeMaterial);
+  // produtos que a gestão adicionou vêm primeiro: são mais específicos que os grupos padrão
+  var extras = (lista || ckProdutosDoMes(ckMesAtualStr())).filter(function(g){ return g.extra; });
+  for (var j = 0; j < extras.length; j++){ if (extras[j].match(n)) return extras[j].key; }
   for (var i = 0; i < CK_PRODUTOS.length; i++){
     var g = CK_PRODUTOS[i];
     if (g.match && g.match(n)) return g.key;
@@ -19152,7 +19198,7 @@ function ckRenderMetasProdutoPessoa(){
   var metasMes = ckMetasProdutoDoMes(mes);
   var thr = tbody.parentNode && tbody.parentNode.querySelector('thead tr');
   if (thr) {
-    thr.innerHTML = '<th>Vendedor(a)</th>' + CK_PRODUTOS.map(function(g){
+    thr.innerHTML = '<th>Vendedor(a)</th>' + ckProdutosDoMes(mes).map(function(g){
       var u = ckUnidProduto(mes, g.key);
       return '<th class="num">' + g.label + '<br><button type="button" class="ck-unid" data-unid="' + g.key + '" title="Clique para alternar entre quantidade e R$" style="margin-top:3px;font-size:10px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);background:' + (u === 'R$' ? '#E8F5E9' : '#fff') + ';cursor:pointer;">' + (u === 'R$' ? 'em R$' : 'em qtd') + '</button></th>';
     }).join('');
@@ -19171,7 +19217,7 @@ function ckRenderMetasProdutoPessoa(){
   CK_EQUIPE.forEach(function(pessoa){
     var nomeExibicao = vendedores[pessoa] ? vendedores[pessoa].nome : pessoa;
     var tds = '<td>'+nomeExibicao+'</td>';
-    CK_PRODUTOS.forEach(function(g){
+    ckProdutosDoMes(mes).forEach(function(g){
       var val = (metasMes[g.key] && metasMes[g.key][pessoa]) || 0;
       tds += '<td><input type="number" step="0.01" min="0" data-pessoa="'+pessoa+'" data-produto="'+g.key+'" value="'+val+'"></td>';
     });
@@ -19720,16 +19766,103 @@ function mmEdRender(forcar){
     MMED_GERAIS.map(function(g){
       return '<label class="mm-ed-campo"><span>' + g[1] + '</span><input type="number" min="0" step="' + (g[2] ? '0.01' : '1') + '" data-ger="' + g[0] + '" value="' + fmtIn(ckMetaPessoa(vn, g[0], mes)) + '" oninput="MMED.sujo=true"></label>';
     }).join('') + '</div>' +
-    '<div class="mm-ed-tit">Metas de produto <span class="mm-ed-dica">— a unidade (qtd ou R$) vale para a equipe toda neste mês</span></div><div class="mm-ed-grade">' +
-    CK_PRODUTOS.map(function(g){
+    '<div class="mm-ed-tit">Metas de produto <span class="mm-ed-dica">— a lista de produtos e a unidade (qtd ou R$) valem para a equipe toda neste mês. Use ✕ para tirar um produto e “+ Adicionar produto” para colocar outro.</span></div><div class="mm-ed-grade">' +
+    ckProdutosDoMes(mes).map(function(g){
       var v = (metasP[g.key] && metasP[g.key][vn]) || 0, u = ckUnidProduto(mes, g.key);
-      return '<label class="mm-ed-campo"><span>' + g.label + '</span><div class="mm-ed-par"><input type="number" min="0" step="0.01" data-prod="' + g.key + '" value="' + fmtIn(v) + '" oninput="MMED.sujo=true">' +
+      return '<label class="mm-ed-campo"><span class="mm-ed-prodnome">' + rtEsc(g.label) + '<button type="button" class="mm-ed-tirar" title="Tirar ' + rtEsc(g.label) + ' das metas deste mês" onclick="event.preventDefault();mmEdTirarProduto(\'' + g.key + '\')">✕</button></span>' +
+        (g.extra ? '<small class="mm-ed-termos" title="Conta os itens do pedido que tenham estas palavras no nome">conta: ' + rtEsc(g.termos) + '</small>' : '') + '<div class="mm-ed-par"><input type="number" min="0" step="0.01" data-prod="' + g.key + '" value="' + fmtIn(v) + '" oninput="MMED.sujo=true">' +
         '<select data-unid="' + g.key + '" onchange="MMED.sujo=true"><option value="qtd"' + (u === 'qtd' ? ' selected' : '') + '>qtd</option><option value="R$"' + (u === 'R$' ? ' selected' : '') + '>R$</option></select></div></label>';
-    }).join('') + '</div>' +
+    }).join('') + '</div>' + mmEdBlocoProdutos(mes) +
     '<div class="mm-ed-rodape"><button type="button" class="mm-ed-salvar" onclick="mmEdSalvar()">💾 Salvar metas de ' + (vendedores[vn] ? vendedores[vn].nome : vn) + ' · ' + mes.slice(5) + '/' + mes.slice(0, 4) + '</button><span id="mmed-status" class="mm-ed-status ' + MMED.msgCls + '">' + MMED.msg + '</span></div>' +
     '</div></details>';
   box.innerHTML = h;
   MMED.sujo = false;
+}
+/* ── ajuste da lista de produtos do mês (vale para a equipe toda) ── */
+function mmEdBlocoProdutos(mes){
+  var ocultos = ckProdutosOcultosDoMes(mes);
+  var h = '<div class="mm-ed-prods">';
+  if (ocultos.length) h += '<div class="mm-ed-fora"><span>Fora da meta neste mês:</span> ' + ocultos.map(function(g){
+    return '<button type="button" class="mm-ed-chip" title="Voltar com ' + rtEsc(g.label) + ' para as metas" onclick="mmEdVoltarProduto(\'' + g.key + '\')">+ ' + rtEsc(g.label) + '</button>';
+  }).join(' ') + '</div>';
+  h += '<details class="mm-ed-novo"><summary>+ Adicionar produto</summary><div class="mm-ed-novo-corpo">' +
+    '<label class="mm-ed-campo"><span>Nome na meta</span><input id="mmed-np-nome" placeholder="Ex.: Fita telada" oninput="mmEdPreviaProduto()"></label>' +
+    '<label class="mm-ed-campo"><span>Palavras do nome no pedido <small>(separe por vírgula; em branco = usa o nome)</small></span><input id="mmed-np-termos" placeholder="Ex.: FITA TELADA, FITA JUNTA" oninput="mmEdPreviaProduto()"></label>' +
+    '<label class="mm-ed-campo"><span>Meta em</span><select id="mmed-np-unid"><option value="qtd">qtd</option><option value="R$">R$</option></select></label>' +
+    '<div id="mmed-np-previa" class="mm-ed-previa">Digite o nome para ver quais produtos do catálogo vão contar.</div>' +
+    '<button type="button" class="mm-ed-sec" onclick="mmEdAdicionarProduto()">Adicionar em ' + mes.slice(5) + '/' + mes.slice(0, 4) + '</button>' +
+    '</div></details></div>';
+  return h;
+}
+function mmEdPreviaProduto(){
+  var box = document.getElementById('mmed-np-previa'); if (!box) return;
+  var nome = (document.getElementById('mmed-np-nome') || {}).value || '', termosTxt = (document.getElementById('mmed-np-termos') || {}).value || '';
+  var termos = ckTermosProduto(termosTxt.trim() || nome);
+  if (!termos.length) { box.textContent = 'Digite o nome para ver quais produtos do catálogo vão contar.'; return; }
+  var cat = (typeof obterMateriaisUnicos === 'function' ? obterMateriaisUnicos() : []).map(function(m){ return m.nome; });
+  var achou = cat.filter(function(n){ var x = ckSemAcento(n).replace(/\s+/g, ' '); return termos.some(function(t){ return x.indexOf(t) >= 0; }); });
+  box.innerHTML = achou.length
+    ? '✅ Vai contar <b>' + achou.length + '</b> produto(s) do catálogo: ' + achou.slice(0, 8).map(rtEsc).join(' · ') + (achou.length > 8 ? ' …' : '')
+    : '⚠️ Nenhum produto do catálogo tem essas palavras no nome. Confira como o produto aparece no pedido.';
+}
+function mmEdCfgEditavel(mes){
+  var s = ckData.settings;
+  s.produtosMetaPorMes = s.produtosMetaPorMes || {};
+  if (!s.produtosMetaPorMes[mes]) s.produtosMetaPorMes[mes] = JSON.parse(JSON.stringify(ckCfgProdutosDoMes(mes) || {}));
+  var c = s.produtosMetaPorMes[mes]; c.ocultos = c.ocultos || {}; c.extras = c.extras || {};
+  return c;
+}
+function mmEdGravarCfgProdutos(mes, msg){
+  var c = ckData.settings.produtosMetaPorMes[mes];
+  if (!Object.keys(c.ocultos || {}).length) c.ocultos = { _: false };   // mantém o registro do mês no Firebase
+  var fim = function(ok, txt){ MMED.msg = txt; MMED.msgCls = ok ? 'ok' : 'erro'; mmEdRender(true);
+    var d = document.querySelector('#mm-editor-metas details'); if (d) d.open = true;
+    if (typeof mmRenderTudo === 'function') mmRenderTudo();
+    try { if (typeof rtRender === 'function') rtRender(); } catch (e) {}
+    try { ckRenderMetasProdutoPessoa(); } catch (e) {} };
+  if (!(firebaseOK && db)) { ckSaveSettings(); fim(false, '⚠️ Sem conexão: ' + msg + ' só neste aparelho.'); return; }
+  db.ref('checkinDiario/settings/produtosMetaPorMes/' + mes).set(c)
+    .then(function(){ fim(true, '✅ ' + msg + ' (vale para a equipe toda em ' + mes.slice(5) + '/' + mes.slice(0, 4) + ' e nos meses seguintes até você mudar de novo).'); })
+    .catch(function(e){ fim(false, '❌ Não salvou: ' + (e && e.message ? e.message : e)); });
+}
+function mmEdTirarProduto(key){
+  if (!ckIsAdmin()) return;
+  if (MMED.sujo && !confirm('Você tem metas digitadas e não salvas. Elas serão descartadas. Continuar?')) return;
+  var mes = MMED.mes, g = ckProdutosDoMes(mes).find(function(x){ return x.key === key; }); if (!g) return;
+  if (!confirm('Tirar "' + g.label + '" das metas de ' + mes.slice(5) + '/' + mes.slice(0, 4) + ' para a equipe toda?\n\nAs metas já digitadas dele ficam guardadas: se ele voltar, elas voltam junto.')) return;
+  var c = mmEdCfgEditavel(mes);
+  if (g.extra) { c.extrasFora = c.extrasFora || {}; c.extrasFora[key] = c.extras[key]; delete c.extras[key]; }
+  else c.ocultos[key] = true;
+  mmEdGravarCfgProdutos(mes, '"' + g.label + '" saiu das metas');
+}
+function mmEdVoltarProduto(key){
+  if (!ckIsAdmin()) return;
+  var mes = MMED.mes, c = mmEdCfgEditavel(mes), g = CK_PRODUTOS.find(function(x){ return x.key === key; });
+  delete c.ocultos[key];
+  mmEdGravarCfgProdutos(mes, '"' + (g ? g.label : key) + '" voltou para as metas');
+}
+function mmEdAdicionarProduto(){
+  if (!ckIsAdmin()) return;
+  var nome = ((document.getElementById('mmed-np-nome') || {}).value || '').trim();
+  var termos = ((document.getElementById('mmed-np-termos') || {}).value || '').trim();
+  var unid = (document.getElementById('mmed-np-unid') || {}).value || 'qtd';
+  if (!nome) { alert('Digite o nome do produto.'); return; }
+  var mes = MMED.mes;
+  if (ckProdutosDoMes(mes).some(function(g){ return ckSemAcento(g.label) === ckSemAcento(nome); })) { alert('"' + nome + '" já está na meta deste mês.'); return; }
+  var padrao = CK_PRODUTOS.find(function(g){ return ckSemAcento(g.label) === ckSemAcento(nome); });
+  if (padrao) { mmEdVoltarProduto(padrao.key); return; }
+  var c = mmEdCfgEditavel(mes);
+  // se já existiu um igual antes (tirado), reaproveita a chave para não perder as metas antigas
+  var key = Object.keys(c.extrasFora || {}).find(function(k){ return ckSemAcento(c.extrasFora[k].label) === ckSemAcento(nome); });
+  if (key) delete c.extrasFora[key];
+  else key = 'px' + Date.now().toString(36);
+  var ordem = Object.keys(c.extras).reduce(function(mx, k){ return Math.max(mx, c.extras[k].ordem || 0); }, 0) + 1;
+  c.extras[key] = { label: nome, termos: termos || nome, ordem: ordem };
+  var s = ckData.settings;
+  s.metaProdutosUnidPorMes = s.metaProdutosUnidPorMes || {}; s.metaProdutosUnidPorMes[mes] = s.metaProdutosUnidPorMes[mes] || {};
+  s.metaProdutosUnidPorMes[mes][key] = unid;
+  if (firebaseOK && db) db.ref('checkinDiario/settings/metaProdutosUnidPorMes/' + mes + '/' + key).set(unid).catch(function(){});
+  mmEdGravarCfgProdutos(mes, '"' + nome + '" entrou nas metas — agora digite a meta de cada vendedor e clique em Salvar');
 }
 function mmEdTrocar(){
   if (MMED.sujo && !confirm('Você tem alterações não salvas. Trocar mesmo assim?')) { mmEdRender(true); return; }
@@ -20151,10 +20284,11 @@ function mmRenderProdutos(){
   var somaPessoas = [];
   pessoas.forEach(function(p){ somaPessoas = somaPessoas.concat(mmPedidosEquipe[p] || []); });
   var soma = ckSomarProdutos(somaPessoas, deStr, ateStr), totais = {};
-  CK_PRODUTOS.forEach(function(g){ totais[g.key] = ckUnidProduto(mes, g.key) === 'R$' ? soma[g.key].valor : soma[g.key].qtd; });
+  var listaMes = ckProdutosDoMes(mes);
+  listaMes.forEach(function(g){ var sg = soma[g.key] || { qtd: 0, valor: 0 }; totais[g.key] = ckUnidProduto(mes, g.key) === 'R$' ? sg.valor : sg.qtd; });
 
   var html = '';
-  CK_PRODUTOS.forEach(function(g){
+  listaMes.forEach(function(g){
     var meta = (mmSelectedUser === 'EQUIPE')
       ? mmTotalMetaProdutoEquipe(g.key, mes)
       : ckMetaProduto(mes, g.key, mmSelectedUser);
