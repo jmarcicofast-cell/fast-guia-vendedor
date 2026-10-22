@@ -919,6 +919,8 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .dc-pri:hover{background:var(--acc);filter:brightness(1.07)}
 .dc-nome{font-size:26px;font-weight:800;line-height:1.15;color:var(--txt)}
 .dc-emp{color:var(--muted);font-size:14px;margin-top:2px}
+.dc-prev{margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(183,121,31,.12);border:1px solid rgba(183,121,31,.35);font-size:13px;line-height:1.5}
+.dc-prev i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .dc-edit{display:block;width:100%;background:transparent;border:1px dashed transparent;border-radius:6px;padding:2px 6px;margin-left:-7px;font-family:inherit;outline:none}
 .dc-ctwrap{max-height:380px;overflow:auto;border:1px solid var(--line,#e2ded6);border-radius:8px;margin-top:8px}
 .dc-ct{width:100%;border-collapse:collapse;font-size:13px}
@@ -26915,7 +26917,22 @@ function dcPos() {
   var p = ((DC.estado.posicoes || {})[DC.listaId]) || 0, l = dcLista();
   if (l && l.equipe) while (p < l.contatos.length && /outro|ganho/.test(dcEqStatus(l.contatos[p]))) p++;
   if (l && l.para) while (p < l.contatos.length && l.contatos[p].repassado) p++;
+  // 22/10/2026: quem já atendeu (ou número errado / retorno agendado) não volta para a fila; Não atendeu e Caixa postal voltam, com o histórico
+  if (l && !l.equipe) while (p < l.contatos.length && dcResolvido(l.contatos[p]) && !(DC.manual && DC.manual.lista === l.id && DC.manual.p === p)) p++;
   return p;
+}
+var DC_VOLTA = { nao: 1, caixa: 1 }; // resultados que deixam o contato voltar na fila
+function dcResolvido(c) { return !!(c && c.ult && c.ult.res && !DC_VOLTA[c.ult.res]); }
+function dcFaltam(l) { return l ? l.contatos.filter(function(c) { return !dcResolvido(c) && !c.repassado; }).length : 0; }
+function dcHistHtml(a) {
+  var hs = (a.hist || []).slice(-3).reverse(); if (!hs.length) return '';
+  return '<div class="dc-prev">' + hs.map(function(x, k) {
+    var r = DC_RESMAP[x.res] || { t: x.res, cor: '#888' };
+    return '<div' + (k ? ' class="dc-sub"' : '') + '><i style="background:' + r.cor + '"></i><b>' + (k ? '' : 'Última tentativa: ') + dcEsc(r.t) + '</b> · ' +
+      dcEsc(new Date(x.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) +
+      (x.por && x.por !== currentUser ? ' · ' + dcEsc(typeof rtNome === 'function' ? rtNome(x.por) : x.por) : '') +
+      (x.obs ? ' — ' + dcEsc(x.obs) : '') + '</div>';
+  }).join('') + '</div>';
 }
 function dcAssumir(i) {
   var l = (DC.todasListas || []).find(function(x) { return x.equipe; }); if (!l || !l.contatos[i]) return;
@@ -26937,7 +26954,7 @@ function dcEqIdx(a) { var l = dcLista(); if (!l || !l.equipe || !a || DC.avulso)
 function dcAlvo() {
   if (DC.avulso) return DC.avulso;
   var l = dcLista(); if (!l) return null;
-  var c = l.contatos[dcPos()]; return c ? { nome: c.nome, empresa: c.empresa, tel: c.tel, obs: c.obs, origem: 'lista' } : null;
+  var c = l.contatos[dcPos()]; return c ? { nome: c.nome, empresa: c.empresa, tel: c.tel, obs: c.obs, hist: c.hist || [], origem: 'lista' } : null;
 }
 function dcResumo(itens) {
   var at = itens.filter(function(x) { return DC_RESMAP[x.res] && DC_RESMAP[x.res].at; });
@@ -26992,7 +27009,7 @@ function dcVDiscar() {
     h += '<div class="dc-eyebrow">' + (DC.avulso ? (DC.avulso.retIdx != null ? 'Retorno agendado' : 'Ligação avulsa') : 'Contato ' + (pos + 1) + ' de ' + total) + '</div>' +
       '<input class="dc-nome dc-edit" value="' + dcEsc(a.nome || '') + '" id="dc-enome" placeholder="Nome do contato ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
       '<input class="dc-emp dc-edit" value="' + dcEsc(a.empresa || '') + '" id="dc-eemp" placeholder="Empresa / loja ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
-      (a.obs ? '<div class="dc-emp">Anotação: ' + dcEsc(a.obs) + '</div>' : '') +
+      (a.obs ? '<div class="dc-emp">Anotação: ' + dcEsc(a.obs) + '</div>' : '') + dcHistHtml(a) +
       '<div class="dc-row" style="margin-top:8px"><button class="dc-btn dc-pri" id="dc-salvar" onclick="dcSalvarCard()">✓ Salvar alterações</button>' +
       (dcLista() && dcLista().equipe && !DC.avulso ? (function() { var i = dcPos(), st = dcEqStatus(l.contatos[i]);
           return st === 'meu' ? '<span class="dc-sub">✋ Assumido por você · ' + dcEqPrazo(l.contatos[i]) + '</span><button class="dc-btn dc-mini" onclick="dcLiberar(' + i + ')">Devolver</button>'
@@ -27012,7 +27029,7 @@ function dcVDiscar() {
       (DC.auto ? '<div class="dc-auto">Discando o próximo em <b id="dc-auton">' + DC.auto.n + '</b>s <button class="dc-btn" onclick="dcPararAuto()">Parar</button></div>' : '');
   } else {
     h += '<div class="dc-vazio">' + (!DC.listas.length ? 'Cadastre uma lista em <b>Listas de clientes</b> para discar em sequência. Enquanto isso, use o teclado ao lado para um número avulso.'
-      : !l ? 'Escolha uma lista acima para começar.' : 'Lista terminada: ' + total + ' contatos trabalhados. Os clientes que você adicionar entram aqui na sequência. <button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button> <button class="dc-btn" onclick="dcMover(-' + pos + ')">Recomeçar do início</button>') + '</div>';
+      : !l ? 'Escolha uma lista acima para começar.' : 'Lista terminada: ' + total + ' contatos trabalhados' + (dcFaltam(l) ? ' · <b>' + dcFaltam(l) + '</b> ainda sem atender (Não atendeu / Caixa postal)' : '') + '. Os clientes que você adicionar entram aqui na sequência. <button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button> <button class="dc-btn" onclick="dcRecomecar()">' + (dcFaltam(l) ? 'Ligar de novo para quem não atendeu' : 'Recomeçar do início') + '</button>') + '</div>';
   }
   h += '</div>';
   if (l) h += '<div class="dc-sub">Lista: ' + Math.min(pos, total) + ' de ' + total + ' trabalhados · discagem automática ' + (p.auto ? 'ligada (' + p.espera + 's)' : 'desligada') + '</div>';
@@ -27326,11 +27343,26 @@ function dcSalvarEstado(fn) {
 function dcMover(d) {
   if (!DC.listaId) return;
   var tot = (dcLista() || { contatos: [] }).contatos.length, novo = Math.max(0, Math.min(tot, dcPos() + d));
-  DC.call = null; dcPararAuto(true);
+  DC.call = null; dcPararAuto(true); DC.manual = d < 0 ? { lista: DC.listaId, p: novo } : null;
   dcSalvarEstado(function(e) { e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[DC.listaId] = novo; return e; }).then(dcRender);
   dcRender();
 }
 
+function dcRecomecar() { if (!DC.listaId) return; DC.manual = null; DC.call = null; dcPararAuto(true);
+  dcSalvarEstado(function(e) { e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[DC.listaId] = 0; return e; }).then(dcRender); dcRender(); }
+// grava no próprio contato da lista o resultado e a anotação, para quando ele voltar na fila
+function dcMarcarNaLista(l, pos, item) {
+  if (!l || l.equipe) return;
+  var i = l.contatos[pos] && dcMicroNum(l.contatos[pos].tel) === dcMicroNum(item.tel) ? pos : -1;
+  if (i < 0) l.contatos.some(function(c, k) { if (c && dcMicroNum(c.tel) === dcMicroNum(item.tel)) { i = k; return true; } });
+  if (i < 0) return;
+  var c = l.contatos[i], h = { res: item.res, em: item.hora, por: currentUser };
+  if (item.obs) h.obs = item.obs.slice(0, 500);
+  var upd = { ult: h, hist: (c.hist || []).concat([h]).slice(-10) };
+  if (item.obs && item.obs !== (c.obs || '')) { if (c.obs) upd.obsHist = (c.obsHist || []).concat([{ txt: c.obs, em: Date.now(), por: currentUser }]).slice(-30); upd.obs = item.obs.slice(0, 1000); }
+  Object.assign(c, upd);
+  Promise.resolve(dbRef('discador/listas/' + l.id + '/contatos/' + i).update(upd)).catch(function(e) { dcAviso('Não salvou o resultado no contato: ' + (e && e.message)); });
+}
 function dcRegistrar(res) {
   var a = dcAlvo(); if (!a) return;
   var obsEl = document.getElementById('dc-obs'), qEl = document.getElementById('dc-quando');
@@ -27345,6 +27377,8 @@ function dcRegistrar(res) {
     dbRef('discador/listas/' + lAt.id + '/contatos/' + pos + '/funil').set(lAt.contatos[pos].funil);
   }
   if (res === 'funil') dcAbrirNegociacao(a, obs, quando, lAt && !eraAvulso ? lAt.nome : '');
+  try { dcMarcarNaLista(lAt, eraAvulso ? -1 : pos, item); } catch (e) { console.warn('discador: marcar contato', e); }
+  DC.manual = null;
   if (!eraAvulso && lAt && lAt.equipe && res === 'pedido') // pedido fechado: o cliente fica com quem fechou e sai da roda da equipe
     dbRef('discador/listas/' + lAt.id + '/contatos/' + pos).update({ ganhoPor: currentUser, ganhoEm: Date.now(), dono: currentUser, assumidoEm: Date.now() });
   DC.call = null; DC.avulso = null;
@@ -27596,6 +27630,7 @@ function dcEditarContato(id, i, campo, valor) {
 }
 function dcDiscarDaqui(id, i) {
   DC.listaId = id; DC.avulso = null; DC.call = null; dcLsSet('lista_' + currentUser, id); dcPararAuto(true);
+  DC.manual = { lista: id, p: i };
   dcSalvarEstado(function(e) { e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[id] = i; return e; }).then(dcRender);
   dcSetAba('discar');
 }
