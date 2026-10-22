@@ -23906,7 +23906,7 @@ function msnRenderPip() {
   html += '</div>';
   if (MSN.pipConv) {
     var c = MSN.pipConv, msgs = (MSN.msgs[c] || []).slice(-30);
-    html += '<div class="cv"><div class="tp" style="font-size:12px"><span>' + msnEsc(msnNome(msnOutro(c))) + '</span><span><button class="bt" data-a="treme" ' + (msnSala(c) ? 'style="display:none"' : '') + '>📳</button> <button class="bt" data-a="fecha">✕</button></span></div><div class="ms" id="pms">' +
+    html += '<div class="cv"><div class="tp" style="font-size:12px"><span>' + msnEsc(msnNome(msnOutro(c))) + '</span><span><button class="bt" data-a="treme">📳</button> <button class="bt" data-a="fecha">✕</button></span></div><div class="ms" id="pms">' +
       (msgs.length ? msgs.map(function(m) { return m.tipo === 'tremer' ? '<div class="sis">📳 ' + (m.de === MSN.eu ? 'Você chamou a atenção' : msnEsc(msnNome(m.de)) + ' chamou sua atenção!') + '</div>' : '<div class="m' + (m.de === MSN.eu ? ' eu' : '') + '"><small>' + msnEsc(m.de === MSN.eu ? 'Você' : msnNome(m.de)) + ' (' + msnHora(m.ts) + '):</small><div>' + (m.apagada ? '<i style="color:#9AA5B1">🚫 Mensagem apagada</i>' : m.tipo === 'figurinha' && MSN.figs && MSN.figs[m.fig] ? '<img src="' + MSN.figs[m.fig].dados + '" style="width:80px;height:80px;object-fit:contain" alt="Figurinha">' : m.tipo === 'anexo' && m.anexo ? '<a href="#" data-anx="' + msnEsc(m.anexo.id) + '">' + msnEsc(m.txt) + '</a>' : msnEsc(m.txt)) + '</div></div>'; }).join('') : '<div class="sis" style="color:#9AA5B1">Nenhuma mensagem ainda.</div>') +
       '</div><div class="en"><input id="pin" maxlength="1000" placeholder="Escreva e tecle Enter"><button data-a="envia">Enviar</button></div></div>';
   }
@@ -24025,7 +24025,6 @@ function msnChegou(conv, v) {
   if (!v || v.de === MSN.eu) return;
   var aberta = MSN.abertas.indexOf(conv) >= 0;
   if (v.tipo === 'tremer') {
-    if (msnSala(conv)) return;
     if (MSN.tremidoEm[conv + v.ts]) return; MSN.tremidoEm[conv + v.ts] = 1;
     msnAbrir(conv);
     msnBalao(conv, v.de, 'está chamando sua atenção! 📳', true);
@@ -24429,7 +24428,7 @@ function msnCriarJanela(conv) {
     '<div class="msn-para" id="msn-pa-' + conv + '"></div>' +
     '<div class="msn-tb">' + tb('📎', 'Enviar arquivo', "document.getElementById('msn-f-" + conv + "').click()", 'Foto, print, PDF, planilha… até 5 MB. Também dá para arrastar o arquivo ou colar um print (Ctrl+V).') +
       tb('🖼️', 'Figurinhas', "msnFigAbrirPainel('" + conv + "')") + tb('✨', 'Winks', "msnWinkPainel('" + conv + "')", 'Animações que tomam conta da tela') + tb('😀', 'Emoticons', emoT) +
-      (msnSala(conv) ? '' : tb('📳', 'Chamar atenção', "msnTremer('" + conv + "')", 'Treme a tela de quem recebe')) + '</div>' +
+      tb('📳', 'Chamar atenção', "msnTremer('" + conv + "')", msnSala(conv) ? 'Treme a tela de todo mundo da sala' : 'Treme a tela de quem recebe') + '</div>' +
     '<input type="file" id="msn-f-' + conv + '" style="display:none" onchange="msnAnexarArquivos(\'' + conv + '\', this.files); this.value=\'\'">' +
     '<div class="msn-meio"><div class="msn-esq">' +
       '<div class="msn-corpo" id="msn-c-' + conv + '" aria-live="polite"><div class="msn-dia">Carregando…</div></div>' +
@@ -24438,7 +24437,7 @@ function msnCriarJanela(conv) {
         '<div class="msn-figs" id="msn-g-' + conv + '"></div>' +
         '<div class="msn-figs msn-fontes" id="msn-fo-' + conv + '" data-conv="' + conv + '"></div>' +
         '<div class="msn-figs" id="msn-wk-' + conv + '"></div>' +
-        '<div class="msn-fmt"><button type="button" onclick="msnAbrirFontes(\'' + conv + '\')" title="Fonte e cor das suas mensagens" style="font:bold 14px Georgia,serif;text-decoration:underline">A</button><button type="button" onclick="' + emoT + '" title="Emoticons">😀▾</button>' + (msnSala(conv) ? '' : '<button type="button" onclick="msnTremer(\'' + conv + '\')" title="Chamar atenção">📳</button>') + '<button type="button" onclick="msnFigAbrirPainel(\'' + conv + '\')" title="Figurinhas">🖼️</button></div>' +
+        '<div class="msn-fmt"><button type="button" onclick="msnAbrirFontes(\'' + conv + '\')" title="Fonte e cor das suas mensagens" style="font:bold 14px Georgia,serif;text-decoration:underline">A</button><button type="button" onclick="' + emoT + '" title="Emoticons">😀▾</button>' + '<button type="button" onclick="msnTremer(\'' + conv + '\')" title="Chamar atenção">📳</button>' + '<button type="button" onclick="msnFigAbrirPainel(\'' + conv + '\')" title="Figurinhas">🖼️</button></div>' +
         '<div class="msn-linha"><textarea id="msn-in-' + conv + '" maxlength="1000" aria-label="Mensagem" onkeydown="msnTecla(event,\'' + conv + '\')" oninput="msnDigitando(\'' + conv + '\')"></textarea>' +
         '<button type="button" onclick="msnEnviar(\'' + conv + '\')">Enviar</button></div></div>' +
     '</div><div class="msn-dir" id="msn-dps-' + conv + '"></div></div>' +
