@@ -27015,15 +27015,18 @@ function dcRender() {
   var obsV = obs ? obs.value : '', quandoV = quando ? quando.value : '', kAntes = obs ? obs.getAttribute('data-k') : null;
   var agT = document.getElementById('dc-ag-tel'), agC = document.getElementById('dc-ag-cont'), agTV = agT && agT.value, agCV = agC && agC.value;
   var oeEl = document.getElementById('dc-obsed'), oeV = oeEl ? oeEl.value : null;
+  var diT = document.getElementById('dci-txt'), diTV = diT ? diT.value : null, diP = document.getElementById('dci-para'), diPV = diP ? diP.value : null;
   root.innerHTML = h;
   if (oeV != null && document.getElementById('dc-obsed')) document.getElementById('dc-obsed').value = oeV;
+  if (diTV && document.getElementById('dci-txt')) { document.getElementById('dci-txt').value = diTV; dcInatPrevia(); }
+  if (diPV && document.getElementById('dci-para')) document.getElementById('dci-para').value = diPV;
   if (agTV != null && document.getElementById('dc-ag-tel')) document.getElementById('dc-ag-tel').value = agTV;
   if (agCV != null && document.getElementById('dc-ag-cont')) document.getElementById('dc-ag-cont').value = agCV;
   var obsN = document.getElementById('dc-obs'), mesmo = obsN && kAntes != null && obsN.getAttribute('data-k') === kAntes;
   if (mesmo && obsV) obsN.value = obsV;
   if (mesmo && quandoV && document.getElementById('dc-quando')) document.getElementById('dc-quando').value = quandoV;
   if (!mesmo && (foco === 'dc-obs' || foco === 'dc-quando')) foco = null;
-  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed|dci-busca)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
+  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed|dci-busca|dci-txt)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
 }
 function dcSetAba(a) { DC.aba = a; dcPararAuto(true); dcRender(); }
 
@@ -27938,9 +27941,9 @@ function dcInatStatus(c) {
   var r = c && c.ik ? DCI.recs[c.ik] : null;
   if (c.repassado) return '<div class="dc-sub">↪ ' + (c.motivo ? dcEsc(c.motivo) : 'passou para o próximo vendedor') + '</div>';
   if (c.funil || (r && r.status === 'captado' && r.captado && r.captado.vn === currentUser)) return '<div class="dc-sub">✅ no funil · fica com você</div>';
-  if (!r || r.status !== 'andamento') return '<div class="dc-sub">última compra ' + dcInatDataStr(c.ultima) + '</div>';
+  if (!r || r.status !== 'andamento') return c.ultima ? '<div class="dc-sub">última compra ' + dcInatDataStr(c.ultima) + '</div>' : '';
   var fim = dcInatFim(r), quase = fim - Date.now() < 864e5;
-  return '<div class="dc-sub">última compra ' + dcInatDataStr(c.ultima) + '</div><div class="dc-sub"' + (quase ? ' style="color:#C2413B;font-weight:600"' : '') + '>⏳ levar ao funil até ' + dcInatData(fim) + ' (' + dcInatFalta(r) + ')</div>';
+  return (c.ultima ? '<div class="dc-sub">última compra ' + dcInatDataStr(c.ultima) + '</div>' : '') + '<div class="dc-sub"' + (quase ? ' style="color:#C2413B;font-weight:600"' : '') + '>⏳ levar ao funil até ' + dcInatData(fim) + ' (' + dcInatFalta(r) + ')</div>';
 }
 function dcInatBanner(l) {
   var abertos = l.contatos.filter(function(c) { var r = c.ik && DCI.recs[c.ik]; return !c.repassado && !c.funil && r && r.status === 'andamento' && r.vn === l.inatPara; });
@@ -27949,6 +27952,63 @@ function dcInatBanner(l) {
   return '<div class="dc-prazo' + (prox && prox - Date.now() < 864e5 ? ' quase' : '') + '">💤 <b>Clientes inativos</b> distribuídos pela gestão · ' + abertos.length + ' aguardando você' +
     (prox ? ' · o próximo prazo vence em ' + dcInatData(prox) : '') +
     '<div class="dc-sub">Cada cliente fica com você ' + dias + ' dias. Se ele não entrar no funil nesse prazo (negociação aberta, pedido cadastrado ou "Levou para o funil"), passa para o próximo vendedor.</div></div>';
+}
+// ── lista colada pela gestão: entra direto na roda de inativos ──
+function dcInatVendDe(txt) {
+  var t = ckSemAcento(String(txt || '')).trim(); if (!t) return '';
+  return CK_EQUIPE.find(function(v) { return v === t || ckSemAcento(typeof rtNome === 'function' ? rtNome(v) : v) === t || ckSemAcento((typeof rtNome === 'function' ? rtNome(v) : v).split(' ')[0]) === t; }) || '';
+}
+function dcInatParse(txt) {
+  var out = [];
+  String(txt || '').split(/\r?\n/).forEach(function(line) {
+    if (!line.trim()) return;
+    var parts = line.split(/[;\t]/).map(function(x) { return x.replace(/^"|"$/g, '').trim(); });
+    if (parts.length === 1) parts = line.split(',').map(function(x) { return x.trim(); });
+    var iT = parts.findIndex(function(x) { var d = dcDig(x); return d.length >= 8 && d.length <= 13 && /^[\d\s()+\-.]+$/.test(x); });
+    if (iT < 0) return;
+    var vn = '', resto = [];
+    parts.forEach(function(x, i) { if (i === iT || !x) return; var v = !vn && dcInatVendDe(x); if (v) vn = v; else resto.push(x); });
+    var nome = resto.length > 1 ? resto[0] : '', loja = resto.length > 1 ? resto[1] : (resto[0] || '');
+    out.push({ nome: nome, empresa: loja, tel: dcDig(parts[iT]), vn: vn });
+  });
+  return out;
+}
+function dcInatPrevia() { var n = dcInatParse((document.getElementById('dci-txt') || {}).value).length; var e = document.getElementById('dci-prev'); if (e) e.textContent = n ? n + ' clientes reconhecidos' : ''; }
+function dcInatArquivo(inp) { var f = inp.files[0]; if (!f) return; var r = new FileReader(); r.onload = function() { document.getElementById('dci-txt').value = r.result; dcInatPrevia(); }; r.readAsText(f); }
+function dcInatImportar() {
+  var cfg = dcInatCfg(), lin = dcInatParse((document.getElementById('dci-txt') || {}).value);
+  var modo = (document.getElementById('dci-para') || {}).value || '';
+  if (!lin.length) { dcAviso('Nenhum telefone reconhecido. Confira o formato.'); return; }
+  var base = {}; dcInatBase().forEach(function(r) { base[r.k] = r; });
+  var tels = {}; Object.keys(DCI.recs).forEach(function(k) { var r = DCI.recs[k]; if (r && r.tel && (r.status === 'andamento' || r.status === 'captado')) tels[dcMicroNum(r.tel)] = 1; });
+  var carga = dcInatCarga(), agora = Date.now(), upd = {}, porVn = {}, n = 0, rep = 0;
+  lin.forEach(function(c) {
+    var k = c.empresa ? dcAgChave(c.empresa) : 'TEL_' + dcDig(c.tel), atual = DCI.recs[k];
+    if (upd[k] || tels[dcMicroNum(c.tel)] || (atual && (atual.status === 'andamento' || atual.status === 'captado'))) { rep++; return; }
+    var b = base[k] || {}, natural = c.vn || (modo && modo !== 'auto' ? modo : '') || b.vn || '';
+    var dono = cfg.vends.indexOf(natural) >= 0 ? natural : cfg.vends.slice().sort(function(x, y) { return (carga[x] || 0) - (carga[y] || 0); })[0];
+    if (!dono) return;
+    var rec = { k: k, empresa: c.empresa || b.empresa || dcTel(c.tel), contato: c.nome || b.contato || '', tel: dcDig(c.tel), uf: b.uf || '', ultima: b.ultima || '', vnPedidos: natural,
+      fila: dcInatFila(dono, cfg.vends), pos: 0, vn: dono, desde: agora, dias: cfg.dias, status: 'andamento', passagens: [], origem: 'lista', criadoPor: currentUser, criadoEm: agora };
+    upd[k] = rec; tels[dcMicroNum(c.tel)] = 1; (porVn[dono] = porVn[dono] || []).push(rec); carga[dono] = (carga[dono] || 0) + 1; n++;
+  });
+  if (!n) { dcAviso(rep ? 'Esses clientes já estão na roda' : 'Nenhum cliente adicionado'); return; }
+  Promise.resolve(dbRef('discador/inativos').update(upd)).then(function() {
+    return Promise.all(Object.keys(porVn).map(function(vn) { return dcInatListaAdd(vn, porVn[vn]); }));
+  }).then(function() {
+    document.getElementById('dci-txt').value = ''; dcInatPrevia();
+    dcAviso(n + ' cliente' + (n > 1 ? 's' : '') + ' na roda' + (rep ? ' · ' + rep + ' já estava' + (rep > 1 ? 'm' : '') + ' e ' + (rep > 1 ? 'foram ignorados' : 'foi ignorado') : ''));
+  }).catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
+}
+function dcInatListaFormHtml() {
+  return '<div class="dc-card"><div class="dc-eyebrow">➕ Adicionar minha lista de inativos</div>' +
+    '<div class="dc-sub" style="margin-bottom:8px">Cole uma linha por cliente: nome, loja e telefone, separados por ponto e vírgula ou tabulação (pode colar do Excel). Se quiser, coloque o vendedor na linha. Os clientes entram direto na roda, com a mesma regra de ' + dcInatCfg().dias + ' dias.</div>' +
+    '<label class="dc-lab">Começar com<select id="dci-para"><option value="auto">Quem cadastrou o último pedido (ou o vendedor da linha)</option>' +
+      dcInatCfg().vends.map(function(v) { return '<option value="' + v + '">' + dcInatNome(v) + '</option>'; }).join('') + '</select></label>' +
+    '<textarea id="dci-txt" rows="7" style="width:100%;margin-top:8px" oninput="dcInatPrevia()" placeholder="Carlos Souza; Casa do Drywall; (11) 98765-4321&#10;Gesso &amp; Cia; 21 3344-5566; Vitor"></textarea>' +
+    '<div class="dc-row" style="margin-top:8px"><label class="dc-btn" for="dci-file">Abrir arquivo .csv</label><input type="file" id="dci-file" accept=".csv,.txt" style="display:none" onchange="dcInatArquivo(this)"><span class="dc-sub" id="dci-prev"></span></div>' +
+    '<button class="dc-btn dc-pri" style="margin-top:10px" onclick="dcInatImportar()">Colocar na roda</button>' +
+    '<div class="dc-sub" style="margin-top:6px">Sem vendedor na linha e sem pedido cadastrado, o cliente vai para quem tem menos inativos em andamento. Esta lista não respeita o limite por vendedor.</div></div>';
 }
 function dcVInativos() {
   if (!dcGestao()) return '<div class="dc-vazio">Só a gestão distribui clientes inativos.</div>';
@@ -27966,7 +28026,7 @@ function dcVInativos() {
     (cfg.lim ? '<span class="dc-sub" style="margin-left:8px">até ' + cfg.lim + ' em andamento por vendedor; o que passar fica para a próxima</span>' : '') +
     (pend.length - comTel.length ? '<div class="dc-sub" style="margin-top:8px">Os sem telefone ficam de fora. Preencha o telefone na <b>Agenda de clientes</b> (aba Discar) e eles entram na próxima distribuição.</div>' : '') + '</div>';
 
-  h += '<div class="dc-grid"><div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Regras da roda</div>' +
+  h += '<div class="dc-grid"><div class="dc-col">' + dcInatListaFormHtml() + '<div class="dc-card"><div class="dc-eyebrow">Regras da roda</div>' +
     '<div class="dc-row" style="gap:10px"><label class="dc-lab" style="flex:1;min-width:130px">Prazo para entrar no funil (dias)<input type="number" id="dci-dias" min="1" max="30" value="' + cfg.dias + '"></label>' +
     '<label class="dc-lab" style="flex:1;min-width:130px">Máximo em andamento por vendedor (0 = sem limite)<input type="number" id="dci-lim" min="0" max="500" value="' + cfg.lim + '"></label></div>' +
     '<div class="dc-lab" style="margin-top:10px">Vendedores na roda (ordem da equipe)</div><div class="dc-row" style="gap:6px 14px;margin-top:4px">' +
@@ -27996,7 +28056,7 @@ function dcVInativos() {
         : r.status === 'sem_retorno' ? 'passou por todos sem entrar no funil · ' + dcInatData(r.fimEm) : 'tirado da roda em ' + dcInatData(r.fimEm);
       var acoes = r.status === 'andamento' ? '<button class="dc-btn dc-mini" onclick="dcInatAcao(\'passar\',\'' + dcEsc(r.k) + '\')">Passar agora</button> <button class="dc-btn dc-mini" onclick="dcInatAcao(\'tirar\',\'' + dcEsc(r.k) + '\')">' + (DCI.confirma === 't' + r.k ? 'Confirmar' : 'Tirar') + '</button>'
         : (r.status === 'sem_retorno' || r.status === 'removido') ? '<button class="dc-btn dc-mini" onclick="dcInatAcao(\'recomecar\',\'' + dcEsc(r.k) + '\')">Recomeçar roda</button>' : '';
-      return '<div class="dc-it"><div style="min-width:0;flex:1"><b>' + dcEsc(r.empresa) + '</b> <span class="dc-sub">' + dcEsc(dcTel(r.tel)) + ' · última compra ' + dcInatDataStr(r.ultima) + '</span><div class="dc-sub">' + info + '</div><div class="dc-sub" style="margin-top:2px">' + fila + '</div></div><div class="dc-row" style="flex-shrink:0">' + acoes + '</div></div>';
+      return '<div class="dc-it"><div style="min-width:0;flex:1"><b>' + dcEsc(r.empresa) + '</b> <span class="dc-sub">' + dcEsc(dcTel(r.tel)) + (r.ultima ? ' · última compra ' + dcInatDataStr(r.ultima) : r.origem === 'lista' ? ' · da sua lista' : '') + '</span><div class="dc-sub">' + info + '</div><div class="dc-sub" style="margin-top:2px">' + fila + '</div></div><div class="dc-row" style="flex-shrink:0">' + acoes + '</div></div>';
     }).join('') : '<div class="dc-vazio">Nada aqui.</div>') + '</div></div></div>';
   return h;
 }
