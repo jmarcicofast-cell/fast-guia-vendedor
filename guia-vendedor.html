@@ -5360,7 +5360,7 @@ var CA_UNIDADE_RIO = 'Televendas';
 var CA_VENDEDORES_LIBERADOS = ['PEDRO', 'GESSICA', 'BREDER', 'JONATAS', 'ELIZIANE', 'VITOR', 'ANTONIO', 'WELLINGTON'];
 function caUsuarioLiberado(user){
   if (!user || !vendedores[user]) return false;
-  return user === 'JULIANA' || vendedores[user].tipo === 'administrativo' || CA_VENDEDORES_LIBERADOS.indexOf(user) !== -1;
+  return ehDona(user) || vendedores[user].tipo === 'administrativo' || CA_VENDEDORES_LIBERADOS.indexOf(user) !== -1;
 }
 /* unidades que não aparecem para um usuário do guia */
 var CA_UNID_OCULTAS = {};
@@ -5478,9 +5478,9 @@ var CA_ACOES_GRAVAM = { 'nova-venda':1, 'novo-abast':1, 'chegou':1, 'v-salvar':1
   'vc-abrir':1, 'vc-vincular':1, 'desvincular':1, 'cad-del':1, 'abast-da-selecao':1, 'abast-da-venda':1, 'sel':1, 'sel-dc':1 };
 function caVeTudo(){ return caUnidGeral() || (!CA.unid && typeof abVeTudo === 'function' && abVeTudo()); }
 /* equipe do Televendas (vendedores, inclusive a líder) vê só o Televendas na Central; gestão e administrativo veem tudo */
-function caSoTelevendas(){ return !CA.unid && !!currentUser && currentUser !== 'JULIANA' && !(typeof abEhAdm === 'function' && abEhAdm()); }
+function caSoTelevendas(){ return !CA.unid && !!currentUser && !ehDona() && !(typeof abEhAdm === 'function' && abEhAdm()); }
 function caMostraUnid(){ return (!CA.unid && !caSoTelevendas()) || caUnidGeral(); }
-function caPodeCadastro(){ return !CA.unid && (currentUser === 'JULIANA' || (typeof abEhAdm === 'function' && abEhAdm())); }
+function caPodeCadastro(){ return !CA.unid && (ehDona() || (typeof abEhAdm === 'function' && abEhAdm())); }
 function caAutor(){ return CA.unid ? 'unid:' + CA.unid.key : (currentUser || ''); }
 function caMinhaUnidade(){ return CA.unid ? CA.unid.unidade : CA_UNIDADE_RIO; }
 function caNomeAutor(a){ if (!a) return ''; if (a.indexOf('unid:') === 0){ var u = CA_UNIDADES[a.slice(5)]; return u ? u.nome : a.slice(5); } return (typeof abNomeVend === 'function') ? abNomeVend(a) : a; }
@@ -7225,9 +7225,9 @@ var QZ_NO = ['Quase lá.','Não foi dessa vez.','Atenção nessa!','Não exatame
 var QZ = { ligado:false, dados:{}, quiz:null, i:0, ans:[], dicas:0 };
 
 function qzEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-function qzGestora(){ return currentUser === 'JULIANA'; }
+function qzGestora(){ return ehDona(); }
 function qzMeus(){ return QZ_QUIZZES.filter(function(q){ return qzGestora() || q.para.indexOf(currentUser) >= 0; }); }
-function qzTemAcesso(user){ return user === 'JULIANA' || QZ_QUIZZES.some(function(q){ return q.para.indexOf(user) >= 0; }); }
+function qzTemAcesso(user){ return ehDona(user) || QZ_QUIZZES.some(function(q){ return q.para.indexOf(user) >= 0; }); }
 function qzNome(login){ return (vendedores[login] && vendedores[login].nome) || login; }
 function qzData(ts){ var d = new Date(+ts); return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
 function qzTentativas(quizId, login){
@@ -7730,7 +7730,7 @@ function abrirEditarPedido(vendNome, pedidoId) {
   dbRef('pedidos/' + vendNome + '/' + pedidoId).once('value').then(function(snap) {
     var p = snap.val();
     if (!p) { alert('Pedido nao encontrado.'); return; }
-    if (p.status === 'faturado' && currentUser !== 'JULIANA') { avisarPedidoTravado(); return; }
+    if (p.status === 'faturado' && !ehDona()) { avisarPedidoTravado(); return; }
     pedidoEmEdicao = { vendNome: vendNome, pedidoId: pedidoId, pedido: p };
 
     // Fill modal fields
@@ -8291,7 +8291,7 @@ function exportarPedidosExcel() {
   if (btn) { btn.textContent = 'Gerando...'; btn.disabled = true; }
 
   // Collect all pedidos
-  var nomes = currentUser === 'JULIANA' ? ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'] : [currentUser];
+  var nomes = ehDona() ? ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'] : [currentUser];
   var allPedidos = [];
   var pendentes = nomes.length;
 
@@ -8531,7 +8531,7 @@ function renderFeedPremiacoes(){
     return;
   }
 
-  var admin = (typeof ckIsAdmin === 'function') ? ckIsAdmin() : (currentUser === 'JULIANA');
+  var admin = (typeof ckIsAdmin === 'function') ? ckIsAdmin() : (ehDona());
   box.innerHTML = posts.map(function(p){
     var dataFmt = new Date(p.data).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }) +
       ' às ' + new Date(p.data).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
@@ -11290,7 +11290,7 @@ function salvarPedido() {
 // alterar status, observação, editar ou excluir o pedido.
 function pedidoEstaTravado(vendNome, pedidoId) {
   var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vendNome && x.id === pedidoId; });
-  return !!(p && p.status === 'faturado' && currentUser !== 'JULIANA');
+  return !!(p && p.status === 'faturado' && !ehDona());
 }
 function avisarPedidoTravado() {
   alert('🔒 Este pedido já foi faturado e só pode ser alterado pela Juliana.');
@@ -11375,7 +11375,7 @@ function confirmarDocFaturado() {
 }
 
 function salvarNumDoc(vendNome, pedidoId, valor) {
-  if (currentUser !== 'JULIANA') return;
+  if (!ehDona()) return;
   dbRef('pedidos/' + vendNome + '/' + pedidoId + '/numDoc').set(valor || '')
     .catch(e => console.error('Erro ao salvar nº do documento:', e));
 }
@@ -11410,7 +11410,7 @@ function restaurarPedido(vendNome, pedidoId) {
 }
 
 function excluirPedidoDefinitivo(vendNome, pedidoId) {
-  if (currentUser !== 'JULIANA' && currentUser !== 'ELIZIANE') {
+  if (!ehDona() && currentUser !== 'ELIZIANE') {
     alert('Apenas a gestão pode excluir um pedido definitivamente.');
     return;
   }
@@ -11451,7 +11451,7 @@ function renderLixeiraPedidos() {
     atualizarBadgeLixeira();
     return;
   }
-  var podeExcluirDefinitivo = (currentUser === 'JULIANA' || currentUser === 'ELIZIANE');
+  var podeExcluirDefinitivo = (ehDona() || currentUser === 'ELIZIANE');
   box.innerHTML = _pedExcluidos.map(function(p) {
     var quando = p.excluidoEm ? new Date(p.excluidoEm).toLocaleString('pt-BR') : '—';
     return '<div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">' +
@@ -11482,7 +11482,7 @@ function linhaPedidoHtml(p, isGestora) {
   var vendLabel = isGestora ? '<td style="font-size:12px;font-weight:600;color:var(--acc-txt);">' + (p.vendedor||'') + '</td>' : '';
   var clienteNome = p.empresa || p.cliente || '—';
   var obsVal = (p.obs || '').replace(/"/g,'&quot;');
-  var travadoNegocio = p.status === 'faturado' && currentUser !== 'JULIANA';
+  var travadoNegocio = p.status === 'faturado' && !ehDona();
   var selectAttrs = travadoNegocio ? ' disabled style="font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid var(--line);background:var(--surface-2);color:var(--faint);cursor:not-allowed;"' : ' style="font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid var(--line);cursor:pointer;"';
   var obsAttrs = travadoNegocio ? ' readonly style="width:150px;font-size:11.5px;padding:5px 8px;border-radius:5px;border:1px solid var(--line);outline:none;color:var(--faint);background:var(--surface-2);cursor:not-allowed;"' : ' style="width:150px;font-size:11.5px;padding:5px 8px;border-radius:5px;border:1px solid var(--line);outline:none;color:var(--txt);"';
   return '<tr onclick="abrirDetalhePedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="cursor:pointer;">' +
@@ -11505,7 +11505,7 @@ function linhaPedidoHtml(p, isGestora) {
 function numDocCellHtml(p) {
   if (p.status !== 'faturado') return '<span style="color:var(--faint);font-size:12px;">—</span>';
   var val = (p.numDoc || '').toString().replace(/"/g,'&quot;');
-  if (currentUser === 'JULIANA') {
+  if (ehDona()) {
     return '<input type="text" value="' + val + '" placeholder="—" style="width:90px;font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid var(--line);outline:none;font-family:monospace;" onblur="salvarNumDoc(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()">';
   }
   return '<span style="font-family:monospace;font-size:12.5px;font-weight:600;">' + (val || '—') + '</span>';
@@ -11524,7 +11524,7 @@ function fmtBRLConc(n) { return 'R$ ' + Number(n||0).toLocaleString('pt-BR',{min
 // ── PIPE FAST: o vendedor confere se o pedido já foi lançado no Pipe FAST (Sim/Não) ──
 function pipeFastPodeMarcar(p) {
   if (!currentUser || !p) return false;
-  return currentUser === 'JULIANA' || p.vendedor === currentUser || (typeof ehLider === 'function' && ehLider());
+  return ehDona() || p.vendedor === currentUser || (typeof ehLider === 'function' && ehLider());
 }
 function pipeFastCellHtml(p) {
   var v = p.pipeFast || '', pode = pipeFastPodeMarcar(p);
@@ -11563,7 +11563,7 @@ function conciliacaoCellHtml(p) {
         : '<span style="font-size:11px;font-weight:700;color:var(--acc-txt);" title="Vendida, faturada e conciliada fora do mesmo mês — não gera comissão">🚫 Fora da janela · sem comissão</span>') +
     '</div>';
   }
-  if (currentUser === 'JULIANA') {
+  if (ehDona()) {
     return '<button type="button" onclick="abrirModalConciliar(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:1.5px solid #1B5E20;background:var(--surface);color:color-mix(in srgb, #1B5E20 var(--tm), #fff);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;font-weight:700;white-space:nowrap;">⚖️ Conciliar</button>';
   }
   return '<span style="font-size:11px;color:#E65100;font-weight:600;">⏳ Pendente</span>';
@@ -11648,7 +11648,7 @@ function calcComissaoPedidoBruta(p) {
 var _concPendente = null;
 
 function abrirModalConciliar(vendNome, pedidoId) {
-  if (currentUser !== 'JULIANA') return;
+  if (!ehDona()) return;
   var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vendNome && x.id === pedidoId; });
   if (!p || p.status !== 'faturado') return;
   var mesRef = (p.data || new Date().toISOString()).slice(0,7);
@@ -11744,7 +11744,7 @@ function atualizarAvisoJanelaConc() {
 }
 
 function alterarDataConciliacao(vendNome, pedidoId) {
-  if (currentUser !== 'JULIANA') return;
+  if (!ehDona()) return;
   var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vendNome && x.id === pedidoId; });
   if (!p || !p.conciliado) return;
   var atual = p.conciliadoEm ? p.conciliadoEm.split('-').reverse().join('/') : '';
@@ -11765,7 +11765,7 @@ function fecharModalConciliar() {
 }
 
 function confirmarConciliacao() {
-  if (!_concPendente || currentUser !== 'JULIANA') return;
+  if (!_concPendente || !ehDona()) return;
   var pend = _concPendente;
   var dtEl = document.getElementById('conc-data');
   var dtConc = (dtEl && /^\d{4}-\d{2}-\d{2}$/.test(dtEl.value)) ? dtEl.value : new Date().toISOString().split('T')[0];
@@ -11780,7 +11780,7 @@ function confirmarConciliacao() {
 }
 
 function desfazerConciliacao(vendNome, pedidoId) {
-  if (currentUser !== 'JULIANA') return;
+  if (!ehDona()) return;
   if (!confirm('Desfazer a conciliação desta carga? A comissão calculada será apagada.')) return;
   dbRef('pedidos/' + vendNome + '/' + pedidoId).update({
     conciliado: null, conciliadoEm: null, conciliadoPor: null, comissaoConc: null
@@ -11807,7 +11807,7 @@ function cardPedidoHtml(p, isGestora) {
   var clienteNome = p.empresa || p.cliente || '—';
   var vendLine = isGestora ? '<div style="font-size:11px;font-weight:700;color:var(--acc-txt);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">' + (p.vendedor||'') + '</div>' : '';
   var obsVal = (p.obs || '').replace(/"/g,'&quot;');
-  var travadoNegocio = p.status === 'faturado' && currentUser !== 'JULIANA';
+  var travadoNegocio = p.status === 'faturado' && !ehDona();
   var obsAttrs = travadoNegocio ? ' readonly style="width:100%;margin-top:10px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid var(--line);outline:none;color:var(--faint);background:var(--surface-2);cursor:not-allowed;"' : ' style="width:100%;margin-top:10px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid var(--line);outline:none;color:var(--txt);"';
   return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;">' +
     '<div onclick="abrirDetalhePedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="cursor:pointer;">' +
@@ -11860,7 +11860,7 @@ function abrirDetalhePedido(vend, pedidoId) {
   if (titulo) titulo.textContent = (p.empresa || p.cliente || 'Pedido');
   var veicLabel = p.veiculo==='truck' ? 'Truck' : p.veiculo==='carreta' ? 'Carreta' : p.veiculo==='outros' ? 'Outros' : '—';
   var itens = p.itens && p.itens.length ? p.itens : (p.material ? [{material:p.material, qtd:p.qtd||0, vUnit:p.vUnit||0}] : []);
-  var travadoNegocio = p.status === 'faturado' && currentUser !== 'JULIANA';
+  var travadoNegocio = p.status === 'faturado' && !ehDona();
 
   if (body) {
     body.innerHTML =
@@ -11871,7 +11871,7 @@ function abrirDetalhePedido(vend, pedidoId) {
       (p.status === 'faturado' ?
         '<div style="background:var(--surface-2);border-radius:8px;padding:9px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
           '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">📄 Nº Documento (DOC)</span>' +
-          (currentUser === 'JULIANA' ?
+          (ehDona() ?
             '<input type="text" value="' + (p.numDoc||'').toString().replace(/"/g,'&quot;') + '" placeholder="Digite o nº do DOC" style="width:140px;font-size:13px;font-family:monospace;font-weight:700;padding:5px 8px;border-radius:6px;border:1px solid var(--line);outline:none;text-align:right;" onblur="salvarNumDoc(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)" onkeydown="if(event.key===\'Enter\') this.blur()">'
             :
             '<span style="font-size:13px;font-family:monospace;font-weight:700;color:var(--txt);">' + (p.numDoc || '—') + '</span>') +
@@ -11882,8 +11882,8 @@ function abrirDetalhePedido(vend, pedidoId) {
           '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:' + (p.conciliado ? '#1B5E20' : '#E65100') + ';">⚖️ Conciliação' +
             (p.conciliado && p.conciliadoEm ? ' <span style="font-weight:500;text-transform:none;letter-spacing:0;">· ' + new Date(p.conciliadoEm + 'T12:00:00').toLocaleDateString('pt-BR') + '</span>' : '') + '</span>' +
           '<span style="display:flex;align-items:center;gap:8px;">' + conciliacaoCellHtml(p) +
-            (p.conciliado && currentUser === 'JULIANA' ? '<button type="button" onclick="alterarDataConciliacao(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:none;color:color-mix(in srgb, #1B5E20 var(--tm), #fff);font-size:11px;cursor:pointer;text-decoration:underline;">alterar data</button>' : '') +
-            (p.conciliado && currentUser === 'JULIANA' ? '<button type="button" onclick="desfazerConciliacao(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:none;color:var(--acc-txt);font-size:11px;cursor:pointer;text-decoration:underline;">desfazer</button>' : '') +
+            (p.conciliado && ehDona() ? '<button type="button" onclick="alterarDataConciliacao(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:none;color:color-mix(in srgb, #1B5E20 var(--tm), #fff);font-size:11px;cursor:pointer;text-decoration:underline;">alterar data</button>' : '') +
+            (p.conciliado && ehDona() ? '<button type="button" onclick="desfazerConciliacao(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:none;color:var(--acc-txt);font-size:11px;cursor:pointer;text-decoration:underline;">desfazer</button>' : '') +
           '</span>' +
         '</div>'
         : '') +
@@ -14824,6 +14824,9 @@ const vendedores = {
   'ELIZIANE': { senha: 'ELIZI123', nome: 'Eliziane', tipo: 'veterana', lider: true,
     meta: 'R$ 80.000', realizado: 'R$ 0', pedidos: '0', ticket: 'R$ 0', pct: 0,
     obs: 'Bem-vinda, Eliziane! Seus dados serao atualizados pela gestao.', credenciais: [] },
+  'POLIANA':  { senha: 'POLI123', nome: 'Poliana', tipo: 'gestora', diretoria: true,
+    meta: 'R$ 0', realizado: 'R$ 0', pedidos: '0', ticket: 'R$ 0', pct: 0,
+    obs: 'Bem-vinda, Poliana! Painel da diretoria.', credenciais: [] },
   'JULIANA':  { senha: 'JU1234', nome: 'Juliana', tipo: 'gestora',
     meta: 'R$ 7.319.212', realizado: 'R$ 0', pedidos: '0', ticket: 'R$ 0', pct: 0,
     obs: 'Bem-vinda, Juliana! Painel da gestao.', credenciais: [] },
@@ -14854,7 +14857,8 @@ function doLogin() {
   const pass  = document.getElementById('login-pass').value.trim().toUpperCase();
   const error = document.getElementById('login-error');
   if (typeof acChaveDoLogin === 'function') { var _chave = acChaveDoLogin(user); if (_chave) user = _chave; else if (vendedores[user]) user = '#' + user; }
-  if (!vendedores[user] && typeof caLoginUnidade === 'function' && caLoginUnidade(user, pass)) { error.textContent = ''; return; }
+  if (typeof caLoginUnidade === 'function' && (!vendedores[user] || String(vendedores[user].senha).toUpperCase() !== pass) && caLoginUnidade(user, pass)) { error.textContent = ''; return; }
+  if (!vendedores[user] && OP_OUTRA.logins.indexOf(user) >= 0) { error.innerHTML = 'Seu acesso é do <b>' + OP_OUTRA.nome + '</b>. <a href="' + OP_OUTRA.url + '">Entrar no guia do ' + OP_OUTRA.nome + '</a>'; return; }
   const v = vendedores[user];
   if (!v || String(v.senha).toUpperCase() !== pass) {
     error.textContent = (!v && typeof AC !== 'undefined' && !AC.carregado)
@@ -15001,7 +15005,7 @@ function entrarComoUsuario(user) {
   // criar pedidos direto, sem precisar passar por uma negociação primeiro.
   var btnNovoPed = document.getElementById('btn-novo-pedido');
   if (btnNovoPed) btnNovoPed.style.display = (v.tipo === 'administrativo') ? 'none' : 'inline-block';
-    if (v.nome !== 'Juliana') {
+    if (!ehDona(user)) {
       fbListenVendedor(user);
       listenLigacoesVendedor(user);
     }
@@ -15023,16 +15027,16 @@ function entrarComoUsuario(user) {
     if (gestTools) gestTools.style.display = 'block';
     configurarFormPremiacao(v.tipo);
     var fotosAdmin = document.getElementById('rank-fotos-admin');
-    if (fotosAdmin) fotosAdmin.style.display = (v.nome === 'Juliana') ? 'block' : 'none';
+    if (fotosAdmin) fotosAdmin.style.display = (ehDona(user)) ? 'block' : 'none';
     var feedForm = document.getElementById('feed-form-post');
-    if (feedForm) feedForm.style.display = (v.nome === 'Juliana') ? 'block' : 'none';
+    if (feedForm) feedForm.style.display = (ehDona(user)) ? 'block' : 'none';
   });
   // Start listening to pedidos
   listenPedidos(user, v.tipo === 'gestora' || v.tipo === 'administrativo');
   try { if (typeof qdOuvir === 'function') qdOuvir(); } catch (e) { console.warn('quadro', e); }
   // Base de Clientes: só a Juliana vê
   var navCli = document.getElementById('nav-clientes');
-  if (navCli) navCli.style.display = (user === 'JULIANA') ? '' : 'none';
+  if (navCli) navCli.style.display = (ehDona(user)) ? '' : 'none';
   // Central de Abastecimento: só Juliana, administrativo e os vendedores liberados
   var navCen = document.getElementById('nav-central');
   if (navCen) navCen.style.display = caUsuarioLiberado(user) ? '' : 'none';
@@ -15052,7 +15056,8 @@ function entrarComoUsuario(user) {
     listenEvolucaoGestora();
     listenPaineisGestora();
   }
-  try { if (v.lider) liderAoEntrar(); if (user === 'JULIANA') liderOuvirSolicitacoes(); } catch(e) { console.warn('lider', e); }
+  try { var sbOp = document.getElementById('sb-op'); if (sbOp) sbOp.style.display = v.diretoria ? '' : 'none'; } catch (e) {}
+  try { if (v.lider) liderAoEntrar(); if (ehDona(user)) liderOuvirSolicitacoes(); } catch(e) { console.warn('lider', e); }
   // Render personal credentials
   const credBox = document.getElementById('credenciais-box');
   const credGrid = document.getElementById('credenciais-grid');
@@ -15108,6 +15113,13 @@ var _liderEquipeLigada = false;
 var _liderGuardOk = false;
 var _liderUltimoAviso = 0;
 
+/* dona do guia (gestora principal) ou diretoria: os mesmos poderes da gestora principal */
+function ehDona(u) { u = u || currentUser; return u === 'JULIANA' || !!(u && vendedores[u] && vendedores[u].diretoria); }
+/* ── OPERAÇÕES SEPARADAS: este guia é o do Televendas. O Atacado BA usa atacado-ba.html, com dados
+   próprios no Firebase (tudo em ba/...) e no navegador. A diretoria entra nos dois e troca pelo menu. ── */
+var OP_ATUAL = { k: 'tv', nome: 'Televendas' };
+var OP_OUTRA = { k: 'ba', nome: 'Atacado BA', url: 'atacado-ba.html', logins: ['ANACAROLINA', 'ANA CAROLINA', 'ANA', 'BRUNO', 'NIVIA'] };
+function opIrOutra() { location.href = OP_OUTRA.url; }
 function ehLider(u) { u = u || currentUser; return !!(u && vendedores[u] && vendedores[u].lider); }
 function liderPodeEditar() { return ehLider() && !!(_liderAcesso && _liderAcesso.liberado); }
 function liderTravado() { return ehLider() && !liderPodeEditar(); }
@@ -15341,12 +15353,12 @@ function liderSugerirVendedorNoForm() {
 // ── Tela da Juliana: pedidos de autorização ──
 var _liderAprovLigado = false;
 function liderOuvirSolicitacoes() {
-  if (currentUser !== 'JULIANA' || _liderAprovLigado) return;
+  if (!ehDona() || _liderAprovLigado) return;
   _liderAprovLigado = true;
   dbRef('liderAcesso').on('value', function(snap) { liderRenderAprovacoes((snap && snap.val()) || {}); });
 }
 function liderRenderAprovacoes(todos) {
-  if (currentUser !== 'JULIANA') return;
+  if (!ehDona()) return;
   var box = document.getElementById('lider-aprov-box');
   if (!box) {
     box = document.createElement('div'); box.id = 'lider-aprov-box';
@@ -15376,7 +15388,7 @@ function liderRenderAprovacoes(todos) {
   box.style.display = html ? 'flex' : 'none';
 }
 function liderResponder(u, aprovar) {
-  if (currentUser !== 'JULIANA') return;
+  if (!ehDona()) return;
   if (!(firebaseOK && db)) { alert('Sem conexão com o servidor agora. Tente de novo em instantes.'); return; }
   var upd = {};
   upd['solicitacao/status'] = aprovar ? 'aprovada' : 'recusada';
@@ -15385,7 +15397,7 @@ function liderResponder(u, aprovar) {
   db.ref('liderAcesso/' + u).update(upd).catch(function(e) { alert('Não consegui salvar: ' + (e && e.message ? e.message : e)); });
 }
 function liderTravar(u) {
-  if (currentUser !== 'JULIANA') return;
+  if (!ehDona()) return;
   if (!(firebaseOK && db)) { alert('Sem conexão com o servidor agora. Tente de novo em instantes.'); return; }
   db.ref('liderAcesso/' + u).update({ liberado: false, travadoEm: Date.now() })
     .catch(function(e) { alert('Não consegui travar: ' + (e && e.message ? e.message : e)); });
@@ -15417,7 +15429,7 @@ var RT_SPR = {
 var RT_ORDEM = ['capivara','arara','robo','astronauta','gato','raposa','onca','tucano'];
 
 function rtEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
-function rtGestao() { return currentUser === 'JULIANA' || (typeof ehLider === 'function' && ehLider()); }
+function rtGestao() { return ehDona() || (typeof ehLider === 'function' && ehLider()); }
 function rtNome(vn) { return (vendedores[vn] && vendedores[vn].nome) || vn; }
 function rtJoga(vn) { return CK_EQUIPE.indexOf(vn) !== -1; }
 
@@ -17005,13 +17017,13 @@ var RT_CHECKS = [
 ];
 // MicroSIP: ligações do ramal, lançadas só pela gestão (campo 'micro' no mesmo registro do dia).
 // Total do dia (qtd) = WhatsApp e outros (c12 + c18) + MicroSIP.
-function rtPodeMicro() { return currentUser === 'JULIANA' || !!(vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora'); }
+function rtPodeMicro() { return ehDona() || !!(vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora'); }
 function rtLigDet(vn, data) { return ((RT.ligDet || {})[vn] || {})[data] || {}; }
 function rtLigHojeDet(vn) { return ((RT.ligDet || {})[vn] || {})[ckToday()] || {}; }
 function rtDiaUtilHoje() { var w = new Date().getDay(); return w !== 0 && w !== 6; }
 function rtHoraAgora() { var d = new Date(); return d.getHours() + d.getMinutes() / 60; }
 function rtHoraFmt(ts) { if (!ts) return ''; var d = new Date(ts); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
-function rtLigPodeEditar(vn) { return vn === currentUser || currentUser === 'JULIANA'; }
+function rtLigPodeEditar(vn) { return vn === currentUser || ehDona(); }
 function rtCardLigacoes(c, eu, alvoLig) {
   // Ligações não são mais lançadas à mão: contam sozinhas pelo Discador (só as atendidas).
   // Lançamentos manuais antigos do dia (checks 12h/18h e MicroSIP) continuam somando, só para leitura.
@@ -17163,14 +17175,14 @@ function rtAvisoMetasOutrosMeses(vn) {
   var h = '<div class="rt-aviso" style="margin-bottom:10px;font-size:13.5px;line-height:1.5">📍 As metas vêm de <b>Check-in › Metas de produto</b>, mês <b>' + rot(mesAt) + '</b> (' + nAt + ' de ' + listaAt.length + ' produtos preenchidos para ' + rtEsc(rtNome(vn)) + ').';
   if (achados.length) {
     h += '<br>Encontrei metas de produto de ' + rtEsc(rtNome(vn)) + ' em: ' + achados.map(function(a) { return '<b>' + rot(a.m) + '</b> (' + a.n + ' produtos)'; }).join(', ') + '.';
-    if (currentUser === 'JULIANA') h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' + achados.map(function(a) {
+    if (ehDona()) h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' + achados.map(function(a) {
       return '<button type="button" onclick="rtCopiarMetas(\'' + vn + '\',\'' + a.m + '\')" style="border:2px solid #7A4A00;background:var(--surface);padding:5px 10px;font-weight:700;cursor:pointer;font-family:inherit">Usar as de ' + rot(a.m) + ' em ' + rot(mesAt) + '</button>';
     }).join('') + '</div><div style="font-size:12.5px;margin-top:4px">Copia só os produtos que ainda estão sem meta em ' + rot(mesAt) + '; o que já está preenchido não muda.</div>';
   }
   return h + '</div>';
 }
 function rtCopiarMetas(vn, origem) {
-  if (currentUser !== 'JULIANA') return;
+  if (!ehDona()) return;
   var s = ckData.settings, mesAt = ckMesAtualStr();
   var src = origem === 'antigo' ? (s.metaProdutosMes || {}) : ((s.metaProdutosPorMes || {})[origem] || {});
   s.metaProdutosPorMes = s.metaProdutosPorMes || {};
@@ -17973,7 +17985,7 @@ function checkAdminAccess(nome) {
   // Quiz: Juliana e quem tiver quiz liberado (QZ_QUIZZES[].para)
   var qzNav = document.getElementById('nav-quiz');
   if (qzNav) qzNav.style.display = (typeof qzTemAcesso === 'function' && qzTemAcesso(currentUser)) ? 'flex' : 'none';
-  if (nome === 'Juliana') {
+  if (ehDona(currentUser) || nome === 'Juliana') {
     adminNav.style.display = 'flex';
     if (rampaNav) rampaNav.style.display = 'flex';
     if (checkinNav) checkinNav.style.display = 'flex';
@@ -18001,7 +18013,7 @@ function checkAdminAccess(nome) {
 function checkParanaAccess() {
   const paranaNav = document.getElementById('nav-parana');
   if (!paranaNav) return;
-  if (currentUser === 'JULIANA' || currentUser === 'ELIZIANE') {
+  if (ehDona() || currentUser === 'ELIZIANE') {
     paranaNav.style.display = 'flex';
   } else {
     paranaNav.style.display = 'none';
@@ -18119,7 +18131,7 @@ function toggleTarefaVendedor(vendNome, idx) {
 }
 
 function renderTarefasVendedor(vendNome) {
-  const v = vendedores[vendNome];
+  const v = vendedores[vendNome] || vendedores[currentUser] || {};
   const container = document.getElementById('ev-plano');
   if (!container) return;
   const tarefas = v.tarefas || [];
@@ -19005,7 +19017,7 @@ function ckDateToStr(d){
 function ckToday(){ return ckDateToStr(new Date()); }
 function ckFmtBRL(n){ n = Number(n)||0; return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL', maximumFractionDigits:0}); }
 function ckNum(n){ return Number(n)||0; }
-function ckIsAdmin(){ return currentUser === 'JULIANA' || (typeof liderPodeEditar === 'function' && liderPodeEditar()); }
+function ckIsAdmin(){ return ehDona() || (typeof liderPodeEditar === 'function' && liderPodeEditar()); }
 
 function ckAplicarPermissoes(){
   var admin = ckIsAdmin();
@@ -19668,7 +19680,7 @@ var mmListenersAttached = false;
 var mmSelectedUser = null, mmDonoSel = null;
 /* 22/10/2026: Minhas Metas é individual. Cada vendedor (inclusive líder) vê só o próprio painel;
    a visão da equipe e o seletor ficam só para a gestão (Juliana / gestora). */
-function mmPodeVerEquipe(){ return currentUser === 'JULIANA' || !!(vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora'); }
+function mmPodeVerEquipe(){ return ehDona() || !!(vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora'); }
 function mmInit(){
   if (mmDonoSel !== currentUser) { mmSelectedUser = null; mmDonoSel = currentUser; } // trocou o login sem recarregar
   if (!mmPodeVerEquipe()) mmSelectedUser = currentUser;
@@ -20547,7 +20559,7 @@ var SP = { ROOT:'shoppingPrecos', tree:null, mode:null, rodada:null, regiao:null
            pendingRender:false, bound:false, attachTarget:null, somenteLeitura:false };
 var SP_OLD_KEY = 'shoppingPrecosFAST_v1';
 
-function spIsGestao(){ return currentUser === 'JULIANA' || currentUser === 'ELIZIANE'; }
+function spIsGestao(){ return ehDona() || currentUser === 'ELIZIANE'; }
 function spUid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function spPad(n){ return (n < 10 ? '0' : '') + n; }
 function spEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -21752,8 +21764,8 @@ function abTipoTag(r, it){
 
 function abEhAdm(){ return !!(vendedores[currentUser] && vendedores[currentUser].tipo === 'administrativo'); }
 /* quem edita depois de incluído: Juliana + administrativo. Vendedores só incluem. */
-function abPodeEditar(){ return currentUser === 'JULIANA' || abEhAdm(); }
-function abVeTudo(){ return currentUser === 'JULIANA' || currentUser === 'ELIZIANE' || abEhAdm(); }
+function abPodeEditar(){ return ehDona() || abEhAdm(); }
+function abVeTudo(){ return ehDona() || currentUser === 'ELIZIANE' || abEhAdm(); }
 
 /* administrativo entra direto no Abastecimento e só vê as abas de consulta */
 var AB_NAV_ADM = ['abastecimento', 'central', 'pedidos', 'tabela', 'empresa', 'sugestoes', 'quadro'];
@@ -22512,7 +22524,7 @@ function abEntregaHtml(r, ed){
       (ed && !(p && p.status === 'entregue') ? '<button type="button" onclick="abEntregaTick(\'' + r.id + '\')" style="border:1.5px solid ' + (ent ? '#2E7D32' : '#D9D6CE') + ';background:' + (ent ? '#2E7D32' : '#fff') + ';color:' + (ent ? '#fff' : '#555') + ';border-radius:14px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:pointer;">' + (ent ? '✓ Entregue' : 'Marcar') + '</button>' : '') + '</span></div>';
   var concHtml = '';
   if (et === 'conciliacao' || et === 'finalizado'){
-    var podeConc = currentUser === 'JULIANA' && p && p.status === 'faturado' && !p.conciliado;
+    var podeConc = ehDona() && p && p.status === 'faturado' && !p.conciliado;
     concHtml = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-top:6px;background:' + (p && p.conciliado ? '#E8F5E9' : '#F3E5F5') + ';border:1px solid ' + (p && p.conciliado ? '#A5D6A7' : '#CE93D8') + ';">' +
       '<span style="font-size:12.5px;font-weight:800;color:' + (p && p.conciliado ? '#1B5E20' : '#6A1B9A') + ';">' + (p && p.conciliado ? '🏁 Conciliado' + (p.conciliadoEm ? ' em ' + p.conciliadoEm.split('-').reverse().join('/') : '') + ' — finalizado' : '⚖️ Aguardando conciliação') + '</span>' +
       (podeConc ? '<button type="button" onclick="abrirModalConciliar(\'' + p.vendedor + '\',\'' + p.id + '\')" style="border:none;background:#6A1B9A;color:#fff;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">⚖️ Conciliar</button>' :
@@ -23429,7 +23441,7 @@ var SG_STATUS = {
   feita:     { t:'✅ Feita',        cor:'#1B5E20', bg:'#E8F5E9' },
   recusada:  { t:'Não será feita', cor:'#888',    bg:'#F5F5F5' }
 };
-function sgGestora(){ return currentUser === 'JULIANA'; }
+function sgGestora(){ return ehDona(); }
 function sgEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
 function sgNome(k){ return (vendedores[k] && vendedores[k].nome) || k || ''; }
 function sgData(ts){ if (!ts) return ''; var d = new Date(ts); return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear(); }
@@ -23942,7 +23954,7 @@ document.addEventListener('visibilitychange', function() {
 });
 var MSN_VOLUMES = { alto: 1, medio: .55, baixo: .25, mudo: 0 };
 function msnVolume() { var v = 'alto'; try { v = localStorage.getItem('msn_volume') || 'alto'; } catch (e) {} return MSN_VOLUMES[v] != null ? MSN_VOLUMES[v] : 1; }
-function msnEhGestao() { return MSN.eu === 'JULIANA'; }
+function msnEhGestao() { return ehDona(MSN.eu); }
 function msnEscolherSom(file, qual) {
   qual = qual === 'tremer' ? 'somTremer' : 'somMsg';
   if (!file || !msnEhGestao()) return;
@@ -24600,7 +24612,7 @@ function msnRenderMsgs(conv) {
     if (m.tipo === 'tremer') { h += '<div class="msn-sis">📳 ' + (m.de === MSN.eu ? 'Você chamou a atenção' : msnEsc(msnNome(m.de)) + ' chamou sua atenção!') + ' <span style="color:#9AA5B1;font-weight:400">' + msnHora(m.ts) + '</span></div>'; return; }
     var meu = m.de === MSN.eu, quem = msnEsc(meu ? 'Você' : msnNome(m.de)), hora = ' <span style="color:#9AA5B1">(' + msnHora(m.ts) + ')</span>';
     if (m.apagada) { h += '<div class="msn-msg' + (meu ? ' eu' : '') + '"><div class="msn-quem">' + quem + ' diz' + hora + ':</div><div class="msn-txt msn-apagada">🚫 Mensagem apagada</div></div>'; return; }
-    var podeApagar = m._id && (meu || MSN.eu === 'JULIANA'), podeEditar = m._id && meu && (m.tipo === 'msg' || !m.tipo);
+    var podeApagar = m._id && (meu || ehDona(MSN.eu)), podeEditar = m._id && meu && (m.tipo === 'msg' || !m.tipo);
     var acoes = podeApagar ? '<span class="msn-acoes">' + (podeEditar ? '<button type="button" onclick="msnMsgEditar(\'' + conv + '\',\'' + m._id + '\')" title="Editar mensagem">✏️ Editar</button>' : '') + '<button type="button" onclick="msnMsgApagar(\'' + conv + '\',\'' + m._id + '\')" title="Apagar para todos">🗑️ Apagar</button></span>' : '';
     var ed = MSN.editando && MSN.editando.conv === conv && MSN.editando.id === m._id;
     var corpo = ed ? '<div class="msn-editbox"><textarea id="msn-ed-' + conv + '" maxlength="1000" oninput="MSN.editando.txt=this.value" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();msnMsgSalvar(\'' + conv + '\')}else if(event.key===\'Escape\'){msnMsgCancelar(\'' + conv + '\')}">' + msnEsc(MSN.editando.txt) + '</textarea><div><button type="button" class="pri" onclick="msnMsgSalvar(\'' + conv + '\')">Salvar</button><button type="button" onclick="msnMsgCancelar(\'' + conv + '\')">Cancelar</button></div></div>'
@@ -24638,7 +24650,7 @@ function msnMsgSalvar(conv) {
   msnRenderMsgs(conv);
 }
 function msnMsgApagar(conv, id) {
-  var m = msnMsgAchar(conv, id); if (!m || (m.de !== MSN.eu && MSN.eu !== 'JULIANA')) return;
+  var m = msnMsgAchar(conv, id); if (!m || (m.de !== MSN.eu && !ehDona(MSN.eu))) return;
   if (!confirm('Apagar esta mensagem para todos?')) return;
   if (m.tipo === 'anexo' && m.anexo && m.anexo.id) dbRef('chat/anexos/' + m.anexo.id).remove();
   dbRef('chat/conv/' + conv + '/msgs/' + id).set({ de: m.de, ts: m.ts, tipo: 'msg', txt: '', apagada: true, apagadaPor: MSN.eu, apagadaEm: Date.now() });
@@ -24763,7 +24775,7 @@ function msnFigCartela(conv) {
   var ids = Object.keys(MSN.figs || {}).sort(function(a, b) { return (MSN.figs[b].ts || 0) - (MSN.figs[a].ts || 0); });
   return '<div class="msn-figtopo"><b>Figurinhas da equipe</b><button type="button" onclick="msnFigCriar(\'' + conv + '\')">➕ Criar figurinha</button></div>' +
     '<div class="msn-figgrade">' + (ids.length ? ids.map(function(id) {
-      var f = MSN.figs[id], meu = f.de === MSN.eu || MSN.eu === 'JULIANA';
+      var f = MSN.figs[id], meu = f.de === MSN.eu || ehDona(MSN.eu);
       return '<span class="msn-figit"><button type="button" class="env" onclick="msnFigEnviar(\'' + conv + '\',\'' + id + '\')" title="Enviar (criada por ' + msnEsc(msnNome(f.de)) + ')"><img src="' + f.dados + '" alt="Figurinha"></button>' +
         (meu ? '<button type="button" class="del" onclick="msnFigApagar(\'' + id + '\')" aria-label="Apagar figurinha" title="Apagar">×</button>' : '') + '</span>';
     }).join('') : '<div style="grid-column:1/-1;color:#6B8199;font-size:12px;padding:8px">Nenhuma figurinha ainda. Crie a primeira! 🎨</div>') + '</div>';
@@ -24780,7 +24792,7 @@ function msnFigEnviar(conv, id) {
   var p = document.getElementById('msn-g-' + conv); if (p) p.classList.remove('on');
 }
 function msnFigApagar(id) {
-  var f = (MSN.figs || {})[id]; if (!f || (f.de !== MSN.eu && MSN.eu !== 'JULIANA')) return;
+  var f = (MSN.figs || {})[id]; if (!f || (f.de !== MSN.eu && !ehDona(MSN.eu))) return;
   if (!confirm('Apagar esta figurinha da cartela da equipe?')) return;
   dbRef('chat/figurinhas/' + id).remove();
 }
@@ -24998,6 +25010,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       var ft = document.createElement('div'); ft.className = 'sb-foot';
       ft.innerHTML = '<button type="button" class="sb-btn" id="sb-instalar" title="Instalar o guia como aplicativo" onclick="appInstalar()" style="display:none"><span class="ic">📱</span><span class="lb">Instalar no celular</span></button>' +
         '<button type="button" class="sb-btn" title="Estilo do guia" onclick="temaAbrir(event)"><span class="ic">🎨</span><span class="lb">Estilo do guia</span></button>' +
+        '<button type="button" class="sb-btn" id="sb-op" style="display:' + (currentUser && vendedores[currentUser] && vendedores[currentUser].diretoria ? '' : 'none') + '" title="Abrir o guia da outra operação" onclick="opIrOutra()"><span class="ic">↔</span><span class="lb">Ir para ' + OP_OUTRA.nome + '</span></button>' +
         '<div class="sb-user"><div style="min-width:0"><div class="hi">Conectado como</div><div class="nm" id="sb-nome"></div></div><button type="button" class="sb-btn sb-sair" title="Sair" onclick="doLogout()">Sair</button></div>';
       nav.appendChild(ft);
       var tb = document.createElement('div'); tb.className = 'sb-topbar';
@@ -26208,7 +26221,7 @@ function acRender() {
     var tags = '<span class="ac-tag">' + acEsc(acPerfilNome(v.tipo, k)) + '</span>';
     if (v.lider) tags += ' <span class="ac-tag">Líder</span>';
     if (acPodeGerenciar(k)) tags += ' <span class="ac-tag ger">Gerencia acessos</span>';
-    var podeMexer = !jul || currentUser === 'JULIANA';
+    var podeMexer = !jul || ehDona();
     var bts = '';
     if (podeMexer) bts += '<button class="ac-btn min" onclick="acAbrir(\'' + acEsc(k) + '\')">Editar</button>';
     if (!jul) bts += '<button class="ac-btn min' + (off ? '' : ' perigo') + '" onclick="acAtivar(\'' + acEsc(k) + '\',' + (off ? 'true' : 'false') + ')">' + (off ? 'Reativar' : 'Desativar') + '</button>';
@@ -26307,7 +26320,7 @@ function acAbrir(k) {
   if (!acPodeGerenciar()) return;
   var novo = !k, v = novo ? {} : vendedores[k];
   if (!novo && !v) return;
-  if (k === 'JULIANA' && currentUser !== 'JULIANA') return;
+  if (k === 'JULIANA' && !ehDona()) return;
   var jul = k === 'JULIANA';
   AC.form = { k: k, novo: novo, paginas: JSON.parse(JSON.stringify((v && v.paginas) || {})) };
   var perfis = AC_PERFIS.map(function(p) { return '<option value="' + p[0] + '"' + ((v.tipo || '') === p[0] ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('');
@@ -26321,7 +26334,7 @@ function acAbrir(k) {
     '</div>' +
     (jul ? '' :
       '<label class="ac-chk"><input type="checkbox" id="ac-f-lider"' + (v.lider ? ' checked' : '') + ' onchange="acMudouPerfil()"> Vendedora líder <small>(vê os painéis de gestão; para editar pede liberação)</small></label>' +
-      (currentUser === 'JULIANA'
+      (ehDona()
         ? '<label class="ac-chk"><input type="checkbox" id="ac-f-ger"' + (gerAtual ? ' checked' : '') + '> Pode gerenciar acessos <small>(vê Gestão &gt; Acessos)</small></label>'
         : '')) +
     '<div class="ac-pg-tit"><b>Páginas</b><span>“Padrão” segue o perfil. Use Liberar/Bloquear para mudar só para esta pessoa.</span></div>' +
@@ -26386,7 +26399,7 @@ function acSalvar() {
     var liderEl = document.getElementById('ac-f-lider');
     r.lider = !!(liderEl && liderEl.checked && tipo !== 'administrativo');
     var gerEl = document.getElementById('ac-f-ger');
-    if (gerEl && currentUser === 'JULIANA') r.gerenciaAcessos = gerEl.checked;
+    if (gerEl && ehDona()) r.gerenciaAcessos = gerEl.checked;
   } else { r.lider = false; }
   var pags = {}; Object.keys(f.paginas).forEach(function(id) { if (typeof f.paginas[id] === 'boolean') pags[id] = f.paginas[id]; });
   r.paginas = Object.keys(pags).length ? pags : null;
@@ -26819,7 +26832,7 @@ function dcBotaoLigar(a, canal, principal, live) {
 }
 function dcClock(s) { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
 function dcDur(s) { s = Math.round(s || 0); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + 'h ' : '') + m + 'm ' + String(x).padStart(2, '0') + 's'; }
-function dcGestao() { return currentUser === 'JULIANA' || (typeof ehLider === 'function' && ehLider()) || !!(vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora'); }
+function dcGestao() { return ehDona() || (typeof ehLider === 'function' && ehLider()) || !!(vendedores[currentUser] && vendedores[currentUser].tipo === 'gestora'); }
 function dcAviso(m) { var t = document.getElementById('dc-toast'); if (!t) return; t.textContent = m; t.style.display = 'block'; clearTimeout(dcAviso.h); dcAviso.h = setTimeout(function() { t.style.display = 'none'; }, 2600); }
 
 function dcInit() {

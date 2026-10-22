@@ -2,7 +2,7 @@
 // Sempre busca a versão mais nova na internet; o que ficou guardado só é usado sem conexão.
 // Firebase (dados em tempo real) não passa por aqui.
 const CACHE = 'guia-fast-v1';
-const BASE = ['./guia-vendedor.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
+const BASE = ['./guia-vendedor.html', './atacado-ba.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 const CDN = ['https://cdnjs.cloudflare.com/'];
 
 self.addEventListener('install', e => {
