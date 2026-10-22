@@ -79,7 +79,20 @@ def main():
 
     # bases embutidas do Televendas (carteira geral de clientes, metas de produto de set/2026): o BA começa vazio
     i = s.index('var CLI_GERAL_SEED = ['); j = s.index('\n];', i) + 3
-    s = s[:i] + 'var CLI_GERAL_SEED = []; // Atacado BA: carteira própria, cadastrada pela gestão' + s[j:]
+    nomes_tv = re.findall(r'nome:\s*"((?:[^"\\]|\\.)*)"|nome:\s*\'((?:[^\'\\]|\\.)*)\'', s[i:j])
+    nomes_tv = sorted(set((x[0] or x[1]) for x in nomes_tv if (x[0] or x[1])))
+    import json as _json
+    s = s[:i] + 'var CLI_GERAL_SEED = []; // Atacado BA: carteira própria, cadastrada pela gestão\n' + \
+        '// clientes do Televendas que entraram por engano em ba/clientesGeral (22/10/2026): saem da base do BA uma vez\n' + \
+        'var CLI_GERAL_TV_NOMES = ' + _json.dumps(nomes_tv, ensure_ascii=False) + ';' + s[j:]
+    # limpeza: a base do BA é só o que o BA cadastrar (pedidos e "+ Adicionar Cliente")
+    rep("""  dbRef('clientesGeral').once('value').then(function(snap) {
+    if (!snap.val()) {""", """  dbRef('clientesGeral').once('value').then(function(snap) {
+    var atual = snap.val() || {}, tv = {}, tirar = {}, n = 0;
+    CLI_GERAL_TV_NOMES.forEach(function(nm) { tv[cliChave(nm)] = 1; });
+    Object.keys(atual).forEach(function(k) { if (tv[k] || (atual[k] && tv[cliChave(atual[k].nome || '')])) { tirar[k] = null; n++; } });
+    if (n) dbRef('clientesGeral').update(tirar);
+    if (false) {""")
     i = s.index('const CK_METAS_PRODUTO_SEED = {'); j = s.index('\n};', i) + 3
     s = s[:i] + 'const CK_METAS_PRODUTO_SEED = {}; // Atacado BA: metas definidas na tela' + s[j:]
 

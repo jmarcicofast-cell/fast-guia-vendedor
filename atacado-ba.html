@@ -12969,6 +12969,8 @@ var CLI_META_INATIVO_DIAS = 60;
 // pelos pedidos. Só é usada quando o cliente NÃO tem nenhum pedido registrado
 // no sistema com qualquer vendedor — se tiver, o dado real do pedido manda.
 var CLI_GERAL_SEED = []; // Atacado BA: carteira própria, cadastrada pela gestão
+// clientes do Televendas que entraram por engano em ba/clientesGeral (22/10/2026): saem da base do BA uma vez
+var CLI_GERAL_TV_NOMES = ["A P Construcoes Ltda", "ACS Athenas Comercio de Gesso Ltda", "Alegra Comercio de Ferragens e Servicos Ltda", "Apice - Artefatos de Gesso Ltda", "Apoio Forros e Divisorias Ltda.", "Araucaria Ferro e Aco Ltda", "Atitude Gesso Comercio de Materiais para Construcao Ltda", "BLJ Distribuidora de Materiais de Construcao a Seco Ltda", "Bazar Flor do Gesso Ltda", "Camelos Distribuicao e Comercio de Materiais Ltda", "Casa do Gesso VR Ltda", "Casa do Gesso e Comunicacao Visual Ltda", "Casa do Gesso e Drywall Ltda", "Central do Gesso Comercio de Materiais", "Cerpolo Comercio de Forros Ltda", "Cezar DMJ", "Claudinei dos Santos Gesso", "Comercio de Gesso Arte Buzios Ltda", "Construcenter Contagem Comercio de Materiais Ltda", "Construtech Comercio de Materiais Ltda", "D M J Transportes e Comercio de Itaperuna Ltda.", "D Souza Comercio e Revestimento Ltda", "Diego Rafael da Silva Gesso", "Distribuidora e Servicos Evolugesso Ltda", "Diviforros Ltda", "Drybox Materiais para Construcao a Seco Ltda", "Drycenter Uberaba Gesso & Drywall Ltda", "Drylux Construtora Ltda", "Drymaster Construcao a Seco Ltda", "Emerson de Freitas Moreira", "Engesso Comercio de Drywall Ltda", "Eurogesso Materiais de Construcao Ltda", "Evanilce Alves do Nascimento Gesso", "F.P.S dos Santos", "Fagundes Decoracoes Ltda", "Fernando Simplicio da Silva Ltda", "Flavio Vinicius Avelino Vaz Ltda", "GS Atacadao do Drywall Ltda", "Gesso Braga Ltda", "Gesso Elizabete Ltda ME", "Gesso Fazendinha Ltda", "Gesso Flor do Campo Ltda", "Gesso Lagos Comercio e Servicos Ltda", "Gesso Pontal Ltda", "Gesso Rafael Ltda", "Gesso Teto", "Gesso e Companhia Ltda", "Gessobras - Distribuidora de Drywall Ltda", "Gessolar Barretos Ltda.", "Higashi Forros e Divisorias Ltda", "IGB Solucoes Construtivas Comercio e Importacao Ltda", "Industria e Comercio de Ferros Bela Vista Ltda", "Inove Gesso Ltda", "J. C. Albano Decoracoes", "JJ de Alencar Gesso - EPP", "JRC Gesso Ltda", "Jose Novais Silva Guaruja", "Jose Raimundo Simoes", "Kleberson Marques de Oliveira", "LK Drywall e Construcoes Ltda", "LV Gesso", "Leal Comercio de Gesso Ltda", "Leal Gesso Ltda", "Liberty Gesso e Dry Wall Ltda", "M A Fernandes Materiais de Construcoes", "M C Steinbach Auada Gesso Comercio e Servicos", "M L Belato - Gesso Acartonado - ME", "M M Steel Frame Materiais em Gesso Acartonado Ltda", "MR Gesso Ltda", "MS Plast Comercio de Derivados de PVC Ltda", "MW Top Gesso Ltda.", "Maf Gesso Comercio e Servicos Ltda", "Marcio Sidnei de Oliveira", "Mercado Gesso Ltda", "Michael Anderson Neves", "Minosso Industria e Comércio de Perfilados Ltda", "Mix Perfis Drywall Industria e Comercio Ltda", "Moreira & Filhos Industria, Comercio, Importacao e Exportacao", "Nickson Industria e Comercio de Perfilados Ltda", "Nova Estrutura Construcao a Seco Ltda", "Olimax Solucoes Construtivas Ltda", "Ongesso Drywall Ltda", "Ongesso Steel Frame e Drywall Ltda", "Pentagono Gesso Ltda", "Placocentro Drywall, Logistica e Transportes Ltda", "Plaster Comercial", "Pro Gesso Drywall Comercio e Servicos Ltda", "Quenier Junior de Oliveira Queiroz", "R & M Comercio de Gesso Ltda", "R G K Comercio e Servicos para Construcao Ltda", "RP Gesso Marica Ltda", "Reveste Distribuidora de Materiais para Acabamento Ltda", "Rioplast Divisorias e Forros PVC Ltda", "SMG Construcoes e Servicos em Geral Ltda", "Soares Gesso e Drywall Ltda", "Steel Shopp Ltda", "Suprafix Representação e Distribuição Ltda", "Taynara T F dos Santos Materiais de Construcao", "Texas Drywall Ltda", "Thalia Ferreira de Paula Ltda", "Top Gesso Comercio e Servico Ltda", "Valdecir Antonio Cavalheiro Ltda", "Valdenilson Rodrigues de Sousa Gesso", "Valdivino Ferreira Cabral", "Vinil Rio Revestimentos Ltda", "WCT 2010 Materiais Eletricos Ltda"];
 var CLI_META_ATENDIMENTO_DIAS = 7;
 var cliAtendState = { porVendedor: {}, isGestora: false, currentVend: null };
 var cliFiltroStatus = 'todos';
@@ -13348,7 +13350,11 @@ function listenAtendimentos(vendNome, isGestora) {
 var cliGeralState = {};
 function listenClientesGeral() {
   dbRef('clientesGeral').once('value').then(function(snap) {
-    if (!snap.val()) {
+    var atual = snap.val() || {}, tv = {}, tirar = {}, n = 0;
+    CLI_GERAL_TV_NOMES.forEach(function(nm) { tv[cliChave(nm)] = 1; });
+    Object.keys(atual).forEach(function(k) { if (tv[k] || (atual[k] && tv[cliChave(atual[k].nome || '')])) { tirar[k] = null; n++; } });
+    if (n) dbRef('clientesGeral').update(tirar);
+    if (false) {
       var atualizacoes = {};
       CLI_GERAL_SEED.forEach(function(c) {
         var chave = cliChave(c.nome);
@@ -26900,17 +26906,23 @@ function dcEqToast(n) {
 setInterval(function() { try { dcEqLembrete(); } catch (e) {} }, 60000);
 setTimeout(function() { try { dcEqLembrete(); } catch (e) {} }, 8000);
 function dcEqPrazo(c) { var d = Math.ceil((c.assumidoEm + DC_ASSUMIR_DIAS * 864e5 - Date.now()) / 864e5); return d <= 1 ? 'volta para a equipe amanhã' : 'volta para a equipe em ' + d + ' dias'; }
+// contato que a fila não mostra: da equipe com outro/ganho · repassado · já resolvido (22/10/2026) · concorrente bloqueado
+function dcPula(l, c, p) {
+  var man = DC.manual && DC.manual.lista === l.id && DC.manual.p === p;
+  if (l.equipe && /outro|ganho/.test(dcEqStatus(c))) return true;
+  if ((l.para || l.inatPara) && c && c.repassado) return true;
+  if (!l.equipe && dcResolvido(c) && !man) return true;
+  if (dcConcBloq(c)) return true;
+  return false;
+}
 function dcPos() {
   var p = ((DC.estado.posicoes || {})[DC.listaId]) || 0, l = dcLista();
   if (!l) return p;
-  // pula: da equipe com outro/ganho · repassados · já resolvidos (22/10/2026) · concorrentes bloqueados
-  while (p < l.contatos.length) {
-    var c = l.contatos[p], man = DC.manual && DC.manual.lista === l.id && DC.manual.p === p;
-    if (l.equipe && /outro|ganho/.test(dcEqStatus(c))) { p++; continue; }
-    if ((l.para || l.inatPara) && c && c.repassado) { p++; continue; }
-    if (!l.equipe && dcResolvido(c) && !man) { p++; continue; }
-    if (dcConcBloq(c)) { p++; continue; }
-    break;
+  while (p < l.contatos.length && dcPula(l, l.contatos[p], p)) p++;
+  // 22/10/2026: chegou ao fim mas ficou cliente para trás que nunca recebeu ligação (ex.: abriu um cliente do fim da lista
+  // pelo Funil ou pela tabela, ou chegaram clientes novos no meio): volta para ele em vez de dizer que a lista terminou
+  if (p >= l.contatos.length) {
+    for (var i = 0; i < l.contatos.length; i++) { var c = l.contatos[i]; if (!dcPula(l, c, i) && !dcTentativas(c).length) return i; }
   }
   return p;
 }
@@ -26928,7 +26940,7 @@ function dcTentativas(c) {
   return out.sort(function(a, b) { return a.em - b.em; });
 }
 function dcResolvido(c) { var t = dcTentativas(c), u = t[t.length - 1]; return !!(u && u.res && !DC_VOLTA[u.res]); }
-function dcFaltam(l) { return l ? l.contatos.filter(function(c) { return !dcResolvido(c) && !c.repassado && !dcConcBloq(c); }).length : 0; }
+function dcFaltam(l) { return l ? l.contatos.filter(function(c, i) { return !dcPula(l, c, i); }).length : 0; }
 // card abaixo da discagem: todas as anotações e tentativas do cliente, da mais nova para a mais antiga
 function dcHistCardHtml(a) {
   var nm = function(v) { return dcEsc(typeof rtNome === 'function' ? rtNome(v) : v); };
