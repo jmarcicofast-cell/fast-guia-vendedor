@@ -926,6 +926,21 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .dc-hq span{display:block}
 .dc-hr{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;border:1px solid currentColor;color:var(--muted)}
 .dc-ho{font-size:14px;margin-top:4px;white-space:pre-wrap;word-break:break-word}
+.dc-kb-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:10px}
+.dc-kb{display:flex;gap:12px;align-items:flex-start;min-height:200px}
+.dc-kcol{flex:0 0 250px;background:var(--surface-2);border-radius:12px;padding:10px;min-height:140px;transition:box-shadow .15s,background .15s}
+.dc-kcol.over{box-shadow:0 0 0 2px var(--acc) inset;background:var(--surface-3)}
+.dc-kh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--txt);padding:2px 2px 8px;margin-bottom:8px;border-bottom:3px solid}
+.dc-kh b{font-size:12px;background:var(--surface);border-radius:999px;padding:1px 8px;color:var(--muted)}
+.dc-kc{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:9px 10px;margin-bottom:8px;cursor:pointer;font-size:12.5px;line-height:1.35}
+.dc-kc[draggable=true]{cursor:grab}
+.dc-kc:hover{border-color:var(--line-strong,var(--muted))}
+.dc-kc b{display:block;color:var(--txt);word-break:break-word}
+.dc-kt{font-size:11.5px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.dc-ko{font-size:11.5px;color:var(--txt);margin-top:5px;padding-top:5px;border-top:1px dashed var(--line);word-break:break-word}
+.dc-kneg[draggable=true]{cursor:grab}
+.dc-kvazio{font-size:12px;color:var(--muted);text-align:center;padding:16px 0}
+.dc-ksep{flex:0 0 2px;background:var(--line);border-radius:2px;align-self:stretch;margin:0 2px}
 .dc-prev{margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(183,121,31,.12);border:1px solid rgba(183,121,31,.35);font-size:13px;line-height:1.5}
 .dc-prev i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .dc-edit{display:block;width:100%;background:transparent;border:1px dashed transparent;border-radius:6px;padding:2px 6px;margin-left:-7px;font-family:inherit;outline:none}
@@ -2787,7 +2802,7 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
         <button onclick="fecharRelatorioNeg()" style="padding:7px 12px;border-radius:6px;border:none;background:var(--surface-3);font-size:12px;font-weight:600;cursor:pointer;">Fechar</button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--faint);margin-bottom:16px;" id="neg-rel-escopo">Considerando os filtros ativos na aba Negociações.</div>
+    <div style="font-size:11px;color:var(--faint);margin-bottom:16px;" id="neg-rel-escopo">Considerando o vendedor escolhido no Funil.</div>
 
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--surface-3);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:1.4rem;">
@@ -12371,7 +12386,7 @@ function listenPedidos(vendNome, isGestora) {
 // ══════════════════════════════════════════════════════════════
 var NEG_VENDEDORES_LISTA = ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'];
 var NEG_ETAPAS = [
-  { key: 'contato',    label: '🔵 Contato',            cor: '#185FA5' },
+  { key: 'contato',    label: '🔵 Interessado',            cor: '#185FA5' },
   { key: 'orcamento',  label: '📋 Orçamento enviado',   cor: '#7A4A00' },
   { key: 'negociando', label: '🤝 Negociando',          cor: '#4A148C' },
   { key: 'fechado',    label: '✅ Fechado',              cor: '#1B5E20' },
@@ -12496,6 +12511,7 @@ function negTodasListadas() {
 }
 
 function renderNegKanban() {
+  try { if (typeof dcFunilAtualizar === 'function') dcFunilAtualizar(); } catch (e) {}
   var todas = negTodasListadas();
   var hoje = new Date().toISOString().split('T')[0];
   NEG_ETAPAS.forEach(function(et) {
@@ -18214,6 +18230,10 @@ function sortTable(col) {
 }
 
 function showTab(name, btn) {
+  if (name === 'negociacoes') { // a aba Negociações virou o Funil do Discador
+    if (typeof DC !== 'undefined') DC.aba = 'funil';
+    name = 'discador'; btn = document.getElementById('nav-discador') || btn;
+  }
   if (typeof ckFlushPendingSave === 'function') ckFlushPendingSave();
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -26085,7 +26105,7 @@ function acPadrao(key, navId) {
   }
 }
 function acRegra(key, navId) { var v = vendedores[key]; var p = v && v.paginas; return (p && typeof p[navId] === 'boolean') ? p[navId] : null; }
-function acVe(key, navId) { var r = acRegra(key, navId); return r === null ? acPadrao(key, navId) : r; }
+function acVe(key, navId) { if (navId === 'negociacoes') return false; /* 22/10/2026: negociações agora ficam no Funil do Discador */ var r = acRegra(key, navId); return r === null ? acPadrao(key, navId) : r; }
 function acPodeGerenciar(key) {
   key = key || currentUser;
   if (key === 'JULIANA') return true;
@@ -26118,6 +26138,8 @@ function acAplicarPaginas(key) {
     var b = document.querySelector('#main-nav .nav-btn[data-nav-id="' + id + '"]');
     if (b) acMexerNav(b, p[id]);
   });
+  // Negociações agora fica dentro do Funil do Discador: a aba some para todos
+  var bNeg = document.getElementById('nav-negociacoes'); if (bNeg) acMexerNav(bNeg, false);
   // Gestão > Acessos para quem gerencia; se a Gestão não é do perfil, só a sub-aba Acessos aparece
   var podeGer = acPodeGerenciar(key);
   var bAc = document.getElementById('admsub-btn-acessos');
@@ -27003,12 +27025,12 @@ function dcMetaHoje() {
 
 function dcRender() {
   var root = document.getElementById('dc-root'); if (!root) return;
-  var abas = [['discar', 'Discar'], ['hist', 'Minhas ligações'], ['listas', 'Listas de clientes']];
-  if (dcGestao()) abas.splice(1, 0, ['equipe', 'Equipe hoje'], ['inativos', 'Inativos']);
+  var abas = [['discar', 'Discar'], ['funil', 'Funil'], ['hist', 'Minhas ligações'], ['listas', 'Listas de clientes']];
+  if (dcGestao()) abas.splice(2, 0, ['equipe', 'Equipe hoje'], ['inativos', 'Inativos']);
   abas.push(['config', 'Configurar']);
   var h = '<div class="dc-head"><h2 class="dc-tit">☎️ Discador</h2><div class="dc-abas">' +
     abas.map(function(a) { return '<button class="dc-aba' + (DC.aba === a[0] ? ' on' : '') + '" onclick="dcSetAba(\'' + a[0] + '\')">' + a[1] + '</button>'; }).join('') + '</div></div>';
-  h += ({ discar: dcVDiscar, equipe: dcVEquipe, inativos: dcVInativos, hist: dcVHist, listas: dcVListas, config: dcVConfig })[DC.aba]();
+  h += ({ discar: dcVDiscar, funil: dcVFunil, equipe: dcVEquipe, inativos: dcVInativos, hist: dcVHist, listas: dcVListas, config: dcVConfig })[DC.aba]();
   h += '<div class="dc-toast" id="dc-toast"></div>';
   var foco = document.activeElement && document.activeElement.id;
   var obs = document.getElementById('dc-obs'), quando = document.getElementById('dc-quando');
@@ -27026,7 +27048,7 @@ function dcRender() {
   if (mesmo && obsV) obsN.value = obsV;
   if (mesmo && quandoV && document.getElementById('dc-quando')) document.getElementById('dc-quando').value = quandoV;
   if (!mesmo && (foco === 'dc-obs' || foco === 'dc-quando')) foco = null;
-  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed|dci-busca|dci-txt)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
+  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed|dci-busca|dci-txt|fbusca)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
 }
 function dcSetAba(a) { DC.aba = a; dcPararAuto(true); dcRender(); }
 
@@ -27081,6 +27103,156 @@ function dcVDiscar() {
   h += '<div class="dc-card"><div class="dc-eyebrow">Ligar para um número</div><div class="dc-row"><input id="dc-pad" inputmode="tel" placeholder="(21) 99999-9999" value="' + dcEsc(DC.pad) + '" oninput="DC.pad=this.value" style="flex:1;min-width:0"><button class="dc-btn dc-pri" onclick="dcUsarPad()">Usar</button></div>' +
     '<div class="dc-pad">' + ['1','2','3','4','5','6','7','8','9','*','0','⌫'].map(function(k) { return '<button onclick="dcTecla(\'' + k + '\')">' + k + '</button>'; }).join('') + '</div></div>';
   return h + '</div></div>';
+}
+
+/* ══ FUNIL (aba do Discador, 22/10/2026) — prospecção e negociação no mesmo quadro ══
+   Colunas de prospecção andam sozinhas pelo resultado das ligações (contatos das listas do vendedor);
+   colunas de negociação são as negociações (negociacoes/{VN}), que antes ficavam na aba Negociações. */
+var DC_FUNIL_PROSP = [
+  { k: 'aligar',   t: '📞 A ligar',           cor: '#8E939C' },
+  { k: 'tentando', t: '🔁 Tentando contato',  cor: '#B7791F' },
+  { k: 'falou',    t: '💬 Falou com cliente', cor: '#1F8A5B' },
+  { k: 'retorno',  t: '📅 Retorno agendado',  cor: '#2F6FB3' }
+];
+var DC_FUNIL_MAX = 30; // cards por coluna de prospecção (o resto aparece como "+ N")
+DC.funilVend = null; DC.funilBusca = ''; DC.funilMais = {};
+function dcFunilQuem() { if (!dcGestao()) return currentUser; return DC.funilVend || currentUser; }
+function dcFunilNegs(quem) {
+  var out = [];
+  Object.keys(negState.porVendedor || {}).forEach(function(vn) {
+    if (quem !== 'todos' && vn !== quem) return;
+    (negState.porVendedor[vn] || []).forEach(function(n) { if (n && n.id) out.push(n); });
+  });
+  return out;
+}
+// contatos das listas da pessoa (listas dela, direcionadas a ela e os da equipe que ela assumiu)
+function dcFunilContatos(quem) {
+  var out = [];
+  (DC.todasListas || []).forEach(function(l) {
+    l.contatos.forEach(function(c, i) {
+      if (!c || !c.tel) return;
+      if (l.equipe) { if (!(c.dono && (quem === 'todos' || c.dono === quem) && dcEqStatus(c) !== 'livre')) return; }
+      else { if (c.repassado) return; if (quem !== 'todos' && (l.inatPara ? l.inatPara !== quem : (l.criadoPor !== quem && l.para !== quem))) return; }
+      out.push({ c: c, i: i, l: l });
+    });
+  });
+  return out;
+}
+function dcFunilEtapaProsp(c) {
+  var t = dcTentativas(c), u = t[t.length - 1];
+  if (!u) return 'aligar';
+  return ({ nao: 'tentando', caixa: 'tentando', atendeu: 'falou', retornar: 'retorno' })[u.res] || null; // errado, funil e pedido saem da prospecção
+}
+function dcFunilBate(txt) { var b = ckSemAcento(DC.funilBusca || '').trim(); if (!b) return true; return ckSemAcento(txt).indexOf(b) >= 0; }
+function dcFunilMontar() {
+  var quem = dcFunilQuem(), negs = dcFunilNegs(quem);
+  var telNeg = {}; negs.forEach(function(n) { var d = dcMicroNum(n.telefone); if (dcDig(d).length >= 10) telNeg[d] = 1; });
+  var cols = { aligar: [], tentando: [], falou: [], retorno: [] }, vistos = {};
+  // retornos agendados (só da própria pessoa: ficam no estado dela)
+  if (quem === currentUser) (DC.estado.retornos || []).forEach(function(r, i) {
+    if (!r) return; var k = dcMicroNum(r.tel); vistos[k] = 1;
+    if (telNeg[k] || !dcFunilBate((r.nome || '') + ' ' + (r.empresa || '') + ' ' + r.tel)) return;
+    cols.retorno.push({ tipo: 'ret', i: i, nome: r.nome, empresa: r.empresa, tel: r.tel, obs: r.obs, quando: r.quando });
+  });
+  dcFunilContatos(quem).forEach(function(x) {
+    var k = dcMicroNum(x.c.tel); if (vistos[k] || telNeg[k]) return; vistos[k] = 1;
+    var et = dcFunilEtapaProsp(x.c); if (!et || !cols[et]) return;
+    if (!dcFunilBate((x.c.nome || '') + ' ' + (x.c.empresa || '') + ' ' + x.c.tel + ' ' + x.l.nome)) return;
+    var t = dcTentativas(x.c), u = t[t.length - 1];
+    cols[et].push({ tipo: 'lista', lista: x.l.id, listaNome: x.l.nome, i: x.i, nome: x.c.nome, empresa: x.c.empresa, tel: x.c.tel, obs: (u && u.obs) || x.c.obs, em: u ? u.em : 0, n: t.length });
+  });
+  cols.tentando.sort(function(a, b) { return a.em - b.em; }); // quem está há mais tempo sem contato primeiro
+  cols.falou.sort(function(a, b) { return b.em - a.em; });
+  cols.retorno.sort(function(a, b) { return String(a.quando || '9').localeCompare(String(b.quando || '9')); });
+  var neg = {}; NEG_ETAPAS.forEach(function(e) { neg[e.key] = []; });
+  negs.forEach(function(n) { if (neg[n.etapa] && dcFunilBate((n.empresa || '') + ' ' + (n.contato || '') + ' ' + (n.telefone || ''))) neg[n.etapa].push(n); });
+  Object.keys(neg).forEach(function(k) { neg[k].sort(function(a, b) { return (a.proximaData || '9999').localeCompare(b.proximaData || '9999'); }); });
+  return { prosp: cols, neg: neg, quem: quem };
+}
+function dcFunilCardProsp(x, col) {
+  var id = x.tipo === 'ret' ? 'r:' + x.i : 'l:' + x.lista + ':' + x.i;
+  var abrir = x.tipo === 'ret' ? 'dcAbrirRetorno(' + x.i + ')' : 'dcDiscarDaqui(\'' + dcEsc(x.lista) + '\',' + x.i + ')';
+  var info = '';
+  if (x.tipo === 'ret' && x.quando) { var venc = new Date(x.quando) <= new Date(); info = '<span style="' + (venc ? 'color:#C2413B;font-weight:600' : '') + '">' + (venc ? '⚠️ ' : '📅 ') + dcEsc(new Date(x.quando).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) + '</span>'; }
+  else if (x.em) info = dcEsc(new Date(x.em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })) + (x.n > 1 ? ' · ' + x.n + ' tentativas' : '');
+  else if (x.listaNome) info = dcEsc(x.listaNome);
+  var pode = dcFunilQuem() === currentUser;
+  return '<div class="dc-kc"' + (pode ? ' draggable="true" ondragstart="dcFunilArrastar(event,\'' + id + '\')" ondragend="dcFunilSoltou()"' : '') + ' onclick="' + (pode ? abrir : '') + '" title="' + (pode ? 'Abrir no discador · arraste para uma etapa de negociação' : '') + '">' +
+    '<b>' + dcEsc(x.empresa || x.nome || dcTel(x.tel)) + '</b>' +
+    (x.empresa && x.nome ? '<div class="dc-sub">' + dcEsc(x.nome) + '</div>' : '') +
+    '<div class="dc-kt">' + dcEsc(dcTel(x.tel)) + (info ? ' · ' + info : '') + '</div>' +
+    (x.obs ? '<div class="dc-ko">' + dcEsc(String(x.obs).slice(0, 90)) + (String(x.obs).length > 90 ? '…' : '') + '</div>' : '') + '</div>';
+}
+function dcVFunil() {
+  var m = dcFunilMontar(), hoje = new Date().toISOString().split('T')[0], gest = dcGestao();
+  var nm = function(v) { return dcEsc(vendedores[v] ? vendedores[v].nome : v); };
+  var abertas = []; ['contato', 'orcamento', 'negociando'].forEach(function(k) { abertas = abertas.concat(m.neg[k] || []); });
+  var soma = abertas.reduce(function(s, n) { return s + (Number(n.valorEstimado) || 0); }, 0);
+  var h = '<div class="dc-card" style="margin-bottom:14px"><div class="dc-row" style="justify-content:space-between;gap:12px">' +
+    '<div class="dc-row" style="gap:10px;flex:1;min-width:240px">' +
+    (gest ? '<select onchange="dcFunilVend(this.value)" style="min-width:170px"><option value="' + dcEsc(currentUser) + '">Meu funil</option>' +
+      CK_EQUIPE.filter(function(v) { return v !== currentUser; }).map(function(v) { return '<option value="' + v + '"' + (m.quem === v ? ' selected' : '') + '>' + nm(v) + '</option>'; }).join('') +
+      '<option value="todos"' + (m.quem === 'todos' ? ' selected' : '') + '>Toda a equipe</option></select>' : '') +
+    '<input id="dc-fbusca" placeholder="Buscar cliente, telefone ou lista" value="' + dcEsc(DC.funilBusca) + '" oninput="dcFunilBuscar(this.value)" style="flex:1;min-width:160px"></div>' +
+    '<div class="dc-row" style="gap:8px"><span class="dc-sub">Em negociação: <b style="color:var(--txt)">R$ ' + soma.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '</b></span>' +
+    (gest ? '<button class="dc-btn" onclick="negState.filtroVend=(dcFunilQuem()===\'todos\'?\'todos\':dcFunilQuem());abrirRelatorioNeg()">📊 Relatório</button>' : '') +
+    '<button class="dc-btn dc-pri" onclick="abrirNegModal()">+ Nova negociação</button></div></div>' +
+    '<div class="dc-sub" style="margin-top:8px">As 4 primeiras colunas andam sozinhas com o resultado das ligações. Arraste um cliente para <b>Interessado</b>, <b>Orçamento</b> ou outra etapa de negociação para abrir a negociação.</div></div>';
+  h += '<div class="dc-kb-wrap"><div class="dc-kb">';
+  DC_FUNIL_PROSP.forEach(function(c) {
+    var it = m.prosp[c.k], lim = DC.funilMais[c.k] ? it.length : DC_FUNIL_MAX;
+    h += '<div class="dc-kcol" data-col="' + c.k + '" ondragover="dcFunilSobre(event)" ondragleave="this.classList.remove(\'over\')" ondrop="dcFunilDrop(event,\'' + c.k + '\')">' +
+      '<div class="dc-kh" style="border-color:' + c.cor + '"><span>' + c.t + '</span><b>' + it.length + '</b></div>' +
+      (it.length ? it.slice(0, lim).map(function(x) { return dcFunilCardProsp(x, c.k); }).join('') : '<div class="dc-kvazio">Nenhum</div>') +
+      (it.length > lim ? '<button class="dc-btn dc-mini" style="width:100%;justify-content:center" onclick="DC.funilMais[\'' + c.k + '\']=1;dcRender()">+ ' + (it.length - lim) + ' clientes</button>' : '') + '</div>';
+  });
+  h += '<div class="dc-ksep" aria-hidden="true"></div>';
+  NEG_ETAPAS.forEach(function(et) {
+    var it = m.neg[et.key] || [];
+    h += '<div class="dc-kcol neg" data-col="' + et.key + '" ondragover="dcFunilSobre(event)" ondragleave="this.classList.remove(\'over\')" ondrop="dcFunilDrop(event,\'' + et.key + '\')">' +
+      '<div class="dc-kh" style="border-color:' + et.cor + '"><span>' + et.label + '</span><b>' + it.length + '</b></div>' +
+      (it.length ? it.map(function(n) {
+        var pode = n.vendedor === currentUser || gest;
+        return '<div class="dc-kneg"' + (pode ? ' draggable="true" ondragstart="dcFunilArrastar(event,\'n:' + dcEsc(n.vendedor) + ':' + dcEsc(n.id) + '\')" ondragend="dcFunilSoltou()"' : '') + '>' + negCardHtml(n, et, hoje) + '</div>';
+      }).join('') : '<div class="dc-kvazio">Nenhuma</div>') + '</div>';
+  });
+  return h + '</div></div>';
+}
+function dcFunilVend(v) { DC.funilVend = v; DC.funilMais = {}; negState.filtroVend = 'todos'; dcRender(); }
+function dcFunilBuscar(v) { DC.funilBusca = v; clearTimeout(dcFunilBuscar.t); dcFunilBuscar.t = setTimeout(dcRender, 250); }
+function dcFunilArrastar(ev, id) { DC.arrastando = id; try { ev.dataTransfer.setData('text/plain', id); ev.dataTransfer.effectAllowed = 'move'; } catch (e) {} }
+function dcFunilSoltou() { DC.arrastando = null; document.querySelectorAll('.dc-kcol.over').forEach(function(c) { c.classList.remove('over'); }); if (DC.funilPend) { DC.funilPend = false; dcRender(); } }
+function dcFunilSobre(ev) { ev.preventDefault(); ev.currentTarget.classList.add('over'); }
+function dcFunilDrop(ev, col) {
+  ev.preventDefault(); ev.currentTarget.classList.remove('over');
+  var id = DC.arrastando || (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || ''; DC.arrastando = null;
+  if (!id) return;
+  var ehNeg = NEG_ETAPAS.some(function(e) { return e.key === col; });
+  if (id.indexOf('n:') === 0) { // negociação mudando de etapa
+    var p = id.split(':'), vend = p[1], nid = p.slice(2).join(':');
+    if (!ehNeg) { dcAviso('Negociação não volta para a prospecção. Use Perdido se não andou.'); return; }
+    var n = (negState.porVendedor[vend] || []).find(function(x) { return x.id === nid; });
+    if (n && n.etapa === col) return;
+    negMoverEtapa(vend, nid, col); dcAviso('Movida para ' + (NEG_ETAPAS.find(function(e) { return e.key === col; }) || {}).label);
+    return;
+  }
+  if (!ehNeg) { dcAviso('Essas colunas andam sozinhas com o resultado das ligações. Para retorno, use "Agendar retorno" no card.'); return; }
+  var a = null, ret = null;
+  if (id.indexOf('r:') === 0) { ret = parseInt(id.slice(2), 10); a = (DC.estado.retornos || [])[ret]; }
+  else { var q = id.split(':'), l = (DC.todasListas || []).find(function(x) { return x.id === q[1]; }); a = l && l.contatos[parseInt(q[2], 10)]; var lst = l; }
+  if (!a) { dcAviso('Cliente não encontrado'); return; }
+  var motivo = col === 'perdido' ? (prompt('Motivo da perda (opcional):', '') || '') : '';
+  dcAbrirNegociacao(a, a.obs || '', '', lst ? lst.nome : '', col, motivo);
+  var item = { tel: dcDig(a.tel), res: col === 'fechado' ? 'pedido' : 'funil', hora: Date.now(), obs: 'Movido no funil para ' + (NEG_ETAPAS.find(function(e) { return e.key === col; }) || {}).label };
+  try { if (lst) dcMarcarNaLista(lst, parseInt(id.split(':')[2], 10), item); } catch (e) {}
+  if (ret != null) dcSalvarEstado(function(e) { var rs = (e.retornos || []).slice(); rs.splice(ret, 1); e.retornos = rs; return e; });
+}
+// re-desenha o funil quando chegam negociações novas (sem atrapalhar quem está arrastando ou digitando na busca)
+function dcFunilAtualizar() {
+  if (typeof DC === 'undefined' || DC.aba !== 'funil') return;
+  var tab = document.getElementById('tab-discador'); if (!tab || !tab.classList.contains('active')) return;
+  if (DC.arrastando) { DC.funilPend = true; return; }
+  clearTimeout(dcFunilAtualizar.t); dcFunilAtualizar.t = setTimeout(dcRender, 150);
 }
 
 /* ══ AGENDA DE CLIENTES (aba Discar) ══
@@ -28061,13 +28233,13 @@ function dcVInativos() {
   return h;
 }
 // "Levou para o funil": abre a negociação na aba Negociações (etapa Orçamento enviado)
-function dcAbrirNegociacao(a, obs, quando, listaNome) {
+function dcAbrirNegociacao(a, obs, quando, listaNome, etapa, motivo) {
   var id = 'neg_' + Date.now(), agora = new Date().toISOString();
-  var n = { id: id, empresa: a.empresa || a.nome || dcTel(a.tel), contato: a.nome || '', telefone: dcTel(a.tel), estado: '', valorEstimado: 0, etapa: 'orcamento',
-    proximaAcao: obs || '', proximaData: quando ? String(quando).slice(0, 10) : '', motivoPerda: '', motivoCategoria: '', motivoOutro: '', concorrente: '', valorConcorrente: 0,
+  var n = { id: id, empresa: a.empresa || a.nome || dcTel(a.tel), contato: a.nome || '', telefone: dcTel(a.tel), estado: '', valorEstimado: 0, etapa: etapa || 'orcamento',
+    proximaAcao: obs || '', proximaData: quando ? String(quando).slice(0, 10) : '', motivoPerda: motivo || '', motivoCategoria: '', motivoOutro: '', concorrente: '', valorConcorrente: 0,
     motivoTravando: '', faltaFechar: '', vendedor: currentUser, origem: 'discador', dataCriacao: agora,
     historico: [{ data: agora, texto: 'Negociação aberta pelo Discador' + (listaNome ? ' (lista ' + listaNome + ')' : '') + '.' }] };
-  Promise.resolve(dbRef('negociacoes/' + currentUser + '/' + id).set(n)).then(function() { dcAviso('Negociação aberta em Negociações'); })
+  Promise.resolve(dbRef('negociacoes/' + currentUser + '/' + id).set(n)).then(function() { dcAviso('Negociação aberta no Funil'); })
     .catch(function(e) { dcAviso('Não abriu a negociação: ' + (e && e.message)); });
 }
 function dcJuntar(l, novos) {
