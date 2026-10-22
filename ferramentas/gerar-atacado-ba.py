@@ -77,18 +77,24 @@ def main():
     s = s.replace("'JULIANA'", q(GESTORA_BA)).replace('"JULIANA"', '"%s"' % GESTORA_BA)
     s = s.replace("u === '%s' || !!(u && vendedores[u] && vendedores[u].diretoria)" % GESTORA_BA, "u === '%s' || !!(u && vendedores[u] && vendedores[u].diretoria)" % GESTORA_BA)
 
+    # bases embutidas do Televendas (carteira geral de clientes, metas de produto de set/2026): o BA começa vazio
+    i = s.index('var CLI_GERAL_SEED = ['); j = s.index('\n];', i) + 3
+    s = s[:i] + 'var CLI_GERAL_SEED = []; // Atacado BA: carteira própria, cadastrada pela gestão' + s[j:]
+    i = s.index('const CK_METAS_PRODUTO_SEED = {'); j = s.index('\n};', i) + 3
+    s = s[:i] + 'const CK_METAS_PRODUTO_SEED = {}; // Atacado BA: metas definidas na tela' + s[j:]
+
     # a líder do Televendas tem alguns poderes de gestão: no BA são do vendedor líder
     s = s.replace("'ELIZIANE'", q(EQUIPE_BA[0]))
 
     # 5) dados separados: Firebase em ba/... e navegador com chaves fgvba_
     rep("      db = firebase.database();",
-        "      db = (function(real){ var w = Object.create(real); w.ref = function(p){ p = String(p == null ? '' : p).replace(/^\\/+/, ''); return /^\\.info/.test(p) ? real.ref(p) : real.ref(p ? 'ba/' + p : 'ba'); }; return w; })(firebase.database()); // Atacado BA: tudo em ba/")
+        "      db = (function(real){ var w = Object.create(real); w.ref = function(p){ p = String(p == null ? '' : p).replace(/^\\/+/, ''); return /^(\\.info|centralAbast)/.test(p) ? real.ref(p) : real.ref(p ? 'ba/' + p : 'ba'); }; w.__real = real; return w; })(firebase.database()); // Atacado BA: tudo em ba/, menos a Central de Abastecimento (interligada)")
     s = s.replace('fgv_', 'fgvba_')
 
     # 6) troca de operação (diretoria) e login de quem é do Televendas
     rep("var OP_ATUAL = { k: 'tv', nome: 'Televendas' };", "var OP_ATUAL = { k: 'ba', nome: 'Atacado BA' };")
     i = s.index("var OP_OUTRA = {"); j = s.index("};", i) + 2
-    s = s[:i] + "var OP_OUTRA = { k: 'tv', nome: 'Televendas', url: 'guia-vendedor.html', logins: [" + ','.join(q(x) for x in TV + ['JULIANA']) + "] };" + s[j:]
+    s = s[:i] + "var OP_OUTRA = { k: 'tv', nome: 'Televendas', url: 'guia-vendedor.html', logins: [" + ','.join(q(x) for x in TV + ['JULIANA']) + "], equipe: [" + ','.join(q(x) for x in TV if x != 'MARIA PRISCILLA') + "] };" + s[j:]
     rep("if (user === 'MARIA' || user === 'PRISCILLA') user = 'MARIA PRISCILLA';",
         "if (user === 'ANA' || user === 'ANA CAROLINA') user = '%s';" % GESTORA_BA)
 

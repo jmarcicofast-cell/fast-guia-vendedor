@@ -5557,7 +5557,20 @@ function caLigarPedidos(){
   if (!CA.unid && !currentUser) return;
   var chave = (CA.unid ? 'unid:' + CA.unid.key : currentUser) + (caVeTudo() ? '*' : '');
   if (CA.pedPara === chave) return;
-  CA.pedPara = chave; CA.ped = {};
+  CA.pedPara = chave; CA.ped = {}; CA.abOutra = {}; CA.opDe = {};
+  // Central interligada: quem vê todas as unidades enxerga também os pedidos para ABASTECER da outra operação
+  if (typeof OP_OUTRA !== 'undefined' && OP_OUTRA.equipe && caVeTudo() && !caSoTelevendas()) {
+    dbRefOp(OP_OUTRA.k, 'abastecimento').on('value', function(snap){ if (CA.pedPara !== chave) return; CA.abOutra = snap.val() || {}; caPedirRender(); });
+    OP_OUTRA.equipe.forEach(function(vn){
+      CA.opDe[vn] = OP_OUTRA.nome;
+      dbRefOp(OP_OUTRA.k, 'pedidos/' + vn).on('value', function(snap){
+        if (CA.pedPara !== chave) return;
+        var v = snap.val() || {};
+        CA.ped[vn] = Object.keys(v).map(function(k){ var p = v[k] || {}; if (!p.id) p.id = k; if (!p.vendedor) p.vendedor = vn; return p; }).filter(function(p){ return !p.excluido; });
+        caPedirRender();
+      });
+    });
+  }
   var lista = caVeTudo() ? Object.keys(vendedores).filter(function(vn){ var t = vendedores[vn].tipo; return t !== 'administrativo'; }) : [currentUser];
   lista.forEach(function(vn){
     dbRef('pedidos/' + vn).on('value', function(snap){
@@ -5611,8 +5624,9 @@ function caVendas(todas){
 function caGruposAbastecer(){
   var g = {};
   if (typeof AB === 'undefined' || !AB.itens) return g;
-  Object.keys(AB.itens).forEach(function(id){
-    var r = AB.itens[id]; if (!r || !r.itens || !r.pedidoId || !r.vendedor) return;
+  var fontes = Object.assign({}, CA.abOutra || {}, AB.itens);
+  Object.keys(fontes).forEach(function(id){
+    var r = fontes[id]; if (!r || !r.itens || !r.pedidoId || !r.vendedor) return;
     r.id = id;
     var its = abItensDe(r).filter(function(it){ return it.tipo === 'abastecer'; });
     if (!its.length) return;
@@ -5650,7 +5664,7 @@ function caVendaGuia(vn, pid, g){
     if (por[c] != null) itens[por[c]].q += q; else { por[c] = itens.length; itens.push({ c:c, q:q, semNec:sn }); }
   });
   return { key:'g:' + okey, okey:okey, origem:'guia', chamado:String((p && p.chamado) || r0.chamado || ''), cliente:(p && (p.empresa || p.cliente)) || r0.cliente || '',
-    vendedor:(typeof abNomeVend === 'function' ? abNomeVend(vn) : vn), vendKey:vn, unidade:CA_UNIDADE_RIO,
+    vendedor:(typeof abNomeVend === 'function' ? abNomeVend(vn) : vn), vendKey:vn, unidade:(CA.opDe && CA.opDe[vn]) || CA_UNIDADE_RIO, outraOp:!!(CA.opDe && CA.opDe[vn]),
     dc:o.dc || dcAb, data:o.data || prazoAb, status:st, pedStatus:pst, obs:o.obs || '', itens:itens, raw:p || r0, over:o, classificado:classificado,
     criadoEm: g.regs.reduce(function(mn, r){ var t = caTs(r.criadoEm); return t && (!mn || t < mn) ? t : mn; }, 0) || caTs(p && p.criadoEm), criadoPor: r0.criadoPor || r0.vendedor || '' };
 }
@@ -15118,7 +15132,9 @@ function ehDona(u) { u = u || currentUser; return u === 'JULIANA' || !!(u && ven
 /* ── OPERAÇÕES SEPARADAS: este guia é o do Televendas. O Atacado BA usa atacado-ba.html, com dados
    próprios no Firebase (tudo em ba/...) e no navegador. A diretoria entra nos dois e troca pelo menu. ── */
 var OP_ATUAL = { k: 'tv', nome: 'Televendas' };
-var OP_OUTRA = { k: 'ba', nome: 'Atacado BA', url: 'atacado-ba.html', logins: ['ANACAROLINA', 'ANA CAROLINA', 'ANA', 'BRUNO', 'NIVIA'] };
+var OP_OUTRA = { k: 'ba', nome: 'Atacado BA', url: 'atacado-ba.html', logins: ['ANACAROLINA', 'ANA CAROLINA', 'ANA', 'BRUNO', 'NIVIA'], equipe: ['BRUNO', 'NIVIA'] };
+/* lê dados de outra operação (só a Central de Abastecimento usa, que é interligada entre as operações) */
+function dbRefOp(k, path) { if (!(firebaseOK && db)) return dbRef(path); var raiz = db.__real || db; return raiz.ref((k === 'ba' ? 'ba/' : '') + path); }
 function opIrOutra() { location.href = OP_OUTRA.url; }
 function ehLider(u) { u = u || currentUser; return !!(u && vendedores[u] && vendedores[u].lider); }
 function liderPodeEditar() { return ehLider() && !!(_liderAcesso && _liderAcesso.liberado); }

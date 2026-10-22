@@ -5533,7 +5533,20 @@ function caLigarPedidos(){
   if (!CA.unid && !currentUser) return;
   var chave = (CA.unid ? 'unid:' + CA.unid.key : currentUser) + (caVeTudo() ? '*' : '');
   if (CA.pedPara === chave) return;
-  CA.pedPara = chave; CA.ped = {};
+  CA.pedPara = chave; CA.ped = {}; CA.abOutra = {}; CA.opDe = {};
+  // Central interligada: quem vê todas as unidades enxerga também os pedidos para ABASTECER da outra operação
+  if (typeof OP_OUTRA !== 'undefined' && OP_OUTRA.equipe && caVeTudo() && !caSoTelevendas()) {
+    dbRefOp(OP_OUTRA.k, 'abastecimento').on('value', function(snap){ if (CA.pedPara !== chave) return; CA.abOutra = snap.val() || {}; caPedirRender(); });
+    OP_OUTRA.equipe.forEach(function(vn){
+      CA.opDe[vn] = OP_OUTRA.nome;
+      dbRefOp(OP_OUTRA.k, 'pedidos/' + vn).on('value', function(snap){
+        if (CA.pedPara !== chave) return;
+        var v = snap.val() || {};
+        CA.ped[vn] = Object.keys(v).map(function(k){ var p = v[k] || {}; if (!p.id) p.id = k; if (!p.vendedor) p.vendedor = vn; return p; }).filter(function(p){ return !p.excluido; });
+        caPedirRender();
+      });
+    });
+  }
   var lista = caVeTudo() ? Object.keys(vendedores).filter(function(vn){ var t = vendedores[vn].tipo; return t !== 'administrativo'; }) : [currentUser];
   lista.forEach(function(vn){
     dbRef('pedidos/' + vn).on('value', function(snap){
@@ -5587,8 +5600,9 @@ function caVendas(todas){
 function caGruposAbastecer(){
   var g = {};
   if (typeof AB === 'undefined' || !AB.itens) return g;
-  Object.keys(AB.itens).forEach(function(id){
-    var r = AB.itens[id]; if (!r || !r.itens || !r.pedidoId || !r.vendedor) return;
+  var fontes = Object.assign({}, CA.abOutra || {}, AB.itens);
+  Object.keys(fontes).forEach(function(id){
+    var r = fontes[id]; if (!r || !r.itens || !r.pedidoId || !r.vendedor) return;
     r.id = id;
     var its = abItensDe(r).filter(function(it){ return it.tipo === 'abastecer'; });
     if (!its.length) return;
@@ -5626,7 +5640,7 @@ function caVendaGuia(vn, pid, g){
     if (por[c] != null) itens[por[c]].q += q; else { por[c] = itens.length; itens.push({ c:c, q:q, semNec:sn }); }
   });
   return { key:'g:' + okey, okey:okey, origem:'guia', chamado:String((p && p.chamado) || r0.chamado || ''), cliente:(p && (p.empresa || p.cliente)) || r0.cliente || '',
-    vendedor:(typeof abNomeVend === 'function' ? abNomeVend(vn) : vn), vendKey:vn, unidade:CA_UNIDADE_RIO,
+    vendedor:(typeof abNomeVend === 'function' ? abNomeVend(vn) : vn), vendKey:vn, unidade:(CA.opDe && CA.opDe[vn]) || CA_UNIDADE_RIO, outraOp:!!(CA.opDe && CA.opDe[vn]),
     dc:o.dc || dcAb, data:o.data || prazoAb, status:st, pedStatus:pst, obs:o.obs || '', itens:itens, raw:p || r0, over:o, classificado:classificado,
     criadoEm: g.regs.reduce(function(mn, r){ var t = caTs(r.criadoEm); return t && (!mn || t < mn) ? t : mn; }, 0) || caTs(p && p.criadoEm), criadoPor: r0.criadoPor || r0.vendedor || '' };
 }
@@ -10191,7 +10205,7 @@ function initFirebase() {
         messagingSenderId: "122472038745",
         appId: "1:122472038745:web:8b5dcd190534d3e65d8c48"
       });
-      db = (function(real){ var w = Object.create(real); w.ref = function(p){ p = String(p == null ? '' : p).replace(/^\/+/, ''); return /^\.info/.test(p) ? real.ref(p) : real.ref(p ? 'ba/' + p : 'ba'); }; return w; })(firebase.database()); // Atacado BA: tudo em ba/
+      db = (function(real){ var w = Object.create(real); w.ref = function(p){ p = String(p == null ? '' : p).replace(/^\/+/, ''); return /^(\.info|centralAbast)/.test(p) ? real.ref(p) : real.ref(p ? 'ba/' + p : 'ba'); }; w.__real = real; return w; })(firebase.database()); // Atacado BA: tudo em ba/, menos a Central de Abastecimento (interligada)
       pedInstalarSaneamento();
       firebaseOK = true;
       console.log('Firebase conectado');
@@ -12954,114 +12968,7 @@ var CLI_META_INATIVO_DIAS = 60;
 // gestora. status: 'sim' = ativo, 'nao' = inativo, '' = deixa o sistema decidir
 // pelos pedidos. Só é usada quando o cliente NÃO tem nenhum pedido registrado
 // no sistema com qualquer vendedor — se tiver, o dado real do pedido manda.
-var CLI_GERAL_SEED = [
-  { nome: 'JRC Gesso Ltda', status: 'sim' },
-  { nome: 'Camelos Distribuicao e Comercio de Materiais Ltda', status: 'nao' },
-  { nome: 'Gesso e Companhia Ltda', status: 'sim' },
-  { nome: 'Casa do Gesso e Comunicacao Visual Ltda', status: 'sim' },
-  { nome: 'JJ de Alencar Gesso - EPP', status: 'sim' },
-  { nome: 'Construtech Comercio de Materiais Ltda', status: 'sim' },
-  { nome: 'Gessobras - Distribuidora de Drywall Ltda', status: 'sim' },
-  { nome: 'M L Belato - Gesso Acartonado - ME', status: 'sim' },
-  { nome: 'Distribuidora e Servicos Evolugesso Ltda', status: 'nao' },
-  { nome: 'Liberty Gesso e Dry Wall Ltda', status: 'sim' },
-  { nome: 'Minosso Industria e Comércio de Perfilados Ltda', status: 'sim' },
-  { nome: 'BLJ Distribuidora de Materiais de Construcao a Seco Ltda', status: 'sim' },
-  { nome: 'Nova Estrutura Construcao a Seco Ltda', status: '' },
-  { nome: 'Araucaria Ferro e Aco Ltda', status: 'nao' },
-  { nome: 'Leal Gesso Ltda', status: '' },
-  { nome: 'Evanilce Alves do Nascimento Gesso', status: 'nao' },
-  { nome: 'Gesso Rafael Ltda', status: 'nao' },
-  { nome: 'MR Gesso Ltda', status: '' },
-  { nome: 'Claudinei dos Santos Gesso', status: '' },
-  { nome: 'MW Top Gesso Ltda.', status: 'sim' },
-  { nome: 'Gessolar Barretos Ltda.', status: 'nao' },
-  { nome: 'Texas Drywall Ltda', status: '' },
-  { nome: 'ACS Athenas Comercio de Gesso Ltda', status: 'sim' },
-  { nome: 'J. C. Albano Decoracoes', status: '' },
-  { nome: 'Drybox Materiais para Construcao a Seco Ltda', status: '' },
-  { nome: 'LV Gesso', status: '' },
-  { nome: 'Olimax Solucoes Construtivas Ltda', status: 'nao' },
-  { nome: 'Maf Gesso Comercio e Servicos Ltda', status: '' },
-  { nome: 'Industria e Comercio de Ferros Bela Vista Ltda', status: 'sim' },
-  { nome: 'Alegra Comercio de Ferragens e Servicos Ltda', status: 'sim' },
-  { nome: 'Drymaster Construcao a Seco Ltda', status: '' },
-  { nome: 'Taynara T F dos Santos Materiais de Construcao', status: 'nao' },
-  { nome: 'Diviforros Ltda', status: 'nao' },
-  { nome: 'D M J Transportes e Comercio de Itaperuna Ltda.', status: 'sim' },
-  { nome: 'Mercado Gesso Ltda', status: 'nao' },
-  { nome: 'Plaster Comercial', status: 'nao' },
-  { nome: 'Central do Gesso Comercio de Materiais', status: 'nao' },
-  { nome: 'Gesso Lagos Comercio e Servicos Ltda', status: 'nao' },
-  { nome: 'Drylux Construtora Ltda', status: '' },
-  { nome: 'Placocentro Drywall, Logistica e Transportes Ltda', status: 'sim' },
-  { nome: 'M M Steel Frame Materiais em Gesso Acartonado Ltda', status: '' },
-  { nome: 'Moreira & Filhos Industria, Comercio, Importacao e Exportacao', status: 'sim' },
-  { nome: 'Kleberson Marques de Oliveira', status: 'sim' },
-  { nome: 'D Souza Comercio e Revestimento Ltda', status: '' },
-  { nome: 'Cerpolo Comercio de Forros Ltda', status: 'sim' },
-  { nome: 'RP Gesso Marica Ltda', status: '' },
-  { nome: 'Steel Shopp Ltda', status: 'nao' },
-  { nome: 'IGB Solucoes Construtivas Comercio e Importacao Ltda', status: '' },
-  { nome: 'Reveste Distribuidora de Materiais para Acabamento Ltda', status: 'sim' },
-  { nome: 'Diego Rafael da Silva Gesso', status: 'sim' },
-  { nome: 'MS Plast Comercio de Derivados de PVC Ltda', status: '' },
-  { nome: 'Atitude Gesso Comercio de Materiais para Construcao Ltda', status: 'sim' },
-  { nome: 'M C Steinbach Auada Gesso Comercio e Servicos', status: '' },
-  { nome: 'Mix Perfis Drywall Industria e Comercio Ltda', status: 'sim' },
-  { nome: 'Eurogesso Materiais de Construcao Ltda', status: '' },
-  { nome: 'Comercio de Gesso Arte Buzios Ltda', status: '' },
-  { nome: 'Leal Comercio de Gesso Ltda', status: '' },
-  { nome: 'Valdenilson Rodrigues de Sousa Gesso', status: '' },
-  { nome: 'Suprafix Representação e Distribuição Ltda', status: 'sim' },
-  { nome: 'Nickson Industria e Comercio de Perfilados Ltda', status: '' },
-  { nome: 'Soares Gesso e Drywall Ltda', status: 'sim' },
-  { nome: 'Rioplast Divisorias e Forros PVC Ltda', status: '' },
-  { nome: 'Drycenter Uberaba Gesso & Drywall Ltda', status: 'sim' },
-  { nome: 'Engesso Comercio de Drywall Ltda', status: 'sim' },
-  { nome: 'Pentagono Gesso Ltda', status: '' },
-  { nome: 'Valdivino Ferreira Cabral', status: '' },
-  { nome: 'F.P.S dos Santos', status: '' },
-  { nome: 'Gesso Pontal Ltda', status: 'sim' },
-  { nome: 'A P Construcoes Ltda', status: '' },
-  { nome: 'Jose Novais Silva Guaruja', status: 'nao' },
-  { nome: 'Valdecir Antonio Cavalheiro Ltda', status: '' },
-  { nome: 'Fagundes Decoracoes Ltda', status: 'sim' },
-  { nome: 'Flavio Vinicius Avelino Vaz Ltda', status: 'nao' },
-  { nome: 'Inove Gesso Ltda', status: '' },
-  { nome: 'Quenier Junior de Oliveira Queiroz', status: 'nao' },
-  { nome: 'Higashi Forros e Divisorias Ltda', status: '' },
-  { nome: 'Gesso Teto', status: 'sim' },
-  { nome: 'Casa do Gesso e Drywall Ltda', status: 'nao' },
-  { nome: 'M A Fernandes Materiais de Construcoes', status: '' },
-  { nome: 'Gesso Fazendinha Ltda', status: '' },
-  { nome: 'Gesso Braga Ltda', status: '' },
-  { nome: 'Cezar DMJ', status: '' },
-  { nome: 'LK Drywall e Construcoes Ltda', status: '' },
-  { nome: 'Michael Anderson Neves', status: '' },
-  { nome: 'Thalia Ferreira de Paula Ltda', status: 'nao' },
-  { nome: 'Construcenter Contagem Comercio de Materiais Ltda', status: 'sim' },
-  { nome: 'Gesso Elizabete Ltda ME', status: '' },
-  { nome: 'Fernando Simplicio da Silva Ltda', status: 'nao' },
-  { nome: 'Ongesso Drywall Ltda', status: 'sim' },
-  { nome: 'Pro Gesso Drywall Comercio e Servicos Ltda', status: '' },
-  { nome: 'Marcio Sidnei de Oliveira', status: '' },
-  { nome: 'WCT 2010 Materiais Eletricos Ltda', status: 'nao' },
-  { nome: 'GS Atacadao do Drywall Ltda', status: '' },
-  { nome: 'Ongesso Steel Frame e Drywall Ltda', status: 'sim' },
-  { nome: 'Top Gesso Comercio e Servico Ltda', status: '' },
-  { nome: 'Apoio Forros e Divisorias Ltda.', status: '' },
-  { nome: 'Bazar Flor do Gesso Ltda', status: '' },
-  { nome: 'SMG Construcoes e Servicos em Geral Ltda', status: 'sim' },
-  { nome: 'Gesso Flor do Campo Ltda', status: '' },
-  { nome: 'Jose Raimundo Simoes', status: '' },
-  { nome: 'R & M Comercio de Gesso Ltda', status: '' },
-  { nome: 'Casa do Gesso VR Ltda', status: '' },
-  { nome: 'Apice - Artefatos de Gesso Ltda', status: 'nao' },
-  { nome: 'Emerson de Freitas Moreira', status: '' },
-  { nome: 'R G K Comercio e Servicos para Construcao Ltda', status: '' },
-  { nome: 'Vinil Rio Revestimentos Ltda', status: '' }
-];
+var CLI_GERAL_SEED = []; // Atacado BA: carteira própria, cadastrada pela gestão
 var CLI_META_ATENDIMENTO_DIAS = 7;
 var cliAtendState = { porVendedor: {}, isGestora: false, currentVend: null };
 var cliFiltroStatus = 'todos';
@@ -15059,7 +14966,9 @@ function ehDona(u) { u = u || currentUser; return u === 'ANACAROLINA' || !!(u &&
 /* ── OPERAÇÕES SEPARADAS: este guia é o do Televendas. O Atacado BA usa atacado-ba.html, com dados
    próprios no Firebase (tudo em ba/...) e no navegador. A diretoria entra nos dois e troca pelo menu. ── */
 var OP_ATUAL = { k: 'ba', nome: 'Atacado BA' };
-var OP_OUTRA = { k: 'tv', nome: 'Televendas', url: 'guia-vendedor.html', logins: ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR','MARIA PRISCILLA','JULIANA'] };
+var OP_OUTRA = { k: 'tv', nome: 'Televendas', url: 'guia-vendedor.html', logins: ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR','MARIA PRISCILLA','JULIANA'], equipe: ['PEDRO','WELLINGTON','JONATAS','ANTONIO','GESSICA','LETICIA','ELIZIANE','THALES','BREDER','VITOR'] };
+/* lê dados de outra operação (só a Central de Abastecimento usa, que é interligada entre as operações) */
+function dbRefOp(k, path) { if (!(firebaseOK && db)) return dbRef(path); var raiz = db.__real || db; return raiz.ref((k === 'ba' ? 'ba/' : '') + path); }
 function opIrOutra() { location.href = OP_OUTRA.url; }
 function ehLider(u) { u = u || currentUser; return !!(u && vendedores[u] && vendedores[u].lider); }
 function liderPodeEditar() { return ehLider() && !!(_liderAcesso && _liderAcesso.liberado); }
@@ -18756,18 +18665,7 @@ const CK_PRODUTOS = [
 
 /* Metas de produto de setembro/2026 (passadas pela gestora em 02/10/2026).
    Só entram se o mês ainda não tiver metas gravadas — edição na tela manda. */
-const CK_METAS_PRODUTO_SEED = {
-  '2026-09': (function(){
-    var base = { placomix: 692, basecoat: 291, laVidroWF: 92, placaCimenticia: 152, laRocha: 96 };
-    var st   = { GESSICA: 24170, WELLINGTON: 9668, JONATAS: 9668, ELIZIANE: 24170, PEDRO: 13535, ANTONIO: 9668 };
-    var vab  = { GESSICA: 2205,  WELLINGTON: 2205, JONATAS: 2205, ELIZIANE: 5512,  PEDRO: 3088,  ANTONIO: 2205 };
-    var perf = { GESSICA: 125375, WELLINGTON: 50150, JONATAS: 50150, ELIZIANE: 125375, PEDRO: 84142.57, ANTONIO: 50150 };
-    var r = {};
-    Object.keys(base).forEach(function(k){ r[k] = {}; Object.keys(st).forEach(function(v){ r[k][v] = base[k]; }); });
-    r.placaST = st; r.placaVAB = vab; r.perfil = perf;
-    return r;
-  })()
-};
+const CK_METAS_PRODUTO_SEED = {}; // Atacado BA: metas definidas na tela
 
 /* ── Lista de produtos da meta, ajustável por mês pela gestão ──
    settings.produtosMetaPorMes[mes] = { ocultos: {key:true}, extras: {key:{label, termos, ordem}} }
