@@ -11345,6 +11345,7 @@ function aplicarNovoStatus(vendNome, pedidoId, novoStatus, numDoc) {
   } catch(e){}
   dbRef('pedidos/' + vendNome + '/' + pedidoId).update(updates)
     .catch(e => console.error('Erro status:', e));
+  try { var mud = { status: novoStatus, dataStatus: agora }; if (typeof numDoc !== 'undefined') mud.numDoc = numDoc; pedDetalheRecarregar(vendNome, pedidoId, mud); } catch(e){}
 }
 
 // ── Modal: número do documento (DOC) ao faturar um pedido ──
@@ -11791,7 +11792,7 @@ function confirmarConciliacao() {
     comissaoConc: pend.snap
   }).catch(function(e) { alert('Erro ao conciliar: ' + (e && e.message ? e.message : e)); });
   fecharModalConciliar();
-  if (typeof fecharDetalhePedido === 'function') fecharDetalhePedido();
+  pedDetalheRecarregar(pend.vend, pend.id, { conciliado: true, conciliadoEm: dtConc, conciliadoPor: currentUser, comissaoConc: pend.snap });
 }
 
 function desfazerConciliacao(vendNome, pedidoId) {
@@ -11883,6 +11884,7 @@ function abrirDetalhePedido(vend, pedidoId) {
         '<span style="display:inline-block;background:var(--ink);color:#fff;font-family:monospace;font-size:16px;font-weight:700;padding:6px 14px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + '</span>' +
         '<span class="status-badge s-' + (p.status||'') + '" style="font-size:12px;">' + (STATUS_LABEL[p.status]||p.status||'') + '</span>' +
       '</div>' +
+      pedDetalheAcoesHtml(p, isGestora) +
       (p.status === 'faturado' ?
         '<div style="background:var(--surface-2);border-radius:8px;padding:9px 12px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
           '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">📄 Nº Documento (DOC)</span>' +
@@ -11954,6 +11956,29 @@ function abrirDetalhePedido(vend, pedidoId) {
   if (ov) ov.style.display = 'flex';
 }
 
+// Botões Faturado / Conciliado dentro do card do pedido
+function pedDetalheAcoesHtml(p, isGestora) {
+  var podeFaturar = isGestora && !(typeof ehLider === 'function' && ehLider()) && p.status !== 'cancelado';
+  var podeConciliar = ehDona();
+  if (!podeFaturar && !podeConciliar) return '';
+  var est = 'flex:1;min-width:140px;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;';
+  var fat = p.status === 'faturado'
+    ? '<button type="button" disabled style="' + est + 'cursor:default;border:1.5px solid #1B5E20;background:color-mix(in srgb, #E8F5E9 var(--tint), var(--surface));color:color-mix(in srgb, #1B5E20 var(--tm), #fff);">✅ Faturado' + (p.numDoc ? ' · DOC ' + String(p.numDoc).replace(/</g, '&lt;') : '') + '</button>'
+    : (podeFaturar ? '<button type="button" onclick="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',\'faturado\')" style="' + est + 'border:1.5px solid #6B3FA0;background:var(--surface);color:color-mix(in srgb, #6B3FA0 var(--tm), #fff);">🧾 Marcar como Faturado</button>' : '');
+  var conc = '';
+  if (podeConciliar) {
+    if (p.conciliado) conc = '<button type="button" disabled style="' + est + 'cursor:default;border:1.5px solid #1B5E20;background:color-mix(in srgb, #E8F5E9 var(--tint), var(--surface));color:color-mix(in srgb, #1B5E20 var(--tm), #fff);">✅ Conciliado' + (p.conciliadoEm ? ' · ' + p.conciliadoEm.split('-').reverse().join('/') : '') + '</button>';
+    else if (p.status === 'faturado') conc = '<button type="button" onclick="abrirModalConciliar(\'' + p.vendedor + '\',\'' + p.id + '\')" style="' + est + 'border:1.5px solid #1B5E20;background:var(--surface);color:color-mix(in srgb, #1B5E20 var(--tm), #fff);">⚖️ Marcar como Conciliado</button>';
+    else conc = '<button type="button" disabled title="Primeiro marque como Faturado" style="' + est + 'cursor:not-allowed;opacity:.55;border:1.5px dashed var(--line-strong, #bbb);background:var(--surface);color:var(--muted);">⚖️ Conciliado <span style="font-weight:500;font-size:11px">(depois de faturar)</span></button>';
+  }
+  return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">' + fat + conc + '</div>';
+}
+function pedDetalheRecarregar(vend, pedidoId, mudou) {
+  var p = (_pedTodosGeral || []).find(function(x) { return x.vendedor === vend && x.id === pedidoId; });
+  if (p && mudou) Object.keys(mudou).forEach(function(k) { if (mudou[k] === null) delete p[k]; else p[k] = mudou[k]; });
+  var ov = document.getElementById('ped-detalhe-modal-overlay');
+  if (ov && ov.style.display === 'flex') abrirDetalhePedido(vend, pedidoId);
+}
 function fecharDetalhePedido() {
   var ov = document.getElementById('ped-detalhe-modal-overlay');
   if (ov) ov.style.display = 'none';
