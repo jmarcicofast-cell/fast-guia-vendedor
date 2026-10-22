@@ -984,6 +984,7 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .dc-edit:focus{border-color:var(--dc-ok);border-style:solid;background:var(--card,#fff)}
 .dc-edit::placeholder{color:var(--muted);opacity:.7}
 .dc-num{font-family:ui-monospace,Consolas,monospace;font-size:28px;font-weight:700;letter-spacing:.02em;user-select:all;color:var(--txt)}
+.dc-num-ed{display:inline-block;width:11.5ch;max-width:100%;margin-left:0;padding:0 6px}
 .dc-ligar{display:inline-flex;align-items:center;gap:10px;background:var(--acc);color:#fff;font-weight:700;font-size:17px;padding:13px 28px;border-radius:999px;text-decoration:none}
 .dc-ligar.live{background:var(--dc-ok)}
 .dc-prazo{background:var(--acc-soft);border-radius:8px;padding:10px 12px;margin:-2px 0 14px;font-size:13.5px;color:var(--txt)}
@@ -27064,6 +27065,7 @@ function dcRender() {
   h += '<div class="dc-toast" id="dc-toast"></div>';
   var foco = document.activeElement && document.activeElement.id;
   var obs = document.getElementById('dc-obs'), quando = document.getElementById('dc-quando');
+  var numEl = document.getElementById('dc-num'), numV = numEl && numEl.value !== numEl.defaultValue ? numEl.value : null;
   var obsV = obs ? obs.value : '', quandoV = quando ? quando.value : '', kAntes = obs ? obs.getAttribute('data-k') : null;
   var agT = document.getElementById('dc-ag-tel'), agC = document.getElementById('dc-ag-cont'), agTV = agT && agT.value, agCV = agC && agC.value;
   var oeEl = document.getElementById('dc-obsed'), oeV = oeEl ? oeEl.value : null;
@@ -27077,9 +27079,10 @@ function dcRender() {
   if (agCV != null && document.getElementById('dc-ag-cont')) document.getElementById('dc-ag-cont').value = agCV;
   var obsN = document.getElementById('dc-obs'), mesmo = obsN && kAntes != null && obsN.getAttribute('data-k') === kAntes;
   if (mesmo && obsV) obsN.value = obsV;
+  if (mesmo && numV != null && document.getElementById('dc-num')) { document.getElementById('dc-num').value = numV; dcSujo(); }
   if (mesmo && quandoV && document.getElementById('dc-quando')) document.getElementById('dc-quando').value = quandoV;
   if (!mesmo && (foco === 'dc-obs' || foco === 'dc-quando')) foco = null;
-  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed|dci-busca|dci-txt|fbusca|conc-txt)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
+  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|num|obsed|dci-busca|dci-txt|fbusca|conc-txt)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
 }
 function dcSetAba(a) { DC.aba = a; dcPararAuto(true); dcRender(); }
 
@@ -27105,7 +27108,7 @@ function dcVDiscar() {
           return st === 'meu' ? '<span class="dc-sub">✋ Assumido por você · ' + dcEqPrazo(l.contatos[i]) + '</span><button class="dc-btn dc-mini" onclick="dcLiberar(' + i + ')">Devolver</button>'
             : '<button class="dc-btn dc-assumir" onclick="dcAssumir(' + i + ')">✋ Assumir este cliente</button><span class="dc-sub">fica com você por ' + DC_ASSUMIR_DIAS + ' dias</span>'; })()
         : '<button class="dc-btn" onclick="dcParaEquipe(dcAlvo())">👥 Disponibilizar para a equipe</button>') + '</div>' +
-      '<div class="dc-row" style="margin:12px 0"><span class="dc-num" id="dc-num">' + dcEsc(dcTel(a.tel)) + '</span><button class="dc-btn" onclick="dcCopiar()">Copiar</button>' + (dcConcBloq(a) ? '' : '<button class="dc-btn" title="Cadastrar este número como concorrente: ele some da fila de todos" onclick="dcConcMarcar(dcAlvo())">🚫 É concorrente</button>') +
+      '<div class="dc-row" style="margin:12px 0"><input class="dc-num dc-edit dc-num-ed" id="dc-num" value="' + dcEsc(dcTel(a.tel)) + '" inputmode="tel" placeholder="Número ✎" title="Clique para corrigir o número e aperte Enter para salvar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();event.stopPropagation();dcSalvarCard()}"><button class="dc-btn" onclick="dcCopiar()">Copiar</button>' + (dcConcBloq(a) ? '' : '<button class="dc-btn" title="Cadastrar este número como concorrente: ele some da fila de todos" onclick="dcConcMarcar(dcAlvo())">🚫 É concorrente</button>') +
       (DC.avulso && l ? '<button class="dc-btn" onclick="dcSalvarAvulsoNaLista()">+ Salvar na lista ' + dcEsc(l.nome) + '</button>' : '') +
       (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') + '</div>' +
       '<div class="dc-row" style="gap:12px 16px">' + (dcConcBloq(a) ? '<span class="dc-sub" style="color:#C2413B;font-weight:600">🚫 Ligação bloqueada: concorrente</span>' : dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live)) +
@@ -27547,8 +27550,8 @@ function dcNoAr() { return !!(DC.call && !DC.call.fim); }
 function dcSeg() { return DC.call ? ((DC.call.fim || Date.now()) - DC.call.ini) / 1000 : 0; }
 function dcDesliguei() { if (dcNoAr()) { DC.call.fim = Date.now(); dcRender(); } }
 function dcCopiar() {
-  var t = dcMicroNum((dcAlvo() || {}).tel);
-  var sel = function() { var n = document.getElementById('dc-num'); if (!n) return; var r = document.createRange(); r.selectNodeContents(n); var s = getSelection(); s.removeAllRanges(); s.addRange(r); dcAviso('Número selecionado. Use Ctrl+C.'); };
+  var nEl = document.getElementById('dc-num'), t = dcMicroNum(nEl && nEl.value ? nEl.value : (dcAlvo() || {}).tel);
+  var sel = function() { var n = document.getElementById('dc-num'); if (!n) return; n.select(); dcAviso('Número selecionado. Use Ctrl+C.'); };
   if (navigator.clipboard) navigator.clipboard.writeText(t).then(function() { dcAviso('Número copiado'); }).catch(sel); else sel();
 }
 function dcSujo() { var b = document.getElementById('dc-salvar'); if (b) b.classList.add('sujo'); }
@@ -27556,11 +27559,16 @@ function dcSalvarCard() {
   var n = document.getElementById('dc-enome'), e = document.getElementById('dc-eemp'), o = document.getElementById('dc-obs');
   var a = dcAlvo(); if (!a) return;
   var obs = o && o.value.trim();
+  var tEl = document.getElementById('dc-num'), tel = tEl ? dcDig(tEl.value) : dcDig(a.tel);
+  if (tel.length < 8) { dcAviso('Número inválido: confira o DDD e o número'); if (tEl) tEl.focus(); return; }
+  var telMudou = tel !== dcDig(a.tel);
   if (DC.avulso) {
+    if (telMudou) DC.avulso.tel = tel;
     DC.avulso.nome = (n ? n.value : '').trim(); DC.avulso.empresa = (e ? e.value : '').trim(); if (obs) DC.avulso.obs = obs;
     dcAviso('Alterações salvas'); dcRender(); return;
   }
   var l = dcLista(), i = dcPos(); if (!l || !l.contatos[i]) return;
+  if (telMudou) l.contatos[i].tel = tel;
   l.contatos[i].nome = (n ? n.value : '').trim().slice(0, 120); l.contatos[i].empresa = (e ? e.value : '').trim().slice(0, 120); if (obs && obs !== (l.contatos[i].obs || '')) { if (l.contatos[i].obs) l.contatos[i].obsHist = (l.contatos[i].obsHist || []).concat([{ txt: l.contatos[i].obs, em: Date.now(), por: currentUser }]).slice(-30); l.contatos[i].obs = obs.slice(0, 1000); }
   dcGravarContatos(l, l.contatos).then(function() { dcAviso('Alterações salvas na lista'); dcRender(); });
 }
