@@ -26850,6 +26850,7 @@ function dcInit() {
     });
     dcAgInit();
     dcInatIni();
+    dcConcIni();
     if (dcGestao()) CK_EQUIPE.forEach(function(vn) {
       dbRef('discador/dias/' + vn + '/' + dia).on('value', function(snap) {
         var v = (snap && snap.val()) || {}; DC.equipe[vn] = Array.isArray(v.itens) ? v.itens.filter(Boolean) : [];
@@ -26860,6 +26861,117 @@ function dcInit() {
   dcRender();
 }
 
+// ══ CONCORRENTES — cadastro único (discador/concorrentes/{id} = {nome, tels:[], por, em, nao:{tel:1}})
+// Telefone cadastrado = BLOQUEIO: o contato é pulado na fila e o botão de ligar some.
+// Loja com nome parecido com um concorrente = AVISO: mostra o alerta antes de ligar e pergunta se é concorrente.
+var DCC = { lista: [], idxTel: {}, idxNome: [], ligado: false, form: false };
+function dcConcIni() {
+  if (DCC.ligado) return; DCC.ligado = true;
+  dbRef('discador/concorrentes').on('value', function(snap) {
+    var v = (snap && snap.val()) || {};
+    DCC.lista = Object.keys(v).map(function(k) { var c = v[k] || {}; c.id = k; c.tels = Array.isArray(c.tels) ? c.tels.filter(Boolean) : (c.tels ? Object.values(c.tels) : []); c.nao = c.nao || {}; return c; })
+      .sort(function(a, b) { return String(a.nome || '').localeCompare(String(b.nome || '')); });
+    DCC.idxTel = {}; DCC.idxNome = [];
+    DCC.lista.forEach(function(c) {
+      c.tels.forEach(function(t) { var k = dcMicroNum(t); if (k) DCC.idxTel[k] = c; });
+      var nk = dcAgChave(c.nome || ''); if (nk && nk !== '_' && nk.length >= 4) DCC.idxNome.push({ k: nk, c: c });
+    });
+    if (!DC.call && !DC.auto) dcRender();
+  });
+}
+// devolve { c: concorrente, bloqueio: true|false } ou null
+function dcConcDe(x) {
+  if (!x) return null;
+  var t = dcMicroNum(x.tel);
+  if (t && DCC.idxTel[t]) return { c: DCC.idxTel[t], bloqueio: true };
+  var e = dcAgChave(x.empresa || x.nome || ''); if (!e || e === '_') return null;
+  var e2 = '_' + e + '_';
+  for (var i = 0; i < DCC.idxNome.length; i++) {
+    var n = DCC.idxNome[i];
+    if (t && n.c.nao[t]) continue;
+    if (e === n.k || e2.indexOf('_' + n.k + '_') >= 0) return { c: n.c, bloqueio: false };
+  }
+  return null;
+}
+function dcConcBloq(x) { var r = dcConcDe(x); return !!(r && r.bloqueio); }
+function dcConcNome(c) { return dcEsc(c && c.nome ? c.nome : 'Concorrente'); }
+// marca o contato em tela (ou um da tabela) como concorrente: junta o telefone no concorrente com esse nome
+function dcConcMarcar(x, nomeSugerido) {
+  if (!x || !dcDig(x.tel)) return;
+  var nome = (nomeSugerido != null ? nomeSugerido : prompt('Nome do concorrente (loja/empresa):', x.empresa || x.nome || '') || '').trim();
+  if (!nome) return;
+  var t = dcDig(x.tel), nk = dcAgChave(nome), c = DCC.lista.find(function(z) { return dcAgChave(z.nome || '') === nk; });
+  var p;
+  if (c) {
+    var tels = c.tels.slice(); if (!tels.some(function(z) { return dcMicroNum(z) === dcMicroNum(t); })) tels.push(t);
+    var upd = { tels: tels }; if (c.nao && c.nao[dcMicroNum(t)]) upd['nao/' + dcMicroNum(t)] = null;
+    p = dbRef('discador/concorrentes/' + c.id).update(upd);
+  } else p = dbRef('discador/concorrentes/c' + Date.now().toString(36)).set({ nome: nome.slice(0, 80), tels: [t], por: currentUser, em: Date.now() });
+  Promise.resolve(p).then(function() {
+    dcAviso('🚫 ' + nome + ' marcado como concorrente. Não aparece mais na fila.');
+    if (DC.avulso) { DC.avulso = null; DC.call = null; }
+    dcPararAuto(true); dcRender();
+  }).catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
+}
+// aviso por nome que não procede: guarda o telefone como exceção daquele concorrente
+function dcConcNaoE(id, tel) {
+  var k = dcMicroNum(tel); if (!id || !k) return;
+  Promise.resolve(dbRef('discador/concorrentes/' + id + '/nao/' + k).set(true)).then(function() { dcAviso('Ok, este contato não é concorrente'); dcRender(); });
+}
+function dcConcRemover(id) {
+  if (DCC.confirma !== id) { DCC.confirma = id; dcRender(); return; } DCC.confirma = null;
+  Promise.resolve(dbRef('discador/concorrentes/' + id).remove()).then(function() { dcAviso('Concorrente removido'); });
+}
+function dcConcTirarTel(id, tel) {
+  var c = DCC.lista.find(function(z) { return z.id === id; }); if (!c) return;
+  var tels = c.tels.filter(function(z) { return dcMicroNum(z) !== dcMicroNum(tel); });
+  Promise.resolve(dbRef('discador/concorrentes/' + id + '/tels').set(tels)).then(function() { dcAviso('Telefone liberado'); });
+}
+function dcConcSalvarForm() {
+  var el = document.getElementById('dc-conc-txt'), linhas = String(el ? el.value : '').split(/\r?\n/), n = 0, ps = [];
+  var mapa = {}; DCC.lista.forEach(function(c) { mapa[dcAgChave(c.nome || '')] = { id: c.id, nome: c.nome, tels: c.tels.slice(), novo: false }; });
+  linhas.forEach(function(lin) {
+    if (!lin.trim()) return;
+    var parts = lin.split(/[;\t,]/).map(function(z) { return z.replace(/^"|"$/g, '').trim(); }).filter(Boolean);
+    var tels = parts.filter(function(z) { var d = dcDig(z); return d.length >= 8 && d.length <= 13 && /^[\d\s()+\-.]+$/.test(z); }).map(dcDig);
+    var nome = parts.filter(function(z) { return tels.indexOf(dcDig(z)) < 0 || !/^[\d\s()+\-.]+$/.test(z); })[0] || '';
+    if (!nome) return;
+    var k = dcAgChave(nome), r = mapa[k] || (mapa[k] = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), nome: nome, tels: [], novo: true });
+    r.mudou = true; tels.forEach(function(t) { if (!r.tels.some(function(z) { return dcMicroNum(z) === dcMicroNum(t); })) r.tels.push(t); });
+    n++;
+  });
+  if (!n) { dcAviso('Escreva ao menos o nome do concorrente'); return; }
+  Object.keys(mapa).forEach(function(k) { var r = mapa[k]; if (!r.mudou) return;
+    ps.push(r.novo ? dbRef('discador/concorrentes/' + r.id).set({ nome: r.nome.slice(0, 80), tels: r.tels, por: currentUser, em: Date.now() }) : dbRef('discador/concorrentes/' + r.id + '/tels').set(r.tels)); });
+  Promise.all(ps).then(function() { el.value = ''; DCC.form = false; dcAviso(n + ' concorrente' + (n > 1 ? 's' : '') + ' salvo' + (n > 1 ? 's' : '')); dcRender(); })
+    .catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
+}
+// quantos contatos de uma lista são concorrentes (para avisar na hora de salvar a lista)
+function dcConcContar(contatos) { var b = 0, a = 0; (contatos || []).forEach(function(c) { var r = dcConcDe(c); if (r) { if (r.bloqueio) b++; else a++; } }); return { b: b, a: a }; }
+function dcConcCardHtml() {
+  var pode = function(c) { return dcGestao() || c.por === currentUser; };
+  return '<div class="dc-card"><div class="dc-row" style="justify-content:space-between;align-items:center;gap:6px"><div class="dc-eyebrow">🚫 Concorrentes (' + DCC.lista.length + ')</div>' +
+    '<button class="dc-btn dc-mini dc-pri" onclick="DCC.form=!DCC.form;dcRender()">' + (DCC.form ? 'Fechar' : '+ Cadastrar') + '</button></div>' +
+    '<div class="dc-sub" style="margin-bottom:6px">Telefone cadastrado aqui é <b>bloqueado</b>: o discador pula o contato e não deixa ligar. Loja com nome parecido com um concorrente aparece com <b>aviso</b> antes da ligação.</div>' +
+    (DCC.form ? '<label class="dc-lab">Um concorrente por linha: nome e telefones (quantos tiver), separados por ponto e vírgula. Só o nome também vale: aí o guia avisa quando aparecer uma loja com esse nome.' +
+      '<textarea id="dc-conc-txt" rows="5" placeholder="Leroy Merlin; (21) 3333-4444; (21) 99999-0000&#10;Drywall Center"></textarea></label><button class="dc-btn dc-pri" style="margin-top:8px" onclick="dcConcSalvarForm()">Salvar concorrentes</button>' : '') +
+    (DCC.lista.length ? '<div style="max-height:320px;overflow:auto;margin-top:6px">' + DCC.lista.map(function(c) {
+      return '<div class="dc-it"><div style="min-width:0;flex:1"><b>' + dcEsc(c.nome) + '</b><div class="dc-sub">' +
+        (c.tels.length ? c.tels.map(function(t) { return dcEsc(dcTel(t)) + (pode(c) ? ' <a href="#" title="Liberar este telefone" onclick="dcConcTirarTel(\'' + dcEsc(c.id) + '\',\'' + dcEsc(t) + '\');return false" style="color:var(--faint);text-decoration:none">✕</a>' : ''); }).join(' · ') : 'só pelo nome (aviso)') +
+        (c.por ? ' · por ' + dcEsc(typeof rtNome === 'function' ? rtNome(c.por) : c.por) : '') + '</div></div>' +
+        (pode(c) ? '<button class="dc-btn dc-mini" onclick="dcConcRemover(\'' + dcEsc(c.id) + '\')">' + (DCC.confirma === c.id ? 'Confirmar' : 'Remover') + '</button>' : '') + '</div>';
+    }).join('') + '</div>' : '<div class="dc-vazio">Nenhum concorrente cadastrado.</div>') + '</div>';
+}
+// faixa no card do contato em tela
+function dcConcFaixaHtml(a) {
+  var r = dcConcDe(a); if (!r) return '';
+  if (r.bloqueio) return '<div class="dc-card dc-alerta" style="margin:0 0 12px;padding:12px 14px"><b style="color:#C2413B">🚫 Concorrente: ' + dcConcNome(r.c) + '</b><div class="dc-sub">Este telefone está cadastrado como concorrente. Não ligue.' + (dcGestao() || r.c.por === currentUser ? ' Se foi engano, libere o telefone em Listas de clientes → Concorrentes.' : '') + '</div>' +
+    '<div class="dc-row" style="margin-top:8px">' + (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '<button class="dc-btn dc-pri" onclick="dcMover(1)">Pular</button>') + '</div></div>';
+  return '<div class="dc-card" style="margin:0 0 12px;padding:12px 14px;border:2px solid #B7791F"><b style="color:#B7791F">⚠️ Pode ser concorrente: ' + dcConcNome(r.c) + '</b><div class="dc-sub">O nome desta loja parece com um concorrente cadastrado. Confira antes de ligar.</div>' +
+    '<div class="dc-row" style="margin-top:8px"><button class="dc-btn" style="border-color:#C2413B;color:#C2413B;font-weight:600" onclick="dcConcMarcar(dcAlvo(),\'' + dcEsc(String(r.c.nome || '').replace(/'/g, '')) + '\')">🚫 É concorrente, bloquear</button>' +
+    '<button class="dc-btn" onclick="dcConcNaoE(\'' + dcEsc(r.c.id) + '\',\'' + dcEsc(dcDig(a.tel)) + '\')">Não é concorrente</button></div></div>';
+}
+function dcConcTagHtml(c) { var r = dcConcDe(c); if (!r) return ''; return r.bloqueio ? '<div class="dc-sub" style="color:#C2413B;font-weight:600;white-space:nowrap" title="Concorrente: ' + dcConcNome(r.c) + ' · bloqueado">🚫 concorrente</div>' : '<div class="dc-sub" style="color:#B7791F;font-weight:600;white-space:nowrap" title="Nome parecido com ' + dcConcNome(r.c) + '">⚠️ concorrente?</div>'; }
 function dcLista() { return DC.listas.find(function(l) { return l.id === DC.listaId; }); }
 var DC_ASSUMIR_DIAS = 10;
 // status de um contato da lista da equipe: livre, meu (assumido por mim), outro (com outro vendedor) ou ganho (pedido fechado)
@@ -26936,10 +27048,16 @@ setTimeout(function() { try { dcEqLembrete(); } catch (e) {} }, 8000);
 function dcEqPrazo(c) { var d = Math.ceil((c.assumidoEm + DC_ASSUMIR_DIAS * 864e5 - Date.now()) / 864e5); return d <= 1 ? 'volta para a equipe amanhã' : 'volta para a equipe em ' + d + ' dias'; }
 function dcPos() {
   var p = ((DC.estado.posicoes || {})[DC.listaId]) || 0, l = dcLista();
-  if (l && l.equipe) while (p < l.contatos.length && /outro|ganho/.test(dcEqStatus(l.contatos[p]))) p++;
-  if (l && (l.para || l.inatPara)) while (p < l.contatos.length && l.contatos[p].repassado) p++;
-  // 22/10/2026: quem já atendeu (ou número errado / retorno agendado) não volta para a fila; Não atendeu e Caixa postal voltam, com o histórico
-  if (l && !l.equipe) while (p < l.contatos.length && dcResolvido(l.contatos[p]) && !(DC.manual && DC.manual.lista === l.id && DC.manual.p === p)) p++;
+  if (!l) return p;
+  // pula: da equipe com outro/ganho · repassados · já resolvidos (22/10/2026) · concorrentes bloqueados
+  while (p < l.contatos.length) {
+    var c = l.contatos[p], man = DC.manual && DC.manual.lista === l.id && DC.manual.p === p;
+    if (l.equipe && /outro|ganho/.test(dcEqStatus(c))) { p++; continue; }
+    if ((l.para || l.inatPara) && c && c.repassado) { p++; continue; }
+    if (!l.equipe && dcResolvido(c) && !man) { p++; continue; }
+    if (dcConcBloq(c)) { p++; continue; }
+    break;
+  }
   return p;
 }
 var DC_VOLTA = { nao: 1, caixa: 1 }; // resultados que deixam o contato voltar na fila
@@ -26956,7 +27074,7 @@ function dcTentativas(c) {
   return out.sort(function(a, b) { return a.em - b.em; });
 }
 function dcResolvido(c) { var t = dcTentativas(c), u = t[t.length - 1]; return !!(u && u.res && !DC_VOLTA[u.res]); }
-function dcFaltam(l) { return l ? l.contatos.filter(function(c) { return !dcResolvido(c) && !c.repassado; }).length : 0; }
+function dcFaltam(l) { return l ? l.contatos.filter(function(c) { return !dcResolvido(c) && !c.repassado && !dcConcBloq(c); }).length : 0; }
 // card abaixo da discagem: todas as anotações e tentativas do cliente, da mais nova para a mais antiga
 function dcHistCardHtml(a) {
   var nm = function(v) { return dcEsc(typeof rtNome === 'function' ? rtNome(v) : v); };
@@ -27037,9 +27155,10 @@ function dcRender() {
   var obsV = obs ? obs.value : '', quandoV = quando ? quando.value : '', kAntes = obs ? obs.getAttribute('data-k') : null;
   var agT = document.getElementById('dc-ag-tel'), agC = document.getElementById('dc-ag-cont'), agTV = agT && agT.value, agCV = agC && agC.value;
   var oeEl = document.getElementById('dc-obsed'), oeV = oeEl ? oeEl.value : null;
-  var diT = document.getElementById('dci-txt'), diTV = diT ? diT.value : null, diP = document.getElementById('dci-para'), diPV = diP ? diP.value : null;
+  var ccT = document.getElementById('dc-conc-txt'), ccTV = ccT ? ccT.value : null; var diT = document.getElementById('dci-txt'), diTV = diT ? diT.value : null, diP = document.getElementById('dci-para'), diPV = diP ? diP.value : null;
   root.innerHTML = h;
   if (oeV != null && document.getElementById('dc-obsed')) document.getElementById('dc-obsed').value = oeV;
+  if (ccTV && document.getElementById('dc-conc-txt')) document.getElementById('dc-conc-txt').value = ccTV;
   if (diTV && document.getElementById('dci-txt')) { document.getElementById('dci-txt').value = diTV; dcInatPrevia(); }
   if (diPV && document.getElementById('dci-para')) document.getElementById('dci-para').value = diPV;
   if (agTV != null && document.getElementById('dc-ag-tel')) document.getElementById('dc-ag-tel').value = agTV;
@@ -27048,7 +27167,7 @@ function dcRender() {
   if (mesmo && obsV) obsN.value = obsV;
   if (mesmo && quandoV && document.getElementById('dc-quando')) document.getElementById('dc-quando').value = quandoV;
   if (!mesmo && (foco === 'dc-obs' || foco === 'dc-quando')) foco = null;
-  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed|dci-busca|dci-txt|fbusca)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
+  if (foco && document.getElementById(foco) && /^dc-(obs|quando|pad|lnome|ltxt|ag-busca|ag-tel|ag-cont|obsed|dci-busca|dci-txt|fbusca|conc-txt)$/.test(foco)) { var fe = document.getElementById(foco); fe.focus(); if (fe.setSelectionRange && fe.type !== 'datetime-local') try { fe.setSelectionRange(fe.value.length, fe.value.length); } catch (e) {} }
 }
 function dcSetAba(a) { DC.aba = a; dcPararAuto(true); dcRender(); }
 
@@ -27064,6 +27183,7 @@ function dcVDiscar() {
   if (l && l.para) h += dcPrazoBanner(l);
   if (l && l.inatPara) h += dcInatBanner(l);
   if (a) {
+    h += dcConcFaixaHtml(a);
     h += '<div class="dc-eyebrow">' + (DC.avulso ? (DC.avulso.retIdx != null ? 'Retorno agendado' : 'Ligação avulsa') : 'Contato ' + (pos + 1) + ' de ' + total) + '</div>' +
       '<input class="dc-nome dc-edit" value="' + dcEsc(a.nome || '') + '" id="dc-enome" placeholder="Nome do contato ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
       '<input class="dc-emp dc-edit" value="' + dcEsc(a.empresa || '') + '" id="dc-eemp" placeholder="Empresa / loja ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
@@ -27073,10 +27193,10 @@ function dcVDiscar() {
           return st === 'meu' ? '<span class="dc-sub">✋ Assumido por você · ' + dcEqPrazo(l.contatos[i]) + '</span><button class="dc-btn dc-mini" onclick="dcLiberar(' + i + ')">Devolver</button>'
             : '<button class="dc-btn dc-assumir" onclick="dcAssumir(' + i + ')">✋ Assumir este cliente</button><span class="dc-sub">fica com você por ' + DC_ASSUMIR_DIAS + ' dias</span>'; })()
         : '<button class="dc-btn" onclick="dcParaEquipe(dcAlvo())">👥 Disponibilizar para a equipe</button>') + '</div>' +
-      '<div class="dc-row" style="margin:12px 0"><span class="dc-num" id="dc-num">' + dcEsc(dcTel(a.tel)) + '</span><button class="dc-btn" onclick="dcCopiar()">Copiar</button>' +
+      '<div class="dc-row" style="margin:12px 0"><span class="dc-num" id="dc-num">' + dcEsc(dcTel(a.tel)) + '</span><button class="dc-btn" onclick="dcCopiar()">Copiar</button>' + (dcConcBloq(a) ? '' : '<button class="dc-btn" title="Cadastrar este número como concorrente: ele some da fila de todos" onclick="dcConcMarcar(dcAlvo())">🚫 É concorrente</button>') +
       (DC.avulso && l ? '<button class="dc-btn" onclick="dcSalvarAvulsoNaLista()">+ Salvar na lista ' + dcEsc(l.nome) + '</button>' : '') +
       (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') + '</div>' +
-      '<div class="dc-row" style="gap:12px 16px">' + dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live) +
+      '<div class="dc-row" style="gap:12px 16px">' + (dcConcBloq(a) ? '<span class="dc-sub" style="color:#C2413B;font-weight:600">🚫 Ligação bloqueada: concorrente</span>' : dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live)) +
       '<span class="dc-timer' + (live ? ' live' : '') + '" id="dc-timer">' + dcClock(dcSeg()) + '</span>' +
       (live ? '<button class="dc-btn dc-deslig" onclick="dcDesliguei()">Desliguei <span class="dc-kbd">D</span></button>' : (DC.call ? '<span class="dc-sub">Ligação encerrada · marque o resultado</span>' : '')) + '</div>' +
       '<div class="dc-eyebrow" style="margin-top:16px">Como foi a ligação?</div><div class="dc-res">' +
@@ -27130,7 +27250,7 @@ function dcFunilContatos(quem) {
   var out = [];
   (DC.todasListas || []).forEach(function(l) {
     l.contatos.forEach(function(c, i) {
-      if (!c || !c.tel) return;
+      if (!c || !c.tel || dcConcBloq(c)) return;
       if (l.equipe) { if (!(c.dono && (quem === 'todos' || c.dono === quem) && dcEqStatus(c) !== 'livre')) return; }
       else { if (c.repassado) return; if (quem !== 'todos' && (l.inatPara ? l.inatPara !== quem : (l.criadoPor !== quem && l.para !== quem))) return; }
       out.push({ c: c, i: i, l: l });
@@ -27796,7 +27916,7 @@ function dcVListas() {
     '<textarea id="dc-ltxt" rows="9" oninput="dcPrevia()" placeholder="Carlos Souza; Casa do Drywall; (11) 98765-4321&#10;Marina Lopes; Gesso &amp; Cia; 21 3344-5566"></textarea></label>' +
     '<div class="dc-row" style="margin-top:10px"><label class="dc-btn" for="dc-lfile">Abrir arquivo .csv</label><input type="file" id="dc-lfile" accept=".csv,.txt" style="display:none" onchange="dcArquivo(this)"><span class="dc-sub" id="dc-prev"></span></div>' +
     '<button class="dc-btn dc-pri" style="margin-top:12px" onclick="dcSalvarLista()">' + (dest ? 'Adicionar à lista' : 'Salvar lista') + '</button></div></div>' +
-    '<div class="dc-col">' + dcDirecionadasHtml() + '<div class="dc-card"><div class="dc-eyebrow">Minhas listas</div><div class="dc-sub" style="margin-bottom:6px">Só você vê e disca as listas que anexar. Para passar um contato para todos, use o botão <b>Equipe</b> na linha dele.</div>' +
+    '<div class="dc-col">' + dcConcCardHtml() + dcDirecionadasHtml() + '<div class="dc-card"><div class="dc-eyebrow">Minhas listas</div><div class="dc-sub" style="margin-bottom:6px">Só você vê e disca as listas que anexar. Para passar um contato para todos, use o botão <b>Equipe</b> na linha dele.</div>' +
     (DC.listas.length ? DC.listas.map(function(l) {
       return '<div class="dc-it"><div style="min-width:0"><b>' + (l.equipe ? '👥 ' : '') + dcEsc(l.nome) + '</b><div class="dc-sub">' + l.contatos.length + ' contatos · ' + (l.equipe ? 'disponível para todos · ' : '') + (l.criadoPor ? dcEsc(rtNome ? rtNome(l.criadoPor) : l.criadoPor) + ' · ' : '') + (l.criado ? new Date(l.criado).toLocaleDateString('pt-BR') : '') + '</div></div>' +
         '<div class="dc-row"><button class="dc-btn" onclick="dcEscolherLista(\'' + dcEsc(l.id) + '\');dcSetAba(\'discar\')">Discar</button><button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button>' +
@@ -27819,8 +27939,8 @@ function dcTabelaContatos(l, leitura) {
         : st === 'outro' ? '<div class="dc-sub">✋ com ' + nm(c.dono) + ' · ' + dcEqPrazo(c) + '</div>'
         : st === 'meu' ? '<div class="dc-sub">✋ com você · ' + dcEqPrazo(c) + '</div>' + (dcEqAtrasado(c) ? '<div class="dc-sub" style="color:#C2413B;font-weight:600">⏰ sem contato há ' + dcEqDiasSem(c) + ' dia(s): ligue hoje</div>' : '<div class="dc-sub">próximo contato até ' + new Date(dcEqUltimo(c) + DC_RETORNO_DIAS * 864e5).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + '</div>')
         : (c.por ? '<div class="dc-sub">livre · indicado por ' + nm(c.por) + '</div>' : '<div class="dc-sub">livre</div>');
-      return '<tr' + (l.equipe && /outro|ganho/.test(st) ? ' class="feito"' : (i < feitos ? ' class="feito"' : (i === feitos ? ' class="prox"' : ''))) + '><td>' + (i + 1) + '</td><td>' + ed('nome') + stTxt + '</td><td>' + ed('empresa') + '</td><td class="tel">' + dcEsc(dcTel(c.tel)) + '</td>' +
-        (leitura ? '<td></td>' : '<td style="white-space:nowrap"><button class="dc-btn dc-mini" title="Discar a partir deste contato" onclick="dcDiscarDaqui(\'' + lid + '\',' + i + ')">Ligar</button>' +
+      return '<tr' + (l.equipe && /outro|ganho/.test(st) ? ' class="feito"' : (i < feitos ? ' class="feito"' : (i === feitos ? ' class="prox"' : ''))) + '><td>' + (i + 1) + '</td><td>' + ed('nome') + dcConcTagHtml(c) + stTxt + '</td><td>' + ed('empresa') + '</td><td class="tel">' + dcEsc(dcTel(c.tel)) + '</td>' +
+        (leitura || dcConcBloq(c) ? '<td></td>' : '<td style="white-space:nowrap"><button class="dc-btn dc-mini" title="Discar a partir deste contato" onclick="dcDiscarDaqui(\'' + lid + '\',' + i + ')">Ligar</button>' +
           (l.equipe ? (st === 'livre' ? ' <button class="dc-btn dc-mini dc-assumir" onclick="dcAssumir(' + i + ')">✋ Assumir</button>' : st === 'meu' ? ' <button class="dc-btn dc-mini" onclick="dcLiberar(' + i + ')">Devolver</button>' : '') : ' <button class="dc-btn dc-mini" title="Disponibilizar este contato para a equipe" onclick="dcParaEquipe(DC.listas.find(function(x){return x.id===\'' + lid + '\'}).contatos[' + i + '])">👥 Equipe</button>') + '</td>') + '</tr>';
     }).join('') + '</tbody></table></div><div class="dc-sub" style="margin:4px 0 14px">' + (leitura ? 'Lista de outro vendedor: só leitura.' : 'Você já trabalhou ' + Math.min(feitos, l.contatos.length) + ' de ' + l.contatos.length + '. Clique no nome ou na loja para editar.') + '</div>';
 }
@@ -27860,7 +27980,8 @@ function dcSalvarLista() {
     if (!novos.length) { dcAviso('Nenhum telefone reconhecido. Confira o formato.'); return; }
     var r = dcJuntar(l, novos); if (!r.add) { dcAviso('Esses números já estão na lista'); return; }
     dcGravarContatos(l, r.contatos).then(function() {
-      dcAviso(r.add + ' cliente' + (r.add > 1 ? 's' : '') + ' adicionado' + (r.add > 1 ? 's' : '') + (r.rep ? ' · ' + r.rep + ' repetido' + (r.rep > 1 ? 's' : '') + ' ignorado' + (r.rep > 1 ? 's' : '') : ''));
+      var ccA = dcConcContar(novos);
+      dcAviso(r.add + ' cliente' + (r.add > 1 ? 's' : '') + ' adicionado' + (r.add > 1 ? 's' : '') + (ccA.b ? ' · 🚫 ' + ccA.b + ' concorrente' + (ccA.b > 1 ? 's' : '') + ' bloqueado' + (ccA.b > 1 ? 's' : '') : '') + (ccA.a ? ' · ⚠️ ' + ccA.a + ' com nome de concorrente' : '') + (r.rep ? ' · ' + r.rep + ' repetido' + (r.rep > 1 ? 's' : '') + ' ignorado' + (r.rep > 1 ? 's' : '') : ''));
       document.getElementById('dc-ltxt').value = ''; dcPrevia();
     });
     return;
@@ -27878,7 +27999,8 @@ function dcSalvarLista() {
   }
   dbRef('discador/listas/' + id).set(obj).then(function() {
     if (para) { dcAviso('Lista direcionada para ' + (typeof rtNome === 'function' ? rtNome(para) : para) + ' · ' + obj.prazoDias + ' dias de prazo'); DC.aba = 'listas'; dcRender(); return; }
-    dcAviso('Lista salva com ' + contatos.length + ' contatos'); dcEscolherLista(id); DC.aba = 'discar'; dcRender();
+    var ccN = dcConcContar(contatos);
+    dcAviso('Lista salva com ' + contatos.length + ' contatos' + (ccN.b ? ' · 🚫 ' + ccN.b + ' concorrente' + (ccN.b > 1 ? 's' : '') + ' (serão pulados)' : '') + (ccN.a ? ' · ⚠️ ' + ccN.a + ' com nome de concorrente' : '')); dcEscolherLista(id); DC.aba = 'discar'; dcRender();
   }).catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
 }
 // junta contatos novos no fim da lista, sem repetir telefone (a fila de quem já discou não muda)
@@ -27985,7 +28107,7 @@ function dcInatBase() {
     .filter(function(r) { return r.ultima && r.dias > lim; })
     .sort(function(a, b) { return String(b.ultima).localeCompare(String(a.ultima)); });
 }
-function dcInatPendentes() { return dcInatBase().filter(function(r) { return !DCI.recs[r.k]; }); }
+function dcInatPendentes() { return dcInatBase().filter(function(r) { return !DCI.recs[r.k] && !dcConcBloq(r); }); }
 // roda: começa no vendedor dos pedidos e segue a ordem da equipe
 function dcInatFila(primeiro, vends) {
   var ordem = CK_EQUIPE.filter(function(v) { return vends.indexOf(v) >= 0; });
@@ -28156,6 +28278,7 @@ function dcInatImportar() {
   var carga = dcInatCarga(), agora = Date.now(), upd = {}, porVn = {}, n = 0, rep = 0;
   lin.forEach(function(c) {
     var k = c.empresa ? dcAgChave(c.empresa) : 'TEL_' + dcDig(c.tel), atual = DCI.recs[k];
+    if (dcConcBloq(c)) { rep++; return; }
     if (upd[k] || tels[dcMicroNum(c.tel)] || (atual && (atual.status === 'andamento' || atual.status === 'captado'))) { rep++; return; }
     var b = base[k] || {}, natural = c.vn || (modo && modo !== 'auto' ? modo : '') || b.vn || '';
     var dono = cfg.vends.indexOf(natural) >= 0 ? natural : cfg.vends.slice().sort(function(x, y) { return (carga[x] || 0) - (carga[y] || 0); })[0];
