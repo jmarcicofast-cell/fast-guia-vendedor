@@ -1002,6 +1002,11 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .dc-tab td{font-variant-numeric:tabular-nums}
 .dc-chip{display:inline-block;font-size:12px;font-weight:700;border:1px solid;border-radius:999px;padding:1px 8px;white-space:nowrap}
 .dc-filtros{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.dc-per{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px}
+.dc-per label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--txt-2)}
+.dc-per select,.dc-per input{font:inherit;font-size:13.5px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--txt)}
+.dc-per-res{font-size:13px;color:var(--txt-2);margin-bottom:10px}
+.dc-per-res b{color:var(--txt)}
 .dc-filtros button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:999px;padding:4px 12px;cursor:pointer}
 .dc-filtros button.on{background:var(--txt);color:var(--surface);border-color:var(--txt)}
 .dc-passos{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.55;color:var(--txt-2)}
@@ -27401,22 +27406,100 @@ function dcVEquipe() {
     }).join('') + '</tbody><tfoot><tr><td><b>Total da equipe</b></td><td><b>' + t.total + '</b></td><td><b>' + t.at + '</b></td><td><b>' + (t.total ? Math.round(t.at / t.total * 100) + '%' : '—') + '</b></td><td><b>' + dcDur(t.seg) + '</b></td><td><b>' + t.ped + '</b></td><td><b>' + t.wa + '</b></td><td></td></tr></tfoot></table></div><div class="dc-sub" style="margin-top:8px">Só conta o que foi discado por aqui. Atendidas = ligações atendidas (Atendeu, Pedido fechado, Levou para o funil) + todo contato pelo WhatsApp; é esse número que entra sozinho na meta de ligações da Rota da Meta.</div></div>';
 }
 
+/* ── Minhas ligações por período ──
+   Hoje vem ao vivo (DC.itens, com anotação editável). Outros períodos leem
+   discador/dias/{VN} uma vez e guardam em cache por 2 min. Gestão pode ver de outro vendedor. */
+var DCP = { tipo: 'hoje', de: '', ate: '', vn: null, cache: {}, carregando: false, erro: '' };
+function dcPerDataStr(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function dcPerRange() {
+  var hoje = new Date(), h = dcHoje(), d;
+  switch (DCP.tipo) {
+    case 'ontem': d = new Date(); d.setDate(d.getDate() - 1); return [dcPerDataStr(d), dcPerDataStr(d)];
+    case '7d': d = new Date(); d.setDate(d.getDate() - 6); return [dcPerDataStr(d), h];
+    case 'semana': d = new Date(); var dw = d.getDay(); d.setDate(d.getDate() - (dw === 0 ? 6 : dw - 1)); return [dcPerDataStr(d), h];
+    case 'mes': return [h.slice(0, 8) + '01', h];
+    case 'mesant': d = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1); var f = new Date(hoje.getFullYear(), hoje.getMonth(), 0); return [dcPerDataStr(d), dcPerDataStr(f)];
+    case 'custom': var de = DCP.de || h, ate = DCP.ate || h; return de <= ate ? [de, ate] : [ate, de];
+    default: return [h, h];
+  }
+}
+function dcPerVn() { return DCP.vn || currentUser; }
+function dcPerCarregar(forcar) {
+  var vn = dcPerVn(), c = DCP.cache[vn];
+  if (!forcar && c && Date.now() - c.t < 120000) return;
+  if (DCP.carregando) return;
+  DCP.carregando = true; DCP.erro = '';
+  Promise.resolve(dbRef('discador/dias/' + vn).once('value')).then(function(snap) {
+    DCP.cache[vn] = { t: Date.now(), dias: (snap && snap.val()) || {} };
+  }).catch(function(e) { DCP.erro = (e && e.message) || String(e); })
+    .then(function() { DCP.carregando = false; if (DC.aba === 'hist') dcRender(); });
+}
+function dcPerSet(campo, valor) {
+  DCP[campo] = valor;
+  if (campo === 'tipo' && valor === 'custom' && !DCP.de) { DCP.de = dcHoje().slice(0, 8) + '01'; DCP.ate = dcHoje(); }
+  DC.obsEdit = null; dcRender();
+}
+/* itens do período, cada um com .dia (AAAA-MM-DD); _i só nos de hoje do próprio usuário (editáveis) */
+function dcPerItens() {
+  var r = dcPerRange(), de = r[0], ate = r[1], h = dcHoje(), vn = dcPerVn(), proprio = vn === currentUser;
+  var hojeVivo = function() {
+    var src = proprio ? DC.itens : (DC.equipe[vn] || []);
+    return src.map(function(x, i) { var o = Object.assign({ dia: h }, x); if (proprio) o._i = i; return o; });
+  };
+  if (de === h && ate === h) return { itens: hojeVivo(), pronto: true };
+  dcPerCarregar(false);
+  var c = DCP.cache[vn]; if (!c) return { itens: [], pronto: false };
+  var out = [];
+  Object.keys(c.dias).forEach(function(k) {
+    var dia = k.replace(/_/g, '-'); if (dia < de || dia > ate || dia === h) return;
+    var v = c.dias[k] || {}, its = Array.isArray(v.itens) ? v.itens : (v.itens && typeof v.itens === 'object' ? Object.keys(v.itens).map(function(j) { return v.itens[j]; }) : []);
+    its.filter(Boolean).forEach(function(x) { out.push(Object.assign({ dia: dia }, x)); });
+  });
+  if (h >= de && h <= ate) out = out.concat(hojeVivo());
+  out.sort(function(a, b) { return (a.hora || 0) - (b.hora || 0); });
+  return { itens: out, pronto: true };
+}
+function dcPerBarra() {
+  var ops = [['hoje', 'Hoje'], ['ontem', 'Ontem'], ['7d', 'Últimos 7 dias'], ['semana', 'Esta semana'], ['mes', 'Este mês'], ['mesant', 'Mês passado'], ['custom', 'Escolher datas']];
+  var r = dcPerRange(), h = '<div class="dc-per">' +
+    '<label>Período <select onchange="dcPerSet(\'tipo\',this.value)">' + ops.map(function(o) { return '<option value="' + o[0] + '"' + (DCP.tipo === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>';
+  if (DCP.tipo === 'custom') h += '<label>De <input type="date" value="' + r[0] + '" max="' + dcHoje() + '" onchange="dcPerSet(\'de\',this.value)"></label><label>Até <input type="date" value="' + r[1] + '" max="' + dcHoje() + '" onchange="dcPerSet(\'ate\',this.value)"></label>';
+  if (typeof ckIsAdmin === 'function' && ckIsAdmin()) {
+    var lista = [currentUser].concat(CK_EQUIPE.filter(function(v) { return v !== currentUser; }));
+    h += '<label>Vendedor <select onchange="dcPerSet(\'vn\',this.value)">' + lista.map(function(v) { return '<option value="' + v + '"' + (dcPerVn() === v ? ' selected' : '') + '>' + dcEsc(v === currentUser ? 'Eu (' + (typeof rtNome === 'function' ? rtNome(v) : v) + ')' : (typeof rtNome === 'function' ? rtNome(v) : v)) + '</option>'; }).join('') + '</select></label>';
+  }
+  if (DCP.tipo !== 'hoje') h += '<button class="dc-link" onclick="dcPerCarregar(true)" title="Buscar de novo no servidor">↻ atualizar</button>';
+  return h + '</div>';
+}
+function dcPerRotulo() {
+  var r = dcPerRange(), f = function(d) { return d.slice(8, 10) + '/' + d.slice(5, 7); };
+  return r[0] === r[1] ? (r[0] === dcHoje() ? 'hoje' : 'em ' + f(r[0]) + '/' + r[0].slice(0, 4)) : 'de ' + f(r[0]) + ' a ' + f(r[1]) + '/' + r[1].slice(0, 4);
+}
+
 function dcVHist() {
-  var its = DC.itens.map(function(x, i) { return Object.assign({ _i: i }, x); }).reverse().filter(function(x) { return DC.filtro === 'todos' || x.res === DC.filtro; });
-  var f = [{ k: 'todos', t: 'Todas' }].concat(DC_RES);
-  return '<div class="dc-card"><div class="dc-filtros">' + f.map(function(x) {
-      var n = x.k === 'todos' ? DC.itens.length : DC.itens.filter(function(i) { return i.res === x.k; }).length;
+  var P = dcPerItens(), todos = P.itens, r = dcPerRange(), variosDias = r[0] !== r[1];
+  var its = todos.slice().reverse().filter(function(x) { return DC.filtro === 'todos' || x.res === DC.filtro; });
+  var f = [{ k: 'todos', t: 'Todas' }].concat(DC_RES), rs = dcResumo(todos);
+  var vazio = !P.pronto || DCP.carregando ? '<div class="dc-vazio">Carregando ligações…</div>'
+    : DCP.erro ? '<div class="dc-vazio">Não consegui carregar: ' + dcEsc(DCP.erro) + '</div>'
+    : '<div class="dc-vazio">Nenhuma ligação registrada ' + dcPerRotulo() + (DC.filtro !== 'todos' ? ' com esse resultado' : '') + '.</div>';
+  return '<div class="dc-card">' + dcPerBarra() +
+    (todos.length ? '<div class="dc-per-res"><b>' + rs.total + '</b> ligações · <b>' + rs.contaMeta + '</b> atendidas (com WhatsApp) · ' + (rs.total ? Math.round(rs.contaMeta / rs.total * 100) : 0) + '% · <b>' + dcDur(rs.seg) + '</b> falando · <b>' + rs.pedidos + '</b> pedidos' + (variosDias ? ' · ' + dcPerRotulo() : '') + '</div>' : '') +
+    '<div class="dc-filtros">' + f.map(function(x) {
+      var n = x.k === 'todos' ? todos.length : todos.filter(function(i) { return i.res === x.k; }).length;
       return '<button class="' + (DC.filtro === x.k ? 'on' : '') + '" onclick="DC.filtro=\'' + x.k + '\';dcRender()">' + x.t + ' ' + n + '</button>'; }).join('') + '</div>' +
-    (its.length ? '<div class="dc-scroll"><table class="dc-tab"><thead><tr><th>Hora</th><th>Cliente</th><th>Telefone</th><th>Resultado</th><th>Duração</th><th>Anotação</th></tr></thead><tbody>' +
-      its.map(function(x) { var r = DC_RESMAP[x.res] || { t: x.res, cor: '#8E939C' };
-        return '<tr><td>' + new Date(x.hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</td><td>' + dcEsc(x.nome || '—') + (x.empresa ? '<div class="dc-sub">' + dcEsc(x.empresa) + '</div>' : '') + '</td><td style="white-space:nowrap">' + dcEsc(dcTel(x.tel)) + '</td>' +
-          '<td><span class="dc-chip" style="color:' + r.cor + ';border-color:' + r.cor + '">' + r.t + '</span><div class="dc-sub">' + (x.canal === 'wa' ? 'pelo WhatsApp' : 'pelo MicroSIP') + '</div></td><td>' + (x.dur ? dcClock(x.dur) : '—') + '</td><td style="min-width:220px">' + dcObsCelula(x) + '</td></tr>'; }).join('') + '</tbody></table></div>'
-    : '<div class="dc-vazio">Nenhuma ligação registrada hoje' + (DC.filtro !== 'todos' ? ' com esse resultado' : '') + '.</div>') + '</div>';
+    (its.length ? '<div class="dc-scroll"><table class="dc-tab"><thead><tr><th>' + (variosDias ? 'Data' : 'Hora') + '</th><th>Cliente</th><th>Telefone</th><th>Resultado</th><th>Duração</th><th>Anotação</th></tr></thead><tbody>' +
+      its.map(function(x) { var rr = DC_RESMAP[x.res] || { t: x.res, cor: '#8E939C' };
+        var quando = (variosDias ? x.dia.slice(8, 10) + '/' + x.dia.slice(5, 7) + ' ' : '') + (x.hora ? new Date(x.hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
+        return '<tr><td style="white-space:nowrap">' + quando + '</td><td>' + dcEsc(x.nome || '—') + (x.empresa ? '<div class="dc-sub">' + dcEsc(x.empresa) + '</div>' : '') + '</td><td style="white-space:nowrap">' + dcEsc(dcTel(x.tel)) + '</td>' +
+          '<td><span class="dc-chip" style="color:' + rr.cor + ';border-color:' + rr.cor + '">' + rr.t + '</span><div class="dc-sub">' + (x.canal === 'wa' ? 'pelo WhatsApp' : 'pelo MicroSIP') + '</div></td><td>' + (x.dur ? dcClock(x.dur) : '—') + '</td><td style="min-width:220px">' + dcObsCelula(x) + '</td></tr>'; }).join('') + '</tbody></table></div>'
+    : vazio) + '</div>';
 }
 
 /* anotação editável com histórico: cada edição guarda a versão anterior em obsHist */
 function dcObsCelula(x) {
   var hist = Array.isArray(x.obsHist) ? x.obsHist : [];
+  if (x._i == null) return x.obs ? '<div style="white-space:pre-wrap">' + dcEsc(x.obs) + '</div>' : '<span class="dc-sub">sem anotação</span>';
   if (DC.obsEdit === x._i) return '<textarea id="dc-obsed" rows="3" style="width:100%">' + dcEsc(x.obs || '') + '</textarea>' +
     '<div class="dc-row" style="gap:6px;margin-top:4px"><button class="dc-btn dc-pri dc-mini" onclick="dcObsSalvar(' + x._i + ')">Salvar</button><button class="dc-btn dc-mini" onclick="DC.obsEdit=null;dcRender()">Cancelar</button></div>';
   var h = (x.obs ? '<div style="white-space:pre-wrap">' + dcEsc(x.obs) + '</div>' : '<span class="dc-sub">sem anotação</span>') +
