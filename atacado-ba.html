@@ -4577,6 +4577,7 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
   @media (max-width:600px){ #tab-minhasmetas .mm-grid2{ grid-template-columns:1fr; } }
 </style>
 <style>
+#nav-checkin { display:none !important; } /* Check-in Diário retirado */
 .mm-ed { background:var(--surface); border:1.5px solid #4A148C; border-radius:12px; margin:0 0 16px; }
 .mm-ed summary { cursor:pointer; padding:12px 16px; font-weight:700; color:color-mix(in srgb, #4A148C var(--tm), #fff); font-size:14.5px; }
 .mm-ed-dica { font-weight:400; color:var(--muted); font-size:12.5px; }
@@ -4924,7 +4925,7 @@ td.p-tie { color:var(--sp-muted); }
 
   <div class="mm-head">
     <h2 id="mm-titulo">📍 Minhas Metas</h2>
-    <p>Ligações vêm da Rota da Meta e propostas do check-in diário. Vendido, clientes e produtos são calculados automaticamente a partir dos seus pedidos.</p>
+    <p>Ligações vêm do Discador. Vendido, clientes e produtos são calculados automaticamente a partir dos seus pedidos. A meta de hoje é o que falta do mês dividido pelos dias úteis que restam.</p>
     <div id="mm-seletor" class="mm-seletor" style="display:none;"></div>
   </div>
 
@@ -18116,6 +18117,9 @@ function sortTable(col) {
 }
 
 function showTab(name, btn) {
+  if (name === 'checkin') { // Check-in Diário retirado: vai para Minhas Metas
+    name = 'minhasmetas'; btn = document.getElementById('nav-minhasmetas') || btn;
+  }
   if (name === 'parana') { // Plano PR retirado do Atacado BA
     name = 'minhasmetas'; btn = document.getElementById('nav-minhasmetas') || btn;
   }
@@ -19582,7 +19586,7 @@ function mmInit(){
         if (l && l.data) mapa[l.data] = (mapa[l.data] || 0) + ckNum(l.qtd);
       });
       mmLigacoesEquipe[vn] = mapa;
-      mmRenderPeriodo();
+      mmRenderPeriodo(); mmRenderHoje();
     });
   });
 }
@@ -19878,63 +19882,50 @@ function mmCardSimples(icon, label, valorTxt, sub){
   '</div>';
 }
 
+/* HOJE: meta do dia = o que falta do mês ÷ dias úteis que restam (contando hoje), como na Rota da Meta.
+   Ligações vêm do Discador (aba ligações) e vendido dos pedidos — não depende mais do check-in. */
+function mmHojeCalc(vn){
+  var hoje = new Date(), hojeStr = ckToday(), mes = ckMesAtualStr(), ini = mes + '-01';
+  var dUteisMes = rtDiasUteis(hoje.getFullYear(), hoje.getMonth()), dUteisAteHoje = rtDiasUteis(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  var ehUtil = hoje.getDay() !== 0 && hoje.getDay() !== 6, dRest = Math.max(1, dUteisMes - dUteisAteHoje + (ehUtil ? 1 : 0));
+  var settings = (ckData && ckData.settings) || {};
+  var ligs = mmLigacoesEquipe[vn] || {}, ligMes = 0, ligHoje = ckNum(ligs[hojeStr]);
+  Object.keys(ligs).forEach(function(d){ if (d >= ini && d <= hojeStr) ligMes += ckNum(ligs[d]); });
+  var metaLig = ckMetaPessoa(vn, 'metaLigMinMesPorPessoa', mes) || (ckNum(settings.metaLigDia) || CK_META_LIG_PADRAO) * dUteisMes;
+  var vMes = 0, vHoje = 0, pedHoje = 0;
+  (mmPedidosEquipe[vn] || []).forEach(function(p){
+    if (!p.data || p.data < ini || p.data > hojeStr || p.status === 'cancelado') return;
+    var v = mmValorPedido(p); vMes += v; if (p.data === hojeStr) { vHoje += v; pedHoje++; }
+  });
+  var metaVal = ckMetaPessoa(vn, 'metaMensalPorPessoa', mes);
+  return {
+    lig: ligHoje, metaLig: metaLig > 0 ? Math.ceil(Math.max(0, (metaLig - (ligMes - ligHoje)) / dRest)) : 0,
+    vend: vHoje, metaVend: metaVal > 0 ? Math.max(0, (metaVal - (vMes - vHoje)) / dRest) : 0,
+    ped: pedHoje
+  };
+}
 function mmRenderHoje(){
   var box = document.getElementById('mm-hoje');
   if (!box) return;
-  var hoje = ckToday();
-  var rows = (ckData.dias[hoje] && ckData.dias[hoje].rows) || [];
-
-  if (mmSelectedUser === 'EQUIPE'){
-    var totLig=0, totProp=0, totVend=0, totVendasN=0, totMetaLig=0, totMetaProp=0, totMetaVend=0, achouAlguma=false;
-    CK_EQUIPE.forEach(function(key){
-      var nome = vendedores[key] ? vendedores[key].nome : key;
-      var row = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(nome); });
-      if (!row) return;
-      achouAlguma = true;
-      var av = ckAvaliarLinha(row, hoje);
-      totLig += ckNum(row.ligacoes); totMetaLig += av.metaLigEf;
-      totProp += ckNum(row.propostas); totMetaProp += av.metaPropEf;
-      totVend += ckNum(row.vendidoR); totMetaVend += av.metaVendEf;
-      totVendasN += ckNum(row.vendasN);
-    });
-    if (!achouAlguma){ box.innerHTML = '<div class="mm-empty">O check-in de hoje ainda não foi preenchido.</div>'; mmRenderHero(null); return; }
-    var pctLig = totMetaLig>0 ? (totLig/totMetaLig*100) : null;
-    var pctProp = totMetaProp>0 ? (totProp/totMetaProp*100) : null;
-    var pctVend = totMetaVend>0 ? (totVend/totMetaVend*100) : null;
-    var convEq = totProp>0 ? (totVendasN/totProp*100) : 0;
-    box.innerHTML =
-      mmCardHTML('📞', 'Ligações', totLig, totMetaLig, pctLig, false) +
-      mmCardHTML('📝', 'Propostas', totProp, totMetaProp, pctProp, false) +
-      mmCardHTML('💰', 'Vendido', totVend, totMetaVend, pctVend, true) +
-      mmCardSimples('📊', 'Conversão', convEq.toFixed(0)+'%', totVendasN+' venda(s) / '+totProp+' proposta(s)');
-    var pctsEq = [pctLig,pctProp,pctVend].filter(function(p){ return p!==null; });
-    mmRenderHero(pctsEq.length ? Math.min.apply(null, pctsEq) : null);
-    return;
-  }
-
-  if (CK_EQUIPE.indexOf(mmSelectedUser) < 0){ box.innerHTML = '<div class="mm-empty">Não aplicável para esse usuário.</div>'; return; }
-  var meuNome = vendedores[mmSelectedUser] ? vendedores[mmSelectedUser].nome : '';
-  var minhaLinha = rows.find(function(r){ return ckNormNome(r.nome) === ckNormNome(meuNome); });
-  if (!minhaLinha){
-    box.innerHTML = '<div class="mm-empty">O check-in de hoje ainda não foi preenchido.</div>';
-    mmRenderHero(null);
-    return;
-  }
-  var av = ckAvaliarLinha(minhaLinha, hoje);
-  var conv = ckNum(minhaLinha.propostas)>0 ? (ckNum(minhaLinha.vendasN)/ckNum(minhaLinha.propostas)*100) : 0;
+  var pessoas = mmSelectedUser === 'EQUIPE' ? CK_EQUIPE : (CK_EQUIPE.indexOf(mmSelectedUser) >= 0 ? [mmSelectedUser] : []);
+  if (!pessoas.length){ box.innerHTML = '<div class="mm-empty">Não aplicável para esse usuário.</div>'; mmRenderHero(null); return; }
+  var t = { lig: 0, metaLig: 0, vend: 0, metaVend: 0, ped: 0 };
+  pessoas.forEach(function(vn){ var c = mmHojeCalc(vn); Object.keys(t).forEach(function(k){ t[k] += c[k]; }); });
+  var pctLig = t.metaLig > 0 ? t.lig / t.metaLig * 100 : null;
+  var pctVend = t.metaVend > 0 ? t.vend / t.metaVend * 100 : null;
   box.innerHTML =
-    mmCardHTML('📞', 'Ligações', minhaLinha.ligacoes, av.metaLigEf, av.pctLig, false) +
-    mmCardHTML('📝', 'Propostas', minhaLinha.propostas, av.metaPropEf, av.pctProp, false) +
-    mmCardHTML('💰', 'Vendido', minhaLinha.vendidoR, av.metaVendEf, av.pctVend, true) +
-    mmCardSimples('📊', 'Conversão', conv.toFixed(0)+'%', ckNum(minhaLinha.vendasN)+' venda(s) / '+ckNum(minhaLinha.propostas)+' proposta(s)');
-  mmRenderHero(av.overall);
+    mmCardHTML('📞', 'Ligações', t.lig, t.metaLig, pctLig, false) +
+    mmCardHTML('💰', 'Vendido', t.vend, t.metaVend, pctVend, true) +
+    mmCardSimples('📦', 'Pedidos hoje', String(t.ped), t.ped === 1 ? '1 pedido lançado' : t.ped + ' pedidos lançados');
+  var pcts = [pctLig, pctVend].filter(function(p){ return p !== null; });
+  mmRenderHero(pcts.length ? Math.min.apply(null, pcts) : null);
 }
 
 var MM_HERO_TEXTO = {
   good: { emoji: '🔥', titulo: 'Você tá arrasando hoje!', sub: 'Continue nesse ritmo até o fim do dia.' },
   mid: { emoji: '💪', titulo: 'Bom começo, falta um empurrão!', sub: 'Mais algumas ligações e propostas e a meta de hoje sai.' },
   bad: { emoji: '🚨', titulo: 'Hora de acelerar!', sub: 'Ainda dá tempo de virar o dia — foco nas ligações agora.' },
-  neutro: { emoji: '📋', titulo: 'Preencha o check-in de hoje', sub: 'Assim que tiver dados, o resumo do dia aparece aqui.' }
+  neutro: { emoji: '📋', titulo: 'Sem meta para hoje', sub: 'Cadastre as metas do mês em ✏️ Editar metas para o resumo do dia aparecer aqui.' }
 };
 
 function mmRenderHero(overallPct){
@@ -25889,7 +25880,7 @@ var AC_PAGINAS = [
   ['clientes', 'Base de Clientes'], ['abastecimento', 'Pedidos abertos'], ['central', 'Central Abast.'],
   ['shopping', 'Shopping de Preços'], ['treinamentos', 'Treinamentos'], ['reconhecimento', 'Ranking'],
   ['rota', 'Rota da Meta'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
-  ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['checkin', 'Check-in Diário'], ['rotina', 'Minha Rotina']
+  ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['rotina', 'Minha Rotina']
 ];
 var AC_PERFIS = [
   ['novo', 'Vendedor(a) novo(a)'], ['veterana', 'Vendedor(a) veterano(a)'], ['', 'Vendedor(a)'], ['administrativo', 'Administrativo']
@@ -26029,7 +26020,8 @@ function acPadrao(key, navId) {
     case 'clientes': case 'rotina': return jul;
     case 'central': return caUsuarioLiberado(key);
     case 'quiz': return (typeof qzTemAcesso === 'function') && qzTemAcesso(key);
-    case 'admin': case 'rampa': case 'checkin': return jul || !!v.lider;
+    case 'admin': case 'rampa': return jul || !!v.lider;
+    case 'checkin': return false; // Check-in Diário retirado
     case 'parana': return false; // Plano PR não existe no Atacado BA
     default: return true;
   }
