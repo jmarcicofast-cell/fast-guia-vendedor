@@ -15164,6 +15164,13 @@ var OP_OUTRA = { k: 'ba', nome: 'Atacado BA', url: 'atacado-ba.html', logins: ['
 function dbRefOp(k, path) { if (!(firebaseOK && db)) return dbRef(path); var raiz = db.__real || db; return raiz.ref((k === 'ba' ? 'ba/' : '') + path); }
 function opIrOutra() { location.href = OP_OUTRA.url; }
 function ehLider(u) { u = u || currentUser; return !!(u && vendedores[u] && vendedores[u].lider); }
+/* vendedor ou vendedor líder: nunca vê os painéis de gestão (Gestão, Rampa, Check-in, Evolução da equipe),
+   nem que alguma regra de Acessos tente liberar. Gestora, diretoria e administrativo seguem as regras de sempre. */
+function semPaineisGestao(u) {
+  u = u || currentUser; var v = u && vendedores[u];
+  if (!v) return true;
+  return !ehDona(u) && v.tipo !== 'gestora' && v.tipo !== 'administrativo';
+}
 function liderPodeEditar() { return ehLider() && !!(_liderAcesso && _liderAcesso.liberado); }
 function liderTravado() { return ehLider() && !liderPodeEditar(); }
 function liderPodeExcluirPedido(vend) { return !ehLider() || vend === currentUser; }
@@ -15174,28 +15181,9 @@ function liderEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, fun
 function liderAoEntrar() {
   if (!ehLider()) return;
   _liderVerDe = null;
-  ['nav-admin', 'nav-rampa', 'nav-checkin'].forEach(function(id) { var b = document.getElementById(id); if (b) b.style.display = 'flex'; });
-  var nomes = Object.keys(vendedores).filter(function(n) { return vendedores[n].tipo !== 'administrativo' && vendedores[n].tipo !== 'gestora'; });
-  Promise.all(nomes.map(function(n) { return new Promise(function(res) { try { fbLoad(n, res); } catch (e) { res(); } }); }))
-    .then(function() {
-      try { adminSelect('PEDRO', document.getElementById('abtn-PEDRO')); } catch (e) {}
-      try { renderAdminResumo(); } catch (e) {}
-      try { listenRampaNovos(); } catch (e) {}
-    });
-  // Evolução: o painel dela primeiro, a visão da equipe embaixo
-  var evGest = document.getElementById('ev-gestora-section'), evVend = document.getElementById('ev-vendedor-section');
-  if (evGest && evVend && evVend.parentNode) {
-    evVend.parentNode.insertBefore(evGest, evVend.nextSibling);
-    evGest.style.display = 'grid';
-    if (!document.getElementById('ev-lider-titulo')) {
-      var t = document.createElement('h3'); t.id = 'ev-lider-titulo';
-      t.style.cssText = 'font-size:14px;font-weight:700;color:var(--txt);margin:18px 0 0;';
-      t.textContent = '👥 Visão da equipe (líder)';
-      evGest.insertBefore(t, evGest.firstChild);
-    }
-    try { listenEvolucaoGestora(); } catch (e) {}
-    try { listenPaineisGestora(); } catch (e) {}
-  }
+  // 23/10/2026: a líder NÃO vê mais os painéis de gestão (Gestão, Rampa, Check-in, Evolução da equipe)
+  ['nav-admin', 'nav-rampa', 'nav-checkin'].forEach(function(id) { var b = document.getElementById(id); if (b) b.style.display = 'none'; });
+  var evGest = document.getElementById('ev-gestora-section'); if (evGest) evGest.style.display = 'none';
   liderMontarSeletorPedidos();
   liderMontarCampoVendedorNovoPedido();
   liderInstalarGuarda();
@@ -18039,12 +18027,8 @@ function checkAdminAccess(nome) {
         renderAdminResumo();
         listenRampaNovos();
       });
-  } else if (vendedores[currentUser] && vendedores[currentUser].lider) {
-    // Vendedora líder: vê os painéis de gestão (a liberação é feita em liderAoEntrar)
-    adminNav.style.display = 'flex';
-    if (rampaNav) rampaNav.style.display = 'flex';
-    if (checkinNav) checkinNav.style.display = 'flex';
   } else {
+    // vendedores e vendedores líderes não veem os painéis de gestão
     adminNav.style.display = 'none';
     if (rampaNav) rampaNav.style.display = 'none';
     if (checkinNav) checkinNav.style.display = 'none';
@@ -18291,6 +18275,9 @@ function showTab(name, btn) {
   if (name === 'negociacoes') { // a aba Negociações virou o Funil do Discador
     if (typeof DC !== 'undefined') DC.aba = 'funil';
     name = 'discador'; btn = document.getElementById('nav-discador') || btn;
+  }
+  if ((name === 'admin' || name === 'rampa') && semPaineisGestao()) { // vendedor e líder não entram nos painéis de gestão
+    name = 'minhasmetas'; btn = document.getElementById('nav-minhasmetas') || btn;
   }
   if (typeof ckFlushPendingSave === 'function') ckFlushPendingSave();
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -26176,7 +26163,7 @@ function acPadrao(key, navId) {
     case 'clientes': case 'rotina': return jul;
     case 'central': return caUsuarioLiberado(key);
     case 'quiz': return (typeof qzTemAcesso === 'function') && qzTemAcesso(key);
-    case 'admin': case 'rampa': return jul || !!v.lider;
+    case 'admin': case 'rampa': return !semPaineisGestao(key);
     case 'checkin': return false; // Check-in Diário retirado
     case 'parana': return jul || key === 'ELIZIANE';
     default: return true;
@@ -26188,6 +26175,7 @@ function acPodeGerenciar(key) {
   key = key || currentUser;
   if (key === 'JULIANA') return true;
   var v = vendedores[key]; if (!v || v.bloqueado) return false;
+  if (semPaineisGestao(key)) return false; // Acessos fica dentro da Gestão: vendedor e líder não veem
   return v.gerenciaAcessos !== undefined ? !!v.gerenciaAcessos : v.tipo === 'administrativo';
 }
 
@@ -26218,6 +26206,11 @@ function acAplicarPaginas(key) {
   });
   // Negociações agora fica dentro do Funil do Discador: a aba some para todos
   var bNeg = document.getElementById('nav-negociacoes'); if (bNeg) acMexerNav(bNeg, false);
+  // Painéis de gestão nunca aparecem para vendedor nem para vendedor líder, mesmo com regra liberando
+  if (semPaineisGestao(key)) {
+    ['nav-admin', 'nav-rampa', 'nav-checkin'].forEach(function(id) { var b = document.getElementById(id); if (b) acMexerNav(b, false); });
+    var evG = document.getElementById('ev-gestora-section'); if (evG) evG.style.display = 'none';
+  }
   // Gestão > Acessos para quem gerencia; se a Gestão não é do perfil, só a sub-aba Acessos aparece
   var podeGer = acPodeGerenciar(key);
   var bAc = document.getElementById('admsub-btn-acessos');
@@ -26234,7 +26227,7 @@ function acAplicarPaginas(key) {
     if (ativo && ativo.classList.contains('active')) { var b1 = document.getElementById('admsub-btn-avaliacao'); if (b1) showAdminSub('avaliacao', b1); }
   }
   // páginas da gestão liberadas para quem não é gestora: carrega os dados da equipe
-  if (key !== 'JULIANA' && !v.lider) {
+  if (key !== 'JULIANA' && !v.lider && !semPaineisGestao(key)) {
     if (p.admin === true && !AC.admCarregado) {
       AC.admCarregado = true;
       var nomes = Object.keys(vendedores).filter(function(n) { return vendedores[n].tipo !== 'administrativo' && vendedores[n].tipo !== 'gestora'; });
@@ -26398,7 +26391,7 @@ function acAbrir(k) {
       '<div class="ac-campo"><label>Perfil</label>' + (jul ? '<input value="Gestora" readonly>' : '<select id="ac-f-tipo" onchange="acMudouPerfil()">' + perfis + '</select>') + '</div>' +
     '</div>' +
     (jul ? '' :
-      '<label class="ac-chk"><input type="checkbox" id="ac-f-lider"' + (v.lider ? ' checked' : '') + ' onchange="acMudouPerfil()"> Vendedora líder <small>(vê os painéis de gestão; para editar pede liberação)</small></label>' +
+      '<label class="ac-chk"><input type="checkbox" id="ac-f-lider"' + (v.lider ? ' checked' : '') + ' onchange="acMudouPerfil()"> Vendedora líder <small>(não vê os painéis de gestão)</small></label>' +
       (ehDona()
         ? '<label class="ac-chk"><input type="checkbox" id="ac-f-ger"' + (gerAtual ? ' checked' : '') + '> Pode gerenciar acessos <small>(vê Gestão &gt; Acessos)</small></label>'
         : '')) +

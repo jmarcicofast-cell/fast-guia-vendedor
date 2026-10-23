@@ -1169,6 +1169,10 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
     Rampa dos Novos
   </button>
+  <button class="nav-btn" id="nav-parana" draggable="true" data-nav-id="parana" style="display:none;" onclick="showTab('parana',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 0C17 0 4 12 4 24C4 32.28 9.82 39 17 39C24.18 39 30 32.28 30 24C30 12 17 0 17 0Z"/><circle cx="17" cy="26" r="4.5"/></svg>
+    Plano PR
+  </button>
   <button class="nav-btn" id="nav-checkin" draggable="true" data-nav-id="checkin" style="display:none;" onclick="showTab('checkin',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Check-in Diário
@@ -10203,7 +10207,7 @@ function initFirebase() {
         messagingSenderId: "122472038745",
         appId: "1:122472038745:web:8b5dcd190534d3e65d8c48"
       });
-      db = (function(real){ var w = Object.create(real); w.ref = function(p){ p = String(p == null ? '' : p).replace(/^\/+/, ''); return /^(\.info|centralAbast|chat(\/|$))/.test(p) ? real.ref(p) : real.ref(p ? 'ba/' + p : 'ba'); }; w.__real = real; return w; })(firebase.database()); // Atacado BA: tudo em ba/, menos a Central de Abastecimento e o bate-papo (interligados com o Televendas)
+      db = (function(real){ var w = Object.create(real); w.ref = function(p){ p = String(p == null ? '' : p).replace(/^\/+/, ''); return /^(\.info|centralAbast)/.test(p) ? real.ref(p) : real.ref(p ? 'ba/' + p : 'ba'); }; w.__real = real; return w; })(firebase.database()); // Atacado BA: tudo em ba/, menos a Central de Abastecimento (interligada)
       pedInstalarSaneamento();
       firebaseOK = true;
       console.log('Firebase conectado');
@@ -15000,6 +15004,13 @@ var OP_OUTRA = { k: 'tv', nome: 'Televendas', url: 'guia-vendedor.html', logins:
 function dbRefOp(k, path) { if (!(firebaseOK && db)) return dbRef(path); var raiz = db.__real || db; return raiz.ref((k === 'ba' ? 'ba/' : '') + path); }
 function opIrOutra() { location.href = OP_OUTRA.url; }
 function ehLider(u) { u = u || currentUser; return !!(u && vendedores[u] && vendedores[u].lider); }
+/* vendedor ou vendedor líder: nunca vê os painéis de gestão (Gestão, Rampa, Check-in, Evolução da equipe),
+   nem que alguma regra de Acessos tente liberar. Gestora, diretoria e administrativo seguem as regras de sempre. */
+function semPaineisGestao(u) {
+  u = u || currentUser; var v = u && vendedores[u];
+  if (!v) return true;
+  return !ehDona(u) && v.tipo !== 'gestora' && v.tipo !== 'administrativo';
+}
 function liderPodeEditar() { return ehLider() && !!(_liderAcesso && _liderAcesso.liberado); }
 function liderTravado() { return ehLider() && !liderPodeEditar(); }
 function liderPodeExcluirPedido(vend) { return !ehLider() || vend === currentUser; }
@@ -15010,28 +15021,9 @@ function liderEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, fun
 function liderAoEntrar() {
   if (!ehLider()) return;
   _liderVerDe = null;
-  ['nav-admin', 'nav-rampa', 'nav-checkin'].forEach(function(id) { var b = document.getElementById(id); if (b) b.style.display = 'flex'; });
-  var nomes = Object.keys(vendedores).filter(function(n) { return vendedores[n].tipo !== 'administrativo' && vendedores[n].tipo !== 'gestora'; });
-  Promise.all(nomes.map(function(n) { return new Promise(function(res) { try { fbLoad(n, res); } catch (e) { res(); } }); }))
-    .then(function() {
-      try { adminSelect('BRUNO', document.getElementById('abtn-BRUNO')); } catch (e) {}
-      try { renderAdminResumo(); } catch (e) {}
-      try { listenRampaNovos(); } catch (e) {}
-    });
-  // Evolução: o painel dela primeiro, a visão da equipe embaixo
-  var evGest = document.getElementById('ev-gestora-section'), evVend = document.getElementById('ev-vendedor-section');
-  if (evGest && evVend && evVend.parentNode) {
-    evVend.parentNode.insertBefore(evGest, evVend.nextSibling);
-    evGest.style.display = 'grid';
-    if (!document.getElementById('ev-lider-titulo')) {
-      var t = document.createElement('h3'); t.id = 'ev-lider-titulo';
-      t.style.cssText = 'font-size:14px;font-weight:700;color:var(--txt);margin:18px 0 0;';
-      t.textContent = '👥 Visão da equipe (líder)';
-      evGest.insertBefore(t, evGest.firstChild);
-    }
-    try { listenEvolucaoGestora(); } catch (e) {}
-    try { listenPaineisGestora(); } catch (e) {}
-  }
+  // 23/10/2026: a líder NÃO vê mais os painéis de gestão (Gestão, Rampa, Check-in, Evolução da equipe)
+  ['nav-admin', 'nav-rampa', 'nav-checkin'].forEach(function(id) { var b = document.getElementById(id); if (b) b.style.display = 'none'; });
+  var evGest = document.getElementById('ev-gestora-section'); if (evGest) evGest.style.display = 'none';
   liderMontarSeletorPedidos();
   liderMontarCampoVendedorNovoPedido();
   liderInstalarGuarda();
@@ -17875,12 +17867,8 @@ function checkAdminAccess(nome) {
         renderAdminResumo();
         listenRampaNovos();
       });
-  } else if (vendedores[currentUser] && vendedores[currentUser].lider) {
-    // Vendedora líder: vê os painéis de gestão (a liberação é feita em liderAoEntrar)
-    adminNav.style.display = 'flex';
-    if (rampaNav) rampaNav.style.display = 'flex';
-    if (checkinNav) checkinNav.style.display = 'flex';
   } else {
+    // vendedores e vendedores líderes não veem os painéis de gestão
     adminNav.style.display = 'none';
     if (rampaNav) rampaNav.style.display = 'none';
     if (checkinNav) checkinNav.style.display = 'none';
@@ -17892,7 +17880,11 @@ function checkAdminAccess(nome) {
 function checkParanaAccess() {
   const paranaNav = document.getElementById('nav-parana');
   if (!paranaNav) return;
-  paranaNav.style.display = 'none'; // Plano PR retirado do Atacado BA
+  if (ehDona() || currentUser === 'BRUNO') {
+    paranaNav.style.display = 'flex';
+  } else {
+    paranaNav.style.display = 'none';
+  }
 }
 
 function renderEvolucaoVendedor(v) {
@@ -18120,18 +18112,19 @@ function showTab(name, btn) {
   if (name === 'checkin') { // Check-in Diário retirado: vai para Minhas Metas
     name = 'minhasmetas'; btn = document.getElementById('nav-minhasmetas') || btn;
   }
-  if (name === 'parana') { // Plano PR retirado do Atacado BA
-    name = 'minhasmetas'; btn = document.getElementById('nav-minhasmetas') || btn;
-  }
   if (name === 'negociacoes') { // a aba Negociações virou o Funil do Discador
     if (typeof DC !== 'undefined') DC.aba = 'funil';
     name = 'discador'; btn = document.getElementById('nav-discador') || btn;
+  }
+  if ((name === 'admin' || name === 'rampa') && semPaineisGestao()) { // vendedor e líder não entram nos painéis de gestão
+    name = 'minhasmetas'; btn = document.getElementById('nav-minhasmetas') || btn;
   }
   if (typeof ckFlushPendingSave === 'function') ckFlushPendingSave();
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'tabela') renderTable();
+  if (name === 'parana') prInit();
   if (name === 'checkin') ckInit();
   if (name === 'minhasmetas') mmInit();
   if (name === 'rota' && typeof rtInit === 'function') rtInit();
@@ -23725,7 +23718,7 @@ function sgRender(){
      chat/digitando/<CONV>/<USER> = ts
    CONV: 'EQUIPE' ou 'A__B' (logins em ordem alfabética). */
 var MSN = { on:false, eu:null, inicio:0, pres:{}, ind:{}, grupo:null, lidas:{}, av:{}, abertas:[], msgs:{}, ouvindo:{}, dig:{}, tremidoEm:{}, ultTremeEnviado:{}, listaAberta:false, busca:'', titulo:null, piscaTimer:null, frasesTimer:null, hb:null };
-var MSN_TIME = 'ba'; // 'tv' = Televendas, 'ba' = Atacado BA (o chat é um só para os dois guias)
+var MSN_TIME = 'tv'; // 'tv' = Televendas, 'ba' = Atacado BA (o chat é um só para os dois guias)
 var MSN_SALAS = {
   EQUIPE:     { nome: 'Sala da equipe geral', sub: 'Televendas + Atacado BA', cor: '#C41E1E' },
   TELEVENDAS: { nome: 'Sala Televendas', sub: 'Só o Televendas', cor: '#0453D8', time: 'tv' },
@@ -23743,27 +23736,6 @@ function msnMembros(sala) { var t = MSN_SALAS[sala] && MSN_SALAS[sala].time; ret
 function msnPublicarEquipe() {
   var m = {}; Object.keys(vendedores).forEach(function(u) { var v = vendedores[u]; if (!v || v.bloqueado || /[.#$\[\]\/]/.test(u)) return; m[u] = v.nome || u; });
   try { dbRef('chat/equipes/' + MSN_TIME).set(m); } catch (e) {}
-}
-/* Uma vez só: traz o bate-papo antigo do BA (ba/chat) para o chat único.
-   A antiga "Sala da equipe" do BA vira a Sala Atacado BA. */
-function msnMigrarChatBA() {
-  if (!(firebaseOK && db && db.__real) || MSN.migrando) return; MSN.migrando = true; var R = db.__real;
-  R.ref('ba/chat/migrado').once('value').then(function(s) {
-    if (s && s.val()) return;
-    return Promise.all([R.ref('ba/chat').once('value'), R.ref('chat/indice').once('value'), R.ref('chat/fotos').once('value'), R.ref('chat/prefs').once('value'), R.ref('chat/grupo/ATACADO_BA').once('value')]).then(function(r) {
-      var v = r[0].val() || {}, ind = r[1].val() || {}, fotos = r[2].val() || {}, prefs = r[3].val() || {}, gAtual = r[4].val(), up = {};
-      var mc = function(c) { return c === 'EQUIPE' ? 'ATACADO_BA' : c; };
-      Object.keys(v.conv || {}).forEach(function(c) { var ms = (v.conv[c] || {}).msgs || {}; Object.keys(ms).forEach(function(id) { up['chat/conv/' + mc(c) + '/msgs/' + id] = ms[id]; }); });
-      Object.keys(v.indice || {}).forEach(function(u) { Object.keys(v.indice[u] || {}).forEach(function(c) { var x = v.indice[u][c], y = (ind[u] || {})[c]; if (x && (!y || (x.ts || 0) > (y.ts || 0))) up['chat/indice/' + u + '/' + c] = x; }); });
-      var g = (v.grupo || {}).EQUIPE; if (g && (!gAtual || (g.ts || 0) > (gAtual.ts || 0))) up['chat/grupo/ATACADO_BA'] = g;
-      Object.keys(v.lidas || {}).forEach(function(u) { Object.keys(v.lidas[u] || {}).forEach(function(c) { up['chat/lidas/' + u + '/' + mc(c)] = v.lidas[u][c]; }); });
-      Object.keys(v.fotos || {}).forEach(function(u) { if (!fotos[u]) up['chat/fotos/' + u] = v.fotos[u]; });
-      Object.keys(v.prefs || {}).forEach(function(u) { if (!prefs[u]) up['chat/prefs/' + u] = v.prefs[u]; });
-      ['figurinhas', 'anexos'].forEach(function(k) { Object.keys(v[k] || {}).forEach(function(id) { up['chat/' + k + '/' + id] = v[k][id]; }); });
-      var fim = function() { return R.ref('ba/chat/migrado').set(Date.now()); };
-      return Object.keys(up).length ? R.ref().update(up).then(fim) : fim();
-    });
-  }).catch(function(e) { console.warn('migração do chat BA', e); }).then(function() { MSN.migrando = false; });
 }
 var MSN_EMOS = ['😀','😂','😉','😍','😎','🤔','😴','😢','😡','👍','👏','🙏','💪','🔥','🎉','☕','🚚','🧱','💰','📞','✅','❌','❤️','⭐'];
 var MSN_STATUS = { online:'Online', ausente:'Ausente', ocupado:'Ocupado', offline:'Aparecer offline' };
@@ -25880,7 +25852,7 @@ var AC_PAGINAS = [
   ['clientes', 'Base de Clientes'], ['abastecimento', 'Pedidos abertos'], ['central', 'Central Abast.'],
   ['shopping', 'Shopping de Preços'], ['treinamentos', 'Treinamentos'], ['reconhecimento', 'Ranking'],
   ['rota', 'Rota da Meta'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
-  ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['rotina', 'Minha Rotina']
+  ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['parana', 'Plano PR'], ['rotina', 'Minha Rotina']
 ];
 var AC_PERFIS = [
   ['novo', 'Vendedor(a) novo(a)'], ['veterana', 'Vendedor(a) veterano(a)'], ['', 'Vendedor(a)'], ['administrativo', 'Administrativo']
@@ -26020,9 +25992,9 @@ function acPadrao(key, navId) {
     case 'clientes': case 'rotina': return jul;
     case 'central': return caUsuarioLiberado(key);
     case 'quiz': return (typeof qzTemAcesso === 'function') && qzTemAcesso(key);
-    case 'admin': case 'rampa': return jul || !!v.lider;
+    case 'admin': case 'rampa': return !semPaineisGestao(key);
     case 'checkin': return false; // Check-in Diário retirado
-    case 'parana': return false; // Plano PR não existe no Atacado BA
+    case 'parana': return jul || key === 'BRUNO';
     default: return true;
   }
 }
@@ -26032,6 +26004,7 @@ function acPodeGerenciar(key) {
   key = key || currentUser;
   if (key === 'ANACAROLINA') return true;
   var v = vendedores[key]; if (!v || v.bloqueado) return false;
+  if (semPaineisGestao(key)) return false; // Acessos fica dentro da Gestão: vendedor e líder não veem
   return v.gerenciaAcessos !== undefined ? !!v.gerenciaAcessos : v.tipo === 'administrativo';
 }
 
@@ -26062,6 +26035,11 @@ function acAplicarPaginas(key) {
   });
   // Negociações agora fica dentro do Funil do Discador: a aba some para todos
   var bNeg = document.getElementById('nav-negociacoes'); if (bNeg) acMexerNav(bNeg, false);
+  // Painéis de gestão nunca aparecem para vendedor nem para vendedor líder, mesmo com regra liberando
+  if (semPaineisGestao(key)) {
+    ['nav-admin', 'nav-rampa', 'nav-checkin'].forEach(function(id) { var b = document.getElementById(id); if (b) acMexerNav(b, false); });
+    var evG = document.getElementById('ev-gestora-section'); if (evG) evG.style.display = 'none';
+  }
   // Gestão > Acessos para quem gerencia; se a Gestão não é do perfil, só a sub-aba Acessos aparece
   var podeGer = acPodeGerenciar(key);
   var bAc = document.getElementById('admsub-btn-acessos');
@@ -26078,7 +26056,7 @@ function acAplicarPaginas(key) {
     if (ativo && ativo.classList.contains('active')) { var b1 = document.getElementById('admsub-btn-avaliacao'); if (b1) showAdminSub('avaliacao', b1); }
   }
   // páginas da gestão liberadas para quem não é gestora: carrega os dados da equipe
-  if (key !== 'ANACAROLINA' && !v.lider) {
+  if (key !== 'ANACAROLINA' && !v.lider && !semPaineisGestao(key)) {
     if (p.admin === true && !AC.admCarregado) {
       AC.admCarregado = true;
       var nomes = Object.keys(vendedores).filter(function(n) { return vendedores[n].tipo !== 'administrativo' && vendedores[n].tipo !== 'gestora'; });
@@ -26242,7 +26220,7 @@ function acAbrir(k) {
       '<div class="ac-campo"><label>Perfil</label>' + (jul ? '<input value="Gestora" readonly>' : '<select id="ac-f-tipo" onchange="acMudouPerfil()">' + perfis + '</select>') + '</div>' +
     '</div>' +
     (jul ? '' :
-      '<label class="ac-chk"><input type="checkbox" id="ac-f-lider"' + (v.lider ? ' checked' : '') + ' onchange="acMudouPerfil()"> Vendedora líder <small>(vê os painéis de gestão; para editar pede liberação)</small></label>' +
+      '<label class="ac-chk"><input type="checkbox" id="ac-f-lider"' + (v.lider ? ' checked' : '') + ' onchange="acMudouPerfil()"> Vendedora líder <small>(não vê os painéis de gestão)</small></label>' +
       (ehDona()
         ? '<label class="ac-chk"><input type="checkbox" id="ac-f-ger"' + (gerAtual ? ' checked' : '') + '> Pode gerenciar acessos <small>(vê Gestão &gt; Acessos)</small></label>'
         : '')) +
