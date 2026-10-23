@@ -23653,7 +23653,8 @@ function sgRender(){
 .msn-sis.wk { color:#7A3DB8; }
 .msn-sis.wk button { border:1px solid #B79BDB; border-radius:3px; background:#fff; color:#7A3DB8; font:11px Tahoma,sans-serif; padding:1px 6px; cursor:pointer; margin-left:4px; }
 /* wink Pau no gato (cena em cartoon) */
-.wkg-st{position:relative;width:400px;height:300px;overflow:hidden;border-radius:18px;background:radial-gradient(ellipse at 50% 35%,#fffbe8 0%,#ffe3ef 45%,#d9ccff 100%);box-shadow:0 20px 50px rgba(40,20,90,.35),0 0 0 3px #fff}
+.wkg-st{position:relative;width:400px;height:300px;overflow:visible}
+.wkg-floor,.wkg-spark{display:none}
 .wkg-st *{box-sizing:border-box}
 .wkg-world{position:absolute;inset:0}
 .wkg-floor{position:absolute;left:-40px;top:250px;width:480px;height:90px;border-radius:50% 50% 0 0/40px 40px 0 0;
@@ -23662,7 +23663,7 @@ background:linear-gradient(#ffd6ea,#f7bcd9)}
 @keyframes wkg-twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.1)}}
 .wkg-shadow{position:absolute;left:248px;top:262px;width:116px;height:16px;border-radius:50%;background:#b77fa8;opacity:.35}
 .wkg-cat{position:absolute;left:230px;top:118px;width:150px;height:150px;transform-origin:50% 100%}
-.wkg-arm{position:absolute;left:-10px;top:140px;width:130px;height:70px;transform-origin:0% 50%;transform:translateX(-140px)}
+.wkg-arm{position:absolute;left:-10px;top:140px;width:130px;height:70px;transform-origin:0% 50%;transform:translateX(-90px);opacity:0}
 .wkg-stick{position:absolute;left:40px;top:153px;width:60px;height:14px;opacity:0}
 .wkg-bonk{position:absolute;left:140px;top:212px;width:96px;height:64px;opacity:0}
 .wkg-bubble{position:absolute;left:118px;top:20px;width:118px;height:96px;opacity:0;transform-origin:100% 80%}
@@ -23680,13 +23681,7 @@ background:linear-gradient(#ffd6ea,#f7bcd9)}
 .wkg-play .wkg-world{animation:wkg-shake 5s linear forwards}
 @keyframes wkg-shake{0%,39.9%,45%,100%{transform:translate(0,0)}40.5%{transform:translate(-4px,2px)}41.5%{transform:translate(4px,-2px)}42.5%{transform:translate(-3px,1px)}43.5%{transform:translate(2px,0)}}
 .wkg-play .wkg-arm{animation:wkg-arm 5s forwards}
-@keyframes wkg-arm{
-0%{transform:translateX(-140px) rotate(0)}
-12%{transform:translateX(0) rotate(0);animation-timing-function:ease-in-out}
-17%{transform:translateX(-6px) rotate(-38deg);animation-timing-function:ease-in}
-21%{transform:translateX(4px) rotate(28deg)}
-28%{transform:translateX(0) rotate(14deg)}
-38%,100%{transform:translateX(-150px) rotate(10deg)}}
+@keyframes wkg-arm{0%{transform:translateX(-90px) rotate(0);opacity:0}12%{transform:translateX(0) rotate(0);opacity:1;animation-timing-function:ease-in-out}17%{transform:translateX(-6px) rotate(-38deg);opacity:1;animation-timing-function:ease-in}21%{transform:translateX(4px) rotate(28deg);opacity:1}28%{transform:translateX(0) rotate(14deg);opacity:1}36%,100%{transform:translateX(-90px) rotate(10deg);opacity:0}}
 .wkg-play .wkg-handstick{animation:wkg-handstick 5s forwards}
 @keyframes wkg-handstick{0%,20.4%{opacity:1}20.5%,100%{opacity:0}}
 .wkg-play .wkg-stick{animation:wkg-fly 5s forwards}
@@ -24420,7 +24415,12 @@ function msnWinkTocar(id) {
     gbox.querySelectorAll('[data-star]').forEach(function(pl) { var v = pl.getAttribute('data-star').split(',').map(Number), pts = [];
       for (var si = 0; si < v[4] * 2; si++) { var rr = si % 2 ? v[3] : v[2], aa = Math.PI * si / v[4] - Math.PI / 2; pts.push((v[0] + rr * Math.cos(aa)).toFixed(1) + ',' + (v[1] + rr * Math.sin(aa)).toFixed(1)); }
       pl.setAttribute('points', pts.join(' ')); });
-    anima(gbox, [{ transform: 'translate(-50%,-50%) scale(' + gs * .6 + ')', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(' + gs + ')', opacity: 1, offset: .05 }, { transform: 'translate(-50%,-50%) scale(' + gs + ')', opacity: 1, offset: .93 }, { transform: 'translate(-50%,-50%) scale(' + gs * .9 + ')', opacity: 0 }], dur, 0, 'ease-out');
+    // sem fundo, como os outros winks: o gato foge até a borda da tela e espia de volta pelo canto direito
+    var gpk = gbox.querySelector('.wkg-peek'), gpw = el('', 'left:' + (W - 92 * gs) + 'px;top:' + (H * .5 - 150 * gs) + 'px;width:110px;height:110px;transform-origin:0 0;transform:scale(' + gs + ')');
+    gpw.className += ' wkg-play'; if (gpk) { gpk.style.left = '0'; gpk.style.top = '0'; gpw.appendChild(gpk); }
+    var gsai = [{ opacity: 1 }, { opacity: 1, offset: .93 }, { opacity: 0 }];
+    anima(gpw, gsai, dur, 0);
+    anima(gbox, [{ transform: 'translate(-50%,-50%) scale(' + gs + ')', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(' + gs + ')', opacity: 1, offset: .04 }, { transform: 'translate(-50%,-50%) scale(' + gs + ')', opacity: 1, offset: .93 }, { transform: 'translate(-50%,-50%) scale(' + gs + ')', opacity: 0 }], dur, 0);
   } else if (id === 'acorda') {
     tela.style.background = 'rgba(255,210,63,.18)';
     anima(tela, [{ backgroundColor: 'rgba(255,210,63,0)' }, { backgroundColor: 'rgba(255,210,63,.35)' }, { backgroundColor: 'rgba(255,210,63,0)' }], 400, 0).effect.updateTiming({ iterations: 8 });
