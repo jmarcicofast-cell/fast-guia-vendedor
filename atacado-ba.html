@@ -398,6 +398,10 @@
   .s-cancelado      { background:color-mix(in srgb, #FFEBEE var(--tint), var(--surface));color:var(--acc-txt); }
   .s-entregue       { background:color-mix(in srgb, #E8F5E9 var(--tint), var(--surface));color:color-mix(in srgb, #1B5E20 var(--tm), #fff);border:1px solid #81C784; }
   .s-faturado       { background:var(--ink);color:#fff; }
+  .s-fechado        { background:color-mix(in srgb, #C8E6C9 var(--tint), var(--surface));color:color-mix(in srgb, #1B5E20 var(--tm), #fff);border:1px solid #81C784; }
+  tr.ped-fechado > td { background:color-mix(in srgb, #E8F5E9 var(--tint), var(--surface)) !important; }
+  tr.ped-fechado > td:first-child { box-shadow:inset 5px 0 0 #66BB6A; }
+  .ped-card-fechado { background:color-mix(in srgb, #E8F5E9 var(--tint), var(--surface)) !important; border-color:#A5D6A7 !important; box-shadow:inset 5px 0 0 #66BB6A; }
   .s-aguardando-fat { background:color-mix(in srgb, #FFF8E1 var(--tint), var(--surface));color:#E65100; }
   .ped-table { width:100%;border-collapse:collapse;font-size:13px;margin-top:1rem; }
   .ped-table th { background:var(--ink);color:#fff;padding:8px 10px;text-align:left;font-weight:500;white-space:nowrap; }
@@ -10474,7 +10478,12 @@ const STATUS_LABEL = {
   'cancelado':      'Cancelado',
   'faturado':       'Faturado',
   'aguardando-fat': 'Aguardando Fat.',
+  'fechado':        '✅ Fechado',
 };
+/* 23/10/2026: pedido FATURADO e CONCILIADO aparece como "Fechado", com tarja verde-clara.
+   O status gravado continua 'faturado' (comissão, ranking e abastecimento seguem iguais). */
+function pedFechado(p) { return !!(p && !p.excluido && p.status === 'faturado' && p.conciliado); }
+function pedStatusVis(p) { return pedFechado(p) ? 'fechado' : ((p && p.status) || ''); }
 
 const CAT_LABEL = { placa:'Placa', grx:'GRX/Comp.', aco:'Aço' };
 // Converte qtd/vUnit pra número de forma segura, aceitando tanto número quanto
@@ -11478,12 +11487,12 @@ function linhaPedidoHtml(p, isGestora) {
   var travadoNegocio = p.status === 'faturado' && !ehDona();
   var selectAttrs = travadoNegocio ? ' disabled style="font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid var(--line);background:var(--surface-2);color:var(--faint);cursor:not-allowed;"' : ' style="font-size:12px;padding:4px 7px;border-radius:5px;border:1px solid var(--line);cursor:pointer;"';
   var obsAttrs = travadoNegocio ? ' readonly style="width:150px;font-size:11.5px;padding:5px 8px;border-radius:5px;border:1px solid var(--line);outline:none;color:var(--faint);background:var(--surface-2);cursor:not-allowed;"' : ' style="width:150px;font-size:11.5px;padding:5px 8px;border-radius:5px;border:1px solid var(--line);outline:none;color:var(--txt);"';
-  return '<tr onclick="abrirDetalhePedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="cursor:pointer;">' +
+  return '<tr' + (pedFechado(p) ? ' class="ped-fechado" title="Fechado: faturado e conciliado"' : '') + ' onclick="abrirDetalhePedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="cursor:pointer;">' +
     '<td><span style="display:inline-block;background:var(--ink);color:#fff;font-family:monospace;font-size:14px;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + '</span>' + (travadoNegocio ? ' <span title="Faturado — travado, só a Ana Carolina edita" style="font-size:12px;">🔒</span>' : '') + '</td>' +
     '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;font-weight:600;" title="' + clienteNome.replace(/"/g,'&quot;') + '">' + clienteNome + '</td>' +
     vendLabel +
     '<td style="font-weight:700;font-size:14px;color:color-mix(in srgb, #1B5E20 var(--tm), #fff);">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</td>' +
-    '<td onclick="event.stopPropagation()"><select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)"' + selectAttrs + '>' + statusSelectOpts(p, isGestora) + '</select>' + (typeof abFunilTagHtml === 'function' ? abFunilTagHtml(p) : '') + '</td>' +
+    '<td onclick="event.stopPropagation()">' + (pedFechado(p) ? '<span class="status-badge s-fechado" style="font-size:11.5px;" title="Faturado e conciliado">✅ Fechado</span>' : '<select onchange="atualizarStatus(\'' + p.vendedor + '\',\'' + p.id + '\',this.value)"' + selectAttrs + '>' + statusSelectOpts(p, isGestora) + '</select>') + (typeof abFunilTagHtml === 'function' ? abFunilTagHtml(p) : '') + '</td>' +
     '<td onclick="event.stopPropagation()">' + abCelulaPedidoHtml(p) + '</td>' +
     '<td onclick="event.stopPropagation()">' + numDocCellHtml(p) + '</td>' +
     '<td onclick="event.stopPropagation()">' + conciliacaoCellHtml(p) + '</td>' +
@@ -11802,12 +11811,12 @@ function cardPedidoHtml(p, isGestora) {
   var obsVal = (p.obs || '').replace(/"/g,'&quot;');
   var travadoNegocio = p.status === 'faturado' && !ehDona();
   var obsAttrs = travadoNegocio ? ' readonly style="width:100%;margin-top:10px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid var(--line);outline:none;color:var(--faint);background:var(--surface-2);cursor:not-allowed;"' : ' style="width:100%;margin-top:10px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid var(--line);outline:none;color:var(--txt);"';
-  return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;">' +
+  return '<div' + (pedFechado(p) ? ' class="ped-card-fechado"' : '') + ' style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;">' +
     '<div onclick="abrirDetalhePedido(\'' + p.vendedor + '\',\'' + p.id + '\')" style="cursor:pointer;">' +
     vendLine +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;">' +
       '<span style="display:inline-block;background:var(--ink);color:#fff;font-family:monospace;font-size:15px;font-weight:700;padding:5px 12px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + (travadoNegocio ? ' 🔒' : '') + '</span>' +
-      '<span class="status-badge s-' + (p.status||'') + '" style="font-size:11px;">' + (STATUS_LABEL[p.status]||p.status||'') + '</span>' + (typeof abFunilTagHtml === 'function' ? abFunilTagHtml(p) : '') +
+      '<span class="status-badge s-' + pedStatusVis(p) + '" style="font-size:11px;">' + (STATUS_LABEL[pedStatusVis(p)]||p.status||'') + '</span>' + (typeof abFunilTagHtml === 'function' ? abFunilTagHtml(p) : '') +
     '</div>' +
     '<div style="font-size:16px;font-weight:700;color:var(--txt);margin-bottom:10px;">' + clienteNome + '</div>' +
     '<div style="font-size:18px;font-weight:700;color:color-mix(in srgb, #1B5E20 var(--tm), #fff);">R$ ' + Number(p.vTotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2}) + '</div>' +
@@ -11859,7 +11868,7 @@ function abrirDetalhePedido(vend, pedidoId) {
     body.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">' +
         '<span style="display:inline-block;background:var(--ink);color:#fff;font-family:monospace;font-size:16px;font-weight:700;padding:6px 14px;border-radius:6px;letter-spacing:.02em;">' + (p.chamado||'—') + '</span>' +
-        '<span class="status-badge s-' + (p.status||'') + '" style="font-size:12px;">' + (STATUS_LABEL[p.status]||p.status||'') + '</span>' +
+        '<span class="status-badge s-' + pedStatusVis(p) + '" style="font-size:12px;">' + (STATUS_LABEL[pedStatusVis(p)]||p.status||'') + '</span>' +
       '</div>' +
       pedDetalheAcoesHtml(p, isGestora) +
       (p.status === 'faturado' ?
@@ -12068,7 +12077,7 @@ function pedidoCasaBusca(p, termo) {
   var materiais = p.itens ? p.itens.map(function(it){ return it.material; }).join(' ') : (p.material||'');
   var catTxt = p.itens ? p.itens.map(function(it){ return CAT_LABEL[it.cat]||it.cat||''; }).join(' ') : (CAT_LABEL[p.cat]||p.cat||'');
   var veicTxt = p.veiculo==='truck' ? 'truck' : p.veiculo==='carreta' ? 'carreta' : p.veiculo==='outros' ? 'outros' : '';
-  var statusTxt = STATUS_LABEL[p.status] || p.status || '';
+  var statusTxt = (STATUS_LABEL[pedStatusVis(p)] || p.status || '') + (pedFechado(p) ? ' fechado conciliado' : '');
   var vendNome = p.vendedor && vendedores[p.vendedor] ? vendedores[p.vendedor].nome : (p.vendedor||'');
   var campos = [
     p.empresa, p.cliente, vendNome, p.vendedor, materiais, catTxt,
@@ -12160,7 +12169,7 @@ function renderPedidosFiltrados() {
 
   var lista = base;
   if (_pedFiltroEstado) lista = lista.filter(function(p) { return (p.estado||'') === _pedFiltroEstado; });
-  if (_pedFiltroStatus) lista = lista.filter(function(p) { return (p.status||'') === _pedFiltroStatus; });
+  if (_pedFiltroStatus) lista = lista.filter(function(p) { return pedStatusVis(p) === _pedFiltroStatus; });
   if (_pedFiltroItem)   lista = lista.filter(function(p) { return pedidoCasaItem(p, _pedFiltroItem); });
   if (termo)            lista = lista.filter(function(p) { return pedidoCasaBusca(p, termo); });
 
