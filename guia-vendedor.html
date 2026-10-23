@@ -958,6 +958,33 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .dc-ct tr.feito td{opacity:.5}
 .dc-ct tr.prox td{background:rgba(31,138,92,.08)}
 .dc-mini{padding:3px 10px;font-size:12px}
+/* ── Ciclo de foco (23/10/2026): 40 min ligando · 20 min negociando · 5 min respirando ── */
+.fc-band{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:14px 18px;margin-bottom:16px;border-left:6px solid var(--fc-cor,var(--line));color:var(--txt)}
+.fc-band.off{border-left-color:var(--line)}
+.fc-ic{font-size:26px;line-height:1}
+.fc-info{flex:1;min-width:200px}
+.fc-fase{font-size:16px;font-weight:800;color:var(--fc-cor,var(--txt))}
+.fc-sub{font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4}
+.fc-tempo{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:var(--fc-cor,var(--txt));min-width:110px;text-align:right}
+.fc-trilha{display:flex;gap:4px;width:100%;margin-top:2px}
+.fc-seg{height:8px;border-radius:4px;background:var(--surface-3,rgba(127,127,127,.18));overflow:hidden;position:relative}
+.fc-seg i{position:absolute;inset:0 auto 0 0;background:var(--fc-c);border-radius:4px}
+.fc-legenda{display:flex;gap:4px;width:100%;font-size:11px;color:var(--muted);margin-top:-6px}
+.fc-legenda span{text-align:center}
+.fc-acoes{display:flex;flex-wrap:wrap;gap:8px}
+.fc-pausado .fc-tempo{opacity:.45}
+#fc-pill{position:fixed;left:16px;bottom:16px;z-index:9990;display:flex;align-items:center;gap:8px;background:var(--surface,#fff);color:var(--txt,#1f2328);border:2px solid var(--fc-cor,#888);border-radius:999px;padding:6px 14px 6px 10px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:13px;font-weight:700;cursor:pointer;font-variant-numeric:tabular-nums}
+#fc-pill b{color:var(--fc-cor,inherit);font-size:15px}
+#fc-resp{position:fixed;inset:0;z-index:99996;background:rgba(14,40,30,.86);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;color:#fff;text-align:center;padding:24px}
+#fc-resp .fc-bola{width:180px;height:180px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#7fd8ae,#1F8A5B);box-shadow:0 0 60px rgba(127,216,174,.45);animation:fcRespira 10s ease-in-out infinite}
+#fc-resp .fc-guia{font-size:24px;font-weight:700;min-height:32px}
+#fc-resp .fc-rt{font-size:15px;opacity:.85;font-variant-numeric:tabular-nums}
+#fc-resp .fc-dica{font-size:14px;opacity:.75;max-width:420px;line-height:1.5}
+#fc-resp button{font:inherit;font-size:14px;font-weight:600;border-radius:8px;padding:8px 16px;cursor:pointer;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff}
+#fc-resp button.pri{background:#fff;color:#1F8A5B;border-color:#fff}
+@keyframes fcRespira{0%{transform:scale(.55)}40%{transform:scale(1)}50%{transform:scale(1)}100%{transform:scale(.55)}}
+@media (prefers-reduced-motion:reduce){#fc-resp .fc-bola{animation:none;transform:scale(.8)}}
+@media (max-width:600px){.fc-tempo{font-size:28px;min-width:0;text-align:left}}
 .dc-ag-lista{max-height:340px;overflow:auto;margin:0 -4px}
 .dc-ag-it{display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--line,#eee)}
 .dc-ag-tel{font-family:ui-monospace,Consolas,monospace;font-size:13px;margin-top:2px}
@@ -27340,6 +27367,7 @@ function dcRender() {
   abas.push(['config', 'Configurar']);
   var h = '<div class="dc-head"><h2 class="dc-tit">☎️ Discador</h2><div class="dc-abas">' +
     abas.map(function(a) { return '<button class="dc-aba' + (DC.aba === a[0] ? ' on' : '') + '" onclick="dcSetAba(\'' + a[0] + '\')">' + a[1] + '</button>'; }).join('') + '</div></div>';
+  if (DC.aba === 'discar' || DC.aba === 'funil' || fcEstado()) h += fcBandHtml();
   h += ({ discar: dcVDiscar, funil: dcVFunil, equipe: dcVEquipe, inativos: dcVInativos, hist: dcVHist, listas: dcVListas, config: dcVConfig })[DC.aba]();
   h += '<div class="dc-toast" id="dc-toast"></div>';
   var foco = document.activeElement && document.activeElement.id;
@@ -27983,6 +28011,7 @@ function dcRegistrar(res) {
 function dcSemDDD(t) { var d = dcDig(t); return d.length === 8 || d.length === 9; }
 function dcIniciarAuto() {
   dcPararAuto(true); DC.pausaDDD = false;
+  if (fcSemAuto()) { dcRender(); return; } // ciclo de foco: na negociação e na pausa não disca sozinho
   var alvo = dcAlvo();
   if (!alvo) { dcRender(); return; }
   if (dcSemDDD(alvo.tel)) { DC.pausaDDD = true; dcRender(); var ne = document.getElementById('dc-num'); if (ne) ne.focus(); return; }
@@ -27996,6 +28025,169 @@ function dcIniciarAuto() {
 // pula a contagem e já liga para o próximo
 function dcPularContagem() { if (!DC.auto) return; dcPararAuto(true); var b = document.getElementById('dc-ligar'); if (b) b.click(); }
 function dcPararAuto(silencioso) { DC.pausaDDD = false; if (DC.auto && DC.auto.t) clearInterval(DC.auto.t); var tinha = !!DC.auto; DC.auto = null; if (tinha && !silencioso) dcRender(); }
+
+/* ══ CICLO DE FOCO (23/10/2026) — 40 min ligando sem parar · 20 min negociando · 5 min respirando ══
+   O tempo é calculado pelo horário de início, então continua certo se trocar de aba ou recarregar o guia.
+   Fica guardado só neste navegador (fgv_dc_foco_{VN}). Na negociação e na pausa a discagem automática não dispara. */
+var FC_FASES = [
+  { k: 'ligar', min: 40, ic: '📞', t: 'Ligando sem parar', cor: '#2F6FB3',
+    sub: 'Só ligar: capture orçamentos e clientes. Anote e siga para o próximo; a negociação fica para o próximo bloco.' },
+  { k: 'negociar', min: 20, ic: '🤝', t: 'Negociando', cor: '#B7791F',
+    sub: 'Hora de trabalhar os orçamentos que você capturou: retorne, mande proposta e mova no Funil.' },
+  { k: 'respirar', min: 5, ic: '🌿', t: 'Respirando', cor: '#1F8A5B',
+    sub: 'Pausa de verdade: levante, beba água, respire fundo. O próximo ciclo começa com energia.' }
+];
+var FC_TOTAL = FC_FASES.reduce(function(t, f) { return t + f.min * 60e3; }, 0);
+var FC = { ultima: null, respFechado: null };
+function fcLer() { return currentUser ? dcLs('foco_' + currentUser, null) : null; }
+function fcGravar(e) { if (currentUser) dcLsSet('foco_' + currentUser, e); }
+function fcDecorrido(e) { return (e.pausadoEm || Date.now()) - e.ini; }
+// fase atual: {i, f, resta (ms), dec (ms dentro da fase)} · i = FC_FASES.length quando o ciclo terminou
+function fcEstado() {
+  var e = fcLer(); if (!e || !e.ini) return null;
+  var d = fcDecorrido(e), acc = 0;
+  for (var i = 0; i < FC_FASES.length; i++) {
+    var dur = FC_FASES[i].min * 60e3;
+    if (d < acc + dur) return { e: e, i: i, f: FC_FASES[i], dec: d - acc, resta: acc + dur - d, pausado: !!e.pausadoEm };
+    acc += dur;
+  }
+  return { e: e, i: FC_FASES.length, f: null, dec: 0, resta: 0, fim: true };
+}
+function fcSemAuto() { var s = fcEstado(); return !!(s && s.f && s.f.k !== 'ligar' && !s.pausado); }
+function fcRelogio(ms) { var t = Math.max(0, Math.ceil(ms / 1000)), m = Math.floor(t / 60), x = t % 60; return m + ':' + (x < 10 ? '0' : '') + x; }
+function fcContagem() { try { var r = dcResumo(DC.itens || []); return { total: r.total, at: r.contaMeta }; } catch (e) { return { total: 0, at: 0 }; } }
+
+function fcIniciar() {
+  var c = fcContagem();
+  fcGravar({ ini: Date.now(), lig0: c.total, at0: c.at, dia: dcKey(dcHoje()) });
+  FC.ultima = 0; FC.respFechado = null;
+  try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+  fcSom(0); dcAviso('Ciclo de foco iniciado: 40 minutos ligando sem parar');
+  if (typeof dcPref === 'function' && dcPref().auto && DC.aba === 'discar' && !dcNoAr() && !DC.auto && dcAlvo()) dcIniciarAuto(); else dcRender();
+  fcTick();
+}
+function fcPausar() {
+  var e = fcLer(); if (!e) return;
+  if (e.pausadoEm) { e.ini += Date.now() - e.pausadoEm; delete e.pausadoEm; } else e.pausadoEm = Date.now();
+  fcGravar(e); dcRender(); fcTick();
+}
+// pula para o começo da próxima etapa
+function fcPularEtapa() {
+  var s = fcEstado(); if (!s || s.fim) return;
+  var e = s.e, agora = e.pausadoEm || Date.now();
+  e.ini -= s.resta; if (e.pausadoEm) e.pausadoEm = agora;
+  fcGravar(e); fcTick();
+}
+function fcEncerrar() {
+  if (!confirm('Encerrar o ciclo de foco agora?')) return;
+  fcGravar(null); FC.ultima = null; fcFecharResp(); fcPill(null); dcRender();
+}
+
+// bipe curto (sem arquivo de som): 1 nota ao ligar, 2 ao negociar, 3 suaves ao respirar
+function fcSom(i) {
+  try {
+    var Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
+    var ctx = fcSom.ctx || (fcSom.ctx = new Ctx()), notas = [[784], [659, 880], [523, 659, 784], [880, 1047, 1319]][Math.min(i, 3)];
+    if (ctx.state === 'suspended') ctx.resume();
+    notas.forEach(function(fr, k) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime + k * 0.28;
+      o.type = 'sine'; o.frequency.value = fr; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+      o.start(t0); o.stop(t0 + 0.55);
+    });
+  } catch (e) {}
+}
+function fcNotificar(tit, txt) {
+  try { if (window.Notification && Notification.permission === 'granted' && document.hidden) new Notification(tit, { body: txt, tag: 'fc-foco' }); } catch (e) {}
+}
+
+// troca de etapa: som, aviso e o que muda no discador
+function fcMudou(s) {
+  var c = fcContagem(), e = s.e, lig = Math.max(0, c.total - (e.lig0 || 0)), at = Math.max(0, c.at - (e.at0 || 0));
+  if (s.fim) {
+    fcSom(3); fcFecharResp();
+    fcNotificar('Ciclo de foco concluído ✓', lig + ' ligações · ' + at + ' atendidas. Comece outro quando quiser.');
+    dcAviso('Ciclo concluído ✓ ' + lig + ' ligações · ' + at + ' atendidas');
+  } else if (s.f.k === 'negociar') {
+    e.ligFim = c.total; e.atFim = c.at; fcGravar(e);
+    if (!dcNoAr()) dcPararAuto(true); // não corta ligação em andamento, só para a contagem automática
+    fcSom(1); fcNotificar('🤝 Agora: 20 min negociando', 'Bloco de ligações: ' + lig + ' ligações · ' + at + ' atendidas.');
+    dcAviso('Fim das ligações: ' + lig + ' ligações · ' + at + ' atendidas. Agora, negociar!');
+  } else if (s.f.k === 'respirar') {
+    if (!dcNoAr()) dcPararAuto(true);
+    fcSom(2); fcNotificar('🌿 Agora: 5 min respirando', 'Levante, beba água e respire.'); FC.respFechado = null;
+  } else fcSom(0);
+  dcRender();
+}
+
+function fcBandHtml() {
+  var s = fcEstado();
+  if (!s || s.fim) {
+    var feito = s && s.fim, e = s && s.e, c = fcContagem();
+    var res = feito && e.dia === dcKey(dcHoje()) ? ' Último ciclo: <b>' + Math.max(0, (e.ligFim != null ? e.ligFim : c.total) - (e.lig0 || 0)) + '</b> ligações, <b>' + Math.max(0, (e.atFim != null ? e.atFim : c.at) - (e.at0 || 0)) + '</b> atendidas.' : '';
+    return '<div class="fc-band off"><span class="fc-ic">' + (feito ? '✅' : '⏱️') + '</span><div class="fc-info"><div class="fc-fase">' + (feito ? 'Ciclo de foco concluído' : 'Ciclo de foco') + '</div>' +
+      '<div class="fc-sub"><b>40 min</b> ligando sem parar · <b>20 min</b> negociando · <b>5 min</b> respirando.' + res + '</div></div>' +
+      '<div class="fc-acoes">' + (feito ? '<button class="dc-btn" onclick="fcGravar(null);dcRender()">Fechar</button>' : '') + '<button class="dc-btn dc-pri" onclick="fcIniciar()">▶ ' + (feito ? 'Iniciar outro ciclo' : 'Iniciar o ciclo') + '</button></div></div>';
+  }
+  var c = fcContagem(), e = s.e, lig = Math.max(0, (s.i === 0 ? c.total : (e.ligFim != null ? e.ligFim : c.total)) - (e.lig0 || 0)), at = Math.max(0, (s.i === 0 ? c.at : (e.atFim != null ? e.atFim : c.at)) - (e.at0 || 0));
+  var trilha = '<div class="fc-trilha">' + FC_FASES.map(function(f, i) {
+    var pct = i < s.i ? 100 : i > s.i ? 0 : Math.min(100, s.dec / (f.min * 600));
+    return '<div class="fc-seg" style="flex:' + f.min + ';--fc-c:' + f.cor + '"><i id="fc-seg' + i + '" style="width:' + pct.toFixed(1) + '%"></i></div>';
+  }).join('') + '</div><div class="fc-legenda">' + FC_FASES.map(function(f) { return '<span style="flex:' + f.min + '">' + f.min + ' min ' + f.t.split(' ')[0].toLowerCase() + '</span>'; }).join('') + '</div>';
+  var extra = s.f.k === 'negociar' && DC.aba !== 'funil' ? '<button class="dc-btn" onclick="dcSetAba(\'funil\')">Abrir o Funil</button>'
+    : s.f.k === 'ligar' && DC.aba !== 'discar' ? '<button class="dc-btn" onclick="dcSetAba(\'discar\')">Voltar a discar</button>'
+    : s.f.k === 'respirar' ? '<button class="dc-btn" onclick="FC.respFechado=null;fcTick()">🌿 Respirar junto</button>' : '';
+  return '<div class="fc-band' + (s.pausado ? ' fc-pausado' : '') + '" style="--fc-cor:' + s.f.cor + '"><span class="fc-ic">' + s.f.ic + '</span>' +
+    '<div class="fc-info"><div class="fc-fase">' + s.f.t + (s.pausado ? ' · pausado' : '') + '</div><div class="fc-sub">' + s.f.sub +
+    (s.i <= 1 ? '<br>Neste ciclo: <b>' + lig + '</b> ligações · <b>' + at + '</b> atendidas' : '') + '</div></div>' +
+    '<div class="fc-tempo" id="fc-tempo">' + fcRelogio(s.resta) + '</div>' +
+    '<div class="fc-acoes">' + extra + '<button class="dc-btn" onclick="fcPausar()">' + (s.pausado ? '▶ Continuar' : '⏸ Pausar') + '</button>' +
+    '<button class="dc-btn" onclick="fcPularEtapa()" title="Ir direto para a próxima etapa">⏭ Próxima etapa</button><button class="dc-btn" onclick="fcEncerrar()">Encerrar</button></div>' + trilha + '</div>';
+}
+
+// selo flutuante: aparece quando o ciclo está rodando e você está fora do Discador
+function fcPill(s) {
+  var el = document.getElementById('fc-pill'), tab = document.getElementById('tab-discador');
+  var mostra = s && s.f && !(tab && tab.classList.contains('active'));
+  if (!mostra) { if (el) el.remove(); return; }
+  if (!el) {
+    el = document.createElement('div'); el.id = 'fc-pill'; el.title = 'Ciclo de foco · abrir o Discador';
+    el.onclick = function() { var b = document.getElementById('nav-discador'); if (b) showTab('discador', b); };
+    document.body.appendChild(el);
+  }
+  el.style.setProperty('--fc-cor', s.f.cor);
+  el.innerHTML = s.f.ic + ' ' + s.f.t + (s.pausado ? ' (pausado)' : '') + ' <b>' + fcRelogio(s.resta) + '</b>';
+}
+// tela de respiração: inspira 4 s, segura 1 s, solta 5 s
+function fcResp(s) {
+  var el = document.getElementById('fc-resp');
+  var quer = s && s.f && s.f.k === 'respirar' && !s.pausado && FC.respFechado !== s.e.ini;
+  if (!quer) { if (el) el.remove(); return; }
+  if (!el) {
+    el = document.createElement('div'); el.id = 'fc-resp';
+    el.innerHTML = '<div class="fc-bola"></div><div class="fc-guia" id="fc-guia">Inspire…</div><div class="fc-rt" id="fc-rt"></div>' +
+      '<div class="fc-dica">Solte os ombros, tire os olhos da tela e beba um copo de água. Siga a bolinha: ela cresce, você inspira; ela diminui, você solta o ar devagar.</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button onclick="fcFecharResp()">Fechar esta tela</button><button class="pri" onclick="fcPularEtapa()">Terminar a pausa</button></div>';
+    document.body.appendChild(el);
+  }
+  var cic = (s.dec / 1000) % 10, g = document.getElementById('fc-guia'), r = document.getElementById('fc-rt');
+  if (g) g.textContent = cic < 4 ? 'Inspire…' : cic < 5 ? 'Segure…' : 'Solte o ar devagar…';
+  if (r) r.textContent = 'Pausa termina em ' + fcRelogio(s.resta);
+}
+function fcFecharResp() { var s = fcEstado(); if (s) FC.respFechado = s.e.ini; var el = document.getElementById('fc-resp'); if (el) el.remove(); }
+
+function fcTick() {
+  var s = fcEstado();
+  if (!s) { FC.ultima = null; fcPill(null); fcResp(null); return; }
+  var fase = s.fim ? FC_FASES.length : s.i;
+  if (FC.ultima == null) FC.ultima = fase; // abriu o guia no meio do ciclo: não toca som de troca
+  else if (fase !== FC.ultima) { FC.ultima = fase; fcMudou(s); }
+  var t = document.getElementById('fc-tempo'); if (t) t.textContent = fcRelogio(s.resta);
+  if (s.f) { var b = document.getElementById('fc-seg' + s.i); if (b) b.style.width = Math.min(100, s.dec / (s.f.min * 600)).toFixed(1) + '%'; }
+  fcPill(s); fcResp(s);
+}
+setInterval(function() { try { fcTick(); } catch (e) {} }, 1000);
+
 
 setInterval(function() { if (dcNoAr()) { var t = document.getElementById('dc-timer'); if (t) t.textContent = dcClock(dcSeg()); } }, 1000);
 document.addEventListener('keydown', function(e) {
