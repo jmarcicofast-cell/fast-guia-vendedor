@@ -27216,7 +27216,8 @@ function dcPula(l, c, p) {
   var man = DC.manual && DC.manual.lista === l.id && DC.manual.p === p;
   if (l.equipe && /outro|ganho/.test(dcEqStatus(c))) return true;
   if ((l.para || l.inatPara) && c && c.repassado) return true;
-  if (!l.equipe && dcResolvido(c) && !man) return true;
+  if (l.inatPara && c && c.funil) return true;
+  if (!l.equipe && dcResolvido(c, dcRodada(l)) && !man) return true;
   if (dcConcBloq(c)) return true;
   return false;
 }
@@ -27227,7 +27228,7 @@ function dcPos() {
   // 22/10/2026: chegou ao fim mas ficou cliente para trás que nunca recebeu ligação (ex.: abriu um cliente do fim da lista
   // pelo Funil ou pela tabela, ou chegaram clientes novos no meio): volta para ele em vez de dizer que a lista terminou
   if (p >= l.contatos.length) {
-    for (var i = 0; i < l.contatos.length; i++) { var c = l.contatos[i]; if (!dcPula(l, c, i) && !dcTentativas(c).length) return i; }
+    for (var i = 0; i < l.contatos.length; i++) { var c = l.contatos[i]; if (!dcPula(l, c, i) && !dcTentativas(c).length && !dcPulado(l, c)) return i; }
   }
   return p;
 }
@@ -27244,7 +27245,18 @@ function dcTentativas(c) {
   (c.hist || []).concat(dcItensPorTel()[dcMicroNum(c.tel)] || []).forEach(function(h) { if (!h || !h.em || vistos[h.em]) return; vistos[h.em] = 1; out.push(h); });
   return out.sort(function(a, b) { return a.em - b.em; });
 }
-function dcResolvido(c) { var t = dcTentativas(c), u = t[t.length - 1]; return !!(u && u.res && !DC_VOLTA[u.res]); }
+function dcResolvido(c, desde) { var t = dcTentativas(c), u = t[t.length - 1]; if (!(u && u.res && !DC_VOLTA[u.res])) return false; return !desde || (u.em || 0) >= desde; }
+/* 23/10/2026: rodada da lista (Nova rodada nos inativos) e clientes pulados — guardados em discador/estado/{VN} */
+function dcRodada(l) { return l ? (((DC.estado || {}).rodadas || {})[l.id] || 0) : 0; }
+function dcPulKey(t) { return dcMicroNum(t) || 'x'; }
+function dcPulado(l, c) { var m = l && ((DC.estado || {}).pulados || {})[l.id]; return !!(m && c && m[dcPulKey(c.tel)]); }
+function dcPuladosN(l) { return l ? l.contatos.filter(function(c, i) { return dcPulado(l, c) && !dcPula(l, c, i); }).length : 0; }
+/* inativos que continuam com o vendedor (ainda dentro do prazo) e não foram ao funil, mas já foram trabalhados nesta rodada */
+function dcInatAbertosTrabalhados(l) {
+  if (!l || !l.inatPara) return 0;
+  var ini = dcRodada(l);
+  return l.contatos.filter(function(c) { var r = c && c.ik && DCI.recs[c.ik]; return c && !c.repassado && !c.funil && r && r.status === 'andamento' && r.vn === l.inatPara && dcResolvido(c, ini); }).length;
+}
 function dcFaltam(l) { return l ? l.contatos.filter(function(c, i) { return !dcPula(l, c, i); }).length : 0; }
 // card abaixo da discagem: todas as anotações e tentativas do cliente, da mais nova para a mais antiga
 function dcHistCardHtml(a) {
@@ -27344,6 +27356,20 @@ function dcRender() {
 }
 function dcSetAba(a) { DC.aba = a; dcPararAuto(true); dcRender(); }
 
+function dcFimListaHtml(l, total) {
+  var nPul = dcPuladosN(l), nNao = Math.max(0, dcFaltam(l) - nPul), nInat = dcInatAbertosTrabalhados(l);
+  var partes = [];
+  if (nNao) partes.push('<b>' + nNao + '</b> ainda sem atender (Não atendeu / Caixa postal)');
+  if (nPul) partes.push('<b>' + nPul + '</b> que você pulou');
+  var h = '<b>Lista terminada:</b> você passou pelos ' + total + ' contatos' + (partes.length ? ' · ' + partes.join(' · ') : '') + '.';
+  if (nInat) h += '<div class="dc-sub" style="margin-top:6px">💤 <b>' + nInat + '</b> ' + (nInat === 1 ? 'cliente inativo continua' : 'clientes inativos continuam') + ' com você, já ' + (nInat === 1 ? 'trabalhado' : 'trabalhados') + ', mas ainda sem entrar no funil. Para não ' + (nInat === 1 ? 'perdê-lo' : 'perdê-los') + ' no prazo, faça uma nova rodada.</div>';
+  h += '<div class="dc-row" style="margin-top:10px">';
+  if (nNao || nPul) h += '<button class="dc-btn dc-pri" onclick="dcRecomecar()">Ligar de novo para ' + (nNao && nPul ? 'quem não atendeu e os pulados' : nPul ? 'os pulados' : 'quem não atendeu') + '</button>';
+  if (nInat) h += '<button class="dc-btn' + (nNao || nPul ? '' : ' dc-pri') + '" onclick="dcRecomecar(true)">💤 Nova rodada nos ' + nInat + ' inativos</button>';
+  if (!nNao && !nPul && !nInat) h += '<button class="dc-btn" onclick="dcRecomecar(true)">Recomeçar do início</button>';
+  h += '<button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button></div>';
+  return h;
+}
 function dcVDiscar() {
   var a = dcAlvo(), l = dcLista(), r = dcResumo(DC.itens), p = dcPref(), live = dcNoAr();
   var total = l ? l.contatos.length : 0, pos = dcPos();
@@ -27352,7 +27378,7 @@ function dcVDiscar() {
   h += '<div class="dc-card"><div class="dc-row" style="justify-content:space-between;margin-bottom:12px">' +
     '<label class="dc-lab" style="flex:1;min-width:200px">Lista em discagem<select id="dc-sel" onchange="dcEscolherLista(this.value)"><option value="">' + (DC.listas.length ? 'Escolha uma lista' : 'Nenhuma lista cadastrada') + '</option>' +
     DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === DC.listaId ? ' selected' : '') + '>' + (x.para ? '🎯 ' : x.inatPara ? '💤 ' : '') + dcEsc(x.nome) + ' · ' + x.contatos.length + ' contatos' + (x.para ? ' · ' + dcPrazoCurto(x) : '') + '</option>'; }).join('') + '</select></label>' +
-    (l ? '<div class="dc-row"><button class="dc-btn" onclick="dcMover(-1)">Voltar um</button><button class="dc-btn" onclick="dcMover(1)">Pular</button></div>' : '') + '</div>';
+    (l ? '<div class="dc-row"><button class="dc-btn" onclick="dcMover(-1)">Voltar um</button>' + (a && !DC.avulso ? '<button class="dc-btn" onclick="dcMover(1)">Pular</button>' : '') + '</div>' : '') + '</div>';
   if (l && l.para) h += dcPrazoBanner(l);
   if (l && l.inatPara) h += dcInatBanner(l);
   if (a) {
@@ -27382,7 +27408,7 @@ function dcVDiscar() {
       (DC.auto ? '<div class="dc-auto">Discando o próximo em <b id="dc-auton">' + DC.auto.n + '</b>s <button class="dc-btn dc-pri" onclick="dcPularContagem()">Ligar agora <span class="dc-kbd">Enter</span></button> <button class="dc-btn" onclick="dcPararAuto()">Parar <span class="dc-kbd">Esc</span></button></div>' : '');
   } else {
     h += '<div class="dc-vazio">' + (!DC.listas.length ? 'Cadastre uma lista em <b>Listas de clientes</b> para discar em sequência. Enquanto isso, use o teclado ao lado para um número avulso.'
-      : !l ? 'Escolha uma lista acima para começar.' : 'Lista terminada: ' + total + ' contatos trabalhados' + (dcFaltam(l) ? ' · <b>' + dcFaltam(l) + '</b> ainda sem atender (Não atendeu / Caixa postal)' : '') + '. Os clientes que você adicionar entram aqui na sequência. <button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button> <button class="dc-btn" onclick="dcRecomecar()">' + (dcFaltam(l) ? 'Ligar de novo para quem não atendeu' : 'Recomeçar do início') + '</button>') + '</div>';
+      : !l ? 'Escolha uma lista acima para começar.' : dcFimListaHtml(l, total)) + '</div>';
   }
   h += '</div>';
   if (a) h += dcHistCardHtml(a);
@@ -27855,13 +27881,23 @@ function dcSalvarEstado(fn) {
 function dcMover(d) {
   if (!DC.listaId) return;
   var tot = (dcLista() || { contatos: [] }).contatos.length, novo = Math.max(0, Math.min(tot, dcPos() + d));
+  var atual = d > 0 && !DC.avulso ? dcAlvo() : null;
   DC.call = null; dcPararAuto(true); DC.manual = d < 0 ? { lista: DC.listaId, p: novo } : null;
-  dcSalvarEstado(function(e) { e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[DC.listaId] = novo; return e; }).then(dcRender);
+  dcSalvarEstado(function(e) {
+    e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[DC.listaId] = novo;
+    if (atual) { e.pulados = Object.assign({}, e.pulados || {}); e.pulados[DC.listaId] = Object.assign({}, e.pulados[DC.listaId] || {}); e.pulados[DC.listaId][dcPulKey(atual.tel)] = Date.now(); }
+    return e;
+  }).then(dcRender);
   dcRender();
 }
 
-function dcRecomecar() { if (!DC.listaId) return; DC.manual = null; DC.call = null; dcPararAuto(true);
-  dcSalvarEstado(function(e) { e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[DC.listaId] = 0; return e; }).then(dcRender); dcRender(); }
+function dcRecomecar(novaRodada) { if (!DC.listaId) return; DC.manual = null; DC.call = null; dcPararAuto(true);
+  dcSalvarEstado(function(e) {
+    e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[DC.listaId] = 0;
+    if (e.pulados && e.pulados[DC.listaId]) { e.pulados = Object.assign({}, e.pulados); delete e.pulados[DC.listaId]; }
+    if (novaRodada) { e.rodadas = Object.assign({}, e.rodadas || {}); e.rodadas[DC.listaId] = Date.now(); }
+    return e;
+  }).then(dcRender); dcRender(); }
 // grava no próprio contato da lista o resultado e a anotação, para quando ele voltar na fila
 function dcMarcarNaLista(l, pos, item) {
   if (!l || l.equipe) return;
