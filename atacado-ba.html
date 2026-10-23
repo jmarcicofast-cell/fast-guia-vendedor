@@ -27198,6 +27198,8 @@ function dcVDiscar() {
       '<div class="dc-row" style="margin:12px 0"><input class="dc-num dc-edit dc-num-ed" id="dc-num" value="' + dcEsc(dcTel(a.tel)) + '" inputmode="tel" placeholder="Número ✎" title="Clique para corrigir o número e aperte Enter para salvar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();event.stopPropagation();dcSalvarCard()}"><button class="dc-btn" onclick="dcCopiar()">Copiar</button>' + (dcConcBloq(a) ? '' : '<button class="dc-btn" title="Cadastrar este número como concorrente: ele some da fila de todos" onclick="dcConcMarcar(dcAlvo())">🚫 É concorrente</button>') +
       (DC.avulso && l ? '<button class="dc-btn" onclick="dcSalvarAvulsoNaLista()">+ Salvar na lista ' + dcEsc(l.nome) + '</button>' : '') +
       (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') + '</div>' +
+      (dcSemDDD(a.tel) ? '<div class="dc-prazo quase" style="margin:-4px 0 12px">⚠️ <b>Número sem DDD</b> — a ligação não completa. Coloque o DDD no número acima e aperte <b>Enter</b> para salvar.' +
+        (DC.pausaDDD ? '<div class="dc-sub">⏸️ A discagem automática parou aqui. Corrigindo o número, ela continua sozinha; se não souber o DDD, clique em <b>Pular</b>.</div>' : '') + '</div>' : '') +
       '<div class="dc-row" style="gap:12px 16px">' + (dcConcBloq(a) ? '<span class="dc-sub" style="color:#C2413B;font-weight:600">🚫 Ligação bloqueada: concorrente</span>' : dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live)) +
       '<span class="dc-timer' + (live ? ' live' : '') + '" id="dc-timer">' + dcClock(dcSeg()) + '</span>' +
       (live ? '<button class="dc-btn dc-deslig" onclick="dcDesliguei()">Desliguei <span class="dc-kbd">D</span></button>' : (DC.call ? '<span class="dc-sub">Ligação encerrada · marque o resultado</span>' : '')) + '</div>' +
@@ -27657,7 +27659,10 @@ function dcSalvarCard() {
   var l = dcLista(), i = dcPos(); if (!l || !l.contatos[i]) return;
   if (telMudou) l.contatos[i].tel = tel;
   l.contatos[i].nome = (n ? n.value : '').trim().slice(0, 120); l.contatos[i].empresa = (e ? e.value : '').trim().slice(0, 120); if (obs && obs !== (l.contatos[i].obs || '')) { if (l.contatos[i].obs) l.contatos[i].obsHist = (l.contatos[i].obsHist || []).concat([{ txt: l.contatos[i].obs, em: Date.now(), por: currentUser }]).slice(-30); l.contatos[i].obs = obs.slice(0, 1000); }
-  dcGravarContatos(l, l.contatos).then(function() { dcAviso('Alterações salvas na lista'); dcRender(); });
+  dcGravarContatos(l, l.contatos).then(function() {
+    dcAviso('Alterações salvas na lista');
+    if (DC.pausaDDD && telMudou && !dcSemDDD(tel) && !dcNoAr() && dcPref().auto) dcIniciarAuto(); else dcRender();
+  });
 }
 function dcEditar(campo, valor) {
   valor = String(valor || '').trim().slice(0, 120);
@@ -27741,9 +27746,14 @@ function dcRegistrar(res) {
   if (!eraAvulso && dcPref().auto) dcIniciarAuto(); else dcRender();
 }
 
+/* 23/10/2026: número sem DDD (8 ou 9 dígitos, comum nos inativos que vêm dos pedidos) não completa no MicroSIP.
+   A discagem automática pausa nele e a tela pede para corrigir; corrigido e salvo, a contagem volta sozinha. */
+function dcSemDDD(t) { var d = dcDig(t); return d.length === 8 || d.length === 9; }
 function dcIniciarAuto() {
-  dcPararAuto(true);
-  if (!dcAlvo()) { dcRender(); return; }
+  dcPararAuto(true); DC.pausaDDD = false;
+  var alvo = dcAlvo();
+  if (!alvo) { dcRender(); return; }
+  if (dcSemDDD(alvo.tel)) { DC.pausaDDD = true; dcRender(); var ne = document.getElementById('dc-num'); if (ne) ne.focus(); return; }
   DC.auto = { n: dcPref().espera }; dcRender();
   DC.auto.t = setInterval(function() {
     if (!DC.auto) return;
@@ -27753,7 +27763,7 @@ function dcIniciarAuto() {
 }
 // pula a contagem e já liga para o próximo
 function dcPularContagem() { if (!DC.auto) return; dcPararAuto(true); var b = document.getElementById('dc-ligar'); if (b) b.click(); }
-function dcPararAuto(silencioso) { if (DC.auto && DC.auto.t) clearInterval(DC.auto.t); var tinha = !!DC.auto; DC.auto = null; if (tinha && !silencioso) dcRender(); }
+function dcPararAuto(silencioso) { DC.pausaDDD = false; if (DC.auto && DC.auto.t) clearInterval(DC.auto.t); var tinha = !!DC.auto; DC.auto = null; if (tinha && !silencioso) dcRender(); }
 
 setInterval(function() { if (dcNoAr()) { var t = document.getElementById('dc-timer'); if (t) t.textContent = dcClock(dcSeg()); } }, 1000);
 document.addEventListener('keydown', function(e) {
