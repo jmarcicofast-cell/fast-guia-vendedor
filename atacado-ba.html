@@ -10303,9 +10303,31 @@ function loadFirebase(cb) {
 window.addEventListener('DOMContentLoaded', function() {
   setPedViewMode(_pedViewMode);
   var jaProsseguiu = false;
+  var prosseguiuSemConexao = false;
   function prosseguirComLogin() {
-    if (jaProsseguiu) return;
+    if (jaProsseguiu) {
+      // 26/10/2026: no celular com internet lenta o Firebase pode chegar depois da trava
+      // de 6s. A sessão já tinha entrado sem conexão (tudo zerado) e nada puxava os
+      // dados de novo. Agora, quando a conexão chega atrasada, recarrega os acessos e
+      // a sessão, mantendo a pessoa na aba em que estava.
+      if (prosseguiuSemConexao && firebaseOK) {
+        prosseguiuSemConexao = false;
+        console.log('Firebase conectou atrasado: recarregando os dados da sessão');
+        if (typeof AC !== 'undefined') AC.ouvindo = false;
+        var recarregar = function() {
+          if (!currentUser) { prosseguirDepoisDosAcessos(); return; }
+          var abaAtiva = document.querySelector('.tab-content.active');
+          var nomeAba = abaAtiva ? abaAtiva.id.replace(/^tab-/, '') : null;
+          var btnAba = nomeAba ? document.getElementById('nav-' + nomeAba) : null;
+          entrarComoUsuario(currentUser);
+          if (nomeAba && btnAba && nomeAba !== 'minhasmetas') { try { showTab(nomeAba, btnAba); } catch (e) {} }
+        };
+        if (typeof acCarregar === 'function') acCarregar(recarregar); else recarregar();
+      }
+      return;
+    }
     jaProsseguiu = true;
+    prosseguiuSemConexao = !firebaseOK;
     // Primeiro carrega os acessos (Gestão > Acessos) e só depois entra
     if (typeof acCarregar === 'function') acCarregar(prosseguirDepoisDosAcessos);
     else prosseguirDepoisDosAcessos();
