@@ -27048,8 +27048,9 @@ function dcInit() {
   if (typeof rtInit === 'function' && !RT.ligado) { try { rtInit(); } catch (e) {} } // carrega metas e ligações da Rota da Meta
   DC.listaId = DC.listaId || dcLs('lista_' + currentUser, null);
   var dia = dcKey(dcHoje());
-  if (!DC.ligado || DC.diaKey !== dia || DC.user !== currentUser) {
-    DC.ligado = true; DC.diaKey = dia; DC.user = currentUser;
+  if (DC.ligado && DC.user === currentUser && DC.diaKey !== dia) dcLigarDia();
+  if (!DC.ligado || DC.user !== currentUser) {
+    DC.ligado = true; DC.user = currentUser;
     dbRef('discador/listas').on('value', function(snap) {
       var v = (snap && snap.val()) || {};
       DC.todasListas = Object.keys(v).map(function(k) { var l = v[k] || {}; l.id = k; l.contatos = Array.isArray(l.contatos) ? l.contatos.filter(Boolean) : []; return l; })
@@ -27061,10 +27062,7 @@ function dcInit() {
       try { dcInatVerificar(); } catch (e) {}
       dcRender();
     });
-    dbRef('discador/dias/' + currentUser + '/' + dia).on('value', function(snap) {
-      var v = (snap && snap.val()) || {}; DC.itens = Array.isArray(v.itens) ? v.itens.filter(Boolean) : [];
-      if (!DC.call && !DC.auto) dcRender();
-    });
+    dcLigarDia();
     dbRef('discador/estado/' + currentUser).on('value', function(snap) {
       DC.estado = (snap && snap.val()) || {}; if (!Array.isArray(DC.estado.retornos)) DC.estado.retornos = DC.estado.retornos ? Object.values(DC.estado.retornos) : [];
       if (!DC.call && !DC.auto) dcRender();
@@ -27072,15 +27070,50 @@ function dcInit() {
     dcAgInit();
     dcInatIni();
     dcConcIni();
-    if (dcGestao()) CK_EQUIPE.forEach(function(vn) {
-      dbRef('discador/dias/' + vn + '/' + dia).on('value', function(snap) {
-        var v = (snap && snap.val()) || {}; DC.equipe[vn] = Array.isArray(v.itens) ? v.itens.filter(Boolean) : [];
-        if (DC.aba === 'equipe') dcRender();
-      });
-    });
   }
   dcRender();
 }
+
+// 26/10/2026: o contador do dia ficava preso no dia em que o guia foi aberto. Com o app
+// aberto desde sexta, a segunda continuava mostrando (e regravando) as ligações de sexta.
+// Agora: só conta ligações feitas no próprio dia, e à meia-noite (ou ao voltar ao app)
+// troca para o dia novo sozinho.
+function dcDataDe(ms) { var d = new Date(ms); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function dcItensDoDia(itens, data) { return (Array.isArray(itens) ? itens : []).filter(function(it) { return it && (!it.hora || dcDataDe(it.hora) === data); }); }
+function dcLigarDia() {
+  var data = dcHoje(), dia = dcKey(data), quem = currentUser;
+  (DC.diaRefs || []).forEach(function(r) { try { if (r && r.off) r.off(); } catch (e) {} });
+  DC.diaRefs = []; DC.diaKey = dia; DC.itens = []; DC.equipe = {};
+  var ref = dbRef('discador/dias/' + quem + '/' + dia); DC.diaRefs.push(ref);
+  ref.on('value', function(snap) {
+    if (DC.diaKey !== dia || currentUser !== quem) return;
+    var v = (snap && snap.val()) || {}, todos = Array.isArray(v.itens) ? v.itens.filter(Boolean) : [];
+    DC.itens = dcItensDoDia(todos, data);
+    if (DC.itens.length !== todos.length && firebaseOK && db) { // limpa ligações de outro dia que entraram no registro de hoje
+      var limpos = DC.itens;
+      Promise.resolve(ref.set({ data: data, itens: limpos })).then(function() {
+        return typeof rtLigGravar === 'function' ? rtLigGravar(quem, { disc: limpos.length, discAt: dcResumo(limpos).contaMeta }, data) : null;
+      }).catch(function(e) { console.warn('discador: limpar dia', e); });
+    }
+    if (!DC.call && !DC.auto) dcRender();
+  });
+  if (dcGestao()) CK_EQUIPE.forEach(function(vn) {
+    var r = dbRef('discador/dias/' + vn + '/' + dia); DC.diaRefs.push(r);
+    r.on('value', function(snap) {
+      if (DC.diaKey !== dia) return;
+      var v = (snap && snap.val()) || {}; DC.equipe[vn] = dcItensDoDia(Array.isArray(v.itens) ? v.itens.filter(Boolean) : [], data);
+      if (DC.aba === 'equipe') dcRender();
+    });
+  });
+}
+function dcChecarVirada() {
+  try {
+    if (!DC.ligado || !currentUser || DC.diaKey === dcKey(dcHoje())) return;
+    dcLigarDia(); dcRender();
+  } catch (e) { console.warn('discador: virada do dia', e); }
+}
+setInterval(dcChecarVirada, 60 * 1000);
+document.addEventListener('visibilitychange', function() { if (!document.hidden) dcChecarVirada(); });
 
 // ══ CONCORRENTES — cadastro único (discador/concorrentes/{id} = {nome, tels:[], por, em, nao:{tel:1}})
 // Telefone cadastrado OU loja com o nome de um concorrente cadastrado = BLOQUEIO: o contato é pulado na fila e o botão de ligar some.
@@ -28011,7 +28044,7 @@ function dcRegistrar(res) {
     dbRef('discador/listas/' + lAt.id + '/contatos/' + pos).update({ ganhoPor: currentUser, ganhoEm: Date.now(), dono: currentUser, assumidoEm: Date.now() });
   DC.call = null; DC.avulso = null;
   if (obsEl) obsEl.value = ''; if (qEl) qEl.value = '';
-  var hoje = dcHoje(), novos = DC.itens.concat([item]); DC.itens = novos;
+  var hoje = dcHoje(); if (DC.diaKey !== dcKey(hoje)) dcLigarDia(); var novos = dcItensDoDia(DC.itens, hoje).concat([item]); DC.itens = novos;
   dbRef('discador/dias/' + currentUser + '/' + dcKey(hoje)).set({ data: hoje, itens: novos })
     .then(function() { return typeof rtLigGravar === 'function' ? rtLigGravar(currentUser, { disc: novos.length, discAt: dcResumo(novos).contaMeta }) : null; })
     .catch(function(err) { dcAviso('Não salvou a ligação (' + (err && err.message) + '). Tente de novo.'); });
@@ -28285,7 +28318,7 @@ function dcPerItens() {
   Object.keys(c.dias).forEach(function(k) {
     var dia = k.replace(/_/g, '-'); if (dia < de || dia > ate || dia === h) return;
     var v = c.dias[k] || {}, its = Array.isArray(v.itens) ? v.itens : (v.itens && typeof v.itens === 'object' ? Object.keys(v.itens).map(function(j) { return v.itens[j]; }) : []);
-    its.filter(Boolean).forEach(function(x) { out.push(Object.assign({ dia: dia }, x)); });
+    dcItensDoDia(its.filter(Boolean), dia).forEach(function(x) { out.push(Object.assign({ dia: dia }, x)); });
   });
   if (h >= de && h <= ate) out = out.concat(hojeVivo());
   out.sort(function(a, b) { return (a.hora || 0) - (b.hora || 0); });

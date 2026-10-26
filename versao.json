@@ -1,1 +1,1 @@
-{"versao": "2026-10-26.1", "nota": "Correção: no celular com internet lenta o guia abria zerado; agora os dados carregam sozinhos quando a conexão chega."}
+{"versao": "2026-10-26.2", "nota": "Discador: o contador do dia não carrega mais as ligações de dias anteriores e vira o dia sozinho."}
