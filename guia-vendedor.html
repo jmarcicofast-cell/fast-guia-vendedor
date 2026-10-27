@@ -2080,6 +2080,7 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
         </div>
         <button id="btn-sync-local" class="pd-btn pd-btn-warn" onclick="sincronizarPedidosLocais()" style="display:none;">Sincronizar pedidos locais<span id="btn-sync-local-count"></span></button>
         <button id="btn-lixeira-pedidos" class="pd-btn" onclick="abrirLixeiraPedidos()" title="Pedidos excluídos">Lixeira<span id="lixeira-ped-badge" class="pd-badge" style="display:none;"></span></button>
+        <button id="btn-resumo-dia" class="pd-btn" onclick="pdResumoAbrir()" title="Texto do dia para copiar e mandar no WhatsApp">Resumo do dia</button>
         <details class="pd-more" id="ped-mais">
           <summary class="pd-btn" title="Mais ações">Mais ▾</summary>
           <div class="pd-menu">
@@ -2559,6 +2560,112 @@ function pdTrajeto() {
   var d = document.getElementById('pd-dica-periodo'); if (d) d.style.display = 'none';
 }
 function pdCarteira(ativo, inativo, novo) { pdBarra('pd-cart-bar', [ativo, inativo, novo]); }
+
+// ══ RESUMO DO DIA EM TEXTO (para copiar e mandar no WhatsApp) ══
+// Trucks, carretas, total vendido no dia e o aço vendido por chamado, com o total.
+// Usa os pedidos que esta tela enxerga: gestora = equipe toda; vendedor = os dele.
+function pdResumoTexto(dataISO) {
+  var brl = function(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var qtd = function(n) { return Number(n || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); };
+  var dois = function(n) { return n < 10 ? '0' + n : String(n); };
+  var valor = function(p) {
+    var it = itensDoPedidoAco(p);
+    if (p.itens && it.length) return it.reduce(function(s, x) { return s + Math.round(numSafe(x.qtd) * numSafe(x.vUnit) * 100) / 100; }, 0);
+    return Number(p.vTotal || 0);
+  };
+  var op = (typeof OP_ATUAL !== 'undefined' && OP_ATUAL && OP_ATUAL.nome ? OP_ATUAL.nome : 'Televendas').toUpperCase();
+  var dataBR = new Date(dataISO + 'T12:00:00').toLocaleDateString('pt-BR');
+  var peds = (_pedTodosGeral || []).filter(function(p) { return p && !p.excluido && p.status !== 'cancelado' && p.data === dataISO; });
+  var truck = peds.filter(function(p) { return p.veiculo === 'truck'; }).length;
+  var carreta = peds.filter(function(p) { return p.veiculo === 'carreta'; }).length;
+  var outros = peds.length - truck - carreta;
+  var total = peds.reduce(function(s, p) { return s + valor(p); }, 0);
+
+  var codPorNome = {};
+  (typeof allProducts !== 'undefined' ? allProducts : []).forEach(function(pr) { if (pr.codigo && !codPorNome[pr.nome]) codPorNome[pr.nome] = pr.codigo; });
+  var blocos = [], acoTotal = 0, acoPecas = 0;
+  peds.forEach(function(p) {
+    var linhas = [];
+    itensDoPedidoAco(p).forEach(function(it) {
+      if (!itemEhAco(it)) return;
+      var v = Math.round(numSafe(it.qtd) * numSafe(it.vUnit) * 100) / 100;
+      var nome = String(it.material || '(sem nome)').trim();
+      var cod = String(it.codigo || codPorNome[nome] || '').trim();
+      acoTotal += v; acoPecas += numSafe(it.qtd);
+      linhas.push('· ' + qtd(it.qtd) + ' un. – ' + nome + (cod ? ' — ' + cod : '') + ' — AÇO: ' + brl(v));
+    });
+    if (linhas.length) {
+      var id = String(p.chamado || '').trim();
+      blocos.push('📌 Chamado: ' + (id ? '#' + id : (p.empresa || p.cliente || 'sem chamado')) + '\n' + linhas.join('\n'));
+    }
+  });
+
+  var t = [];
+  t.push('📊 *RESUMO GERAL DO DIA – ' + op + ' – ' + dataBR + '*');
+  t.push('');
+  t.push('🚚 Trucks: ' + dois(truck));
+  t.push('🚛 Carretas: ' + dois(carreta));
+  if (outros > 0) t.push('📦 Outros pedidos: ' + dois(outros));
+  t.push('📦 Total de cargas vendidas: ' + dois(truck + carreta));
+  t.push('');
+  t.push('💰 *TOTAL VENDIDO NO DIA: ' + brl(total) + '*');
+  t.push('');
+  t.push('📊 *VENDAS DE AÇO – ' + op + ' | ' + dataBR + '*');
+  t.push('');
+  if (blocos.length) {
+    t.push(blocos.join('\n\n'));
+    t.push('');
+    t.push('🔷 *Total de aço no dia: ' + qtd(acoPecas) + ' peças — ' + brl(acoTotal) + '*');
+  } else {
+    t.push('Nenhuma venda de aço no dia.');
+  }
+  return t.join('\n');
+}
+function pdResumoHojeISO() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function pdResumoAbrir() {
+  var m = document.getElementById('pd-resumo-modal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'pd-resumo-modal';
+    m.setAttribute('role', 'dialog'); m.setAttribute('aria-label', 'Resumo do dia');
+    m.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;';
+    m.innerHTML =
+      '<div style="background:var(--surface);color:var(--txt);border:1px solid var(--line-strong);border-radius:var(--radius);box-shadow:0 20px 50px rgba(0,0,0,.3);width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;padding:20px;gap:12px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+          '<div style="font-size:18px;font-weight:800;">Resumo do dia</div>' +
+          '<button type="button" onclick="pdResumoFechar()" aria-label="Fechar" style="border:none;background:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;">×</button>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);"><label for="pd-resumo-data">Dia</label>' +
+          '<input type="date" id="pd-resumo-data" onchange="pdResumoGerar()" style="height:36px;padding:0 10px;border:1px solid var(--line-strong);border-radius:8px;font-size:13.5px;background:var(--surface);color:var(--txt);"></div>' +
+        '<textarea id="pd-resumo-txt" spellcheck="false" style="flex:1;min-height:320px;width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface-2);color:var(--txt);font-size:13.5px;line-height:1.5;resize:vertical;"></textarea>' +
+        '<div style="display:flex;align-items:center;gap:10px;justify-content:flex-end;">' +
+          '<span id="pd-resumo-ok" style="font-size:13px;color:var(--muted);"></span>' +
+          '<button type="button" onclick="pdResumoCopiar()" style="height:40px;padding:0 18px;border-radius:9px;border:none;background:var(--acc);color:#fff;font-size:14px;font-weight:700;cursor:pointer;">Copiar texto</button>' +
+        '</div>' +
+      '</div>';
+    m.addEventListener('click', function(e) { if (e.target === m) pdResumoFechar(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') pdResumoFechar(); });
+    document.body.appendChild(m);
+  }
+  m.style.display = 'flex';
+  var d = document.getElementById('pd-resumo-data');
+  if (!d.value) d.value = pdResumoHojeISO();
+  pdResumoGerar();
+}
+function pdResumoGerar() {
+  var d = document.getElementById('pd-resumo-data').value || pdResumoHojeISO();
+  var tx = document.getElementById('pd-resumo-txt');
+  try { tx.value = pdResumoTexto(d); } catch (e) { tx.value = 'Não foi possível montar o resumo (' + (e && e.message) + ').'; }
+  document.getElementById('pd-resumo-ok').textContent = '';
+}
+function pdResumoFechar() { var m = document.getElementById('pd-resumo-modal'); if (m) m.style.display = 'none'; }
+function pdResumoCopiar() {
+  var tx = document.getElementById('pd-resumo-txt'), ok = document.getElementById('pd-resumo-ok');
+  var feito = function() { ok.textContent = 'Texto copiado. É só colar no WhatsApp.'; };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(tx.value).then(feito, function() { tx.select(); document.execCommand('copy'); feito(); });
+  } else { tx.select(); document.execCommand('copy'); feito(); }
+}
 (function(){
   // menu "Mais" fecha ao clicar fora ou escolher uma ação
   document.addEventListener('click', function(e) {
