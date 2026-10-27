@@ -140,10 +140,6 @@
       grid-template-columns: repeat(6, 1fr) !important;
     }
     
-    /* Dashboard pedidos - 4 cards lado a lado */
-    #ped-dashboard > div:last-child {
-      grid-template-columns: 1fr 1fr 1fr 1fr !important;
-    }
     
     /* Admin criterios mais largos */
     #criterios-grid > div {
@@ -493,15 +489,6 @@
     #tab-pedidos > div { padding: 1rem 1rem 2rem !important; }
   }
 
-  /* Dashboard de pedidos */
-  @media (max-width: 600px) {
-    #ped-dashboard > div:last-child {
-      grid-template-columns: 1fr !important;
-    }
-    #ped-dashboard > div:first-child > div:last-child {
-      grid-template-columns: repeat(2, 1fr) !important;
-    }
-  }
 
   /* Comissão box */
   .comissao-box {
@@ -1897,29 +1884,170 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 
 
 <!-- ══ PEDIDOS ══ -->
-<div id="tab-pedidos" class="tab-content">
-  <div class="page-section" style="max-width:100%;">
+<style id="ped-v2">
+/* ── Aba Pedidos: layout repaginado (cartões, grade e tipografia únicos) ── */
+#tab-pedidos .pd { display:flex; flex-direction:column; gap:16px; }
+#tab-pedidos .pd > * { margin-top:0 !important; margin-bottom:0 !important; }
+#tab-pedidos .pd-card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--card-shadow); padding:16px 18px; min-width:0; }
+:root[data-tema="vermelho"] #tab-pedidos .pd-card { border:1.5px solid #111; }
+#tab-pedidos .pd-card-h { display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--txt-2); }
+#tab-pedidos .pd-card-h small { font-size:11.5px; font-weight:500; text-transform:none; letter-spacing:0; color:var(--faint); }
+#tab-pedidos .pd-card-h .pd-sub { font-weight:500; text-transform:none; letter-spacing:0; color:var(--faint); }
 
-    <!-- HEADER -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1.25rem;">
+/* Cabeçalho */
+#tab-pedidos .pd-head { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+#tab-pedidos .pd-head h2 { font-size:22px !important; font-weight:800; color:var(--txt); margin:0 0 2px; letter-spacing:-.01em; }
+#tab-pedidos .pd-head #ped-periodo { font-size:13px; color:var(--muted); margin:0; }
+#tab-pedidos .pd-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#tab-pedidos .pd-btn { display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border-radius:8px; border:1px solid var(--line-strong); background:var(--surface); color:var(--txt-2); font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap; position:relative; font-family:inherit; }
+#tab-pedidos .pd-btn:hover { border-color:var(--acc); color:var(--acc-txt); }
+#tab-pedidos .pd-btn-primary { background:var(--acc) !important; border-color:var(--acc) !important; color:#fff !important; order:10; }
+#tab-pedidos .pd-btn-primary:hover { filter:brightness(1.08); }
+#tab-pedidos .pd-btn-warn { border-color:var(--acc); color:var(--acc-txt); background:var(--acc-soft); }
+#tab-pedidos #btn-paineis-toggle { height:36px; padding:0 14px !important; border-radius:8px !important; border:1px solid var(--line-strong) !important; background:var(--surface) !important; color:var(--txt-2) !important; font-size:13px !important; order:9; }
+#tab-pedidos .pd-badge { position:absolute; top:-6px; right:-6px; background:var(--acc); color:#fff; border-radius:10px; font-size:10px; padding:1px 5px; font-weight:700; min-width:14px; text-align:center; }
+#tab-pedidos .pd-seg { display:inline-flex; background:var(--surface-3); border-radius:9px; padding:3px; gap:2px; }
+#tab-pedidos .pd-seg button { height:30px; padding:0 12px; border-radius:7px; border:none; background:transparent; color:var(--muted); font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; }
+#tab-pedidos .pd-seg button.on { background:var(--surface); color:var(--txt); box-shadow:0 1px 3px rgba(0,0,0,.15); }
+#tab-pedidos .pd-more { position:relative; }
+#tab-pedidos .pd-more > summary { list-style:none; }
+#tab-pedidos .pd-more > summary::-webkit-details-marker { display:none; }
+#tab-pedidos .pd-menu { position:absolute; right:0; top:42px; z-index:50; min-width:210px; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 12px 32px rgba(0,0,0,.18); padding:6px; display:flex; flex-direction:column; }
+#tab-pedidos .pd-menu button { display:block !important; width:100%; text-align:left; padding:9px 10px; border:none; background:none; border-radius:7px; color:var(--txt); font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; }
+#tab-pedidos .pd-menu button:hover { background:var(--surface-3); }
+#tab-pedidos .pd-menu button[style*="display:none"], #tab-pedidos .pd-menu button[style*="display: none"] { display:none !important; }
+
+/* Período */
+#tab-pedidos .pd-periodo-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+#tab-pedidos .pd-chips { display:flex; gap:6px; flex-wrap:wrap; }
+#tab-pedidos .pd-dates { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#tab-pedidos .pd-dates label { font-size:12px; color:var(--muted); font-weight:600; }
+#tab-pedidos .pd-dates input[type=date] { height:34px; padding:0 10px; border:1px solid var(--line-strong); border-radius:8px; font-size:13px; background:var(--surface); color:var(--txt); }
+#tab-pedidos .pd-dates .pd-btn { height:34px; }
+
+/* Grade do painel */
+#tab-pedidos .pd-dash { display:flex; flex-direction:column; gap:16px; }
+#tab-pedidos .pd-grid { display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:16px; align-items:start; }
+#tab-pedidos .pd-s4 { grid-column:span 4; } #tab-pedidos .pd-s5 { grid-column:span 5; } #tab-pedidos .pd-s6 { grid-column:span 6; }
+#tab-pedidos .pd-s7 { grid-column:span 7; } #tab-pedidos .pd-s8 { grid-column:span 8; } #tab-pedidos .pd-s12 { grid-column:1 / -1; }
+
+/* KPIs */
+#tab-pedidos .pd-kpis { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; }
+#tab-pedidos .pd-kpi { background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-width:0; }
+#tab-pedidos .pd-kpi-main { grid-column:1 / -1; border-left:4px solid var(--acc); }
+#tab-pedidos .pd-kpi-l { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+#tab-pedidos .pd-kpi-v { font-size:17px; font-weight:800; color:var(--txt); margin-top:4px; overflow-wrap:anywhere; line-height:1.2; font-variant-numeric:tabular-nums; }
+#tab-pedidos .pd-kpi-main .pd-kpi-v { font-size:30px; }
+#tab-pedidos .pd-kpi-s { font-size:11.5px; color:var(--muted); margin-top:2px; }
+#tab-pedidos .pd-stat .pd-kpi-v { font-size:28px; }
+
+/* Resumo de produtos (preenchido pelo JS) */
+#tab-pedidos .pd-prod-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(175px,1fr)); gap:6px; }
+#tab-pedidos .pd-prod-it { display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:7px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); font-size:12px; min-width:0; }
+#tab-pedidos .pd-prod-it span { color:var(--txt-2); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#tab-pedidos .pd-prod-it b { color:var(--txt); font-weight:700; white-space:nowrap; font-variant-numeric:tabular-nums; }
+#tab-pedidos .pd-prod-it.zero { opacity:.45; }
+#tab-pedidos .pd-prod-total { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; margin-bottom:8px; border-radius:8px; background:var(--ink); color:#fff; }
+#tab-pedidos .pd-prod-total span { font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; opacity:.85; }
+#tab-pedidos .pd-prod-total b { font-size:18px; font-weight:800; color:#4CAF50; font-variant-numeric:tabular-nums; }
+
+/* Status do período */
+#tab-pedidos .pd-st { display:flex; flex-direction:column; }
+#tab-pedidos .pd-st > div { display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line); font-size:13px; }
+#tab-pedidos .pd-st > div:last-child { border-bottom:none; }
+#tab-pedidos .pd-st i { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+#tab-pedidos .pd-st span { color:var(--txt-2); flex:1; }
+#tab-pedidos .pd-st b { font-weight:700; color:var(--txt); font-variant-numeric:tabular-nums; white-space:nowrap; }
+#tab-pedidos .pd-res-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+#tab-pedidos .pd-res-head h3 { font-size:16px; font-weight:800; color:var(--txt); margin:0; }
+#tab-pedidos .pd-res-head #filtro-periodo-label { font-size:13px; color:var(--muted); }
+
+/* Lista de pedidos */
+#tab-pedidos .pd-list-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+#tab-pedidos .pd-list-head h3 { font-size:18px; font-weight:800; color:var(--txt); margin:0; }
+#tab-pedidos .pd-list-head #ped-busca-count { font-size:12.5px; color:var(--muted); }
+#tab-pedidos .pd-filtros { display:flex; flex-direction:column; gap:10px; padding:12px 14px; }
+#tab-pedidos .pd-search { display:flex; gap:8px; align-items:center; }
+#tab-pedidos .pd-search input { flex:1; min-width:0; height:38px; padding:0 14px 0 36px; border-radius:8px; border:1px solid var(--line-strong); background:var(--surface-2) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%2214%22 fill=%22none%22 stroke=%22%23999%22 stroke-width=%222%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2211%22 cy=%2211%22 r=%228%22/%3E%3Cpath d=%22m21 21-4.35-4.35%22/%3E%3C/svg%3E') no-repeat 12px center; font-size:13.5px; color:var(--txt); }
+#tab-pedidos .pd-filter-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+#tab-pedidos .pd-filter-row select, #tab-pedidos .pd-filter-row input { height:34px; padding:0 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); color:var(--txt); font-size:12.5px; }
+#tab-pedidos .pd-filter-row input { flex:1; min-width:170px; }
+#tab-pedidos .pd-link { border:none; background:none; color:var(--muted); font-size:12.5px; font-weight:600; cursor:pointer; padding:0 6px; height:34px; font-family:inherit; }
+#tab-pedidos .pd-link:hover { color:var(--acc-txt); }
+#tab-pedidos #ped-periodo-ativo-chip { height:30px; }
+#ped-resumo-clientes .pd-card-h > button:last-child:not(#ped-resumo-uf-toggle) { margin-left:0 !important; }
+
+/* Clientes na carteira */
+#tab-pedidos .pd-cli { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; }
+#tab-pedidos .pd-cli > div { border-radius:10px; padding:10px 14px; border:1px solid var(--line); background:var(--surface-2); }
+#tab-pedidos .pd-cli .pd-kpi-l { display:flex; align-items:center; gap:6px; }
+#tab-pedidos .pd-cli .pd-kpi-l i { width:8px; height:8px; border-radius:50%; }
+#tab-pedidos .pd-cli .pd-kpi-v { font-size:22px; }
+
+/* Tabela */
+#tab-pedidos .pd-table-card { padding:0; }
+#tab-pedidos #ped-tabela-wrap { border-radius:var(--radius) var(--radius) 0 0; }
+#tab-pedidos #ped-tabela-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+#tab-pedidos .ped-table { margin-top:0; font-size:13px; }
+#tab-pedidos .ped-table th { background:var(--surface-2); color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:11px 12px; border-bottom:1px solid var(--line-strong); }
+#tab-pedidos .ped-table td { padding:10px 12px; white-space:nowrap; }
+#tab-pedidos .ped-table tbody tr:nth-child(even) td { background:transparent; }
+#tab-pedidos .ped-table tbody tr:hover td { background:var(--surface-2); }
+#tab-pedidos .pd-hint { font-size:11.5px; color:var(--faint); text-align:center; padding:10px; border-top:1px solid var(--line); margin:0; }
+#tab-pedidos #ped-vazio, #tab-pedidos #ped-vazio-cards { text-align:center; color:var(--faint); font-size:13px; padding:2.5rem 1rem; margin:0; }
+#tab-pedidos #ped-scrollbar-fixo { border-radius:0 0 var(--radius) var(--radius); }
+
+/* Formulário e comissões ficam no mesmo padrão de cartão */
+#tab-pedidos #ped-form { border-radius:var(--radius) !important; box-shadow:var(--card-shadow); }
+#tab-pedidos .comissao-box { margin-bottom:8px; }
+
+@media (max-width: 1100px) {
+  #tab-pedidos .pd-s4, #tab-pedidos .pd-s5, #tab-pedidos .pd-s7, #tab-pedidos .pd-s8 { grid-column:1 / -1; }
+}
+@media (max-width: 700px) {
+  #tab-pedidos .pd-s6 { grid-column:1 / -1; }
+  #tab-pedidos .pd-head h2 { font-size:19px !important; }
+  #tab-pedidos .pd-actions { width:100%; }
+  #tab-pedidos .pd-btn-primary { order:-1; flex:1; justify-content:center; }
+  #tab-pedidos .pd-kpis { grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+  #tab-pedidos .pd-kpi { padding:10px; }
+  #tab-pedidos .pd-kpi-main .pd-kpi-v, #tab-pedidos .pd-stat .pd-kpi-v { font-size:24px; }
+  #tab-pedidos .pd-cli { grid-template-columns:repeat(2, minmax(0,1fr)); }
+  #tab-pedidos .pd-dates { width:100%; }
+  #tab-pedidos .pd-dates input[type=date] { flex:1 1 120px; min-width:120px; }
+  #tab-pedidos .pd-kpi-v { font-size:14px; }
+  #tab-pedidos .pd-card { padding:14px; }
+}
+</style>
+<div id="tab-pedidos" class="tab-content">
+  <div class="page-section pd" style="max-width:100%;">
+
+    <!-- CABEÇALHO -->
+    <div class="pd-head">
       <div>
-        <h2 style="font-size:15px;font-weight:600;color:var(--txt);margin-bottom:2px;">📋 Meus Pedidos</h2>
-        <p style="font-size:12px;color:var(--faint);" id="ped-periodo">Mês atual</p>
+        <h2>📋 Meus Pedidos</h2>
+        <p id="ped-periodo">Mês atual</p>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <div style="display:flex;background:var(--surface-3);border-radius:8px;padding:3px;gap:2px;">
-          <button id="btn-view-tabela" onclick="setPedViewMode('tabela')" style="padding:6px 12px;border-radius:6px;border:none;background:var(--ink);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">📋 Tabela</button>
-          <button id="btn-view-cards" onclick="setPedViewMode('cards')" style="padding:6px 12px;border-radius:6px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;">🗂️ Cards</button>
+      <div class="pd-actions">
+        <div class="pd-seg">
+          <button id="btn-view-tabela" class="on" onclick="setPedViewMode('tabela')">📋 Tabela</button>
+          <button id="btn-view-cards" onclick="setPedViewMode('cards')">🗂️ Cards</button>
         </div>
-        <button id="btn-novo-pedido" onclick="togglePedForm()" style="padding:8px 16px;border-radius:7px;border:none;background:var(--acc);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Novo Pedido</button>
-        <button id="btn-sync-local" onclick="sincronizarPedidosLocais()" style="display:none;padding:8px 16px;border-radius:7px;border:1.5px solid #7A0000;background:color-mix(in srgb, #FFEBEE var(--tint), var(--surface));color:color-mix(in srgb, #7A0000 var(--tm), #fff);font-size:13px;font-weight:700;cursor:pointer;">🔄 Sincronizar pedidos locais<span id="btn-sync-local-count"></span></button>
-        <button id="btn-exportar" onclick="exportarPedidosExcel()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #2E7D32;background:var(--surface);color:color-mix(in srgb, #2E7D32 var(--tm), #fff);font-size:13px;font-weight:600;cursor:pointer;">📥 Exportar Excel</button>
-        <input type="file" id="excel-import-input" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
-        <button id="btn-importar-arquivo" onclick="document.getElementById('excel-import-input').click()" style="padding:8px 16px;border-radius:7px;border:1.5px solid #185FA5;background:var(--surface);color:color-mix(in srgb, #185FA5 var(--tm), #fff);font-size:13px;font-weight:600;cursor:pointer;display:none;">📂 Importar Excel</button>
-        <button onclick="testarConexao()" style="padding:8px 14px;border-radius:7px;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer;">🔧 Testar</button>
-        <button id="btn-lixeira-pedidos" onclick="abrirLixeiraPedidos()" style="position:relative;padding:8px 16px;border-radius:7px;border:1.5px solid var(--acc);background:var(--surface);color:var(--acc-txt);font-size:13px;font-weight:600;cursor:pointer;">🗑️ Lixeira<span id="lixeira-ped-badge" style="display:none;position:absolute;top:-7px;right:-7px;background:var(--acc);color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;font-weight:700;min-width:14px;text-align:center;"></span></button>
+        <button id="btn-sync-local" class="pd-btn pd-btn-warn" onclick="sincronizarPedidosLocais()" style="display:none;">🔄 Sincronizar pedidos locais<span id="btn-sync-local-count"></span></button>
+        <button id="btn-lixeira-pedidos" class="pd-btn" onclick="abrirLixeiraPedidos()" title="Pedidos excluídos">🗑️ Lixeira<span id="lixeira-ped-badge" class="pd-badge" style="display:none;"></span></button>
+        <details class="pd-more" id="ped-mais">
+          <summary class="pd-btn" title="Mais ações">⋯ Mais</summary>
+          <div class="pd-menu">
+            <button id="btn-exportar" onclick="exportarPedidosExcel()">📥 Exportar Excel</button>
+            <input type="file" id="excel-import-input" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
+            <button id="btn-importar-arquivo" onclick="document.getElementById('excel-import-input').click()" style="display:none;">📂 Importar Excel</button>
+            <button onclick="testarConexao()">🔧 Testar conexão</button>
+          </div>
+        </details>
+        <button id="btn-novo-pedido" class="pd-btn pd-btn-primary" onclick="togglePedForm()">+ Novo Pedido</button>
       </div>
     </div>
+
 
     <!-- PLANILHA DE IMPORTAÇÃO EM MASSA -->
     <div id="planilha-import" style="display:none;background:var(--surface);border:1.5px solid #185FA5;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;">
@@ -1965,101 +2093,98 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
       </div>
     </div>
 
-    <!-- DASHBOARD MÉTRICAS -->
-    <div id="ped-dashboard" style="display:grid;gap:12px;margin-bottom:14px;">
+    <!-- PAINEL -->
+    <div id="ped-dashboard" class="pd-dash">
 
-      <!-- HOJE -->
-      <div style="background:var(--ink);border-radius:12px;padding:1.1rem 1.4rem;border-left:4px solid var(--acc);">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;">📅 Hoje — <span id="ped-hoje-data" style="color:var(--faint);"></span></div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
-          <div>
-            <div style="font-size:10px;color:var(--txt-2);margin-bottom:2px;">Total Vendido Hoje</div>
-            <div style="font-size:22px;font-weight:700;color:#fff;" id="dash-hoje-total">R$ 0</div>
+      <!-- PERÍODO: controla os números do período e a lista de pedidos -->
+      <div class="pd-card">
+        <div class="pd-card-h"><span>🔎 Período</span><small>vale para o resultado e para a lista de pedidos</small></div>
+        <div class="pd-periodo-row">
+          <div class="pd-chips" id="ped-qf">
+            <button class="qf-btn" onclick="filtroPeriodoRapido('hoje')">Hoje</button>
+            <button class="qf-btn" onclick="filtroPeriodoRapido('ontem')">Ontem</button>
+            <button class="qf-btn" onclick="filtroPeriodoRapido('7dias')">7 dias</button>
+            <button class="qf-btn" onclick="filtroPeriodoRapido('30dias')">30 dias</button>
+            <button class="qf-btn" onclick="filtroPeriodoRapido('mesatual')">Este mês</button>
+            <button class="qf-btn" onclick="filtroPeriodoRapido('mespassado')">Mês passado</button>
+            <button class="qf-btn" onclick="filtroPeriodoRapido('anoatual')">Este ano</button>
           </div>
-          <div>
-            <div style="font-size:10px;color:var(--txt-2);margin-bottom:2px;">🚛 Truck</div>
-            <div style="font-size:18px;font-weight:600;color:#E8A020;" id="dash-hoje-truck">R$ 0</div>
-            <div style="font-size:10px;color:var(--txt-2);" id="dash-hoje-truck-qt">0 pedido(s)</div>
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--txt-2);margin-bottom:2px;">🚚 Carreta</div>
-            <div style="font-size:18px;font-weight:600;color:#4A90C4;" id="dash-hoje-carreta">R$ 0</div>
-            <div style="font-size:10px;color:var(--txt-2);" id="dash-hoje-carreta-qt">0 pedido(s)</div>
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--txt-2);margin-bottom:2px;">📦 Outros</div>
-            <div style="font-size:18px;font-weight:600;color:var(--faint);" id="dash-hoje-outros">R$ 0</div>
-            <div style="font-size:10px;color:var(--txt-2);" id="dash-hoje-outros-qt">0 pedido(s)</div>
+          <div class="pd-dates">
+            <label for="filtro-data-de">De</label>
+            <input type="date" id="filtro-data-de">
+            <label for="filtro-data-ate">até</label>
+            <input type="date" id="filtro-data-ate">
+            <button class="pd-btn pd-btn-primary" style="order:0;" onclick="aplicarFiltroPeriodo()">Aplicar</button>
+            <button class="pd-link" onclick="limparFiltroPeriodo()">✕ Limpar</button>
           </div>
         </div>
       </div>
 
-      <!-- RESUMO DE PRODUTOS DO DIA (PLACAS EM M² + ITENS UNITÁRIOS) -->
-      <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:color-mix(in srgb, #2E7D32 var(--tm), #fff);margin-bottom:10px;">📐 Resumo de Produtos — Hoje</div>
-        <div id="resumo-produtos-hoje"></div>
+      <!-- HOJE + PRODUTOS DO DIA -->
+      <div class="pd-grid">
+        <div class="pd-card pd-s5">
+          <div class="pd-card-h">📅 Hoje <span id="ped-hoje-data" class="pd-sub"></span></div>
+          <div class="pd-kpis">
+            <div class="pd-kpi pd-kpi-main">
+              <div class="pd-kpi-l">Total vendido hoje</div>
+              <div class="pd-kpi-v" id="dash-hoje-total">R$ 0</div>
+            </div>
+            <div class="pd-kpi">
+              <div class="pd-kpi-l">🚛 Truck</div>
+              <div class="pd-kpi-v" id="dash-hoje-truck">R$ 0</div>
+              <div class="pd-kpi-s" id="dash-hoje-truck-qt">0 pedido(s)</div>
+            </div>
+            <div class="pd-kpi">
+              <div class="pd-kpi-l">🚚 Carreta</div>
+              <div class="pd-kpi-v" id="dash-hoje-carreta">R$ 0</div>
+              <div class="pd-kpi-s" id="dash-hoje-carreta-qt">0 pedido(s)</div>
+            </div>
+            <div class="pd-kpi">
+              <div class="pd-kpi-l">📦 Outros</div>
+              <div class="pd-kpi-v" id="dash-hoje-outros">R$ 0</div>
+              <div class="pd-kpi-s" id="dash-hoje-outros-qt">0 pedido(s)</div>
+            </div>
+          </div>
+        </div>
+        <div class="pd-card pd-s7">
+          <div class="pd-card-h">📐 Produtos de hoje</div>
+          <div id="resumo-produtos-hoje"></div>
+        </div>
       </div>
 
-      <!-- FILTRO DE DATA PERSONALIZADO -->
-      <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:color-mix(in srgb, #4A148C var(--tm), #fff);margin-bottom:10px;">🔎 Filtro de Período Personalizado</div>
-        <div style="font-size:11px;color:var(--faint);margin-bottom:10px;margin-top:-6px;">Controla os cards de resumo abaixo <strong>e</strong> a lista de pedidos mais abaixo, ambos ao mesmo tempo.</div>
-        <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-          <div class="ped-field">
-            <label>De</label>
-            <input type="date" id="filtro-data-de" style="padding:7px 10px;border:1.5px solid var(--line);border-radius:6px;font-size:13px;outline:none;">
-          </div>
-          <div class="ped-field">
-            <label>Até</label>
-            <input type="date" id="filtro-data-ate" style="padding:7px 10px;border:1.5px solid var(--line);border-radius:6px;font-size:13px;outline:none;">
-          </div>
-          <button onclick="aplicarFiltroPeriodo()" style="padding:8px 16px;border-radius:6px;border:none;background:#4A148C;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Aplicar</button>
-          <button onclick="limparFiltroPeriodo()" style="padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer;">✕ Limpar</button>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="qf-btn" onclick="filtroPeriodoRapido('hoje')">Hoje</button>
-          <button class="qf-btn" onclick="filtroPeriodoRapido('ontem')">Ontem</button>
-          <button class="qf-btn" onclick="filtroPeriodoRapido('7dias')">Últimos 7 dias</button>
-          <button class="qf-btn" onclick="filtroPeriodoRapido('30dias')">Últimos 30 dias</button>
-          <button class="qf-btn" onclick="filtroPeriodoRapido('mesatual')">Este mês</button>
-          <button class="qf-btn" onclick="filtroPeriodoRapido('mespassado')">Mês passado</button>
-          <button class="qf-btn" onclick="filtroPeriodoRapido('anoatual')">Este ano</button>
-        </div>
-      </div>
-
-      <!-- RESULTADO DO PERÍODO PERSONALIZADO -->
+      <!-- RESULTADO DO PERÍODO (aparece depois de escolher o período) -->
       <div id="filtro-periodo-resultado" style="display:none;">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;">
-          <div style="background:var(--surface);border:2px solid #4A148C;border-radius:12px;padding:1rem 1.2rem;">
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:color-mix(in srgb, #4A148C var(--tm), #fff);margin-bottom:6px;">📈 Vendas no Período</div>
-            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;" id="filtro-periodo-label">—</div>
-            <div style="font-size:24px;font-weight:700;color:var(--txt);" id="filtro-vendas-total">R$ 0,00</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="filtro-vendas-qt">0 pedido(s)</div>
+        <div class="pd-res-head"><h3>Resultado do período</h3><span id="filtro-periodo-label">—</span></div>
+        <div class="pd-grid">
+          <div class="pd-card pd-stat pd-s6">
+            <div class="pd-kpi-l">📈 Vendas no período</div>
+            <div class="pd-kpi-v" id="filtro-vendas-total">R$ 0,00</div>
+            <div class="pd-kpi-s" id="filtro-vendas-qt">0 pedido(s)</div>
           </div>
-          <div style="background:var(--surface);border:2px solid #185FA5;border-radius:12px;padding:1rem 1.2rem;">
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:color-mix(in srgb, #185FA5 var(--tm), #fff);margin-bottom:6px;">🚚 Entregue + Faturado no Período</div>
-            <div style="font-size:24px;font-weight:700;color:var(--txt);" id="filtro-entregas-total">R$ 0,00</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="filtro-entregas-qt">0 pedido(s)</div>
+          <div class="pd-card pd-stat pd-s6">
+            <div class="pd-kpi-l">🚚 Entregue + faturado</div>
+            <div class="pd-kpi-v" id="filtro-entregas-total">R$ 0,00</div>
+            <div class="pd-kpi-s" id="filtro-entregas-qt">0 pedido(s)</div>
           </div>
-          <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;">
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:color-mix(in srgb, #2E7D32 var(--tm), #fff);margin-bottom:10px;">📐 Resumo de Produtos no Período</div>
+          <div class="pd-card pd-s5">
+            <div class="pd-card-h">📄 Por status</div>
+            <div class="pd-st">
+              <div><i style="background:#1E6FBF;"></i><span>Agendamento</span><b id="filtro-st-agendamento">R$ 0,00 (0)</b></div>
+              <div><i style="background:#E0A100;"></i><span>Aguardando DT</span><b id="filtro-st-aguardando-dt">R$ 0,00 (0)</b></div>
+              <div><i style="background:#7B3FBF;"></i><span>Com DT</span><b id="filtro-st-com-dt">R$ 0,00 (0)</b></div>
+              <div><i style="background:#43A047;"></i><span>Em rota</span><b id="filtro-st-em-rota">R$ 0,00 (0)</b></div>
+              <div><i style="background:#1B5E20;"></i><span>Entregue</span><b id="filtro-st-entregue">R$ 0,00 (0)</b></div>
+              <div><i style="background:var(--txt);"></i><span>Faturado</span><b id="filtro-st-faturado">R$ 0,00 (0)</b></div>
+              <div><i style="background:var(--acc);"></i><span>Cancelado</span><b id="filtro-st-cancelado" style="color:var(--acc-txt);">R$ 0,00 (0)</b></div>
+            </div>
+          </div>
+          <div class="pd-card pd-s7">
+            <div class="pd-card-h">📐 Produtos no período</div>
             <div id="resumo-produtos-periodo"></div>
           </div>
-          <div style="background:var(--surface);border:2px solid #555;border-radius:12px;padding:1rem 1.2rem;grid-column:1/-1;">
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--txt);margin-bottom:6px;">⚙️ Aço Vendido no Período</div>
+          <div class="pd-card pd-s12">
+            <div class="pd-card-h">⚙️ Aço vendido no período</div>
             <div id="filtro-aco"></div>
-          </div>
-          <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;">
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:color-mix(in srgb, #7A4A00 var(--tm), #fff);margin-bottom:10px;">📄 Detalhamento por Status no Período</div>
-            <div style="display:grid;gap:6px;">
-              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt-2);">Agendamento</span><span style="font-size:13px;font-weight:700;color:color-mix(in srgb, #0C447C var(--tm), #fff);" id="filtro-st-agendamento">R$ 0,00 (0)</span></div>
-              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt-2);">Aguardando DT</span><span style="font-size:13px;font-weight:700;color:color-mix(in srgb, #7A4A00 var(--tm), #fff);" id="filtro-st-aguardando-dt">R$ 0,00 (0)</span></div>
-              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt-2);">Com DT</span><span style="font-size:13px;font-weight:700;color:color-mix(in srgb, #4A148C var(--tm), #fff);" id="filtro-st-com-dt">R$ 0,00 (0)</span></div>
-              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt-2);">Em Rota</span><span style="font-size:13px;font-weight:700;color:color-mix(in srgb, #1B5E20 var(--tm), #fff);" id="filtro-st-em-rota">R$ 0,00 (0)</span></div>
-              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt-2);">Entregue</span><span style="font-size:13px;font-weight:700;color:color-mix(in srgb, #1B5E20 var(--tm), #fff);" id="filtro-st-entregue">R$ 0,00 (0)</span></div>
-              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt-2);">Faturado</span><span style="font-size:13px;font-weight:700;color:var(--txt);" id="filtro-st-faturado">R$ 0,00 (0)</span></div>
-              <div style="display:flex;justify-content:space-between;"><span style="font-size:12px;color:var(--txt-2);">Cancelado</span><span style="font-size:13px;font-weight:700;color:var(--acc-txt);" id="filtro-st-cancelado">R$ 0,00 (0)</span></div>
-            </div>
           </div>
         </div>
       </div>
@@ -2269,72 +2394,24 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
     <!-- Âncora: marca o lugar original do #ped-form pra ele voltar quando o popup de conversão fecha -->
     <span id="ped-form-anchor" style="display:none;"></span>
 
-    <!-- TABELA DE PEDIDOS -->
-    <div style="display:flex;align-items:center;gap:10px;margin-top:1.25rem;flex-wrap:wrap;">
-      <input type="text" id="ped-busca" placeholder="Buscar por cliente, empresa, vendedor, material, chamado, PN, UF, veículo, status ou valor..."
-        oninput="aplicarBuscaPedidos(this.value)"
-        style="flex:1;min-width:240px;padding:8px 14px 8px 34px;border-radius:7px;border:1px solid var(--line);background:var(--surface) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%2214%22 fill=%22none%22 stroke=%22%23aaa%22 stroke-width=%222%22 viewBox=%220 0 24 24%22%3E%3Ccircle cx=%2211%22 cy=%2211%22 r=%228%22/%3E%3Cpath d=%22m21 21-4.35-4.35%22/%3E%3C/svg%3E') no-repeat 10px center;font-size:13px;outline:none;">
-      <span id="ped-busca-count" style="font-size:12px;color:var(--faint);white-space:nowrap;"></span>
-      <button id="ped-busca-clear" onclick="limparBuscaPedidos()" style="display:none;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer;white-space:nowrap;">✕ Limpar</button>
-    </div>
-
-    <!-- FILTROS: ESTADO / STATUS / ITEM -->
-    <div style="display:flex;align-items:center;gap:8px;margin-top:0.6rem;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:0.6rem 0.75rem;">
-      <span style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);white-space:nowrap;">Filtrar por:</span>
-      <span id="ped-periodo-ativo-chip" style="display:none;font-size:11px;font-weight:600;color:color-mix(in srgb, #4A148C var(--tm), #fff);background:color-mix(in srgb, #F3E5F5 var(--tint), var(--surface));border-radius:12px;padding:5px 10px;white-space:nowrap;align-items:center;gap:6px;"></span>
-      <select id="ped-filtro-estado" onchange="aplicarFiltrosPedidos()" style="padding:6px 8px;border-radius:6px;border:1px solid var(--line);font-size:12px;outline:none;color:var(--txt);">
-        <option value="">Todos os estados (UF)</option>
-        <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
-        <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
-        <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
-        <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
-        <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
-        <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
-        <option>SP</option><option>SE</option><option>TO</option>
-      </select>
-      <select id="ped-filtro-status" onchange="aplicarFiltrosPedidos()" style="padding:6px 8px;border-radius:6px;border:1px solid var(--line);font-size:12px;outline:none;color:var(--txt);">
-        <option value="">Todos os status</option>
-      </select>
-      <input type="text" id="ped-filtro-item" placeholder="Filtrar por item / material..."
-        oninput="aplicarFiltrosPedidos()"
-        style="flex:1;min-width:180px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);font-size:12px;outline:none;">
-      <button onclick="limparFiltrosPedidos()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:12px;cursor:pointer;white-space:nowrap;">✕ Limpar filtros</button>
-    </div>
-    <div style="font-size:10.5px;color:var(--faint);margin-top:4px;">📅 O período exibido (datas) é controlado pelo <strong>Filtro de Período Personalizado</strong> lá em cima, no topo do Dashboard — ele afeta tanto os cards de resumo quanto esta lista.</div>
-
-    <!-- RESUMO DE CLIENTES: Novos / Ativos / Inativos + quebra por UF -->
-    <div id="ped-resumo-clientes" style="margin-top:1rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0.9rem 1rem;">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--txt-2);">👥 Clientes na Carteira</div>
-        <button id="ped-resumo-uf-toggle" onclick="pedResumoUfToggle()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--txt-2);font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">📍 Ver por UF</button>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:120px;background:color-mix(in srgb, #E6F1FB var(--tint), var(--surface));border-radius:8px;padding:10px 12px;">
-          <div style="font-size:10.5px;font-weight:700;color:color-mix(in srgb, #0C447C var(--tm), #fff);text-transform:uppercase;letter-spacing:.05em;">🔵 Novos</div>
-          <div id="ped-resumo-cli-novo" style="font-size:22px;font-weight:700;color:color-mix(in srgb, #0C447C var(--tm), #fff);">0</div>
-        </div>
-        <div style="flex:1;min-width:120px;background:color-mix(in srgb, #E8F5E9 var(--tint), var(--surface));border-radius:8px;padding:10px 12px;">
-          <div style="font-size:10.5px;font-weight:700;color:color-mix(in srgb, #1B5E20 var(--tm), #fff);text-transform:uppercase;letter-spacing:.05em;">🟢 Ativos</div>
-          <div id="ped-resumo-cli-ativo" style="font-size:22px;font-weight:700;color:color-mix(in srgb, #1B5E20 var(--tm), #fff);">0</div>
-        </div>
-        <div style="flex:1;min-width:120px;background:color-mix(in srgb, #FBE9E9 var(--tint), var(--surface));border-radius:8px;padding:10px 12px;">
-          <div style="font-size:10.5px;font-weight:700;color:color-mix(in srgb, #7A0000 var(--tm), #fff);text-transform:uppercase;letter-spacing:.05em;">🔴 Inativos</div>
-          <div id="ped-resumo-cli-inativo" style="font-size:22px;font-weight:700;color:color-mix(in srgb, #7A0000 var(--tm), #fff);">0</div>
-        </div>
-        <div style="flex:1;min-width:120px;background:var(--surface-3);border-radius:8px;padding:10px 12px;">
-          <div style="font-size:10.5px;font-weight:700;color:var(--txt);text-transform:uppercase;letter-spacing:.05em;">Total</div>
-          <div id="ped-resumo-cli-total" style="font-size:22px;font-weight:700;color:var(--txt);">0</div>
-        </div>
+    <!-- CLIENTES NA CARTEIRA: Novos / Ativos / Inativos + quebra por UF -->
+    <div id="ped-resumo-clientes" class="pd-card">
+      <div class="pd-card-h"><span>👥 Clientes na carteira</span><button id="ped-resumo-uf-toggle" class="pd-link" onclick="pedResumoUfToggle()" style="margin-left:auto;height:auto;">📍 Ver por UF</button></div>
+      <div class="pd-cli">
+        <div><div class="pd-kpi-l"><i style="background:#1E6FBF;"></i>Novos</div><div class="pd-kpi-v" id="ped-resumo-cli-novo">0</div></div>
+        <div><div class="pd-kpi-l"><i style="background:#43A047;"></i>Ativos</div><div class="pd-kpi-v" id="ped-resumo-cli-ativo">0</div></div>
+        <div><div class="pd-kpi-l"><i style="background:var(--acc);"></i>Inativos</div><div class="pd-kpi-v" id="ped-resumo-cli-inativo">0</div></div>
+        <div><div class="pd-kpi-l"><i style="background:var(--txt);"></i>Total</div><div class="pd-kpi-v" id="ped-resumo-cli-total">0</div></div>
       </div>
       <div id="ped-resumo-uf-wrap" style="display:none;margin-top:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
-        <table style="border-collapse:collapse;width:100%;font-size:12px;min-width:420px;">
+        <table style="border-collapse:collapse;width:100%;font-size:12.5px;min-width:420px;">
           <thead>
-            <tr style="border-bottom:1.5px solid var(--line);">
-              <th style="text-align:left;padding:6px 8px;color:var(--faint);font-weight:600;">UF</th>
-              <th style="text-align:right;padding:6px 8px;color:color-mix(in srgb, #0C447C var(--tm), #fff);font-weight:600;">🔵 Novos</th>
-              <th style="text-align:right;padding:6px 8px;color:color-mix(in srgb, #1B5E20 var(--tm), #fff);font-weight:600;">🟢 Ativos</th>
-              <th style="text-align:right;padding:6px 8px;color:color-mix(in srgb, #7A0000 var(--tm), #fff);font-weight:600;">🔴 Inativos</th>
-              <th style="text-align:right;padding:6px 8px;color:var(--txt-2);font-weight:600;">Total</th>
+            <tr style="border-bottom:1px solid var(--line-strong);">
+              <th style="text-align:left;padding:7px 8px;color:var(--muted);font-weight:700;">UF</th>
+              <th style="text-align:right;padding:7px 8px;color:var(--muted);font-weight:700;">Novos</th>
+              <th style="text-align:right;padding:7px 8px;color:var(--muted);font-weight:700;">Ativos</th>
+              <th style="text-align:right;padding:7px 8px;color:var(--muted);font-weight:700;">Inativos</th>
+              <th style="text-align:right;padding:7px 8px;color:var(--muted);font-weight:700;">Total</th>
             </tr>
           </thead>
           <tbody id="ped-resumo-uf-tbody"></tbody>
@@ -2342,41 +2419,85 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
       </div>
     </div>
 
-    <div style="overflow-x:auto;margin-top:0.75rem;-webkit-overflow-scrolling:touch;" id="ped-tabela-wrap">
-      <table class="ped-table" id="ped-tabela">
-        <thead>
-          <tr>
-            <th>Chamado</th>
-            <th>Cliente</th>
-            <th>Vl. Total</th>
-            <th>Status</th>
-            <th>Abastecimento</th>
-            <th>Nº Doc</th>
-            <th>Conciliação</th>
-            <th title="O pedido já foi lançado no Pipe?">Pipe</th>
-            <th>Observação</th>
-          </tr>
-        </thead>
-        <tbody id="ped-tbody"></tbody>
-      </table>
-      <p id="ped-vazio" style="text-align:center;color:var(--faint);font-size:13px;padding:2rem;">Nenhum pedido registrado este mês.</p>
-      <p style="font-size:10.5px;color:var(--faint);text-align:center;margin-top:6px;">👆 Clique num pedido pra ver os detalhes completos (materiais, quantidade, PN, UF etc.)</p>
+    <!-- LISTA DE PEDIDOS -->
+    <div class="pd-list-head"><h3>Pedidos</h3><span id="ped-busca-count"></span></div>
+    <div class="pd-card pd-filtros">
+      <div class="pd-search">
+        <input type="text" id="ped-busca" placeholder="Buscar por cliente, empresa, chamado, PN, material, UF, status ou valor…" oninput="aplicarBuscaPedidos(this.value)">
+        <button id="ped-busca-clear" class="pd-link" onclick="limparBuscaPedidos()" style="display:none;">✕ Limpar</button>
+      </div>
+      <div class="pd-filter-row">
+        <span id="ped-periodo-ativo-chip" style="display:none;font-size:12px;font-weight:600;color:var(--acc-txt);background:var(--acc-soft);border-radius:8px;padding:0 10px;white-space:nowrap;align-items:center;gap:8px;"></span>
+        <select id="ped-filtro-estado" onchange="aplicarFiltrosPedidos()">
+          <option value="">Todas as UFs</option>
+          <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+          <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+          <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+          <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+          <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+          <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+          <option>SP</option><option>SE</option><option>TO</option>
+        </select>
+        <select id="ped-filtro-status" onchange="aplicarFiltrosPedidos()">
+          <option value="">Todos os status</option>
+        </select>
+        <input type="text" id="ped-filtro-item" placeholder="Item / material…" oninput="aplicarFiltrosPedidos()">
+        <button class="pd-link" onclick="limparFiltrosPedidos()">✕ Limpar filtros</button>
+      </div>
+    </div>
+
+    <div class="pd-card pd-table-card" id="ped-tabela-card">
+      <div id="ped-tabela-wrap">
+        <table class="ped-table" id="ped-tabela">
+          <thead>
+            <tr>
+              <th>Chamado</th>
+              <th>Cliente</th>
+              <th>Vl. Total</th>
+              <th>Status</th>
+              <th>Abastecimento</th>
+              <th>Nº Doc</th>
+              <th>Conciliação</th>
+              <th title="O pedido já foi lançado no Pipe?">Pipe</th>
+              <th>Observação</th>
+            </tr>
+          </thead>
+          <tbody id="ped-tbody"></tbody>
+        </table>
+        <p id="ped-vazio">Nenhum pedido registrado este mês.</p>
+      </div>
+      <!-- Barra de rolagem horizontal fixa: fica sempre visível, grudada embaixo da tela -->
+      <div id="ped-scrollbar-fixo" style="position:sticky;bottom:0;overflow-x:auto;overflow-y:hidden;height:14px;background:var(--surface-2);border-top:1px solid var(--line);z-index:5;">
+        <div id="ped-scrollbar-fixo-inner" style="height:1px;"></div>
+      </div>
+      <p class="pd-hint">Clique num pedido para ver os detalhes (materiais, quantidades, PN, UF…)</p>
     </div>
 
     <!-- VISUALIZAÇÃO EM CARDS -->
-    <div id="ped-cards-wrap" style="display:none;margin-top:0.75rem;">
+    <div id="ped-cards-wrap" style="display:none;">
       <div id="ped-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;"></div>
-      <p id="ped-vazio-cards" style="display:none;text-align:center;color:var(--faint);font-size:13px;padding:2rem;">Nenhum pedido registrado este mês.</p>
-    </div>
-
-    <!-- Barra de rolagem horizontal fixa: fica sempre visível (grudada embaixo da tabela na tela),
-         sem precisar descer até o fim da lista de pedidos pra rolar pros lados. -->
-    <div id="ped-scrollbar-fixo" style="position:sticky;bottom:0;overflow-x:auto;overflow-y:hidden;height:14px;background:var(--surface-2);border-top:1px solid var(--line);z-index:5;">
-      <div id="ped-scrollbar-fixo-inner" style="height:1px;"></div>
+      <p id="ped-vazio-cards" style="display:none;">Nenhum pedido registrado este mês.</p>
     </div>
 
   </div>
 </div>
+<script>
+// Aba Pedidos: menu "Mais" fecha ao clicar fora/escolher; atalho de período ativo fica marcado.
+(function(){
+  document.addEventListener('click', function(e) {
+    var m = document.getElementById('ped-mais');
+    if (!m || !m.open) return;
+    if (!m.contains(e.target) || e.target.closest('.pd-menu button')) m.open = false;
+  });
+  document.addEventListener('click', function(e) {
+    var b = e.target.closest && e.target.closest('#ped-qf .qf-btn');
+    if (b) { document.querySelectorAll('#ped-qf .qf-btn').forEach(function(x){ x.classList.toggle('active', x === b); }); return; }
+    if (e.target.closest && e.target.closest('#tab-pedidos .pd-dates button, #ped-periodo-ativo-chip span')) {
+      document.querySelectorAll('#ped-qf .qf-btn').forEach(function(x){ x.classList.remove('active'); });
+    }
+  }, true);
+})();
+</script>
 
 <!-- ══ BASE DE CLIENTES (Ativos / Inativos / Novos + controle de atendimento semanal) ══ -->
 <div id="tab-clientes" class="tab-content">
@@ -10687,14 +10808,15 @@ function renderResumoProdutos(containerId, pedidosList) {
     ['LÃ DE PET', fmtNum2(r.la_pet) + ' un.'],
     ['LÃ DE ROCHA', fmtNum2(r.la_rocha) + ' un.']
   ];
-  box.innerHTML = linhas.map(function(l) {
-    var destaque = !!l[2];
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;' +
-        (destaque ? 'background:var(--ink);border-radius:6px;margin:6px 0;' : 'border-bottom:1px solid var(--line);') + '">' +
-      '<span style="font-size:12px;font-weight:' + (destaque ? '700' : '600') + ';color:' + (destaque ? '#fff' : '#333') + ';">' + negEsc(l[0]) + '</span>' +
-      '<span style="font-size:12.5px;font-weight:700;color:' + (destaque ? '#4CAF50' : '#1C1C1C') + ';">' + l[1] + '</span>' +
-    '</div>';
-  }).join('');
+  // Total em m² em destaque no topo; os itens numa grade compacta (os zerados ficam apagados).
+  var total = linhas.filter(function(l) { return l[2]; })[0];
+  var itens = linhas.filter(function(l) { return !l[2]; });
+  box.innerHTML =
+    '<div class="pd-prod-total"><span>Total em m²</span><b>' + total[1] + '</b></div>' +
+    '<div class="pd-prod-grid">' + itens.map(function(l) {
+      var zero = /^0(,00)?\s/.test(l[1]);
+      return '<div class="pd-prod-it' + (zero ? ' zero' : '') + '" title="' + negEsc(l[0]) + '"><span>' + negEsc(l[0]) + '</span><b>' + l[1] + '</b></div>';
+    }).join('') + '</div>';
 }
 
 // ── AÇO vendido (perfis, guias, montantes, cantoneiras, tabicas, F530 etc.) ──
@@ -11910,15 +12032,10 @@ function setPedViewMode(modo) {
   var btnT = document.getElementById('btn-view-tabela');
   var btnC = document.getElementById('btn-view-cards');
   if (btnT && btnC) {
-    if (modo === 'tabela') {
-      btnT.style.background = '#1C1C1C'; btnT.style.color = '#fff';
-      btnC.style.background = 'transparent'; btnC.style.color = '#888';
-    } else {
-      btnC.style.background = '#1C1C1C'; btnC.style.color = '#fff';
-      btnT.style.background = 'transparent'; btnT.style.color = '#888';
-    }
+    btnT.classList.toggle('on', modo === 'tabela');
+    btnC.classList.toggle('on', modo !== 'tabela');
   }
-  var tabelaWrap = document.getElementById('ped-tabela-wrap');
+  var tabelaWrap = document.getElementById('ped-tabela-card') || document.getElementById('ped-tabela-wrap');
   var cardsWrap = document.getElementById('ped-cards-wrap');
   var scrollFixo = document.getElementById('ped-scrollbar-fixo');
   if (tabelaWrap) tabelaWrap.style.display = modo === 'tabela' ? 'block' : 'none';
