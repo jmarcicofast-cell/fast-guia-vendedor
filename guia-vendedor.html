@@ -2567,7 +2567,6 @@ function pdCarteira(ativo, inativo, novo) { pdBarra('pd-cart-bar', [ativo, inati
 function pdResumoTexto(dataISO) {
   var brl = function(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
   var qtd = function(n) { return Number(n || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); };
-  var dois = function(n) { return n < 10 ? '0' + n : String(n); };
   var valor = function(p) {
     var it = itensDoPedidoAco(p);
     if (p.itens && it.length) return it.reduce(function(s, x) { return s + Math.round(numSafe(x.qtd) * numSafe(x.vUnit) * 100) / 100; }, 0);
@@ -2583,41 +2582,47 @@ function pdResumoTexto(dataISO) {
 
   var codPorNome = {};
   (typeof allProducts !== 'undefined' ? allProducts : []).forEach(function(pr) { if (pr.codigo && !codPorNome[pr.nome]) codPorNome[pr.nome] = pr.codigo; });
-  var blocos = [], acoTotal = 0, acoPecas = 0;
+  // Aço somado por item (mesmo produto em vários chamados vira uma linha só)
+  var porItem = {}, acoTotal = 0, acoPecas = 0, acoPedidos = 0;
   peds.forEach(function(p) {
-    var linhas = [];
+    var teve = false;
     itensDoPedidoAco(p).forEach(function(it) {
       if (!itemEhAco(it)) return;
       var v = Math.round(numSafe(it.qtd) * numSafe(it.vUnit) * 100) / 100;
       var nome = String(it.material || '(sem nome)').trim();
       var cod = String(it.codigo || codPorNome[nome] || '').trim();
-      acoTotal += v; acoPecas += numSafe(it.qtd);
-      linhas.push('· ' + qtd(it.qtd) + ' un. – ' + nome + (cod ? ' — ' + cod : '') + ' — AÇO: ' + brl(v));
+      var k = cod + '|' + nome;
+      if (!porItem[k]) porItem[k] = { nome: nome, cod: cod, q: 0, v: 0 };
+      porItem[k].q += numSafe(it.qtd); porItem[k].v += v;
+      acoTotal += v; acoPecas += numSafe(it.qtd); teve = true;
     });
-    if (linhas.length) {
-      var id = String(p.chamado || '').trim();
-      blocos.push('📌 Chamado: ' + (id ? '#' + id : (p.empresa || p.cliente || 'sem chamado')) + '\n' + linhas.join('\n'));
-    }
+    if (teve) acoPedidos++;
   });
+  var itensAco = Object.keys(porItem).map(function(k) { return porItem[k]; }).sort(function(a, b) { return b.q - a.q; });
+  var diaSemana = new Date(dataISO + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' });
 
   var t = [];
-  t.push('📊 *RESUMO GERAL DO DIA – ' + op + ' – ' + dataBR + '*');
+  t.push('*Resumo do dia | ' + (op.charAt(0) + op.slice(1).toLowerCase()).replace('Atacado ba', 'Atacado BA') + '*');
+  t.push(dataBR + ', ' + diaSemana);
   t.push('');
-  t.push('🚚 Trucks: ' + dois(truck));
-  t.push('🚛 Carretas: ' + dois(carreta));
-  if (outros > 0) t.push('📦 Outros pedidos: ' + dois(outros));
-  t.push('📦 Total de cargas vendidas: ' + dois(truck + carreta));
+  t.push('*Cargas*');
+  t.push('Truck: ' + truck);
+  t.push('Carreta: ' + carreta);
+  if (outros > 0) t.push('Outros: ' + outros);
+  t.push('Total: ' + (truck + carreta) + ((truck + carreta) === 1 ? ' carga' : ' cargas'));
   t.push('');
-  t.push('💰 *TOTAL VENDIDO NO DIA: ' + brl(total) + '*');
+  t.push('*Vendido no dia*');
+  t.push(brl(total) + ' em ' + peds.length + (peds.length === 1 ? ' pedido' : ' pedidos'));
   t.push('');
-  t.push('📊 *VENDAS DE AÇO – ' + op + ' | ' + dataBR + '*');
-  t.push('');
-  if (blocos.length) {
-    t.push(blocos.join('\n\n'));
+  t.push('*Aço*');
+  if (itensAco.length) {
+    t.push('Total: ' + qtd(acoPecas) + ' peças | ' + brl(acoTotal));
     t.push('');
-    t.push('🔷 *Total de aço no dia: ' + qtd(acoPecas) + ' peças — ' + brl(acoTotal) + '*');
+    itensAco.forEach(function(it) {
+      t.push('- ' + qtd(it.q) + ' un. ' + it.nome + (it.cod ? ' (' + it.cod + ')' : '') + ': ' + brl(it.v));
+    });
   } else {
-    t.push('Nenhuma venda de aço no dia.');
+    t.push('Sem venda de aço no dia.');
   }
   return t.join('\n');
 }
