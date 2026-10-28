@@ -13297,6 +13297,14 @@ function negSalvar() {
       dbRef('negociacoes/' + vend + '/' + id).set(dados).then(fecharNegModal);
     });
   } else {
+    if (typeof dcDonoOutro === 'function' && dados.telefone) {
+      dcDonoIni();
+      var dF = dcDonoOutro({ tel: dados.telefone }, vend);
+      if (dF && semPaineisGestao(currentUser)) { alert('Esse cliente já está com ' + rtNome(dF.vn) + ': ' + dF.txt + '.\nPara não duplicar o atendimento, a negociação não foi criada.'); return; }
+      if (dF && !confirm('Esse cliente já está com ' + rtNome(dF.vn) + ': ' + dF.txt + '.\nCriar mesmo assim para ' + rtNome(vend) + '?')) return;
+      var jaF = dcDonoMinhaNeg(dados.telefone, vend);
+      if (jaF && !confirm(rtNome(vend) + ' já tem uma negociação aberta com esse telefone (' + (jaF.empresa || '') + ').\nCriar outra mesmo assim?')) return;
+    }
     var novoId = 'neg_' + Date.now();
     dados.id = novoId;
     dados.dataCriacao = new Date().toISOString();
@@ -27247,6 +27255,7 @@ function dcInit() {
     dcInatIni();
     dcConcIni();
     dcDesqIni();
+    dcDonoIni();
   }
   dcRender();
 }
@@ -27492,6 +27501,7 @@ function dcEqLigar(i) {
 // selo no menu e lembrete enquanto o guia está aberto, mesmo fora da aba Discador
 function dcEqLembrete() {
   if (!currentUser || typeof dbRef !== 'function') return;
+  try { dcDonoIni(); } catch (e) {}
   if (!DC.eqOuvindo) {
     DC.eqOuvindo = true;
     dbRef('discador/listas').on('value', function(snap) {
@@ -27525,6 +27535,97 @@ function dcEqToast(n) {
 setInterval(function() { try { dcEqLembrete(); } catch (e) {} }, 60000);
 setTimeout(function() { try { dcEqLembrete(); } catch (e) {} }, 8000);
 function dcEqPrazo(c) { var d = Math.ceil((c.assumidoEm + DC_ASSUMIR_DIAS * 864e5 - Date.now()) / 864e5); return d <= 1 ? 'volta para a equipe amanhã' : 'volta para a equipe em ' + d + ' dias'; }
+/* ══ CLIENTE COM OUTRO VENDEDOR (28/10/2026) ══
+   Pelo telefone, um cliente "está com" um vendedor quando ele:
+   1) tem negociação aberta com o cliente (Interessado, Orçamento enviado, Negociando);
+   2) assumiu o cliente na lista da equipe (dentro dos 10 dias) ou fechou pedido por ela;
+   3) está com o cliente na roda de inativos;
+   4) recebeu o cliente numa lista direcionada, dentro do prazo;
+   5) tem retorno agendado com o cliente;
+   6) falou com o cliente nos últimos DCO_DIAS_FALOU dias (Atendeu, Retornar, Levou para o funil, Pedido).
+   Para os outros vendedores o cliente sai da fila, o botão de ligar some, não entra em lista nova e não abre
+   negociação nova. A gestora e a diretoria veem o aviso, mas podem ligar. */
+var DCO_DIAS_FALOU = 7;
+var DCO = { neg: {}, ret: {}, ligado: null, ver: 0, cache: null };
+var DCO_PRIO = { neg: 1, ganho: 2, assumido: 3, inat: 4, dir: 5, ret: 6, falou: 7 };
+function dcDonoIni() {
+  if (!currentUser || DCO.ligado === currentUser || typeof dbRef !== 'function') return; DCO.ligado = currentUser;
+  var vs = (typeof CK_EQUIPE !== 'undefined' ? CK_EQUIPE : []).slice(); if (vs.indexOf(currentUser) < 0) vs.push(currentUser);
+  vs.forEach(function(vn) {
+    dbRef('negociacoes/' + vn).on('value', function(snap) { var v = (snap && snap.val()) || {}; DCO.neg[vn] = Object.keys(v).map(function(k) { return v[k]; }).filter(Boolean); DCO.ver++; });
+    dbRef('discador/estado/' + vn + '/retornos').on('value', function(snap) { var v = (snap && snap.val()) || []; DCO.ret[vn] = Array.isArray(v) ? v.filter(Boolean) : Object.values(v).filter(Boolean); DCO.ver++; });
+  });
+}
+function dcDonoIdx() {
+  var L = (typeof DC !== 'undefined' && DC.todasListas) || [], R = (typeof DCI !== 'undefined' && DCI.recs) || {};
+  var c = DCO.cache; if (c && c.l === L && c.r === R && c.v === DCO.ver) return c.idx;
+  var idx = {}, agora = Date.now(), dt = function(t) { return new Date(t).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); };
+  var add = function(tel, vn, tipo, txt, em) { var k = dcMicroNum(tel); if (!k || dcDig(k).length < 10 || !vn) return; (idx[k] = idx[k] || []).push({ vn: vn, tipo: tipo, txt: txt, em: em || 0, prio: DCO_PRIO[tipo] }); };
+  Object.keys(DCO.neg).forEach(function(vn) { DCO.neg[vn].forEach(function(n) {
+    if (!n || !n.telefone || ['contato', 'orcamento', 'negociando'].indexOf(n.etapa) < 0) return;
+    add(n.telefone, n.vendedor || vn, 'neg', 'tem negociação aberta (' + ((typeof FN_NOME !== 'undefined' && FN_NOME[n.etapa]) || n.etapa) + ')' + (n.empresa ? ' com ' + n.empresa : ''), n.etapaDesde ? new Date(n.etapaDesde).getTime() : 0);
+  }); });
+  L.forEach(function(l) {
+    var dirAtiva = l.para && !l.encerrada && typeof dcFimPrazo === 'function' && agora < dcFimPrazo(l);
+    l.contatos.forEach(function(ct) {
+      if (!ct || !ct.tel) return;
+      if (l.equipe) {
+        if (ct.ganhoPor) add(ct.tel, ct.ganhoPor, 'ganho', 'fechou pedido com o cliente', ct.ganhoEm);
+        else if (ct.dono && ct.assumidoEm && agora - ct.assumidoEm < DC_ASSUMIR_DIAS * 864e5) add(ct.tel, ct.dono, 'assumido', 'assumiu o cliente na lista da equipe em ' + dt(ct.assumidoEm), ct.assumidoEm);
+      }
+      if (dirAtiva && !ct.repassado) add(ct.tel, l.para, 'dir', 'recebeu o cliente numa lista direcionada (prazo até ' + dt(dcFimPrazo(l)) + ')', l.inicio || l.criado);
+      (ct.hist || []).forEach(function(h) {
+        if (!h || !h.por || !h.em || agora - h.em > DCO_DIAS_FALOU * 864e5 || !/^(atendeu|retornar|funil|pedido)$/.test(h.res || '')) return;
+        add(ct.tel, h.por, 'falou', 'falou com o cliente em ' + dt(h.em), h.em);
+      });
+    });
+  });
+  Object.keys(R).forEach(function(k) { var r = R[k]; if (r && r.status === 'andamento' && r.vn && r.tel) add(r.tel, r.vn, 'inat', 'está com o cliente na roda de inativos', r.desde); });
+  Object.keys(DCO.ret).forEach(function(vn) { DCO.ret[vn].forEach(function(r) {
+    if (r && r.tel) add(r.tel, vn, 'ret', 'tem retorno agendado com o cliente' + (r.quando ? ' para ' + new Date(r.quando).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''), r.quando ? new Date(r.quando).getTime() : 0);
+  }); });
+  Object.keys(idx).forEach(function(k) { idx[k].sort(function(a, b) { return a.prio - b.prio || b.em - a.em; }); });
+  DCO.cache = { l: L, r: R, v: DCO.ver, idx: idx };
+  return idx;
+}
+// quem está com o cliente (o vínculo mais forte), ou null
+function dcDonoDe(x) { if (!x || !x.tel) return null; dcDonoIni(); var l = dcDonoIdx()[dcMicroNum(x.tel)]; return l && l.length ? l[0] : null; }
+// o cliente está com outra pessoa (que não 'quem')? Se 'quem' também tem vínculo igual ou mais forte, é dele.
+function dcDonoOutro(x, quem) {
+  quem = quem || currentUser; if (!x || !x.tel) return null; dcDonoIni();
+  var l = dcDonoIdx()[dcMicroNum(x.tel)]; if (!l || !l.length) return null;
+  var meu = l.find(function(e) { return e.vn === quem; }), outro = l.find(function(e) { return e.vn !== quem; });
+  if (!outro) return null;
+  if (meu && meu.prio <= outro.prio) return null;
+  return outro;
+}
+// vendedor e líder ficam bloqueados; gestora, diretoria e administrativo só são avisados
+function dcDonoBloq(x) { return !!dcDonoOutro(x) && (typeof semPaineisGestao !== 'function' || semPaineisGestao(currentUser)); }
+function dcDonoNome(d) { return dcEsc(typeof rtNome === 'function' ? rtNome(d.vn) : d.vn); }
+function dcDonoFaixaHtml(a) {
+  var d = dcDonoOutro(a); if (!d) return '';
+  var bloq = dcDonoBloq(a);
+  return '<div class="dc-card dc-alerta" style="margin:0 0 12px;padding:12px 14px;border-left:4px solid #2F6FB3"><b style="color:#2F6FB3">Cliente com ' + dcDonoNome(d) + '</b>' +
+    '<div class="dc-sub">' + dcDonoNome(d) + ' ' + dcEsc(d.txt) + '. ' + (bloq ? 'Para não duplicar o atendimento, a ligação fica bloqueada. Se precisar, fale com ' + dcDonoNome(d) + ' ou com a gestão.' : 'Você é da gestão e pode ligar, mas combine com ' + dcDonoNome(d) + '.') + '</div></div>';
+}
+function dcDonoTagHtml(c) { var d = dcDonoOutro(c); return d ? '<div class="dc-sub" style="color:#2F6FB3;font-weight:600;white-space:nowrap" title="' + dcEsc(rtNome(d.vn) + ' ' + d.txt) + '">com ' + dcDonoNome(d) + '</div>' : ''; }
+// separa da lista o que já está com outro vendedor (para não duplicar lead)
+function dcDonoFiltrar(contatos, quem) {
+  var ok = [], fora = [];
+  (contatos || []).forEach(function(c) { var d = dcDonoOutro(c, quem); if (d) fora.push({ c: c, d: d }); else ok.push(c); });
+  return { ok: ok, fora: fora };
+}
+function dcDonoResumo(fora) {
+  if (!fora.length) return '';
+  var por = {}; fora.forEach(function(f) { por[f.d.vn] = (por[f.d.vn] || 0) + 1; });
+  return ' · ' + fora.length + ' já ' + (fora.length > 1 ? 'estão' : 'está') + ' com outro vendedor e não ' + (fora.length > 1 ? 'entraram' : 'entrou') + ' (' + Object.keys(por).map(function(v) { return rtNome(v) + ': ' + por[v]; }).join(', ') + ')';
+}
+// negociação aberta minha com o mesmo telefone (para não abrir outra igual)
+function dcDonoMinhaNeg(tel, quem) {
+  quem = quem || currentUser; var k = dcMicroNum(tel); if (!k || dcDig(k).length < 10) return null;
+  return (DCO.neg[quem] || []).find(function(n) { return n && n.telefone && dcMicroNum(n.telefone) === k && ['contato', 'orcamento', 'negociando'].indexOf(n.etapa) >= 0; }) || null;
+}
+
 // contato que a fila não mostra: da equipe com outro/ganho · repassado · já resolvido (22/10/2026) · concorrente bloqueado
 function dcPula(l, c, p) {
   var man = DC.manual && DC.manual.lista === l.id && DC.manual.p === p;
@@ -27533,6 +27634,7 @@ function dcPula(l, c, p) {
   if (l.inatPara && c && c.funil) return true;
   if (!l.equipe && dcResolvido(c, dcRodada(l)) && !man) return true;
   if (dcBarrado(c)) return true;
+  if (dcDonoOutro(c)) return true; // 28/10/2026: cliente com outro vendedor
   return false;
 }
 function dcPos() {
@@ -27604,6 +27706,7 @@ function dcAssumir(i) {
   var st = dcEqStatus(l.contatos[i]);
   if (st === 'outro') { dcAviso('Outro vendedor já assumiu este cliente'); return; }
   if (st === 'ganho') { dcAviso('Este cliente já fechou pedido'); return; }
+  var dE = dcDonoOutro(l.contatos[i]); if (dE && semPaineisGestao(currentUser)) { dcAviso('Não dá para assumir: o cliente está com ' + rtNome(dE.vn) + ' (' + dE.txt + ')'); return; }
   Promise.resolve(dbRef('discador/listas/' + l.id + '/contatos/' + i).transaction(function(c) {
     if (!c) return c;
     if (c.ganhoPor || (c.dono && c.dono !== currentUser && c.assumidoEm && Date.now() - c.assumidoEm < DC_ASSUMIR_DIAS * 864e5)) return; // alguém foi mais rápido
@@ -27697,7 +27800,7 @@ function dcVDiscar() {
   if (l && l.para) h += dcPrazoBanner(l);
   if (l && l.inatPara) h += dcInatBanner(l);
   if (a) {
-    h += dcConcFaixaHtml(a) + dcDesqFaixaHtml(a);
+    h += dcConcFaixaHtml(a) + dcDesqFaixaHtml(a) + dcDonoFaixaHtml(a);
     h += '<div class="dc-eyebrow">' + (DC.avulso ? (DC.avulso.retIdx != null ? 'Retorno agendado' : 'Ligação avulsa') : 'Contato ' + (pos + 1) + ' de ' + total) + '</div>' +
       '<input class="dc-nome dc-edit" value="' + dcEsc(a.nome || '') + '" id="dc-enome" placeholder="Nome do contato ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
       '<input class="dc-emp dc-edit" value="' + dcEsc(a.empresa || '') + '" id="dc-eemp" placeholder="Empresa / loja ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
@@ -27712,7 +27815,7 @@ function dcVDiscar() {
       (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') + '</div>' +
       (dcSemDDD(a.tel) ? '<div class="dc-prazo quase" style="margin:-4px 0 12px"><b>Número sem DDD</b> — a ligação não completa. Coloque o DDD no número acima e aperte <b>Enter</b> para salvar.' +
         (DC.pausaDDD ? '<div class="dc-sub">⏸️ A discagem automática parou aqui. Corrigindo o número, ela continua sozinha; se não souber o DDD, clique em <b>Pular</b>.</div>' : '') + '</div>' : '') +
-      '<div class="dc-row" style="gap:12px 16px">' + (dcConcBloq(a) ? '<span class="dc-sub" style="color:#C2413B;font-weight:600">Ligação bloqueada: concorrente</span>' : dcDesqDe(a) ? '<span class="dc-sub" style="color:#6B2737;font-weight:600">Ligação bloqueada: lead desqualificado</span>' : dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live)) +
+      '<div class="dc-row" style="gap:12px 16px">' + (dcConcBloq(a) ? '<span class="dc-sub" style="color:#C2413B;font-weight:600">Ligação bloqueada: concorrente</span>' : dcDesqDe(a) ? '<span class="dc-sub" style="color:#6B2737;font-weight:600">Ligação bloqueada: lead desqualificado</span>' : dcDonoBloq(a) ? '<span class="dc-sub" style="color:#2F6FB3;font-weight:600">Ligação bloqueada: cliente com ' + dcDonoNome(dcDonoOutro(a)) + '</span>' : dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live)) +
       '<span class="dc-timer' + (live ? ' live' : '') + '" id="dc-timer">' + dcClock(dcSeg()) + '</span>' +
       (live ? '<button class="dc-btn dc-deslig" onclick="dcDesliguei()">Desliguei <span class="dc-kbd">D</span></button>' : (DC.call ? '<span class="dc-sub">Ligação encerrada · marque o resultado</span>' : '')) + '</div>' +
       '<div class="dc-eyebrow" style="margin-top:16px">Como foi a ligação?</div><div class="dc-res">' +
@@ -27766,7 +27869,7 @@ function dcFunilContatos(quem) {
   var out = [];
   (DC.todasListas || []).forEach(function(l) {
     l.contatos.forEach(function(c, i) {
-      if (!c || !c.tel || dcBarrado(c)) return;
+      if (!c || !c.tel || dcBarrado(c) || (quem !== 'todos' && dcDonoOutro(c, quem))) return;
       if (l.equipe) { if (!(c.dono && (quem === 'todos' || c.dono === quem) && dcEqStatus(c) !== 'livre')) return; }
       else { if (c.repassado) return; if (quem !== 'todos' && (l.inatPara ? l.inatPara !== quem : (l.criadoPor !== quem && l.para !== quem))) return; }
       out.push({ c: c, i: i, l: l });
@@ -28329,6 +28432,9 @@ function capImportar() {
     var c = x.c; return { nome: '', empresa: c.nome, tel: dcDig(c.tel), cidade: c.cidade || '', uf: c.uf || '', categoria: c.categoria || '', obs: [c.categoria, [c.cidade, c.uf].filter(Boolean).join(' - ')].filter(Boolean).join(' · '), origem: 'google' };
   });
   if (!contatos.length) return;
+  var fdC = dcDonoFiltrar(contatos, CAP.vend || currentUser); contatos = fdC.ok;
+  if (!contatos.length) { dcAviso('Todos esses clientes já estão com outro vendedor' + dcDonoResumo(fdC.fora)); return; }
+  if (fdC.fora.length) setTimeout(function() { dcAviso(fdC.fora.length + ' contato' + (fdC.fora.length > 1 ? 's' : '') + ' ficaram de fora' + dcDonoResumo(fdC.fora).replace(/^ · \d+ /, ' · ')); }, 2800);
   var fim = function(id, n) { capResponder(); CAP.dados = null; var m = document.getElementById('cap-modal'); if (m) m.remove(); dcEscolherLista(id); DC.aba = 'listas'; dcRender(); dcAviso(n + ' contato' + (n > 1 ? 's' : '') + ' no discador'); };
   if (CAP.destino === 'nova') {
     var nome = (novaEl && novaEl.value.trim()) || 'Google · captura';
@@ -28879,14 +28985,15 @@ function dcTabelaContatos(l, leitura) {
         : st === 'outro' ? '<div class="dc-sub">com ' + nm(c.dono) + ' · ' + dcEqPrazo(c) + '</div>'
         : st === 'meu' ? '<div class="dc-sub">com você · ' + dcEqPrazo(c) + '</div>' + (dcEqAtrasado(c) ? '<div class="dc-sub" style="color:#C2413B;font-weight:600">sem contato há ' + dcEqDiasSem(c) + ' dia(s): ligue hoje</div>' : '<div class="dc-sub">próximo contato até ' + new Date(dcEqUltimo(c) + DC_RETORNO_DIAS * 864e5).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + '</div>')
         : (c.por ? '<div class="dc-sub">livre · indicado por ' + nm(c.por) + '</div>' : '<div class="dc-sub">livre</div>');
-      return '<tr' + (l.equipe && /outro|ganho/.test(st) ? ' class="feito"' : (i < feitos ? ' class="feito"' : (i === feitos ? ' class="prox"' : ''))) + '><td>' + (i + 1) + '</td><td>' + ed('nome') + dcConcTagHtml(c) + dcDesqTagHtml(c) + stTxt + '</td><td>' + ed('empresa') + '</td><td class="tel">' + dcEsc(dcTel(c.tel)) + '</td>' +
-        (leitura || dcBarrado(c) ? '<td></td>' : '<td style="white-space:nowrap"><button class="dc-btn dc-mini" title="Discar a partir deste contato" onclick="dcDiscarDaqui(\'' + lid + '\',' + i + ')">Ligar</button>' +
+      return '<tr' + (l.equipe && /outro|ganho/.test(st) ? ' class="feito"' : (i < feitos ? ' class="feito"' : (i === feitos ? ' class="prox"' : ''))) + '><td>' + (i + 1) + '</td><td>' + ed('nome') + dcConcTagHtml(c) + dcDesqTagHtml(c) + dcDonoTagHtml(c) + stTxt + '</td><td>' + ed('empresa') + '</td><td class="tel">' + dcEsc(dcTel(c.tel)) + '</td>' +
+        (leitura || dcBarrado(c) || dcDonoBloq(c) ? '<td></td>' : '<td style="white-space:nowrap"><button class="dc-btn dc-mini" title="Discar a partir deste contato" onclick="dcDiscarDaqui(\'' + lid + '\',' + i + ')">Ligar</button>' +
           (l.equipe ? (st === 'livre' ? ' <button class="dc-btn dc-mini dc-assumir" onclick="dcAssumir(' + i + ')">Assumir</button>' : st === 'meu' ? ' <button class="dc-btn dc-mini" onclick="dcLiberar(' + i + ')">Devolver</button>' : '') : ' <button class="dc-btn dc-mini" title="Disponibilizar este contato para a equipe" onclick="dcParaEquipe(DC.listas.find(function(x){return x.id===\'' + lid + '\'}).contatos[' + i + '])">Equipe</button>') + '</td>') + '</tr>';
     }).join('') + '</tbody></table></div><div class="dc-sub" style="margin:4px 0 14px">' + (leitura ? 'Lista de outro vendedor: só leitura.' : 'Você já trabalhou ' + Math.min(feitos, l.contatos.length) + ' de ' + l.contatos.length + '. Clique no nome ou na loja para editar.') + '</div>';
 }
 // lista única "Contatos da equipe": todos veem e discam; cada um no seu ritmo
 function dcParaEquipe(c) {
   if (!c || !c.tel) return;
+  var dP = dcDonoOutro(c); if (dP && semPaineisGestao(currentUser)) { dcAviso('Esse cliente está com ' + rtNome(dP.vn) + ': ' + dP.txt); return; }
   var l = (DC.todasListas || []).find(function(x) { return x.equipe; });
   var novo = { nome: c.nome || '', empresa: c.empresa || '', tel: dcDig(c.tel), por: currentUser };
   if (!l) {
@@ -28918,10 +29025,12 @@ function dcSalvarLista() {
     var l = DC.listas.find(function(x) { return x.id === dest; }), novos = dcParse(document.getElementById('dc-ltxt').value);
     if (!l) { dcAviso('Lista não encontrada'); return; }
     if (!novos.length) { dcAviso('Nenhum telefone reconhecido. Confira o formato.'); return; }
+    var fd = dcDonoFiltrar(novos, l.para || l.inatPara || l.criadoPor || currentUser); novos = fd.ok;
+    if (!novos.length) { dcAviso('Todos esses clientes já estão com outro vendedor' + dcDonoResumo(fd.fora)); return; }
     var r = dcJuntar(l, novos); if (!r.add) { dcAviso('Esses números já estão na lista'); return; }
     dcGravarContatos(l, r.contatos).then(function() {
       var ccA = dcConcContar(novos);
-      dcAviso(r.add + ' cliente' + (r.add > 1 ? 's' : '') + ' adicionado' + (r.add > 1 ? 's' : '') + (ccA.b ? ' · ' + ccA.b + ' concorrente' + (ccA.b > 1 ? 's' : '') + ' bloqueado' + (ccA.b > 1 ? 's' : '') : '') + (ccA.a ? ' · ' + ccA.a + ' com nome de concorrente' : '') + (r.rep ? ' · ' + r.rep + ' repetido' + (r.rep > 1 ? 's' : '') + ' ignorado' + (r.rep > 1 ? 's' : '') : ''));
+      dcAviso(r.add + ' cliente' + (r.add > 1 ? 's' : '') + ' adicionado' + (r.add > 1 ? 's' : '') + (ccA.b ? ' · ' + ccA.b + ' concorrente' + (ccA.b > 1 ? 's' : '') + ' bloqueado' + (ccA.b > 1 ? 's' : '') : '') + (ccA.a ? ' · ' + ccA.a + ' com nome de concorrente' : '') + dcDonoResumo(fd.fora) + (r.rep ? ' · ' + r.rep + ' repetido' + (r.rep > 1 ? 's' : '') + ' ignorado' + (r.rep > 1 ? 's' : '') : ''));
       document.getElementById('dc-ltxt').value = ''; dcPrevia();
     });
     return;
@@ -28929,6 +29038,9 @@ function dcSalvarLista() {
   var nome = (document.getElementById('dc-lnome').value || '').trim(), contatos = dcParse(document.getElementById('dc-ltxt').value);
   if (!nome) { dcAviso('Dê um nome para a lista'); return; }
   if (!contatos.length) { dcAviso('Nenhum telefone reconhecido. Confira o formato.'); return; }
+  var paraPre = (document.getElementById('dc-lpara') || {}).value || '';
+  var fdN = dcDonoFiltrar(contatos, paraPre || currentUser); contatos = fdN.ok;
+  if (!contatos.length) { dcAviso('Todos esses clientes já estão com outro vendedor' + dcDonoResumo(fdN.fora)); return; }
   var id = 'l' + Date.now().toString(36);
   var obj = { nome: nome, contatos: contatos.slice(0, 5000), criado: Date.now(), criadoPor: currentUser };
   var paraEl = document.getElementById('dc-lpara'), para = paraEl ? paraEl.value : '';
@@ -28938,9 +29050,9 @@ function dcSalvarLista() {
     obj.para = para; obj.prazoDias = dias; obj.inicio = Date.now();
   }
   dbRef('discador/listas/' + id).set(obj).then(function() {
-    if (para) { dcAviso('Lista direcionada para ' + (typeof rtNome === 'function' ? rtNome(para) : para) + ' · ' + obj.prazoDias + ' dias de prazo'); DC.aba = 'listas'; dcRender(); return; }
+    if (para) { dcAviso('Lista direcionada para ' + (typeof rtNome === 'function' ? rtNome(para) : para) + ' · ' + obj.prazoDias + ' dias de prazo' + dcDonoResumo(fdN.fora)); DC.aba = 'listas'; dcRender(); return; }
     var ccN = dcConcContar(contatos);
-    dcAviso('Lista salva com ' + contatos.length + ' contatos' + (ccN.b ? ' · ' + ccN.b + ' concorrente' + (ccN.b > 1 ? 's' : '') + ' (serão pulados)' : '') + (ccN.a ? ' · ' + ccN.a + ' com nome de concorrente' : '')); dcEscolherLista(id); DC.aba = 'discar'; dcRender();
+    dcAviso('Lista salva com ' + contatos.length + ' contatos' + dcDonoResumo(fdN.fora) + (ccN.b ? ' · ' + ccN.b + ' concorrente' + (ccN.b > 1 ? 's' : '') + ' (serão pulados)' : '') + (ccN.a ? ' · ' + ccN.a + ' com nome de concorrente' : '')); dcEscolherLista(id); DC.aba = 'discar'; dcRender();
   }).catch(function(e) { dcAviso('Não salvou: ' + (e && e.message)); });
 }
 // junta contatos novos no fim da lista, sem repetir telefone (a fila de quem já discou não muda)
@@ -29271,6 +29383,7 @@ function dcInatImportar() {
     if (dcBarrado(c)) { rep++; return; }
     if (upd[k] || tels[dcMicroNum(c.tel)] || (atual && (atual.status === 'andamento' || atual.status === 'captado'))) { rep++; return; }
     var b = base[k] || {}, natural = c.vn || (modo && modo !== 'auto' ? modo : '') || b.vn || '';
+    var dI = dcDonoDe(c); if (dI && dI.tipo !== 'inat' && cfg.vends.indexOf(dI.vn) >= 0) natural = dI.vn; // já está com alguém: fica com ele
     var dono = cfg.vends.indexOf(natural) >= 0 ? natural : cfg.vends.slice().sort(function(x, y) { return (carga[x] || 0) - (carga[y] || 0); })[0];
     if (!dono) return;
     var rec = { k: k, empresa: c.empresa || b.empresa || dcTel(c.tel), contato: c.nome || b.contato || '', tel: dcDig(c.tel), uf: b.uf || '', ultima: b.ultima || '', vnPedidos: natural,
@@ -29347,6 +29460,16 @@ function dcVInativos() {
 }
 // "Levou para o funil": abre a negociação na aba Negociações (etapa Orçamento enviado)
 function dcAbrirNegociacao(a, obs, quando, listaNome, etapa, motivo) {
+  dcDonoIni();
+  var dN = dcDonoOutro(a);
+  if (dN && semPaineisGestao(currentUser)) { dcAviso('Não abriu: o cliente está com ' + rtNome(dN.vn) + ' (' + dN.txt + ')'); return; }
+  var ja = dcDonoMinhaNeg(a.tel);
+  if (ja) { // já existe negociação aberta minha com esse telefone: anota nela em vez de duplicar
+    var mudaEtapa = etapa && etapa !== ja.etapa && ['fechado', 'perdido'].indexOf(etapa) >= 0;
+    negAnotar(currentUser, ja.id, 'Novo contato pelo Discador' + (obs ? ': ' + obs : '') + (listaNome ? ' (lista ' + listaNome + ')' : ''), mudaEtapa ? { etapa: etapa, etapaDesde: new Date().toISOString() } : (quando ? { proximaData: String(quando).slice(0, 10) } : null))
+      .then(function() { dcAviso('Esse cliente já tem negociação aberta: anotação adicionada nela'); });
+    return;
+  }
   var id = 'neg_' + Date.now(), agora = new Date().toISOString();
   var n = { id: id, empresa: a.empresa || a.nome || dcTel(a.tel), contato: a.nome || '', telefone: dcTel(a.tel), estado: '', valorEstimado: 0, etapa: etapa || 'orcamento',
     proximaAcao: obs || '', proximaData: quando ? String(quando).slice(0, 10) : '', motivoPerda: motivo || '', motivoCategoria: '', motivoOutro: '', concorrente: '', valorConcorrente: 0,
@@ -29368,6 +29491,7 @@ function dcGravarContatos(l, contatos) {
 function dcAddNaLista(id) { DC.listaDestino = id; DC.aba = 'listas'; dcRender(); setTimeout(function() { var t = document.getElementById('dc-ltxt'); if (t) { t.scrollIntoView({ block: 'center' }); t.focus(); } }, 50); }
 function dcSalvarAvulsoNaLista() {
   var a = DC.avulso, l = dcLista(); if (!a || !l) return;
+  var dA = dcDonoOutro(a, l.para || l.criadoPor || currentUser); if (dA) { dcAviso('Esse cliente está com ' + rtNome(dA.vn) + ': ' + dA.txt); return; }
   var r = dcJuntar(l, [{ nome: a.nome || '', empresa: a.empresa || '', tel: dcDig(a.tel) }]);
   if (!r.add) { dcAviso('Esse número já está na lista ' + l.nome); return; }
   dcGravarContatos(l, r.contatos).then(function() { dcAviso('Adicionado à lista ' + l.nome); });
