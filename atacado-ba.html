@@ -1163,6 +1163,10 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>
     Discador
   </button>
+  <button class="nav-btn" id="nav-agenda" draggable="true" data-nav-id="agenda" onclick="showTab('agenda',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/><rect x="7" y="12" width="4" height="4" rx="1"/></svg>
+    Agenda
+  </button>
   <button class="nav-btn" id="nav-quadro" draggable="true" data-nav-id="quadro" onclick="showTab('quadro',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6.5" y="6.5" width="4" height="10" rx="1"/><rect x="13.5" y="6.5" width="4" height="6" rx="1"/></svg>
     Quadro
@@ -3185,6 +3189,10 @@ function pdResumoCopiar() {
 <!-- ══ RECONHECIMENTO ══ -->
 <div id="tab-discador" class="tab-content">
   <div class="page-section" style="max-width:100%;"><div id="dc-root"></div></div>
+</div>
+
+<div id="tab-agenda" class="tab-content">
+  <div class="page-section" style="max-width:100%;"><div id="agd-root"></div></div>
 </div>
 
 <div id="tab-rota" class="tab-content">
@@ -15163,6 +15171,8 @@ function navAplicarOrdemSalva(){
     var el = nav.querySelector('.nav-btn[data-nav-id="'+id+'"]');
     if (el) nav.appendChild(el);
   });
+  // abas novas que ainda não estavam na ordem salva (28/10/2026: Agenda) ficam logo depois do Discador
+  if (salvo.indexOf('agenda') < 0) { var ag = nav.querySelector('.nav-btn[data-nav-id="agenda"]'), dc = nav.querySelector('.nav-btn[data-nav-id="discador"]'); if (ag && dc) dc.after(ag); }
 }
 
 function navSetupDragDrop(){
@@ -18509,6 +18519,7 @@ function showTab(name, btn) {
   if (name === 'minhasmetas') mmInit();
   if (name === 'rota' && typeof rtInit === 'function') rtInit();
   if (name === 'discador' && typeof dcInit === 'function') dcInit();
+  if (name === 'agenda' && typeof agdInit === 'function') agdInit();
   if (name === 'shopping' && typeof spInit === 'function') spInit();
   if (name === 'abastecimento' && typeof abInit === 'function') abInit();
   if (name === 'central' && typeof caInit === 'function') caInit();
@@ -26323,7 +26334,7 @@ var AC_PAGINAS = [
   ['minhasmetas', 'Minhas Metas'], ['tabela', 'Tabela de Produtos'], ['empresa', 'Empresa'], ['pedidos', 'Pedidos'],
   ['clientes', 'Base de Clientes'], ['abastecimento', 'Pedidos abertos'], ['central', 'Central Abast.'],
   ['shopping', 'Shopping de Preços'], ['treinamentos', 'Treinamentos'], ['reconhecimento', 'Ranking'],
-  ['rota', 'Rota da Meta'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
+  ['rota', 'Rota da Meta'], ['agenda', 'Agenda'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
   ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['parana', 'Plano PR'], ['rotina', 'Minha Rotina']
 ];
 var AC_PERFIS = [
@@ -29333,5 +29344,683 @@ setTimeout(appMostrarBotao, 1500);
 #tab-abastecimento .ab-card .l { color: var(--muted) !important; font-weight: 600 !important; }
 #tab-abastecimento .ab-card:nth-child(2) .n { color: var(--acc-txt) !important; }
 </style>
+<style>
+/* ══ AGENDA (28/10/2026) ══ */
+#agd-root{color:var(--txt);font-size:13.5px}
+.agd-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:14px}
+.agd-top h2{margin:0 6px 0 0;font-size:22px;font-weight:700;color:var(--txt)}
+.agd-nav{display:flex;align-items:center;gap:4px}
+.agd-ico{width:34px;height:34px;border-radius:50%;border:none;background:none;color:var(--txt-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:18px}
+.agd-ico:hover{background:var(--surface-3)}
+.agd-lbl{font-size:18px;font-weight:600;color:var(--txt);min-width:0}
+.agd-sp{flex:1}
+.agd-btn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:8px;padding:7px 14px;cursor:pointer}
+.agd-btn:hover{background:var(--surface-3)}
+.agd-btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.agd-btn.pri:hover{filter:brightness(1.07);background:var(--acc)}
+.agd-btn.dng{color:#C2413B;border-color:#C2413B}
+.agd-vistas{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.agd-vistas button{border:none;background:var(--surface);color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:7px 12px;cursor:pointer}
+.agd-vistas button+button{border-left:1px solid var(--line)}
+.agd-vistas button.on{background:var(--acc-soft);color:var(--acc-txt)}
+.agd-sel{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:8px;padding:7px 10px}
+.agd-wrap{display:grid;grid-template-columns:236px minmax(0,1fr);gap:18px;align-items:start}
+.agd-side{display:flex;flex-direction:column;gap:16px}
+.agd-criar{align-self:flex-start;display:inline-flex;align-items:center;gap:10px;border:none;border-radius:16px;padding:14px 22px;font:inherit;font-weight:600;font-size:14px;cursor:pointer;background:var(--surface);color:var(--txt);box-shadow:var(--card-shadow)}
+.agd-criar b{font-size:22px;line-height:1;color:var(--acc-txt);font-weight:500}
+.agd-criar:hover{background:var(--surface-3)}
+.agd-mini{background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:12px}
+.agd-mini-h{display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:13px;margin-bottom:6px}
+.agd-mini-h .agd-ico{width:28px;height:28px;font-size:15px}
+.agd-mini-g{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;gap:2px}
+.agd-mini-g span{font-size:10.5px;color:var(--faint);font-weight:600;padding:2px 0}
+.agd-mini-g button{border:none;background:none;color:var(--txt-2);font:inherit;font-size:11.5px;width:28px;height:28px;margin:auto;border-radius:50%;cursor:pointer;position:relative}
+.agd-mini-g button:hover{background:var(--surface-3)}
+.agd-mini-g button.fora{color:var(--faint)}
+.agd-mini-g button.sel{background:var(--acc-soft);color:var(--acc-txt);font-weight:700}
+.agd-mini-g button.hoje{background:var(--acc);color:#fff;font-weight:700}
+.agd-mini-g button.tem::after{content:'';position:absolute;bottom:3px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:currentColor;opacity:.55}
+.agd-cals{background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:12px 14px}
+.agd-cals h4{margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.agd-cal{display:flex;align-items:center;gap:10px;padding:5px 0;cursor:pointer;font-size:13px;color:var(--txt-2);user-select:none}
+.agd-cal i{width:16px;height:16px;border-radius:4px;border:2px solid var(--c);flex:none;display:inline-flex;align-items:center;justify-content:center}
+.agd-cal.on i{background:var(--c)}
+.agd-cal.on i::after{content:'';width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.agd-main{background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);overflow:hidden;min-width:0}
+/* grade de horas (dia e semana) */
+.agd-scrollx{overflow-x:auto}
+.agd-tg{--hh:46px;min-width:0}
+.agd-tg.sem{min-width:640px}
+.agd-row{display:grid;grid-template-columns:58px repeat(var(--cols),minmax(0,1fr))}
+.agd-dh{text-align:center;padding:10px 4px 8px;cursor:pointer;border-left:1px solid var(--line)}
+.agd-dh small{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.agd-dh b{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;font-size:21px;font-weight:500;color:var(--txt);margin-top:2px}
+.agd-dh:hover b{background:var(--surface-3)}
+.agd-dh.hoje small{color:var(--acc-txt)}
+.agd-dh.hoje b{background:var(--acc);color:#fff}
+.agd-ad{border-bottom:1px solid var(--line-strong)}
+.agd-ad>div{border-left:1px solid var(--line);padding:2px 3px 4px;min-height:24px;display:flex;flex-direction:column;gap:2px}
+.agd-ad>div:first-child{border-left:none;font-size:10px;color:var(--faint);text-align:right;padding:6px 8px 0 0}
+.agd-chip{display:block;width:100%;text-align:left;border:none;border-radius:5px;padding:2px 7px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;background:var(--c);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agd-chip.leve{background:color-mix(in srgb,var(--c) 18%,var(--surface));color:var(--txt);border-left:3px solid var(--c);font-weight:500}
+.agd-body{position:relative;max-height:620px;overflow-y:auto}
+.agd-hrs{position:relative}
+.agd-hrs span{position:absolute;right:8px;font-size:10.5px;color:var(--faint);transform:translateY(-50%)}
+.agd-col{position:relative;border-left:1px solid var(--line);height:calc(var(--hh)*24);background-image:repeating-linear-gradient(to bottom,var(--line) 0,var(--line) 1px,transparent 1px,transparent var(--hh));cursor:cell}
+.agd-col.hoje{background-color:color-mix(in srgb,var(--acc) 4%,transparent)}
+.agd-agora{position:absolute;left:-1px;right:0;height:2px;background:#EA4335;z-index:3;pointer-events:none}
+.agd-agora::before{content:'';position:absolute;left:-6px;top:-5px;width:12px;height:12px;border-radius:50%;background:#EA4335}
+.agd-ev{position:absolute;border-radius:6px;padding:3px 7px;font-size:12px;line-height:1.3;overflow:hidden;cursor:pointer;background:var(--c);color:#fff;border:1px solid var(--surface);z-index:2}
+.agd-ev[data-arr]{touch-action:none}
+.agd-ev.fundo{z-index:1;opacity:.75;padding:2px 6px;font-size:11px}
+.agd-ev.fundo b{font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.agd-ev.fundo:hover{opacity:1}
+.agd-ev.leve{background:color-mix(in srgb,var(--c) 20%,var(--surface));color:var(--txt);border-left:3px solid var(--c)}
+.agd-ev b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agd-ev small{opacity:.88;font-size:11px;white-space:nowrap}
+.agd-ev.curto{display:flex;gap:6px;align-items:center}
+.agd-ev.curto b{display:inline;flex:0 1 auto;min-width:22px}
+.agd-ev.curto small{flex:0 100 auto;min-width:0;overflow:hidden}
+.agd-ev.arrastando{opacity:.85;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:5;cursor:grabbing}
+.agd-ev .agd-rs{position:absolute;left:0;right:0;bottom:0;height:7px;cursor:ns-resize}
+.agd-novo{position:absolute;left:2px;right:2px;border-radius:6px;background:var(--acc);opacity:.85;color:#fff;font-size:12px;padding:3px 7px;z-index:4;pointer-events:none}
+/* mês */
+.agd-mes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.agd-mes .wd{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center;padding:8px 0;border-left:1px solid var(--line)}
+.agd-mes .wd:first-child,.agd-cel:nth-child(7n+8){border-left:none}
+.agd-cel{border-left:1px solid var(--line);border-top:1px solid var(--line);min-height:112px;padding:4px 4px 6px;display:flex;flex-direction:column;gap:2px;cursor:cell;min-width:0}
+.agd-cel .n{align-self:center;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:var(--txt-2);cursor:pointer;margin-bottom:2px}
+.agd-cel .n:hover{background:var(--surface-3)}
+.agd-cel.fora .n{color:var(--faint)}
+.agd-cel.hoje .n{background:var(--acc);color:#fff}
+.agd-mais{border:none;background:none;font:inherit;font-size:11.5px;font-weight:600;color:var(--muted);text-align:left;padding:1px 6px;cursor:pointer;border-radius:4px}
+.agd-mais:hover{background:var(--surface-3)}
+.agd-pt{display:flex;align-items:center;gap:6px;border:none;background:none;font:inherit;font-size:12px;color:var(--txt);padding:1px 5px;border-radius:4px;cursor:pointer;text-align:left;white-space:nowrap;overflow:hidden;min-width:0}
+.agd-pt:hover{background:var(--surface-3)}
+.agd-pt i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.agd-pt em{font-style:normal;color:var(--muted);flex:none}
+.agd-pt span{overflow:hidden;text-overflow:ellipsis}
+/* lista */
+.agd-lista{padding:6px 0}
+.agd-ld{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;padding:10px 18px;border-bottom:1px solid var(--line)}
+.agd-ld:last-child{border-bottom:none}
+.agd-ld .d{display:flex;align-items:baseline;gap:8px;cursor:pointer}
+.agd-ld .d b{font-size:22px;font-weight:500}
+.agd-ld .d small{font-size:11px;text-transform:uppercase;font-weight:600;color:var(--muted)}
+.agd-ld.hoje .d b,.agd-ld.hoje .d small{color:var(--acc-txt)}
+.agd-li{display:grid;grid-template-columns:14px 120px minmax(0,1fr);gap:10px;align-items:center;padding:5px 8px;border-radius:6px;cursor:pointer}
+.agd-li:hover{background:var(--surface-3)}
+.agd-li i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.agd-li em{font-style:normal;color:var(--muted);font-size:12.5px}
+.agd-li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agd-vazio{padding:40px 18px;text-align:center;color:var(--muted)}
+/* popover e formulário */
+.agd-fundo{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:16px}
+.agd-fundo.claro{background:transparent;display:block}
+.agd-pop{position:fixed;z-index:9001;width:min(380px,calc(100vw - 32px));background:var(--surface);color:var(--txt);border-radius:14px;box-shadow:0 0 0 1px var(--line),0 24px 48px rgba(0,0,0,.4);padding:14px 16px 16px;max-height:calc(100vh - 32px);overflow:auto}
+.agd-pop-a{display:flex;justify-content:flex-end;gap:2px;margin:-6px -8px 4px 0}
+.agd-pop-a .agd-ico{width:32px;height:32px;font-size:15px}
+.agd-pop h3{margin:0 0 4px;font-size:18px;font-weight:600;display:flex;gap:12px;align-items:flex-start}
+.agd-pop h3 i{width:14px;height:14px;border-radius:4px;background:var(--c);flex:none;margin-top:6px}
+.agd-pop .q{color:var(--txt-2);margin:0 0 10px 26px;font-size:13px}
+.agd-pop .l{display:flex;gap:12px;margin:8px 0;font-size:13px;color:var(--txt-2);align-items:flex-start}
+.agd-pop .l>span:first-child{width:14px;flex:none;color:var(--muted);text-align:center}
+.agd-pop .acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.agd-pop ul{margin:4px 0 0;padding-left:18px;max-height:220px;overflow:auto}
+.agd-form{width:min(520px,100%);background:var(--surface);color:var(--txt);border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.45);padding:18px 20px 20px;max-height:calc(100vh - 32px);overflow:auto}
+.agd-form h3{margin:0 0 14px;font-size:17px}
+.agd-form .tit{width:100%;box-sizing:border-box;font:inherit;font-size:20px;border:none;border-bottom:2px solid var(--line);background:none;color:var(--txt);padding:6px 2px;margin-bottom:14px;outline:none}
+.agd-form .tit:focus{border-bottom-color:var(--acc)}
+.agd-f{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.agd-f label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);flex:1;min-width:120px}
+.agd-f label.chk{flex-direction:row;align-items:center;gap:8px;font-size:13px;color:var(--txt-2);flex:none;min-width:0}
+.agd-f input:not([type=checkbox]),.agd-f select,.agd-f textarea{font:inherit;font-size:13.5px;border:1px solid var(--line);background:var(--surface-2);color:var(--txt);border-radius:8px;padding:8px 10px;width:100%;box-sizing:border-box}
+.agd-cores{display:flex;gap:8px;flex-wrap:wrap}
+.agd-cores button{width:24px;height:24px;border-radius:50%;border:2px solid transparent;background:var(--c);cursor:pointer;padding:0}
+.agd-cores button.on{border-color:var(--txt);box-shadow:inset 0 0 0 2px var(--surface)}
+.agd-form .rod{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.agd-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#202124;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:9100;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+@media (max-width:860px){
+  .agd-wrap{grid-template-columns:1fr}
+  .agd-mini{display:none}
+  .agd-side{flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px}
+  .agd-cals{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:4px 14px;padding:10px 12px}
+  .agd-cals h4{display:none}
+  .agd-cal{padding:2px 0;font-size:12.5px}
+  .agd-criar{padding:10px 16px}
+  .agd-lbl{font-size:16px}
+  .agd-ld{grid-template-columns:76px minmax(0,1fr);padding:10px 12px}
+  .agd-li{grid-template-columns:12px 92px minmax(0,1fr)}
+  .agd-cel{min-height:74px}
+  .agd-pt em{display:none}
+}
+</style>
+<script>
+/* ══ AGENDA (28/10/2026) — no estilo da Agenda do Google: dia, semana, mês e lista ══
+   Firebase: agenda/pessoal/{VN}/{id} (agenda de cada um) · agenda/equipe/{id} (todos veem; a gestão cria)
+   Entram sozinhos (só leitura): retornos do Discador (discador/estado/{VN}/retornos), próximas ações do Funil
+   (negociacoes/{VN}.proximaData), blocos da Minha Rotina (rotinaGestora/{VN}/modelo) e prazo dos inativos (discador/inativos).
+   Cada pessoa vê a própria agenda + a da equipe; a gestão escolhe ver a de um vendedor ou a da equipe toda. */
+var AGD_FONTES = [
+  { k: 'pessoal', t: 'Minha agenda',        cor: '#1A73E8' },
+  { k: 'equipe',  t: 'Agenda da equipe',    cor: '#8E24AA' },
+  { k: 'ret',     t: 'Retornos do Discador', cor: '#0B8043' },
+  { k: 'neg',     t: 'Próximas ações do Funil', cor: '#F4511E' },
+  { k: 'rotina',  t: 'Minha Rotina',        cor: '#616161' },
+  { k: 'inat',    t: 'Prazo dos inativos',  cor: '#D50000' }
+];
+var AGD_CORES = ['#1A73E8', '#039BE5', '#0B8043', '#33B679', '#F6BF26', '#F4511E', '#D50000', '#E67C73', '#8E24AA', '#7986CB', '#616161'];
+var AGD_MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+var AGD_SEM = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+var AGD_REP = [['', 'Não se repete'], ['dia', 'Todos os dias'], ['uteis', 'Todos os dias úteis (seg a sex)'], ['semana', 'Toda semana'], ['mes', 'Todo mês']];
+var AGD_LEMB = [[0, 'Sem lembrete'], [5, '5 minutos antes'], [10, '10 minutos antes'], [30, '30 minutos antes'], [60, '1 hora antes'], [1440, '1 dia antes']];
+var AGD_HH = 46; // altura de uma hora na grade (px)
+var AGD = { vista: null, ref: null, mini: null, quem: null, c: {}, subs: {}, form: null, pop: null, evs: {}, scroll: null, pendente: false, ligado: false, drag: null, avisados: {} };
+
+function agdEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
+function agdLs(k, d) { try { var v = localStorage.getItem('fgvba_agd_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+function agdLsSet(k, v) { try { localStorage.setItem('fgvba_agd_' + k, JSON.stringify(v)); } catch (e) {} }
+function agdIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function agdData(iso) { var p = String(iso || '').slice(0, 10).split('-'); return new Date(+p[0], (+p[1] || 1) - 1, +p[2] || 1); }
+function agdSoma(iso, dias) { var d = agdData(iso); d.setDate(d.getDate() + dias); return agdIso(d); }
+function agdHoje() { return agdIso(new Date()); }
+function agdMin(h) { if (!h) return null; var p = String(h).split(':'); return (+p[0] || 0) * 60 + (+p[1] || 0); }
+function agdHora(m) { m = Math.max(0, Math.min(24 * 60 - 1, Math.round(m))); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+function agdHoraTxt(h) { var m = agdMin(h); if (m == null) return ''; var hh = Math.floor(m / 60), mm = m % 60; return hh + (mm ? ':' + String(mm).padStart(2, '0') : 'h'); }
+function agdNome(vn) { return (typeof rtNome === 'function' ? rtNome(vn) : vn) || vn; }
+function agdId() { return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function agdLista(x) { if (!x) return []; if (Array.isArray(x)) return x.filter(Boolean); return Object.keys(x).map(function(k) { return x[k]; }).filter(Boolean); }
+/* quem pode ver a agenda dos outros e criar na agenda da equipe: gestora e diretoria */
+function agdGestao() { var v = currentUser && vendedores[currentUser]; return !!v && !semPaineisGestao(currentUser) && v.tipo !== 'administrativo'; }
+function agdEquipe() { return (typeof CK_EQUIPE !== 'undefined' ? CK_EQUIPE : []).filter(function(v) { return vendedores[v] && !vendedores[v].bloqueado; }); }
+function agdPessoas() {
+  if (!agdGestao()) return [currentUser];
+  if (AGD.quem === 'todos') { var l = agdEquipe().slice(); if (l.indexOf(currentUser) < 0) l.unshift(currentUser); return l; }
+  return [AGD.quem || currentUser];
+}
+function agdCalOn(k) { var c = agdLs('cal_' + currentUser, {}); return c[k] !== false; }
+function agdAviso(m) { var t = document.getElementById('agd-toast'); if (t) t.remove(); t = document.createElement('div'); t.id = 'agd-toast'; t.className = 'agd-toast'; t.textContent = m; document.body.appendChild(t); clearTimeout(agdAviso.h); agdAviso.h = setTimeout(function() { if (t.parentNode) t.remove(); }, 2800); }
+
+/* ── dados: cada caminho do Firebase é ouvido uma vez e fica em AGD.c ── */
+function agdSub(path) {
+  if (AGD.subs[path]) return; AGD.subs[path] = true;
+  try {
+    dbRef(path).on('value', function(snap) { AGD.c[path] = (snap && snap.val()) || null; agdMudou(); });
+  } catch (e) { console.warn('agenda: não ouviu ' + path, e); }
+}
+function agdOuvir() {
+  if (!currentUser) return;
+  agdSub('agenda/equipe'); agdSub('discador/inativos'); agdSub('discador/inatConfig');
+  agdPessoas().concat([currentUser]).forEach(function(p) {
+    agdSub('agenda/pessoal/' + p); agdSub('discador/estado/' + p + '/retornos'); agdSub('negociacoes/' + p);
+    if (typeof acVe === 'function' && acVe(p, 'rotina')) agdSub('rotinaGestora/' + p + '/modelo');
+  });
+}
+function agdMudou() {
+  var tab = document.getElementById('tab-agenda');
+  if (!tab || !tab.classList.contains('active')) return;
+  if (AGD.form || AGD.drag) { AGD.pendente = true; return; }
+  clearTimeout(agdMudou.h); agdMudou.h = setTimeout(agdRender, 60);
+}
+
+/* ── eventos de um dia (todas as fontes ligadas) ── */
+function agdOcorre(ev, iso) {
+  if (!ev.data || iso < ev.data) return false;
+  if (ev.ate && iso > ev.ate) return false;
+  if (ev.excecoes && ev.excecoes[iso]) return false;
+  var d = agdData(iso), o = agdData(ev.data);
+  switch (ev.rep || '') {
+    case 'dia': return true;
+    case 'uteis': return d.getDay() >= 1 && d.getDay() <= 5;
+    case 'semana': return d.getDay() === o.getDay();
+    case 'mes': return d.getDate() === o.getDate();
+    default: return iso === ev.data;
+  }
+}
+function agdInatCfgDias() { var c = AGD.c['discador/inatConfig'] || {}; return c.dias >= 1 ? c.dias : 4; }
+function agdEventos(iso) {
+  var out = [], pessoas = agdPessoas(), varias = pessoas.length > 1, wd = agdData(iso).getDay();
+  var pre = function(vn) { return varias && vn ? agdNome(vn) + ' · ' : ''; };
+  var push = function(e) { e.key = e.fonte + '|' + e.id + '|' + iso; e.dia = iso; out.push(e); };
+  if (agdCalOn('pessoal')) pessoas.forEach(function(p) {
+    var m = AGD.c['agenda/pessoal/' + p] || {};
+    Object.keys(m).forEach(function(id) { var ev = m[id]; if (!ev || !agdOcorre(ev, iso)) return;
+      push({ fonte: 'pessoal', id: id, dono: p, tit: pre(p) + (ev.tit || '(sem título)'), base: ev, ini: ev.diaTodo ? null : ev.ini, fim: ev.diaTodo ? null : ev.fim, cor: ev.cor || '#1A73E8', editavel: true }); });
+  });
+  if (agdCalOn('equipe')) { var eq = AGD.c['agenda/equipe'] || {};
+    Object.keys(eq).forEach(function(id) { var ev = eq[id]; if (!ev || !agdOcorre(ev, iso)) return;
+      push({ fonte: 'equipe', id: id, tit: ev.tit || '(sem título)', base: ev, ini: ev.diaTodo ? null : ev.ini, fim: ev.diaTodo ? null : ev.fim, cor: ev.cor || '#8E24AA', editavel: true }); }); }
+  if (agdCalOn('ret')) pessoas.forEach(function(p) {
+    agdLista(AGD.c['discador/estado/' + p + '/retornos']).forEach(function(r, i) {
+      if (!r || !r.quando || String(r.quando).slice(0, 10) !== iso) return;
+      if (typeof dcDesqDe === 'function' && dcDesqDe(r)) return;
+      var ini = String(r.quando).slice(11, 16) || '09:00';
+      push({ fonte: 'ret', id: p + '_' + i, dono: p, tit: pre(p) + 'Retorno: ' + (r.empresa || r.nome || (typeof dcTel === 'function' ? dcTel(r.tel) : r.tel)), ini: ini, fim: agdHora(agdMin(ini) + 30), cor: '#0B8043', leve: true, r: r });
+    });
+  });
+  if (agdCalOn('neg')) pessoas.forEach(function(p) {
+    agdLista(AGD.c['negociacoes/' + p]).forEach(function(n) {
+      if (!n || !n.proximaData || String(n.proximaData).slice(0, 10) !== iso || n.etapa === 'fechado' || n.etapa === 'perdido') return;
+      push({ fonte: 'neg', id: n.id || n.empresa, dono: p, tit: pre(p) + 'Funil: ' + (n.empresa || n.contato || 'negociação') + (n.proximaAcao ? ' — ' + n.proximaAcao : ''), ini: null, cor: '#F4511E', leve: true, n: n });
+    });
+  });
+  if (agdCalOn('rotina') && wd >= 1 && wd <= 5) pessoas.forEach(function(p) {
+    var mod = AGD.c['rotinaGestora/' + p + '/modelo'];
+    if (!mod && p === currentUser && typeof rtnPadrao === 'function' && typeof acVe === 'function' && acVe(p, 'rotina')) mod = AGD.rotPad = AGD.rotPad || rtnPadrao(); // rotina sugerida, enquanto não foi salva
+    if (!mod) return;
+    agdLista(mod.blocos).forEach(function(b) { if (!b || !b.ini) return;
+      push({ fonte: 'rotina', id: (b.id || b.ini) + '_' + p, dono: p, tit: pre(p) + (b.tit || 'Bloco da rotina'), ini: b.ini, fim: b.fim || agdHora(agdMin(b.ini) + 30), cor: '#616161', leve: true, b: b }); });
+  });
+  if (agdCalOn('inat')) { var recs = AGD.c['discador/inativos'] || {}, dias = agdInatCfgDias(), por = {};
+    Object.keys(recs).forEach(function(k) { var r = recs[k]; if (!r || r.status !== 'andamento' || pessoas.indexOf(r.vn) < 0) return;
+      var fim = (r.desde || 0) + (r.dias || dias) * 864e5; if (agdIso(new Date(fim)) !== iso) return;
+      (por[r.vn] = por[r.vn] || []).push(Object.assign({ k: k, fim: fim }, r)); });
+    Object.keys(por).forEach(function(vn) { var l = por[vn].sort(function(a, b) { return a.fim - b.fim; });
+      push({ fonte: 'inat', id: vn, dono: vn, tit: pre(vn) + 'Inativos vencem: ' + l.length + ' cliente' + (l.length > 1 ? 's' : ''), ini: null, cor: '#D50000', leve: true, lista: l }); }); }
+  return out.sort(function(a, b) { return (a.ini ? 1 : 0) - (b.ini ? 1 : 0) || String(a.ini || '').localeCompare(String(b.ini || '')) || String(a.tit).localeCompare(String(b.tit)); });
+}
+
+/* ── tela ── */
+function agdInit() {
+  if (!currentUser) return;
+  if (!AGD.ref) AGD.ref = agdHoje();
+  if (!AGD.vista) AGD.vista = agdLs('vista', window.innerWidth < 700 ? 'dia' : 'semana');
+  if (AGD.user !== currentUser) { AGD.user = currentUser; AGD.quem = currentUser; AGD.scroll = null; }
+  if (!AGD.mini) AGD.mini = AGD.ref.slice(0, 7);
+  agdOuvir(); agdRender();
+}
+function agdIntervalo() {
+  var r = AGD.ref, d = agdData(r);
+  if (AGD.vista === 'dia') return [r, r];
+  if (AGD.vista === 'semana') { var ini = agdSoma(r, -d.getDay()); return [ini, agdSoma(ini, 6)]; }
+  if (AGD.vista === 'mes') { var p = agdIso(new Date(d.getFullYear(), d.getMonth(), 1)); var i0 = agdSoma(p, -agdData(p).getDay()); return [i0, agdSoma(i0, 41)]; }
+  return [r, agdSoma(r, 29)];
+}
+function agdRotulo() {
+  var d = agdData(AGD.ref), it = agdIntervalo();
+  if (AGD.vista === 'dia') return d.getDate() + ' de ' + AGD_MESES[d.getMonth()] + ' de ' + d.getFullYear();
+  if (AGD.vista === 'mes') return AGD_MESES[d.getMonth()].replace(/^./, function(c) { return c.toUpperCase(); }) + ' de ' + d.getFullYear();
+  var a = agdData(it[0]), b = agdData(it[1]);
+  if (a.getMonth() === b.getMonth()) return a.getDate() + ' – ' + b.getDate() + ' de ' + AGD_MESES[b.getMonth()] + ' de ' + b.getFullYear();
+  return a.getDate() + ' ' + AGD_MESES[a.getMonth()].slice(0, 3) + ' – ' + b.getDate() + ' ' + AGD_MESES[b.getMonth()].slice(0, 3) + ' ' + b.getFullYear();
+}
+function agdRender() {
+  var root = document.getElementById('agd-root'); if (!root || !currentUser) return;
+  agdBind(root);
+  var body = document.getElementById('agd-body'); if (body) AGD.scroll = body.scrollTop;
+  AGD.evs = {}; AGD.pendente = false;
+  var ges = agdGestao(), vistas = [['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês'], ['lista', 'Lista']];
+  var h = '<div class="agd-top"><h2>Agenda</h2>' +
+    '<button class="agd-btn" data-a="hoje">Hoje</button><div class="agd-nav"><button class="agd-ico" data-a="ant" title="Anterior">‹</button><button class="agd-ico" data-a="prox" title="Próximo">›</button></div>' +
+    '<div class="agd-lbl">' + agdEsc(agdRotulo()) + '</div><div class="agd-sp"></div>';
+  if (ges) h += '<select class="agd-sel" id="agd-quem" title="De quem é a agenda"><option value="' + agdEsc(currentUser) + '"' + (AGD.quem === currentUser ? ' selected' : '') + '>Minha agenda</option>' +
+    agdEquipe().filter(function(v) { return v !== currentUser; }).map(function(v) { return '<option value="' + agdEsc(v) + '"' + (AGD.quem === v ? ' selected' : '') + '>' + agdEsc(agdNome(v)) + '</option>'; }).join('') +
+    '<option value="todos"' + (AGD.quem === 'todos' ? ' selected' : '') + '>Equipe toda</option></select>';
+  h += '<div class="agd-vistas">' + vistas.map(function(v) { return '<button data-vista="' + v[0] + '" class="' + (AGD.vista === v[0] ? 'on' : '') + '">' + v[1] + '</button>'; }).join('') + '</div></div>';
+  h += '<div class="agd-wrap"><div class="agd-side"><button class="agd-criar" data-a="criar"><b>+</b>Criar</button>' + agdMiniHtml() + agdCalsHtml() + '</div><div class="agd-main">';
+  h += ({ dia: agdGradeHtml, semana: agdGradeHtml, mes: agdMesHtml, lista: agdListaHtml })[AGD.vista]();
+  h += '</div></div>';
+  if (AGD.pop) h += agdPopHtml();
+  if (AGD.form) h += agdFormHtml();
+  root.innerHTML = h;
+  var b2 = document.getElementById('agd-body');
+  if (b2) b2.scrollTop = AGD.scroll != null ? AGD.scroll : AGD_HH * 7;
+  agdPosPop();
+  if (AGD.form && AGD.form.foco) { var t = document.getElementById('agd-f-tit'); if (t) { t.focus(); AGD.form.foco = false; } }
+}
+function agdMiniHtml() {
+  var p = AGD.mini.split('-'), y = +p[0], m = +p[1] - 1, ini = agdIso(new Date(y, m, 1)), d0 = agdSoma(ini, -agdData(ini).getDay());
+  var it = agdIntervalo(), hoje = agdHoje(), h = '<div class="agd-mini"><div class="agd-mini-h"><span>' + AGD_MESES[m].replace(/^./, function(c) { return c.toUpperCase(); }) + ' de ' + y + '</span><span><button class="agd-ico" data-a="mini-ant">‹</button><button class="agd-ico" data-a="mini-prox">›</button></span></div><div class="agd-mini-g">' +
+    ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map(function(x) { return '<span>' + x + '</span>'; }).join('');
+  for (var i = 0; i < 42; i++) { var iso = agdSoma(d0, i), dd = agdData(iso);
+    var cls = (dd.getMonth() !== m ? 'fora ' : '') + (iso === hoje ? 'hoje ' : (AGD.vista !== 'mes' && AGD.vista !== 'lista' && iso >= it[0] && iso <= it[1] ? 'sel ' : '')) + (agdTemAlgo(iso) ? 'tem' : '');
+    h += '<button class="' + cls + '" data-dia="' + iso + '">' + dd.getDate() + '</button>'; }
+  return h + '</div></div>';
+}
+function agdTemAlgo(iso) { try { return agdEventos(iso).some(function(e) { return e.fonte === 'pessoal' || e.fonte === 'equipe' || e.fonte === 'ret'; }); } catch (e) { return false; } }
+function agdCalsHtml() {
+  var ges = agdGestao(), temRot = agdPessoas().some(function(p) { return typeof acVe === 'function' && acVe(p, 'rotina'); });
+  return '<div class="agd-cals"><h4>Minhas agendas</h4>' + AGD_FONTES.filter(function(f) { return f.k !== 'rotina' || temRot; }).map(function(f) {
+    var t = f.k === 'pessoal' && ges && AGD.quem !== currentUser ? (AGD.quem === 'todos' ? 'Agendas dos vendedores' : 'Agenda de ' + agdNome(AGD.quem)) : f.t;
+    return '<div class="agd-cal' + (agdCalOn(f.k) ? ' on' : '') + '" data-cal="' + f.k + '" style="--c:' + f.cor + '"><i></i>' + agdEsc(t) + '</div>'; }).join('') + '</div>';
+}
+function agdReg(e) { AGD.evs[e.key] = e; return agdEsc(e.key); }
+function agdQuando(e) { return e.ini ? agdHoraTxt(e.ini) + (e.fim ? ' – ' + agdHoraTxt(e.fim) : '') : 'Dia inteiro'; }
+
+/* grade de horas: dia e semana */
+function agdGradeHtml() {
+  var it = agdIntervalo(), dias = [], hoje = agdHoje();
+  for (var d = it[0]; d <= it[1]; d = agdSoma(d, 1)) dias.push(d);
+  var n = dias.length, evDias = dias.map(function(d) { return agdEventos(d); });
+  var h = '<div class="agd-scrollx"><div class="agd-tg' + (n > 1 ? ' sem' : '') + '" style="--cols:' + n + ';--hh:' + AGD_HH + 'px">';
+  h += '<div class="agd-row"><div></div>' + dias.map(function(d) { var dd = agdData(d);
+    return '<div class="agd-dh' + (d === hoje ? ' hoje' : '') + '" data-ir="' + d + '"><small>' + AGD_SEM[dd.getDay()] + '</small><b>' + dd.getDate() + '</b></div>'; }).join('') + '</div>';
+  h += '<div class="agd-row agd-ad"><div>dia<br>todo</div>' + evDias.map(function(l, i) {
+    return '<div data-diatodo="' + dias[i] + '">' + l.filter(function(e) { return !e.ini; }).map(function(e) {
+      return '<button class="agd-chip' + (e.leve ? ' leve' : '') + '" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '" title="' + agdEsc(e.tit) + '">' + agdEsc(e.tit) + '</button>'; }).join('') + '</div>'; }).join('') + '</div>';
+  h += '<div class="agd-body" id="agd-body"><div class="agd-row"><div class="agd-hrs" style="height:' + AGD_HH * 24 + 'px">';
+  for (var x = 1; x < 24; x++) h += '<span style="top:' + x * AGD_HH + 'px">' + x + 'h</span>';
+  h += '</div>';
+  var agora = new Date(), mAg = agora.getHours() * 60 + agora.getMinutes();
+  dias.forEach(function(d, i) {
+    h += '<div class="agd-col' + (d === hoje ? ' hoje' : '') + '" data-col="' + d + '">';
+    // blocos da Minha Rotina ficam ao fundo (largura toda); os compromissos vão por cima, à direita
+    var comHora = evDias[i].filter(function(e) { return e.ini; }), fundo = comHora.filter(function(e) { return e.fonte === 'rotina'; });
+    var x0 = fundo.length ? 34 : 0;
+    fundo.forEach(function(e) {
+      var a = agdMin(e.ini), b = Math.max(a + 15, agdMin(e.fim) || a + 60), alt = Math.max(16, (b - a) / 60 * AGD_HH - 2);
+      h += '<div class="agd-ev leve fundo" data-ev="' + agdReg(e) + '" style="--c:' + e.cor + ';top:' + (a / 60 * AGD_HH) + 'px;height:' + alt + 'px;left:1px;width:calc(100% - 3px)" title="' + agdEsc(e.tit + ' · ' + agdQuando(e)) + '"><b style="max-width:' + (x0 ? x0 - 2 : 100) + '%">' + agdEsc(e.tit) + '</b></div>';
+    });
+    agdLayout(comHora.filter(function(e) { return e.fonte !== 'rotina'; })).forEach(function(e) {
+      var a = agdMin(e.ini), b = Math.max(a + 15, agdMin(e.fim) || a + 60), top = a / 60 * AGD_HH, alt = Math.max(18, (b - a) / 60 * AGD_HH - 2);
+      var w = (100 - x0) / e._n, curto = alt < 34;
+      var podeArr = e.editavel && agdPodeEditar(e) && !e.base.rep;
+      h += '<div class="agd-ev' + (e.leve ? ' leve' : '') + (curto ? ' curto' : '') + '" data-ev="' + agdReg(e) + '"' + (podeArr ? ' data-arr="1"' : '') + ' style="--c:' + e.cor + ';top:' + top + 'px;height:' + alt + 'px;left:calc(' + (x0 + e._i * w) + '% + 1px);width:calc(' + w + '% - 3px)" title="' + agdEsc(e.tit + ' · ' + agdQuando(e)) + '">' +
+        '<b>' + agdEsc(e.tit) + '</b><small>' + agdEsc(agdQuando(e)) + '</small>' + (podeArr ? '<div class="agd-rs" data-rs="1"></div>' : '') + '</div>';
+    });
+    if (d === hoje) h += '<div class="agd-agora" style="top:' + (mAg / 60 * AGD_HH) + 'px"></div>';
+    h += '</div>';
+  });
+  return h + '</div></div></div></div>';
+}
+/* eventos que se sobrepõem dividem a largura da coluna */
+function agdLayout(evs) {
+  evs.sort(function(a, b) { return agdMin(a.ini) - agdMin(b.ini) || (agdMin(b.fim) || 0) - (agdMin(a.fim) || 0); });
+  var grupo = [], fimGrupo = -1, out = [];
+  function fecha() { var lanes = []; grupo.forEach(function(e) { var a = agdMin(e.ini), k = 0; while (lanes[k] != null && lanes[k] > a) k++; lanes[k] = Math.max(a + 15, agdMin(e.fim) || a + 60); e._i = k; }); grupo.forEach(function(e) { e._n = lanes.length; out.push(e); }); grupo = []; }
+  evs.forEach(function(e) { var a = agdMin(e.ini), b = Math.max(a + 15, agdMin(e.fim) || a + 60); if (grupo.length && a >= fimGrupo) fecha(); grupo.push(e); fimGrupo = Math.max(fimGrupo, b); });
+  if (grupo.length) fecha();
+  return out;
+}
+function agdMesHtml() {
+  var it = agdIntervalo(), m = agdData(AGD.ref).getMonth(), hoje = agdHoje(), h = '<div class="agd-mes">' + AGD_SEM.map(function(s) { return '<div class="wd">' + s + '</div>'; }).join('');
+  for (var i = 0; i < 42; i++) { var iso = agdSoma(it[0], i), dd = agdData(iso), l = agdEventos(iso), max = 3;
+    h += '<div class="agd-cel' + (dd.getMonth() !== m ? ' fora' : '') + (iso === hoje ? ' hoje' : '') + '" data-cel="' + iso + '"><span class="n" data-ir="' + iso + '">' + dd.getDate() + '</span>' +
+      l.slice(0, l.length > max + 1 ? max : max + 1).map(function(e) {
+        return e.ini ? '<button class="agd-pt" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '" title="' + agdEsc(e.tit) + '"><i></i><em>' + agdHoraTxt(e.ini) + '</em><span>' + agdEsc(e.tit) + '</span></button>'
+          : '<button class="agd-chip' + (e.leve ? ' leve' : '') + '" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '" title="' + agdEsc(e.tit) + '">' + agdEsc(e.tit) + '</button>'; }).join('') +
+      (l.length > max + 1 ? '<button class="agd-mais" data-ir="' + iso + '">+ ' + (l.length - max) + ' mais</button>' : '') + '</div>'; }
+  return h + '</div>';
+}
+function agdListaHtml() {
+  var it = agdIntervalo(), hoje = agdHoje(), h = '', n = 0;
+  for (var d = it[0]; d <= it[1]; d = agdSoma(d, 1)) { var l = agdEventos(d); if (!l.length) continue; n++; var dd = agdData(d);
+    h += '<div class="agd-ld' + (d === hoje ? ' hoje' : '') + '"><div class="d" data-ir="' + d + '"><b>' + dd.getDate() + '</b><small>' + AGD_MESES[dd.getMonth()].slice(0, 3) + ', ' + AGD_SEM[dd.getDay()] + '</small></div><div>' +
+      l.map(function(e) { return '<div class="agd-li" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '"><i></i><em>' + agdEsc(agdQuando(e)) + '</em><span>' + agdEsc(e.tit) + '</span></div>'; }).join('') + '</div></div>'; }
+  return '<div class="agd-lista">' + (n ? h : '<div class="agd-vazio">Nada marcado nos próximos 30 dias. Clique em <b>Criar</b> para marcar um compromisso.</div>') + '</div>';
+}
+
+/* ── detalhe do evento (popover) ── */
+function agdPodeEditar(e) {
+  if (!e || !e.editavel) return false;
+  var b = e.base || {};
+  if (e.fonte === 'pessoal') return e.dono === currentUser || b.criadoPor === currentUser || agdGestao();
+  if (e.fonte === 'equipe') return agdGestao() || b.criadoPor === currentUser;
+  return false;
+}
+function agdPopHtml() {
+  var e = AGD.evs[AGD.pop.key]; if (!e) { AGD.pop = null; return ''; }
+  var dd = agdData(e.dia), b = e.base || {}, pode = agdPodeEditar(e);
+  var h = '<div class="agd-fundo claro" data-a="fechar-pop"></div><div class="agd-pop" id="agd-pop"><div class="agd-pop-a">' +
+    (pode ? '<button class="agd-ico" data-a="editar" title="Editar">✎</button><button class="agd-ico" data-a="excluir" title="Excluir">🗑</button>' : '') +
+    '<button class="agd-ico" data-a="fechar-pop" title="Fechar">✕</button></div>' +
+    '<h3 style="--c:' + e.cor + '"><i></i><span>' + agdEsc(e.tit) + '</span></h3>' +
+    '<div class="q">' + AGD_SEM[dd.getDay()].replace(/^./, function(c) { return c.toUpperCase(); }) + ', ' + dd.getDate() + ' de ' + AGD_MESES[dd.getMonth()] + ' · ' + agdEsc(agdQuando(e)) +
+    (b.rep ? '<br>' + agdEsc((AGD_REP.find(function(r) { return r[0] === b.rep; }) || ['', ''])[1]) + (b.ate ? ' até ' + agdEsc(agdData(b.ate).toLocaleDateString('pt-BR')) : '') : '') + '</div>';
+  var fonte = AGD_FONTES.find(function(f) { return f.k === e.fonte; });
+  h += '<div class="l"><span>▣</span><span>' + agdEsc(e.fonte === 'pessoal' ? 'Agenda de ' + agdNome(e.dono) : fonte.t) + (b.criadoPor && b.criadoPor !== e.dono ? ' · criado por ' + agdEsc(agdNome(b.criadoPor)) : '') + '</span></div>';
+  if (b.cliente || b.tel) h += '<div class="l"><span>☎</span><span>' + agdEsc(b.cliente || '') + (b.tel ? (b.cliente ? ' · ' : '') + agdEsc(typeof dcTel === 'function' ? dcTel(b.tel) : b.tel) : '') + '</span></div>';
+  if (b.desc) h += '<div class="l"><span>≡</span><span style="white-space:pre-wrap">' + agdEsc(b.desc) + '</span></div>';
+  if (b.lembrete) h += '<div class="l"><span>⏰</span><span>' + agdEsc((AGD_LEMB.find(function(r) { return r[0] === +b.lembrete; }) || ['', ''])[1]) + '</span></div>';
+  if (e.fonte === 'ret') { var r = e.r || {}; h += '<div class="l"><span>☎</span><span>' + agdEsc(r.nome || '') + (r.nome ? ' · ' : '') + agdEsc(typeof dcTel === 'function' ? dcTel(r.tel) : r.tel) + '</span></div>' + (r.obs ? '<div class="l"><span>≡</span><span>' + agdEsc(r.obs) + '</span></div>' : ''); }
+  if (e.fonte === 'neg') { var n = e.n || {}; h += (n.telefone ? '<div class="l"><span>☎</span><span>' + agdEsc(n.contato || '') + (n.contato ? ' · ' : '') + agdEsc(n.telefone) + '</span></div>' : '') + (n.valorEstimado ? '<div class="l"><span>$</span><span>' + agdEsc(Number(n.valorEstimado).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })) + '</span></div>' : ''); }
+  if (e.fonte === 'rotina' && e.b) { if (e.b.desc) h += '<div class="l"><span>≡</span><span>' + agdEsc(e.b.desc) + '</span></div>'; h += '<ul>' + agdLista(e.b.itens).map(function(x) { return '<li>' + agdEsc(x.txt) + '</li>'; }).join('') + '</ul>'; }
+  if (e.fonte === 'inat') h += '<ul>' + e.lista.map(function(r) { return '<li><b>' + agdEsc(r.empresa || r.contato || r.tel) + '</b> · vence às ' + agdEsc(new Date(r.fim).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })) + '</li>'; }).join('') + '</ul>';
+  var ac = '';
+  if (e.fonte === 'ret' && e.dono === currentUser) ac += '<button class="agd-btn pri" data-a="ir-ret">Ligar agora</button>';
+  if (e.fonte === 'neg') ac += '<button class="agd-btn pri" data-a="ir-neg">Abrir no Funil</button>';
+  if (e.fonte === 'inat') ac += '<button class="agd-btn pri" data-a="ir-inat">' + (e.dono === currentUser ? 'Ligar para os inativos' : 'Ver inativos') + '</button>';
+  if (e.fonte === 'rotina' && e.dono === currentUser) ac += '<button class="agd-btn" data-a="ir-rotina">Abrir Minha Rotina</button>';
+  if ((e.fonte === 'pessoal' || e.fonte === 'equipe') && b.tel && e.dono === currentUser) ac += '<button class="agd-btn pri" data-a="ir-tel">Ligar pelo Discador</button>';
+  if (AGD.pop.confirma === 'excluir') ac = b.rep ? '<button class="agd-btn dng" data-a="exc-um">Excluir só este dia</button><button class="agd-btn dng" data-a="exc-todos">Excluir todos</button><button class="agd-btn" data-a="exc-nao">Cancelar</button>'
+    : '<button class="agd-btn dng" data-a="exc-todos">Excluir</button><button class="agd-btn" data-a="exc-nao">Cancelar</button>';
+  return h + (ac ? '<div class="acoes">' + ac + '</div>' : '') + '</div>';
+}
+function agdPosPop() {
+  var p = document.getElementById('agd-pop'); if (!p || !AGD.pop) return;
+  var w = p.offsetWidth, hh = p.offsetHeight, vw = window.innerWidth, vh = window.innerHeight, x = AGD.pop.x, y = AGD.pop.y;
+  if (vw < 600) { p.style.left = ((vw - w) / 2) + 'px'; p.style.top = Math.max(16, (vh - hh) / 2) + 'px'; return; }
+  var left = x + 12; if (left + w > vw - 16) left = Math.max(16, x - w - 12);
+  var top = Math.min(Math.max(16, y - 40), vh - hh - 16);
+  p.style.left = left + 'px'; p.style.top = Math.max(16, top) + 'px';
+}
+
+/* ── formulário criar/editar ── */
+function agdNovo(iso, ini, diaTodo) {
+  var mAg = new Date().getMinutes(), hAg = new Date().getHours();
+  if (!ini && !diaTodo) ini = agdHora(Math.min(22 * 60, (hAg + (mAg > 0 ? 1 : 0)) * 60));
+  var dono = agdGestao() && AGD.quem && AGD.quem !== 'todos' ? AGD.quem : currentUser;
+  AGD.pop = null;
+  AGD.form = { novo: true, id: agdId(), ag: dono, tit: '', data: iso || AGD.ref, diaTodo: !!diaTodo, ini: ini || '09:00', fim: agdHora(agdMin(ini || '09:00') + 60), rep: '', ate: '', cliente: '', tel: '', desc: '', lembrete: 10, cor: '#1A73E8', foco: true };
+  agdRender();
+}
+function agdEditar(e) {
+  var b = e.base || {};
+  AGD.pop = null;
+  AGD.form = { novo: false, id: e.id, ag: e.fonte === 'equipe' ? 'equipe' : e.dono, agOrig: e.fonte === 'equipe' ? 'equipe' : e.dono, tit: b.tit || '', data: b.data, diaTodo: !!b.diaTodo, ini: b.ini || '09:00', fim: b.fim || agdHora(agdMin(b.ini || '09:00') + 60),
+    rep: b.rep || '', ate: b.ate || '', cliente: b.cliente || '', tel: b.tel || '', desc: b.desc || '', lembrete: b.lembrete != null ? +b.lembrete : 0, cor: b.cor || (e.fonte === 'equipe' ? '#8E24AA' : '#1A73E8'), base: b, foco: true };
+  agdRender();
+}
+function agdFormHtml() {
+  var f = AGD.form, ges = agdGestao(), sel = function(v, cur) { return String(v) === String(cur) ? ' selected' : ''; };
+  var ags = '<option value="' + agdEsc(currentUser) + '"' + sel(currentUser, f.ag) + '>Minha agenda</option>';
+  if (ges) ags += '<option value="equipe"' + sel('equipe', f.ag) + '>Agenda da equipe (todos veem)</option>' +
+    agdEquipe().filter(function(v) { return v !== currentUser; }).map(function(v) { return '<option value="' + agdEsc(v) + '"' + sel(v, f.ag) + '>Agenda de ' + agdEsc(agdNome(v)) + '</option>'; }).join('');
+  else if (f.ag !== currentUser) ags += '<option value="' + agdEsc(f.ag) + '" selected>' + (f.ag === 'equipe' ? 'Agenda da equipe' : 'Agenda de ' + agdEsc(agdNome(f.ag))) + '</option>';
+  return '<div class="agd-fundo" data-a="fundo-form"><div class="agd-form" data-form="1"><h3>' + (f.novo ? 'Novo compromisso' : 'Editar compromisso') + '</h3>' +
+    '<input class="tit" id="agd-f-tit" placeholder="Adicionar título" value="' + agdEsc(f.tit) + '" maxlength="120">' +
+    '<div class="agd-f"><label>Data<input type="date" id="agd-f-data" value="' + agdEsc(f.data) + '"></label>' +
+    '<label class="chk"><input type="checkbox" id="agd-f-dt"' + (f.diaTodo ? ' checked' : '') + '> Dia inteiro</label></div>' +
+    '<div class="agd-f" id="agd-f-horas"' + (f.diaTodo ? ' style="display:none"' : '') + '><label>Início<input type="time" id="agd-f-ini" step="900" value="' + agdEsc(f.ini) + '"></label><label>Fim<input type="time" id="agd-f-fim" step="900" value="' + agdEsc(f.fim) + '"></label></div>' +
+    '<div class="agd-f"><label>Repetir<select id="agd-f-rep">' + AGD_REP.map(function(r) { return '<option value="' + r[0] + '"' + sel(r[0], f.rep) + '>' + r[1] + '</option>'; }).join('') + '</select></label>' +
+    '<label id="agd-f-ate-l"' + (f.rep ? '' : ' style="display:none"') + '>Até (opcional)<input type="date" id="agd-f-ate" value="' + agdEsc(f.ate) + '"></label></div>' +
+    '<div class="agd-f"><label>Agenda<select id="agd-f-ag">' + ags + '</select></label><label>Lembrete<select id="agd-f-lem">' + AGD_LEMB.map(function(r) { return '<option value="' + r[0] + '"' + sel(r[0], f.lembrete) + '>' + r[1] + '</option>'; }).join('') + '</select></label></div>' +
+    '<div class="agd-f"><label>Cliente (opcional)<input id="agd-f-cli" value="' + agdEsc(f.cliente) + '" placeholder="Loja ou contato"></label><label>Telefone (opcional)<input id="agd-f-tel" inputmode="tel" value="' + agdEsc(f.tel) + '" placeholder="(21) 99999-9999"></label></div>' +
+    '<div class="agd-f"><label style="min-width:100%">Descrição<textarea id="agd-f-desc" rows="3" placeholder="Anotações, pauta, link da reunião…">' + agdEsc(f.desc) + '</textarea></label></div>' +
+    '<div class="agd-f"><div class="agd-cores">' + AGD_CORES.map(function(c) { return '<button type="button" data-cor="' + c + '" style="--c:' + c + '" class="' + (f.cor === c ? 'on' : '') + '" title="Cor"></button>'; }).join('') + '</div></div>' +
+    '<div class="rod"><button class="agd-btn" data-a="cancelar">Cancelar</button><button class="agd-btn pri" data-a="salvar">Salvar</button></div></div></div>';
+}
+function agdLerForm() {
+  var f = AGD.form, v = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
+  f.tit = v('agd-f-tit').trim(); f.data = v('agd-f-data') || f.data; f.diaTodo = !!(document.getElementById('agd-f-dt') || {}).checked;
+  f.ini = v('agd-f-ini') || f.ini; f.fim = v('agd-f-fim') || f.fim; f.rep = v('agd-f-rep'); f.ate = f.rep ? v('agd-f-ate') : '';
+  f.ag = v('agd-f-ag') || f.ag; f.lembrete = +v('agd-f-lem') || 0; f.cliente = v('agd-f-cli').trim(); f.tel = (typeof dcDig === 'function' ? dcDig(v('agd-f-tel')) : v('agd-f-tel').replace(/\D/g, '')); f.desc = v('agd-f-desc').trim();
+}
+function agdSalvar() {
+  agdLerForm(); var f = AGD.form;
+  if (!f.tit) { agdAviso('Escreva um título'); var t = document.getElementById('agd-f-tit'); if (t) t.focus(); return; }
+  if (!f.data) { agdAviso('Escolha a data'); return; }
+  if (!f.diaTodo && agdMin(f.fim) <= agdMin(f.ini)) f.fim = agdHora(agdMin(f.ini) + 60);
+  if (f.ate && f.ate < f.data) f.ate = '';
+  var b = f.base || {};
+  var rec = { tit: f.tit.slice(0, 120), data: f.data, diaTodo: f.diaTodo, ini: f.diaTodo ? '' : f.ini, fim: f.diaTodo ? '' : f.fim, rep: f.rep || '', ate: f.ate || '', cliente: f.cliente.slice(0, 100), tel: f.tel.slice(0, 15), desc: f.desc.slice(0, 2000),
+    lembrete: f.lembrete || 0, cor: f.cor, criadoPor: b.criadoPor || currentUser, criadoEm: b.criadoEm || Date.now(), editadoPor: currentUser, editadoEm: Date.now() };
+  if (b.excecoes && b.rep === rec.rep && b.data === rec.data) rec.excecoes = b.excecoes;
+  var caminho = function(ag) { return ag === 'equipe' ? 'agenda/equipe/' + f.id : 'agenda/pessoal/' + ag + '/' + f.id; };
+  var ps = [];
+  if (!f.novo && f.agOrig && f.agOrig !== f.ag) ps.push(dbRef(caminho(f.agOrig)).remove()); // mudou de agenda
+  ps.push(dbRef(caminho(f.ag)).set(rec));
+  if (f.ag !== 'equipe') agdSub('agenda/pessoal/' + f.ag);
+  var dest = f.ag;
+  AGD.form = null; AGD.ref = rec.data;
+  Promise.all(ps).then(function() { agdAviso(f.novo ? 'Compromisso salvo' + (dest === 'equipe' ? ' na agenda da equipe' : dest !== currentUser ? ' na agenda de ' + agdNome(dest) : '') : 'Alterações salvas'); })
+    .catch(function(e) { agdAviso('Não salvou: ' + (e && e.message || e)); });
+  agdRender();
+}
+function agdCaminhoEv(e) { return e.fonte === 'equipe' ? 'agenda/equipe/' + e.id : 'agenda/pessoal/' + e.dono + '/' + e.id; }
+function agdExcluir(e, soEste) {
+  var p = agdCaminhoEv(e);
+  var pr = soEste ? dbRef(p + '/excecoes/' + e.dia).set(true) : dbRef(p).remove();
+  AGD.pop = null;
+  Promise.resolve(pr).then(function() { agdAviso(soEste ? 'Excluído só neste dia' : 'Compromisso excluído'); }).catch(function(x) { agdAviso('Não excluiu: ' + (x && x.message || x)); });
+  agdRender();
+}
+
+/* ── ir para outras abas ── */
+function agdIrAba(id) { var b = document.querySelector('.nav-btn[data-nav-id="' + id + '"]'); if (b && typeof showTab === 'function') showTab(id, b); }
+function agdIrRetorno(r) {
+  AGD.pop = null; agdIrAba('discador');
+  var tentativas = 0, alvo = typeof dcMicroNum === 'function' ? dcMicroNum(r.tel) : r.tel;
+  (function tenta() {
+    var l = (typeof DC !== 'undefined' && DC.estado && DC.estado.retornos) || [];
+    var i = l.findIndex(function(x) { return x && dcMicroNum(x.tel) === alvo && String(x.quando || '') === String(r.quando || ''); });
+    if (i < 0) i = l.findIndex(function(x) { return x && dcMicroNum(x.tel) === alvo; });
+    if (i >= 0 && typeof dcAbrirRetorno === 'function') { dcAbrirRetorno(i); return; }
+    if (++tentativas < 15) setTimeout(tenta, 200);
+  })();
+}
+function agdIrTel(b) {
+  AGD.pop = null; agdIrAba('discador');
+  setTimeout(function() { if (typeof DC === 'undefined') return; DC.avulso = { tel: b.tel, nome: b.cliente || '', empresa: b.cliente || '', obs: b.tit || '' }; DC.call = null; DC.aba = 'discar'; if (typeof dcPararAuto === 'function') dcPararAuto(true); dcRender(); }, 150);
+}
+function agdIrNeg(n) {
+  AGD.pop = null;
+  if (typeof DC !== 'undefined') { DC.aba = 'funil'; DC.funilBusca = n.empresa || n.contato || ''; if (agdGestao() && n.vendedor) DC.funilVend = n.vendedor; }
+  agdIrAba('discador');
+}
+function agdIrInat(e) {
+  AGD.pop = null;
+  if (typeof DC !== 'undefined') {
+    if (e.dono === currentUser) { DC.aba = 'discar'; DC.listaId = 'inat_' + currentUser; if (typeof dcLsSet === 'function') dcLsSet('lista_' + currentUser, DC.listaId); }
+    else if (typeof dcGestao === 'function' && dcGestao()) DC.aba = 'inativos';
+  }
+  agdIrAba('discador');
+}
+
+/* ── cliques (delegados, ligados uma vez) ── */
+function agdBind(root) {
+  if (root._agd) return; root._agd = true;
+  root.addEventListener('click', function(ev) {
+    if (AGD.arrastou) { AGD.arrastou = false; return; }
+    var t = ev.target, el;
+    if ((el = t.closest('[data-cor]')) && AGD.form) { agdLerForm(); AGD.form.cor = el.getAttribute('data-cor'); root.querySelectorAll('.agd-cores button').forEach(function(b) { b.classList.toggle('on', b === el); }); return; }
+    if (t.closest('[data-form]') && !t.closest('[data-a]')) return;
+    if ((el = t.closest('[data-a]'))) { agdAcao(el.getAttribute('data-a'), el, ev); return; }
+    if ((el = t.closest('[data-vista]'))) { AGD.vista = el.getAttribute('data-vista'); agdLsSet('vista', AGD.vista); AGD.pop = null; AGD.scroll = null; agdRender(); return; }
+    if ((el = t.closest('[data-cal]'))) { var c = agdLs('cal_' + currentUser, {}), k = el.getAttribute('data-cal'); c[k] = !agdCalOn(k); agdLsSet('cal_' + currentUser, c); agdRender(); return; }
+    if ((el = t.closest('[data-ev]'))) { ev.stopPropagation(); AGD.pop = { key: el.getAttribute('data-ev'), x: ev.clientX, y: ev.clientY }; agdRender(); return; }
+    if ((el = t.closest('[data-ir]'))) { AGD.ref = el.getAttribute('data-ir'); AGD.vista = 'dia'; agdLsSet('vista', 'dia'); AGD.pop = null; agdRender(); return; }
+    if ((el = t.closest('[data-dia]'))) { AGD.ref = el.getAttribute('data-dia'); AGD.mini = AGD.ref.slice(0, 7); AGD.pop = null; agdRender(); return; }
+    if ((el = t.closest('[data-col]'))) { var r = el.getBoundingClientRect(), m = Math.floor(((ev.clientY - r.top) / AGD_HH * 60) / 30) * 30; agdNovo(el.getAttribute('data-col'), agdHora(m)); return; }
+    if ((el = t.closest('[data-diatodo]'))) { agdNovo(el.getAttribute('data-diatodo'), null, true); return; }
+    if ((el = t.closest('[data-cel]'))) { agdNovo(el.getAttribute('data-cel'), null, false); return; }
+  });
+  root.addEventListener('change', function(ev) {
+    var id = ev.target.id;
+    if (id === 'agd-quem') { AGD.quem = ev.target.value; AGD.pop = null; agdOuvir(); agdRender(); return; }
+    if (id === 'agd-f-dt') { var hz = document.getElementById('agd-f-horas'); if (hz) hz.style.display = ev.target.checked ? 'none' : ''; return; }
+    if (id === 'agd-f-rep') { var al = document.getElementById('agd-f-ate-l'); if (al) al.style.display = ev.target.value ? '' : 'none'; return; }
+    if (id === 'agd-f-ini') { var fi = document.getElementById('agd-f-fim'), f = AGD.form; if (fi && f) { var dur = Math.max(15, agdMin(f.fim) - agdMin(f.ini)); f.ini = ev.target.value; fi.value = agdHora(agdMin(f.ini) + dur); f.fim = fi.value; } }
+    if (id === 'agd-f-fim' && AGD.form) AGD.form.fim = ev.target.value;
+  });
+  root.addEventListener('keydown', function(ev) {
+    if (!AGD.form) return;
+    if (ev.key === 'Escape') { AGD.form = null; agdRender(); }
+    if (ev.key === 'Enter' && ev.target.id === 'agd-f-tit') { ev.preventDefault(); agdSalvar(); }
+  });
+  root.addEventListener('pointerdown', agdArrIni);
+}
+function agdAcao(a, el, ev) {
+  var e = AGD.pop && AGD.evs[AGD.pop.key];
+  switch (a) {
+    case 'hoje': AGD.ref = agdHoje(); AGD.mini = AGD.ref.slice(0, 7); AGD.scroll = null; break;
+    case 'ant': case 'prox': var s = a === 'ant' ? -1 : 1;
+      if (AGD.vista === 'mes') { var d = agdData(AGD.ref); AGD.ref = agdIso(new Date(d.getFullYear(), d.getMonth() + s, 1)); }
+      else AGD.ref = agdSoma(AGD.ref, s * ({ dia: 1, semana: 7, lista: 30 })[AGD.vista]);
+      AGD.mini = AGD.ref.slice(0, 7); break;
+    case 'mini-ant': case 'mini-prox': var p = AGD.mini.split('-'); AGD.mini = agdIso(new Date(+p[0], +p[1] - 1 + (a === 'mini-ant' ? -1 : 1), 1)).slice(0, 7); break;
+    case 'criar': agdNovo(AGD.vista === 'dia' ? AGD.ref : agdHoje()); return;
+    case 'fechar-pop': AGD.pop = null; break;
+    case 'editar': if (e) { agdEditar(e); return; } break;
+    case 'excluir': if (AGD.pop) AGD.pop.confirma = 'excluir'; break;
+    case 'exc-nao': if (AGD.pop) AGD.pop.confirma = null; break;
+    case 'exc-um': if (e) { agdExcluir(e, true); return; } break;
+    case 'exc-todos': if (e) { agdExcluir(e, false); return; } break;
+    case 'ir-ret': if (e) { agdIrRetorno(e.r); return; } break;
+    case 'ir-neg': if (e) { agdIrNeg(e.n); return; } break;
+    case 'ir-inat': if (e) { agdIrInat(e); return; } break;
+    case 'ir-rotina': AGD.pop = null; agdIrAba('rotina'); return;
+    case 'ir-tel': if (e) { agdIrTel(e.base); return; } break;
+    case 'cancelar': AGD.form = null; break;
+    case 'fundo-form': if (ev.target !== el) return; AGD.form = null; break;
+    case 'salvar': agdSalvar(); return;
+  }
+  agdRender();
+}
+
+/* ── arrastar para mudar o horário (ou a borda de baixo para mudar a duração) ── */
+function agdArrIni(ev) {
+  var el = ev.target.closest('.agd-ev[data-arr]'); if (!el || ev.button > 0) return;
+  var e = AGD.evs[el.getAttribute('data-ev')]; if (!e) return;
+  AGD.drag = { el: el, e: e, y0: ev.clientY, x0: ev.clientX, top0: parseFloat(el.style.top), alt0: parseFloat(el.style.height), rs: !!ev.target.closest('[data-rs]'), col: el.parentNode, mov: false, id: ev.pointerId };
+  document.addEventListener('pointermove', agdArrMove); document.addEventListener('pointerup', agdArrFim); document.addEventListener('pointercancel', agdArrFim);
+}
+function agdArrMove(ev) {
+  var d = AGD.drag; if (!d) return;
+  var dy = ev.clientY - d.y0, dx = ev.clientX - d.x0;
+  if (!d.mov && Math.abs(dy) < 5 && Math.abs(dx) < 5) return;
+  if (!d.mov) { d.mov = true; d.el.classList.add('arrastando'); }
+  ev.preventDefault();
+  var passo = AGD_HH / 4, sn = Math.round(dy / passo) * passo;
+  if (d.rs) { d.el.style.height = Math.max(passo - 2, d.alt0 + sn) + 'px'; return; }
+  d.el.style.top = Math.max(0, Math.min(AGD_HH * 24 - d.alt0, d.top0 + sn)) + 'px';
+  var alvo = document.elementsFromPoint(ev.clientX, ev.clientY).find(function(x) { return x.classList && x.classList.contains('agd-col'); });
+  if (alvo && alvo !== d.el.parentNode) { alvo.appendChild(d.el); }
+}
+function agdArrFim() {
+  var d = AGD.drag; document.removeEventListener('pointermove', agdArrMove); document.removeEventListener('pointerup', agdArrFim); document.removeEventListener('pointercancel', agdArrFim);
+  AGD.drag = null; if (!d || !d.mov) { if (AGD.pendente) agdRender(); return; }
+  AGD.arrastou = true; setTimeout(function() { AGD.arrastou = false; }, 50);
+  var top = parseFloat(d.el.style.top), alt = parseFloat(d.el.style.height) + 2;
+  var ini = Math.round(top / AGD_HH * 60 / 15) * 15, dur = Math.max(15, Math.round(alt / AGD_HH * 60 / 15) * 15);
+  var dia = d.el.parentNode.getAttribute('data-col') || d.e.dia;
+  var upd = d.rs ? { fim: agdHora(agdMin(d.e.ini) + dur) } : { data: dia, ini: agdHora(ini), fim: agdHora(Math.min(24 * 60 - 1, ini + dur)) };
+  upd.editadoPor = currentUser; upd.editadoEm = Date.now();
+  Promise.resolve(dbRef(agdCaminhoEv(d.e)).update(upd)).then(function() { agdAviso(d.rs ? 'Duração alterada' : 'Horário alterado: ' + agdHoraTxt(upd.ini)); }).catch(function(x) { agdAviso('Não salvou: ' + (x && x.message || x)); agdRender(); });
+  agdRender();
+}
+
+/* ── lembretes (com o guia aberto, em qualquer aba) ── */
+function agdLembrar() {
+  if (!currentUser || typeof dbRef !== 'function') return;
+  agdSub('agenda/pessoal/' + currentUser); agdSub('agenda/equipe');
+  var hoje = agdHoje(), amanha = agdSoma(hoje, 1), agora = Date.now();
+  var lista = [];
+  [['agenda/pessoal/' + currentUser, 'pessoal'], ['agenda/equipe', 'equipe']].forEach(function(x) {
+    var m = AGD.c[x[0]] || {};
+    Object.keys(m).forEach(function(id) { var ev = m[id]; if (!ev || !ev.lembrete) return;
+      [hoje, amanha].forEach(function(dia) { if (!agdOcorre(ev, dia)) return;
+        var ini = agdData(dia); ini.setHours(0, 0, 0, 0); if (!ev.diaTodo && ev.ini) ini = new Date(ini.getTime() + agdMin(ev.ini) * 60000); else ini.setHours(8, 0, 0, 0);
+        var aviso = ini.getTime() - ev.lembrete * 60000;
+        if (agora >= aviso && agora < ini.getTime() + 60000) lista.push({ id: id, dia: dia, ev: ev, ini: ini }); });
+    });
+  });
+  lista.forEach(function(x) {
+    var ch = 'fgvba_agd_av_' + currentUser + '_' + x.id + '_' + x.dia;
+    try { if (localStorage.getItem(ch)) return; localStorage.setItem(ch, '1'); } catch (e) { if (AGD.avisados[ch]) return; AGD.avisados[ch] = 1; }
+    var falta = Math.round((x.ini.getTime() - agora) / 60000);
+    var quando = x.ev.diaTodo ? (x.dia === hoje ? 'Hoje' : 'Amanhã') : (falta > 0 ? 'Em ' + (falta >= 60 ? Math.round(falta / 60) + 'h' : falta + ' min') + ' · ' + agdHoraTxt(x.ev.ini) : 'Agora · ' + agdHoraTxt(x.ev.ini));
+    var abrir = function() { AGD.ref = x.dia; agdIrAba('agenda'); };
+    if (typeof window.aguiaAvisar === 'function') window.aguiaAvisar({ titulo: agdEsc(x.ev.tit), anim: 'ag-aponta', som: 'pequeno', texto: agdEsc(quando) + (x.ev.cliente ? '<br>' + agdEsc(x.ev.cliente) : ''), dura: 15000, acoes: [{ rot: 'Abrir agenda', pri: true, fn: abrir }] });
+    else agdAviso(x.ev.tit + ' · ' + quando);
+    try { if (window.Notification && Notification.permission === 'granted' && document.hidden) new Notification(x.ev.tit, { body: quando }); } catch (e) {}
+  });
+}
+setInterval(function() { try { agdLembrar(); } catch (e) { console.warn('agenda: lembrete', e); } }, 30000);
+setTimeout(function() { try { agdLembrar(); } catch (e) {} }, 9000);
+/* a linha de "agora" anda sozinha */
+setInterval(function() { var tab = document.getElementById('tab-agenda'); if (tab && tab.classList.contains('active') && !AGD.form && !AGD.drag && !AGD.pop && (AGD.vista === 'dia' || AGD.vista === 'semana')) agdRender(); }, 5 * 60 * 1000);
+window.addEventListener('resize', function() { if (AGD.pop) agdPosPop(); });
+</script>
 </body>
 </html>
