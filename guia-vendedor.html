@@ -27328,7 +27328,8 @@ var DC_RES = [
   { k: 'retornar', t: 'Retornar depois', cor: '#2F6FB3', at: false }, // não conta como atendida (21/10/2026)
   { k: 'nao',      t: 'Não atendeu',     cor: '#8E939C', at: false },
   { k: 'caixa',    t: 'Caixa postal',    cor: '#B7791F', at: false },
-  { k: 'errado',   t: 'Número errado',   cor: '#C2413B', at: false }
+  { k: 'errado',   t: 'Número errado',   cor: '#C2413B', at: false },
+  { k: 'desq',     t: 'Lead desqualificado', cor: '#6B2737', at: true } // 28/10/2026: o número sai da fila de toda a equipe
 ];
 var DC_RESMAP = {}; DC_RES.forEach(function(r) { DC_RESMAP[r.k] = r; });
 var DC = { ligado: false, listas: [], itens: [], estado: {}, equipe: {}, listaId: null, avulso: null, call: null, auto: null, pad: '', filtro: 'todos', aba: 'discar', diaKey: null, confirmDel: null };
@@ -27392,6 +27393,7 @@ function dcInit() {
     dcAgInit();
     dcInatIni();
     dcConcIni();
+    dcDesqIni();
   }
   dcRender();
 }
@@ -27550,6 +27552,52 @@ function dcConcFaixaHtml(a) {
 }
 function dcConcTagHtml(c) { var r = dcConcDe(c); if (!r) return ''; return r.bloqueio ? '<div class="dc-sub" style="color:#C2413B;font-weight:600;white-space:nowrap" title="Concorrente: ' + dcConcNome(r.c) + (r.porNome ? ' (pelo nome)' : '') + ' · bloqueado">concorrente' +
     (r.porNome && dcDig(c.tel) ? ' <a href="#" style="font-weight:400;color:var(--muted)" title="Esta loja não é concorrente: liberar" onclick="dcConcNaoE(\'' + dcEsc(r.c.id) + '\',\'' + dcEsc(dcDig(c.tel)) + '\');return false">liberar</a>' : '') + '</div>' : '<div class="dc-sub" style="color:#B7791F;font-weight:600;white-space:nowrap" title="Nome parecido com ' + dcConcNome(r.c) + '">concorrente?</div>'; }
+/* ══ LEADS DESQUALIFICADOS (28/10/2026) — discador/desqualificados/{00DDDNUMERO} = {tel, nome, empresa, motivo, por, em}
+   Marcou "Lead desqualificado": o número não roda mais para ninguém (fila, funil, inativos, retornos e botão de ligar).
+   Só a gestão (ou quem marcou) pode requalificar. */
+var DCD = { map: {}, ligado: false, confirma: null, ver: false };
+function dcDesqIni() {
+  if (DCD.ligado) return; DCD.ligado = true;
+  dbRef('discador/desqualificados').on('value', function(snap) {
+    DCD.map = (snap && snap.val()) || {};
+    if (!DC.call && !DC.auto) dcRender();
+  });
+}
+function dcDesqDe(x) { if (!x) return null; var k = dcMicroNum(x.tel); return (k && DCD.map[k]) ? Object.assign({ k: k }, DCD.map[k]) : null; }
+function dcBarrado(x) { return dcConcBloq(x) || !!dcDesqDe(x); }
+function dcDesqPode(d) { return dcGestao() || (d && d.por === currentUser); }
+function dcDesqGravar(a, motivo) {
+  var k = dcMicroNum(a.tel); if (!k) return Promise.resolve();
+  var rec = { tel: dcDig(a.tel), nome: String(a.nome || '').slice(0, 80), empresa: String(a.empresa || '').slice(0, 80), motivo: String(motivo || '').slice(0, 300), por: currentUser, em: Date.now() };
+  DCD.map[k] = rec;
+  return Promise.resolve(dbRef('discador/desqualificados/' + k).set(rec)).catch(function(e) { dcAviso('Não salvou a desqualificação: ' + (e && e.message)); });
+}
+function dcDesqRequalificar(k) {
+  var d = DCD.map[k]; if (!d || !dcDesqPode(d)) return;
+  if (DCD.confirma !== k) { DCD.confirma = k; dcRender(); return; }
+  DCD.confirma = null; delete DCD.map[k];
+  Promise.resolve(dbRef('discador/desqualificados/' + k).remove()).then(function() { dcAviso('Lead requalificado: o número volta a rodar'); dcRender(); });
+}
+function dcDesqQuando(t) { return dcEsc(new Date(t).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })); }
+function dcDesqFaixaHtml(a) {
+  var d = dcDesqDe(a); if (!d) return '';
+  return '<div class="dc-card dc-alerta" style="margin:0 0 12px;padding:12px 14px"><b style="color:#6B2737">Lead desqualificado</b><div class="dc-sub">Marcado por ' +
+    dcEsc(typeof rtNome === 'function' ? rtNome(d.por) : d.por) + ' em ' + dcDesqQuando(d.em) + (d.motivo ? ' · ' + dcEsc(d.motivo) : '') + '. Este número não roda mais para ninguém da equipe.</div>' +
+    (dcDesqPode(d) ? '<div class="dc-row" style="margin-top:8px"><button class="dc-btn" onclick="dcDesqRequalificar(\'' + dcEsc(d.k) + '\')">' + (DCD.confirma === d.k ? 'Confirmar: voltar a ligar' : 'Requalificar este lead') + '</button></div>' : '') + '</div>';
+}
+function dcDesqTagHtml(c) { var d = dcDesqDe(c); return d ? '<div class="dc-sub" style="color:#6B2737;font-weight:600;white-space:nowrap" title="' + dcEsc(d.motivo || 'Lead desqualificado') + '">desqualificado</div>' : ''; }
+function dcDesqCardHtml() {
+  var ks = Object.keys(DCD.map).sort(function(a, b) { return (DCD.map[b].em || 0) - (DCD.map[a].em || 0); });
+  var h = '<div class="dc-card"><div class="dc-row" style="justify-content:space-between"><div class="dc-eyebrow">Leads desqualificados · ' + ks.length + '</div>' +
+    (ks.length ? '<button class="dc-btn dc-mini" onclick="DCD.ver=!DCD.ver;dcRender()">' + (DCD.ver ? 'Esconder' : 'Ver todos') + '</button>' : '') + '</div>' +
+    '<div class="dc-sub" style="margin-bottom:6px">Números marcados como <b>Lead desqualificado</b> no resultado da ligação. Saem da fila, do funil e dos inativos de toda a equipe e o botão de ligar some.' + (dcGestao() ? ' A gestão pode requalificar.' : '') + '</div>';
+  if (!ks.length) return h + '<div class="dc-vazio">Nenhum lead desqualificado.</div></div>';
+  if (!DCD.ver) return h + '</div>';
+  return h + ks.map(function(k) { var d = DCD.map[k];
+    return '<div class="dc-it"><div style="min-width:0"><b>' + dcEsc(d.empresa || d.nome || dcTel(d.tel)) + '</b><div class="dc-sub">' + dcEsc(dcTel(d.tel)) + ' · ' +
+      dcEsc(typeof rtNome === 'function' ? rtNome(d.por) : d.por) + ' · ' + dcDesqQuando(d.em) + (d.motivo ? ' · ' + dcEsc(d.motivo) : '') + '</div></div>' +
+      (dcDesqPode(d) ? '<button class="dc-btn dc-mini" onclick="dcDesqRequalificar(\'' + dcEsc(k) + '\')">' + (DCD.confirma === k ? 'Confirmar' : 'Requalificar') + '</button>' : '') + '</div>'; }).join('') + '</div>';
+}
 function dcLista() { return DC.listas.find(function(l) { return l.id === DC.listaId; }); }
 var DC_ASSUMIR_DIAS = 10;
 // status de um contato da lista da equipe: livre, meu (assumido por mim), outro (com outro vendedor) ou ganho (pedido fechado)
@@ -27631,7 +27679,7 @@ function dcPula(l, c, p) {
   if ((l.para || l.inatPara) && c && c.repassado) return true;
   if (l.inatPara && c && c.funil) return true;
   if (!l.equipe && dcResolvido(c, dcRodada(l)) && !man) return true;
-  if (dcConcBloq(c)) return true;
+  if (dcBarrado(c)) return true;
   return false;
 }
 function dcPos() {
@@ -27796,7 +27844,7 @@ function dcVDiscar() {
   if (l && l.para) h += dcPrazoBanner(l);
   if (l && l.inatPara) h += dcInatBanner(l);
   if (a) {
-    h += dcConcFaixaHtml(a);
+    h += dcConcFaixaHtml(a) + dcDesqFaixaHtml(a);
     h += '<div class="dc-eyebrow">' + (DC.avulso ? (DC.avulso.retIdx != null ? 'Retorno agendado' : 'Ligação avulsa') : 'Contato ' + (pos + 1) + ' de ' + total) + '</div>' +
       '<input class="dc-nome dc-edit" value="' + dcEsc(a.nome || '') + '" id="dc-enome" placeholder="Nome do contato ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
       '<input class="dc-emp dc-edit" value="' + dcEsc(a.empresa || '') + '" id="dc-eemp" placeholder="Empresa / loja ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
@@ -27811,7 +27859,7 @@ function dcVDiscar() {
       (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') + '</div>' +
       (dcSemDDD(a.tel) ? '<div class="dc-prazo quase" style="margin:-4px 0 12px"><b>Número sem DDD</b> — a ligação não completa. Coloque o DDD no número acima e aperte <b>Enter</b> para salvar.' +
         (DC.pausaDDD ? '<div class="dc-sub">⏸️ A discagem automática parou aqui. Corrigindo o número, ela continua sozinha; se não souber o DDD, clique em <b>Pular</b>.</div>' : '') + '</div>' : '') +
-      '<div class="dc-row" style="gap:12px 16px">' + (dcConcBloq(a) ? '<span class="dc-sub" style="color:#C2413B;font-weight:600">Ligação bloqueada: concorrente</span>' : dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live)) +
+      '<div class="dc-row" style="gap:12px 16px">' + (dcConcBloq(a) ? '<span class="dc-sub" style="color:#C2413B;font-weight:600">Ligação bloqueada: concorrente</span>' : dcDesqDe(a) ? '<span class="dc-sub" style="color:#6B2737;font-weight:600">Ligação bloqueada: lead desqualificado</span>' : dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live)) +
       '<span class="dc-timer' + (live ? ' live' : '') + '" id="dc-timer">' + dcClock(dcSeg()) + '</span>' +
       (live ? '<button class="dc-btn dc-deslig" onclick="dcDesliguei()">Desliguei <span class="dc-kbd">D</span></button>' : (DC.call ? '<span class="dc-sub">Ligação encerrada · marque o resultado</span>' : '')) + '</div>' +
       '<div class="dc-eyebrow" style="margin-top:16px">Como foi a ligação?</div><div class="dc-res">' +
@@ -27865,7 +27913,7 @@ function dcFunilContatos(quem) {
   var out = [];
   (DC.todasListas || []).forEach(function(l) {
     l.contatos.forEach(function(c, i) {
-      if (!c || !c.tel || dcConcBloq(c)) return;
+      if (!c || !c.tel || dcBarrado(c)) return;
       if (l.equipe) { if (!(c.dono && (quem === 'todos' || c.dono === quem) && dcEqStatus(c) !== 'livre')) return; }
       else { if (c.repassado) return; if (quem !== 'todos' && (l.inatPara ? l.inatPara !== quem : (l.criadoPor !== quem && l.para !== quem))) return; }
       out.push({ c: c, i: i, l: l });
@@ -27885,7 +27933,7 @@ function dcFunilMontar() {
   var cols = { aligar: [], tentando: [], falou: [], retorno: [] }, vistos = {};
   // retornos agendados (só da própria pessoa: ficam no estado dela)
   if (quem === currentUser) (DC.estado.retornos || []).forEach(function(r, i) {
-    if (!r) return; var k = dcMicroNum(r.tel); vistos[k] = 1;
+    if (!r || dcDesqDe(r)) return; var k = dcMicroNum(r.tel); vistos[k] = 1;
     if (telNeg[k] || !dcFunilBate((r.nome || '') + ' ' + (r.empresa || '') + ' ' + r.tel)) return;
     cols.retorno.push({ tipo: 'ret', i: i, nome: r.nome, empresa: r.empresa, tel: r.tel, obs: r.obs, quando: r.quando });
   });
@@ -28232,7 +28280,7 @@ function capImportar() {
   dcGravarContatos(l, r.contatos).then(function() { if (outro) { capFecharSo(); dcAviso(r.add + ' contatos enviados para a lista ' + l.nome); } else fim(l.id, r.add); });
 }
 function dcRetornosHtml() {
-  var rs = (DC.estado.retornos || []).map(function(x, i) { return Object.assign({ i: i }, x); })
+  var rs = (DC.estado.retornos || []).map(function(x, i) { return Object.assign({ i: i }, x); }).filter(function(x) { return !dcDesqDe(x); })
     .sort(function(a, b) { return String(a.quando || '9').localeCompare(String(b.quando || '9')); });
   if (!rs.length) return '<div class="dc-vazio">Nenhum retorno. Ao marcar "Retornar depois", o cliente aparece aqui.</div>';
   var agora = new Date();
@@ -28346,6 +28394,12 @@ function dcRegistrar(res) {
   var obsEl = document.getElementById('dc-obs'), qEl = document.getElementById('dc-quando');
   var obs = obsEl ? obsEl.value.trim() : '', quando = qEl ? qEl.value : '';
   if (res === 'retornar' && !quando) { dcAviso('Escolha quando retornar.'); if (qEl) qEl.focus(); return; }
+  var desqMotivo = '';
+  if (res === 'desq') { // 28/10/2026: confirma, porque o número deixa de rodar para a equipe toda
+    var mt = prompt('Lead desqualificado: este número não vai rodar mais para ninguém.\nMotivo (opcional):', obs);
+    if (mt === null) return;
+    desqMotivo = mt.trim(); if (!obs) obs = desqMotivo;
+  }
   var dur = Math.round(dcSeg()), canal = DC.call ? DC.call.canal : dcPref().canal;
   var item = { tel: dcDig(a.tel), nome: a.nome || '', empresa: a.empresa || '', res: res, canal: canal, obs: obs, dur: dur, hora: Date.now(), lista: a.origem === 'lista' ? DC.listaId : null };
   var eraAvulso = DC.avulso, listaId = DC.listaId, pos = dcPos();
@@ -28374,12 +28428,14 @@ function dcRegistrar(res) {
     var rets = (e.retornos || []).slice();
     if (eraAvulso && eraAvulso.retIdx != null) rets.splice(eraAvulso.retIdx, 1);
     if (res === 'retornar') rets.push({ tel: item.tel, nome: item.nome, empresa: item.empresa, obs: obs, quando: quando });
+    if (res === 'desq') { var kd = dcMicroNum(item.tel); rets = rets.filter(function(r) { return !r || dcMicroNum(r.tel) !== kd; }); }
     e.retornos = rets.slice(-200);
     if (!eraAvulso && listaId) { e.posicoes = Object.assign({}, e.posicoes || {}); e.posicoes[listaId] = pos + 1; }
     return e;
   });
   try { dcEqMarcarContato(item.tel); } catch (e) {}
-  dcAviso(DC_RESMAP[res].t + ' registrado');
+  if (res === 'desq') dcDesqGravar(item, desqMotivo);
+  dcAviso(res === 'desq' ? 'Lead desqualificado: o número não roda mais para ninguém' : DC_RESMAP[res].t + ' registrado');
   if (!eraAvulso && dcPref().auto) dcIniciarAuto(); else dcRender();
 }
 
@@ -28734,7 +28790,7 @@ function dcVListas() {
     '<textarea id="dc-ltxt" rows="9" oninput="dcPrevia()" placeholder="Carlos Souza; Casa do Drywall; (11) 98765-4321&#10;Marina Lopes; Gesso &amp; Cia; 21 3344-5566"></textarea></label>' +
     '<div class="dc-row" style="margin-top:10px"><label class="dc-btn" for="dc-lfile">Abrir arquivo .csv</label><input type="file" id="dc-lfile" accept=".csv,.txt" style="display:none" onchange="dcArquivo(this)"><span class="dc-sub" id="dc-prev"></span></div>' +
     '<button class="dc-btn dc-pri" style="margin-top:12px" onclick="dcSalvarLista()">' + (dest ? 'Adicionar à lista' : 'Salvar lista') + '</button></div></div>' +
-    '<div class="dc-col">' + dcConcCardHtml() + dcDirecionadasHtml() + '<div class="dc-card"><div class="dc-eyebrow">Minhas listas</div><div class="dc-sub" style="margin-bottom:6px">Só você vê e disca as listas que anexar. Para passar um contato para todos, use o botão <b>Equipe</b> na linha dele.</div>' +
+    '<div class="dc-col">' + dcConcCardHtml() + dcDesqCardHtml() + dcDirecionadasHtml() + '<div class="dc-card"><div class="dc-eyebrow">Minhas listas</div><div class="dc-sub" style="margin-bottom:6px">Só você vê e disca as listas que anexar. Para passar um contato para todos, use o botão <b>Equipe</b> na linha dele.</div>' +
     (DC.listas.length ? DC.listas.map(function(l) {
       return '<div class="dc-it"><div style="min-width:0"><b>' + (l.equipe ? '👥 ' : '') + dcEsc(l.nome) + '</b><div class="dc-sub">' + l.contatos.length + ' contatos · ' + (l.equipe ? 'disponível para todos · ' : '') + (l.criadoPor ? dcEsc(rtNome ? rtNome(l.criadoPor) : l.criadoPor) + ' · ' : '') + (l.criado ? new Date(l.criado).toLocaleDateString('pt-BR') : '') + '</div></div>' +
         '<div class="dc-row"><button class="dc-btn" onclick="dcEscolherLista(\'' + dcEsc(l.id) + '\');dcSetAba(\'discar\')">Discar</button><button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button>' +
@@ -28757,8 +28813,8 @@ function dcTabelaContatos(l, leitura) {
         : st === 'outro' ? '<div class="dc-sub">com ' + nm(c.dono) + ' · ' + dcEqPrazo(c) + '</div>'
         : st === 'meu' ? '<div class="dc-sub">com você · ' + dcEqPrazo(c) + '</div>' + (dcEqAtrasado(c) ? '<div class="dc-sub" style="color:#C2413B;font-weight:600">sem contato há ' + dcEqDiasSem(c) + ' dia(s): ligue hoje</div>' : '<div class="dc-sub">próximo contato até ' + new Date(dcEqUltimo(c) + DC_RETORNO_DIAS * 864e5).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + '</div>')
         : (c.por ? '<div class="dc-sub">livre · indicado por ' + nm(c.por) + '</div>' : '<div class="dc-sub">livre</div>');
-      return '<tr' + (l.equipe && /outro|ganho/.test(st) ? ' class="feito"' : (i < feitos ? ' class="feito"' : (i === feitos ? ' class="prox"' : ''))) + '><td>' + (i + 1) + '</td><td>' + ed('nome') + dcConcTagHtml(c) + stTxt + '</td><td>' + ed('empresa') + '</td><td class="tel">' + dcEsc(dcTel(c.tel)) + '</td>' +
-        (leitura || dcConcBloq(c) ? '<td></td>' : '<td style="white-space:nowrap"><button class="dc-btn dc-mini" title="Discar a partir deste contato" onclick="dcDiscarDaqui(\'' + lid + '\',' + i + ')">Ligar</button>' +
+      return '<tr' + (l.equipe && /outro|ganho/.test(st) ? ' class="feito"' : (i < feitos ? ' class="feito"' : (i === feitos ? ' class="prox"' : ''))) + '><td>' + (i + 1) + '</td><td>' + ed('nome') + dcConcTagHtml(c) + dcDesqTagHtml(c) + stTxt + '</td><td>' + ed('empresa') + '</td><td class="tel">' + dcEsc(dcTel(c.tel)) + '</td>' +
+        (leitura || dcBarrado(c) ? '<td></td>' : '<td style="white-space:nowrap"><button class="dc-btn dc-mini" title="Discar a partir deste contato" onclick="dcDiscarDaqui(\'' + lid + '\',' + i + ')">Ligar</button>' +
           (l.equipe ? (st === 'livre' ? ' <button class="dc-btn dc-mini dc-assumir" onclick="dcAssumir(' + i + ')">Assumir</button>' : st === 'meu' ? ' <button class="dc-btn dc-mini" onclick="dcLiberar(' + i + ')">Devolver</button>' : '') : ' <button class="dc-btn dc-mini" title="Disponibilizar este contato para a equipe" onclick="dcParaEquipe(DC.listas.find(function(x){return x.id===\'' + lid + '\'}).contatos[' + i + '])">Equipe</button>') + '</td>') + '</tr>';
     }).join('') + '</tbody></table></div><div class="dc-sub" style="margin:4px 0 14px">' + (leitura ? 'Lista de outro vendedor: só leitura.' : 'Você já trabalhou ' + Math.min(feitos, l.contatos.length) + ' de ' + l.contatos.length + '. Clique no nome ou na loja para editar.') + '</div>';
 }
@@ -28925,7 +28981,7 @@ function dcInatBase() {
     .filter(function(r) { return r.ultima && r.dias > lim; })
     .sort(function(a, b) { return String(b.ultima).localeCompare(String(a.ultima)); });
 }
-function dcInatPendentes() { return dcInatBase().filter(function(r) { return !DCI.recs[r.k] && !dcConcBloq(r); }); }
+function dcInatPendentes() { return dcInatBase().filter(function(r) { return !DCI.recs[r.k] && !dcBarrado(r); }); }
 // roda: começa no vendedor dos pedidos e segue a ordem da equipe
 function dcInatFila(primeiro, vends) {
   var ordem = CK_EQUIPE.filter(function(v) { return vends.indexOf(v) >= 0; });
@@ -29146,7 +29202,7 @@ function dcInatImportar() {
   var carga = dcInatCarga(), agora = Date.now(), upd = {}, porVn = {}, n = 0, rep = 0;
   lin.forEach(function(c) {
     var k = c.empresa ? dcAgChave(c.empresa) : 'TEL_' + dcDig(c.tel), atual = DCI.recs[k];
-    if (dcConcBloq(c)) { rep++; return; }
+    if (dcBarrado(c)) { rep++; return; }
     if (upd[k] || tels[dcMicroNum(c.tel)] || (atual && (atual.status === 'andamento' || atual.status === 'captado'))) { rep++; return; }
     var b = base[k] || {}, natural = c.vn || (modo && modo !== 'auto' ? modo : '') || b.vn || '';
     var dono = cfg.vends.indexOf(natural) >= 0 ? natural : cfg.vends.slice().sort(function(x, y) { return (carga[x] || 0) - (carga[y] || 0); })[0];
@@ -29262,7 +29318,7 @@ function dcVConfig() {
     '<li><b>Teste.</b> Em Discar, use o teclado para ligar para o seu celular. Na primeira vez o Chrome pergunta se pode abrir o MicroSIP: marque <b>Sempre permitir</b> e confirme. Sem isso a discagem automática para a cada ligação.</li>' +
     '<li><b>WhatsApp.</b> O botão WhatsApp abre a conversa do cliente; clique no ícone de telefone da conversa para ligar. O WhatsApp não permite que um site já comece a ligação sozinho. Para isso funcionar direto, instale o <b>WhatsApp para Windows</b> (Microsoft Store) e entre com o WhatsApp do celular da empresa. Ligação pelo WhatsApp não é gravada pelo MicroSIP.</li>' +
     '<li><b>Gravação.</b> Nas Configurações do MicroSIP, ative a gravação de chamadas e escolha a pasta. O arquivo sai com data, hora e número, então dá para achar qualquer ligação pelo histórico.</li>' +
-    '<li><b>Ritmo.</b> <span class="dc-kbd">Enter</span> liga pelo canal padrão (<span class="dc-kbd">M</span> força MicroSIP e <span class="dc-kbd">W</span> abre o WhatsApp), a conversa acontece no MicroSIP, e as teclas <span class="dc-kbd">1</span> a <span class="dc-kbd">6</span> marcam o resultado. O próximo número é discado sozinho depois da contagem.</li>' +
+    '<li><b>Ritmo.</b> <span class="dc-kbd">Enter</span> liga pelo canal padrão (<span class="dc-kbd">M</span> força MicroSIP e <span class="dc-kbd">W</span> abre o WhatsApp), a conversa acontece no MicroSIP, e as teclas <span class="dc-kbd">1</span> a <span class="dc-kbd">8</span> marcam o resultado. O próximo número é discado sozinho depois da contagem.</li>' +
     '</ol></div></div><div class="dc-col"><div class="dc-card"><div class="dc-eyebrow">Preferências deste computador</div>' +
     '<label class="dc-lab">Ligar por padrão pelo<select id="dc-ccanal"><option value="micro"' + (p.canal !== 'wa' ? ' selected' : '') + '>MicroSIP (ramal)</option><option value="wa"' + (p.canal === 'wa' ? ' selected' : '') + '>WhatsApp</option></select></label>' +
     '<label class="dc-lab" style="margin-top:10px">Abrir o WhatsApp no<select id="dc-cwa"><option value="app"' + (p.waModo !== 'web' ? ' selected' : '') + '>Aplicativo do computador</option><option value="web"' + (p.waModo === 'web' ? ' selected' : '') + '>WhatsApp web (navegador)</option></select></label>' +
