@@ -18519,7 +18519,7 @@ function showTab(name, btn) {
   if (name === 'minhasmetas') mmInit();
   if (name === 'rota' && typeof rtInit === 'function') rtInit();
   if (name === 'discador' && typeof dcInit === 'function') dcInit();
-  if (name === 'agenda' && typeof agdInit === 'function') agdInit();
+  if (name === 'agenda' && typeof agdInit === 'function') { agdInit(); if (typeof agdNovosVistos === 'function') agdNovosVistos(); }
   if (name === 'shopping' && typeof spInit === 'function') spInit();
   if (name === 'abastecimento' && typeof abInit === 'function') abInit();
   if (name === 'central' && typeof caInit === 'function') caInit();
@@ -29567,7 +29567,7 @@ function agdAviso(m) { var t = document.getElementById('agd-toast'); if (t) t.re
 function agdSub(path) {
   if (AGD.subs[path]) return; AGD.subs[path] = true;
   try {
-    dbRef(path).on('value', function(snap) { AGD.c[path] = (snap && snap.val()) || null; agdMudou(); });
+    dbRef(path).on('value', function(snap) { AGD.c[path] = (snap && snap.val()) || null; try { agdChecarNovos(path); } catch (e) { console.warn('agenda: novos', e); } agdMudou(); });
   } catch (e) { console.warn('agenda: não ouviu ' + path, e); }
 }
 function agdOuvir() {
@@ -30233,6 +30233,59 @@ function agdImpApagar() {
   agdRender();
 }
 
+
+/* ══ AVISO DE TAREFA NOVA NA AGENDA (28/10/2026) ══
+   Quando outra pessoa coloca um compromisso na minha agenda ou na agenda da equipe, o guia avisa (águia, notificação do
+   navegador se estiver em outra janela) e mostra um número no menu Agenda até eu abrir a aba.
+   Guarda neste aparelho até quando já avisou (fgvba_agd_ultimo_{VN}); o que entrou com o guia fechado é avisado ao abrir. */
+function agdChecarNovos(path) {
+  if (!currentUser) return;
+  var minha = 'agenda/pessoal/' + currentUser;
+  if (path !== minha && path !== 'agenda/equipe') return;
+  var chU = 'ultimo_' + currentUser + '_' + (path === minha ? 'p' : 'e'), ultimo = agdLs(chU, null), m = AGD.c[path] || {};
+  if (ultimo == null) { agdLsSet(chU, Date.now()); return; } // primeira vez neste aparelho: começa a contar daqui
+  var novos = [], maior = ultimo;
+  Object.keys(m).forEach(function(id) { var ev = m[id];
+    if (!ev || !ev.criadoEm || ev.criadoEm <= ultimo) return;
+    maior = Math.max(maior, ev.criadoEm);
+    if (ev.criadoPor === currentUser || ev.origem === 'google') return;
+    novos.push({ id: id, ev: ev, equipe: path !== minha });
+  });
+  if (maior > ultimo) agdLsSet(chU, maior);
+  if (!novos.length) return;
+  var lista = agdLs('novos_' + currentUser, []);
+  novos.forEach(function(n) { if (lista.indexOf(n.id) < 0) lista.push(n.id); });
+  agdLsSet('novos_' + currentUser, lista.slice(-50));
+  agdSelo();
+  var tab = document.getElementById('tab-agenda'), naAba = tab && tab.classList.contains('active') && !document.hidden;
+  var quando = function(ev) { var d = agdData(ev.data); return AGD_SEM[d.getDay()] + ', ' + d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + (ev.diaTodo || !ev.ini ? ' (dia inteiro)' : ' às ' + agdHoraTxt(ev.ini)) + (ev.rep ? ' · se repete' : ''); };
+  var um = novos.length === 1, n0 = novos[0];
+  var titulo = um ? (n0.equipe ? 'Nova tarefa na agenda da equipe' : 'Nova tarefa na sua agenda') : novos.length + ' tarefas novas na sua agenda';
+  var texto = novos.slice(0, 3).map(function(n) { return '<b>' + agdEsc(n.ev.tit) + '</b><br>' + agdEsc(quando(n.ev)) + (n.ev.criadoPor ? ' · por ' + agdEsc(agdNome(n.ev.criadoPor)) : ''); }).join('<br><br>') + (novos.length > 3 ? '<br>… e mais ' + (novos.length - 3) : '');
+  var abrir = function() { AGD.ref = n0.ev.data; AGD.quem = currentUser; agdIrAba('agenda'); };
+  if (typeof window.aguiaAvisar === 'function') window.aguiaAvisar({ titulo: titulo, anim: 'ag-aponta', som: 'pequeno', texto: texto, dura: 20000, acoes: naAba ? [] : [{ rot: 'Ver na agenda', pri: true, fn: abrir }] });
+  else agdAviso(titulo + ': ' + n0.ev.tit);
+  try {
+    if (window.Notification && Notification.permission === 'granted' && document.hidden) {
+      var nt = new Notification(titulo, { body: novos.slice(0, 3).map(function(n) { return n.ev.tit + ' · ' + quando(n.ev); }).join('\n'), tag: 'agd-novos' });
+      nt.onclick = function() { window.focus(); abrir(); nt.close(); };
+    }
+  } catch (e) {}
+  if (naAba) agdNovosVistos();
+}
+// número no botão Agenda do menu
+function agdSelo() {
+  var b = document.getElementById('nav-agenda'); if (!b || !currentUser) return;
+  var n = agdLs('novos_' + currentUser, []).length, s = b.querySelector('.agd-selo');
+  if (!n) { if (s) s.remove(); return; }
+  if (!s) { s = document.createElement('span'); s.className = 'dc-selo agd-selo'; b.appendChild(s); }
+  s.textContent = n; s.title = n + ' tarefa(s) nova(s) na agenda';
+}
+function agdNovosVistos() {
+  if (!currentUser) return;
+  agdLsSet('novos_' + currentUser, []); agdSelo();
+  try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+}
 /* ── lembretes (com o guia aberto, em qualquer aba) ── */
 function agdLembrar() {
   if (!currentUser || typeof dbRef !== 'function') return;
@@ -30259,8 +30312,10 @@ function agdLembrar() {
     try { if (window.Notification && Notification.permission === 'granted' && document.hidden) new Notification(x.ev.tit, { body: quando }); } catch (e) {}
   });
 }
-setInterval(function() { try { agdLembrar(); } catch (e) { console.warn('agenda: lembrete', e); } }, 30000);
-setTimeout(function() { try { agdLembrar(); } catch (e) {} }, 9000);
+setInterval(function() { try { agdLembrar(); agdSelo(); } catch (e) { console.warn('agenda: lembrete', e); } }, 30000);
+setTimeout(function() { try { agdLembrar(); agdSelo(); } catch (e) {} }, 4000);
+// logo depois do login já começa a ouvir a agenda (para avisar de tarefa nova sem esperar o ciclo de 30s)
+setInterval(function() { try { if (currentUser && !AGD.subs['agenda/pessoal/' + currentUser]) { agdLembrar(); agdSelo(); } } catch (e) {} }, 3000);
 /* a linha de "agora" anda sozinha */
 setInterval(function() { var tab = document.getElementById('tab-agenda'); if (tab && tab.classList.contains('active') && !AGD.form && !AGD.drag && !AGD.pop && (AGD.vista === 'dia' || AGD.vista === 'semana')) agdRender(); }, 5 * 60 * 1000);
 window.addEventListener('resize', function() { if (AGD.pop) agdPosPop(); });
