@@ -29574,10 +29574,10 @@ setTimeout(appMostrarBotao, 1500);
 .agd-ad>div:first-child{border-left:none;font-size:10px;color:var(--faint);text-align:right;padding:6px 8px 0 0}
 .agd-chip{display:block;width:100%;text-align:left;border:none;border-radius:5px;padding:2px 7px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;background:var(--c);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .agd-chip.leve{background:color-mix(in srgb,var(--c) 18%,var(--surface));color:var(--txt);border-left:3px solid var(--c);font-weight:500}
-.agd-body{position:relative;max-height:620px;overflow-y:auto}
+.agd-body{position:relative}
 .agd-hrs{position:relative}
 .agd-hrs span{position:absolute;right:8px;font-size:10.5px;color:var(--faint);transform:translateY(-50%)}
-.agd-col{position:relative;border-left:1px solid var(--line);height:calc(var(--hh)*24);background-image:repeating-linear-gradient(to bottom,var(--line) 0,var(--line) 1px,transparent 1px,transparent var(--hh));cursor:cell}
+.agd-col{position:relative;border-left:1px solid var(--line);height:calc(var(--hh)*var(--nh,10));background-image:repeating-linear-gradient(to bottom,var(--line) 0,var(--line) 1px,transparent 1px,transparent var(--hh));cursor:cell}
 .agd-col.hoje{background-color:color-mix(in srgb,var(--acc) 4%,transparent)}
 .agd-agora{position:absolute;left:-1px;right:0;height:2px;background:#EA4335;z-index:3;pointer-events:none}
 .agd-agora::before{content:'';position:absolute;left:-6px;top:-5px;width:12px;height:12px;border-radius:50%;background:#EA4335}
@@ -29703,7 +29703,11 @@ var AGD_MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'ju
 var AGD_SEM = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 var AGD_REP = [['', 'Não se repete'], ['dia', 'Todos os dias'], ['uteis', 'Todos os dias úteis (seg a sex)'], ['semana', 'Toda semana'], ['mes', 'Todo mês']];
 var AGD_LEMB = [[0, 'Sem lembrete'], [5, '5 minutos antes'], [10, '10 minutos antes'], [30, '30 minutos antes'], [60, '1 hora antes'], [1440, '1 dia antes']];
-var AGD_HH = 46; // altura de uma hora na grade (px)
+var AGD_HH = 54; // altura de uma hora na grade (px)
+var AGD_H0 = 8, AGD_H1 = 18; // 28/10/2026: a grade mostra só das 8h às 18h (compromisso fora disso aparece colado na borda)
+var AGD_NH = AGD_H1 - AGD_H0;
+function agdY(min) { return (Math.max(AGD_H0 * 60, Math.min(AGD_H1 * 60, min)) - AGD_H0 * 60) / 60 * AGD_HH; }
+function agdFaixa(a, b) { var t = agdY(Math.min(a, AGD_H1 * 60 - 15)), f = agdY(Math.max(b, AGD_H0 * 60 + 15)); return { top: t, alt: Math.max(f - t, AGD_HH / 4) }; }
 var AGD = { vista: null, ref: null, mini: null, quem: null, c: {}, subs: {}, form: null, pop: null, evs: {}, scroll: null, pendente: false, ligado: false, drag: null, avisados: {} };
 
 function agdEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]; }); }
@@ -29854,7 +29858,7 @@ function agdRender() {
   if (AGD.imp) h += agdImpHtml();
   root.innerHTML = h;
   var b2 = document.getElementById('agd-body');
-  if (b2) b2.scrollTop = AGD.scroll != null ? AGD.scroll : AGD_HH * 7;
+  if (b2) b2.scrollTop = AGD.scroll != null ? AGD.scroll : 0;
   agdPosPop();
   if (AGD.form && AGD.form.foco) { var t = document.getElementById('agd-f-tit'); if (t) { t.focus(); AGD.form.foco = false; } }
 }
@@ -29882,14 +29886,14 @@ function agdGradeHtml() {
   var it = agdIntervalo(), dias = [], hoje = agdHoje();
   for (var d = it[0]; d <= it[1]; d = agdSoma(d, 1)) dias.push(d);
   var n = dias.length, evDias = dias.map(function(d) { return agdEventos(d); });
-  var h = '<div class="agd-scrollx"><div class="agd-tg' + (n > 1 ? ' sem' : '') + '" style="--cols:' + n + ';--hh:' + AGD_HH + 'px">';
+  var h = '<div class="agd-scrollx"><div class="agd-tg' + (n > 1 ? ' sem' : '') + '" style="--cols:' + n + ';--hh:' + AGD_HH + 'px;--nh:' + AGD_NH + '">';
   h += '<div class="agd-row"><div></div>' + dias.map(function(d) { var dd = agdData(d);
     return '<div class="agd-dh' + (d === hoje ? ' hoje' : '') + '" data-ir="' + d + '"><small>' + AGD_SEM[dd.getDay()] + '</small><b>' + dd.getDate() + '</b></div>'; }).join('') + '</div>';
   h += '<div class="agd-row agd-ad"><div>dia<br>todo</div>' + evDias.map(function(l, i) {
     return '<div data-diatodo="' + dias[i] + '">' + l.filter(function(e) { return !e.ini; }).map(function(e) {
       return '<button class="agd-chip' + (e.leve ? ' leve' : '') + '" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '" title="' + agdEsc(e.tit) + '">' + agdEsc(e.tit) + '</button>'; }).join('') + '</div>'; }).join('') + '</div>';
-  h += '<div class="agd-body" id="agd-body"><div class="agd-row"><div class="agd-hrs" style="height:' + AGD_HH * 24 + 'px">';
-  for (var x = 1; x < 24; x++) h += '<span style="top:' + x * AGD_HH + 'px">' + x + 'h</span>';
+  h += '<div class="agd-body" id="agd-body"><div class="agd-row"><div class="agd-hrs" style="height:' + AGD_HH * AGD_NH + 'px">';
+  for (var x = AGD_H0; x < AGD_H1; x++) h += '<span style="top:' + ((x - AGD_H0) * AGD_HH + (x === AGD_H0 ? 8 : 0)) + 'px">' + x + 'h</span>';
   h += '</div>';
   var agora = new Date(), mAg = agora.getHours() * 60 + agora.getMinutes();
   dias.forEach(function(d, i) {
@@ -29898,27 +29902,30 @@ function agdGradeHtml() {
     var comHora = evDias[i].filter(function(e) { return e.ini; }), fundo = comHora.filter(function(e) { return e.fonte === 'rotina'; });
     var x0 = fundo.length ? 34 : 0;
     fundo.forEach(function(e) {
-      var a = agdMin(e.ini), b = Math.max(a + 15, agdMin(e.fim) || a + 60), alt = Math.max(16, (b - a) / 60 * AGD_HH - 2);
-      h += '<div class="agd-ev leve fundo" data-ev="' + agdReg(e) + '" style="--c:' + e.cor + ';top:' + (a / 60 * AGD_HH) + 'px;height:' + alt + 'px;left:1px;width:calc(100% - 3px)" title="' + agdEsc(e.tit + ' · ' + agdQuando(e)) + '"><b style="max-width:' + (x0 ? x0 - 2 : 100) + '%">' + agdEsc(e.tit) + '</b></div>';
+      var a = agdMin(e.ini), b = Math.max(a + 15, agdMin(e.fim) || a + 60), fx = agdFaixa(a, b), alt = Math.max(14, fx.alt - 2);
+      h += '<div class="agd-ev leve fundo" data-ev="' + agdReg(e) + '" style="--c:' + e.cor + ';top:' + fx.top + 'px;height:' + alt + 'px;left:1px;width:calc(100% - 3px)" title="' + agdEsc(e.tit + ' · ' + agdQuando(e)) + '"><b style="max-width:' + (x0 ? x0 - 2 : 100) + '%">' + agdEsc(e.tit) + '</b></div>';
     });
     agdLayout(comHora.filter(function(e) { return e.fonte !== 'rotina'; })).forEach(function(e) {
-      var a = agdMin(e.ini), b = Math.max(a + 15, agdMin(e.fim) || a + 60), top = a / 60 * AGD_HH, alt = Math.max(18, (b - a) / 60 * AGD_HH - 2);
+      var a = agdMin(e.ini), b = Math.max(a + 15, agdMin(e.fim) || a + 60), fx = agdFaixa(a, b), top = fx.top, alt = Math.max(18, fx.alt - 2);
       var w = (100 - x0) / e._n, curto = alt < 34;
       var podeArr = e.editavel && agdPodeEditar(e) && !e.base.rep;
       h += '<div class="agd-ev' + (e.leve ? ' leve' : '') + (curto ? ' curto' : '') + '" data-ev="' + agdReg(e) + '"' + (podeArr ? ' data-arr="1"' : '') + ' style="--c:' + e.cor + ';top:' + top + 'px;height:' + alt + 'px;left:calc(' + (x0 + e._i * w) + '% + 1px);width:calc(' + w + '% - 3px)" title="' + agdEsc(e.tit + ' · ' + agdQuando(e)) + '">' +
         '<b>' + agdEsc(e.tit) + '</b><small>' + agdEsc(agdQuando(e)) + '</small>' + (podeArr ? '<div class="agd-rs" data-rs="1"></div>' : '') + '</div>';
     });
-    if (d === hoje) h += '<div class="agd-agora" style="top:' + (mAg / 60 * AGD_HH) + 'px"></div>';
+    if (d === hoje && mAg >= AGD_H0 * 60 && mAg <= AGD_H1 * 60) h += '<div class="agd-agora" style="top:' + agdY(mAg) + 'px"></div>';
     h += '</div>';
   });
   return h + '</div></div></div></div>';
 }
 /* eventos que se sobrepõem dividem a largura da coluna */
 function agdLayout(evs) {
-  evs.sort(function(a, b) { return agdMin(a.ini) - agdMin(b.ini) || (agdMin(b.fim) || 0) - (agdMin(a.fim) || 0); });
+  // usa o horário já encaixado na janela das 8h às 18h, para o que fica colado na borda não encavalar
+  var cl = function(e) { var a = agdMin(e.ini), b = Math.max(a + 15, agdMin(e.fim) || a + 60), a2 = Math.max(AGD_H0 * 60, Math.min(AGD_H1 * 60 - 15, a)); return [a2, Math.max(a2 + 15, Math.min(AGD_H1 * 60, b))]; };
+  evs.forEach(function(e) { var c = cl(e); e._a = c[0]; e._b = c[1]; });
+  evs.sort(function(a, b) { return a._a - b._a || b._b - a._b; });
   var grupo = [], fimGrupo = -1, out = [];
-  function fecha() { var lanes = []; grupo.forEach(function(e) { var a = agdMin(e.ini), k = 0; while (lanes[k] != null && lanes[k] > a) k++; lanes[k] = Math.max(a + 15, agdMin(e.fim) || a + 60); e._i = k; }); grupo.forEach(function(e) { e._n = lanes.length; out.push(e); }); grupo = []; }
-  evs.forEach(function(e) { var a = agdMin(e.ini), b = Math.max(a + 15, agdMin(e.fim) || a + 60); if (grupo.length && a >= fimGrupo) fecha(); grupo.push(e); fimGrupo = Math.max(fimGrupo, b); });
+  function fecha() { var lanes = []; grupo.forEach(function(e) { var k = 0; while (lanes[k] != null && lanes[k] > e._a) k++; lanes[k] = e._b; e._i = k; }); grupo.forEach(function(e) { e._n = lanes.length; out.push(e); }); grupo = []; }
+  evs.forEach(function(e) { if (grupo.length && e._a >= fimGrupo) fecha(); grupo.push(e); fimGrupo = Math.max(fimGrupo, e._b); });
   if (grupo.length) fecha();
   return out;
 }
@@ -30101,7 +30108,7 @@ function agdBind(root) {
     if ((el = t.closest('[data-ev]'))) { ev.stopPropagation(); AGD.pop = { key: el.getAttribute('data-ev'), x: ev.clientX, y: ev.clientY }; agdRender(); return; }
     if ((el = t.closest('[data-ir]'))) { AGD.ref = el.getAttribute('data-ir'); AGD.vista = 'dia'; agdLsSet('vista', 'dia'); AGD.pop = null; agdRender(); return; }
     if ((el = t.closest('[data-dia]'))) { AGD.ref = el.getAttribute('data-dia'); AGD.mini = AGD.ref.slice(0, 7); AGD.pop = null; agdRender(); return; }
-    if ((el = t.closest('[data-col]'))) { var r = el.getBoundingClientRect(), m = Math.floor(((ev.clientY - r.top) / AGD_HH * 60) / 30) * 30; agdNovo(el.getAttribute('data-col'), agdHora(m)); return; }
+    if ((el = t.closest('[data-col]'))) { var r = el.getBoundingClientRect(), m = AGD_H0 * 60 + Math.floor(((ev.clientY - r.top) / AGD_HH * 60) / 30) * 30; agdNovo(el.getAttribute('data-col'), agdHora(m)); return; }
     if ((el = t.closest('[data-diatodo]'))) { agdNovo(el.getAttribute('data-diatodo'), null, true); return; }
     if ((el = t.closest('[data-cel]'))) { agdNovo(el.getAttribute('data-cel'), null, false); return; }
   });
@@ -30177,7 +30184,7 @@ function agdArrMove(ev) {
   ev.preventDefault();
   var passo = AGD_HH / 4, sn = Math.round(dy / passo) * passo;
   if (d.rs) { d.el.style.height = Math.max(passo - 2, d.alt0 + sn) + 'px'; return; }
-  d.el.style.top = Math.max(0, Math.min(AGD_HH * 24 - d.alt0, d.top0 + sn)) + 'px';
+  d.el.style.top = Math.max(0, Math.min(AGD_HH * AGD_NH - d.alt0, d.top0 + sn)) + 'px';
   var alvo = document.elementsFromPoint(ev.clientX, ev.clientY).find(function(x) { return x.classList && x.classList.contains('agd-col'); });
   if (alvo && alvo !== d.el.parentNode) { alvo.appendChild(d.el); }
 }
@@ -30186,7 +30193,7 @@ function agdArrFim() {
   AGD.drag = null; if (!d || !d.mov) { if (AGD.pendente) agdRender(); return; }
   AGD.arrastou = true; setTimeout(function() { AGD.arrastou = false; }, 50);
   var top = parseFloat(d.el.style.top), alt = parseFloat(d.el.style.height) + 2;
-  var ini = Math.round(top / AGD_HH * 60 / 15) * 15, dur = Math.max(15, Math.round(alt / AGD_HH * 60 / 15) * 15);
+  var ini = AGD_H0 * 60 + Math.round(top / AGD_HH * 60 / 15) * 15, dur = Math.max(15, Math.round(alt / AGD_HH * 60 / 15) * 15);
   var dia = d.el.parentNode.getAttribute('data-col') || d.e.dia;
   var upd = d.rs ? { fim: agdHora(agdMin(d.e.ini) + dur) } : { data: dia, ini: agdHora(ini), fim: agdHora(Math.min(24 * 60 - 1, ini + dur)) };
   upd.editadoPor = currentUser; upd.editadoEm = Date.now();
