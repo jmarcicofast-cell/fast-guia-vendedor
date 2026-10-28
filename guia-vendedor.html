@@ -29650,6 +29650,24 @@ setTimeout(appMostrarBotao, 1500);
 .agd-cores button{width:24px;height:24px;border-radius:50%;border:2px solid transparent;background:var(--c);cursor:pointer;padding:0}
 .agd-cores button.on{border-color:var(--txt);box-shadow:inset 0 0 0 2px var(--surface)}
 .agd-form .rod{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.agd-impbtn{align-self:flex-start;font-size:12.5px}
+.agd-passos{margin:0 0 14px;padding-left:20px;color:var(--txt-2);line-height:1.6}
+.agd-drop{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px dashed var(--line-strong);border-radius:12px;padding:26px 16px;cursor:pointer;text-align:center;margin-bottom:12px}
+.agd-drop b{color:var(--acc-txt);font-size:15px}
+.agd-drop span{color:var(--muted);font-size:12.5px}
+.agd-drop:hover,.agd-drop.sobre{background:var(--acc-soft);border-color:var(--acc)}
+.agd-erro{color:#E5534B;font-size:13px;margin-bottom:10px}
+.agd-sub{color:var(--muted);font-size:12.5px;margin-bottom:8px}
+.agd-impcals{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;max-height:180px;overflow:auto}
+.agd-impcals label{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--txt)}
+.agd-impcals em{margin-left:auto;font-style:normal;color:var(--muted);font-size:12px}
+.agd-resumo{background:var(--surface-2);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13.5px}
+.agd-resumo span{color:var(--muted);font-size:12px}
+.agd-prev{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;font-size:12.5px}
+.agd-prev div{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px}
+.agd-prev em{font-style:normal;color:var(--muted)}
+.agd-prev span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.agd-btn[disabled]{opacity:.5;cursor:default}
 .agd-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#202124;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:9100;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 @media (max-width:860px){
   .agd-wrap{grid-template-columns:1fr}
@@ -29730,7 +29748,7 @@ function agdOuvir() {
 function agdMudou() {
   var tab = document.getElementById('tab-agenda');
   if (!tab || !tab.classList.contains('active')) return;
-  if (AGD.form || AGD.drag) { AGD.pendente = true; return; }
+  if (AGD.form || AGD.drag || AGD.imp) { AGD.pendente = true; return; }
   clearTimeout(agdMudou.h); agdMudou.h = setTimeout(agdRender, 60);
 }
 
@@ -29828,11 +29846,12 @@ function agdRender() {
     agdEquipe().filter(function(v) { return v !== currentUser; }).map(function(v) { return '<option value="' + agdEsc(v) + '"' + (AGD.quem === v ? ' selected' : '') + '>' + agdEsc(agdNome(v)) + '</option>'; }).join('') +
     '<option value="todos"' + (AGD.quem === 'todos' ? ' selected' : '') + '>Equipe toda</option></select>';
   h += '<div class="agd-vistas">' + vistas.map(function(v) { return '<button data-vista="' + v[0] + '" class="' + (AGD.vista === v[0] ? 'on' : '') + '">' + v[1] + '</button>'; }).join('') + '</div></div>';
-  h += '<div class="agd-wrap"><div class="agd-side"><button class="agd-criar" data-a="criar"><b>+</b>Criar</button>' + agdMiniHtml() + agdCalsHtml() + '</div><div class="agd-main">';
+  h += '<div class="agd-wrap"><div class="agd-side"><button class="agd-criar" data-a="criar"><b>+</b>Criar</button><button class="agd-btn agd-impbtn" data-a="importar" title="Trazer os compromissos que você já tem no Google Agenda">Importar do Google Agenda</button>' + agdMiniHtml() + agdCalsHtml() + '</div><div class="agd-main">';
   h += ({ dia: agdGradeHtml, semana: agdGradeHtml, mes: agdMesHtml, lista: agdListaHtml })[AGD.vista]();
   h += '</div></div>';
   if (AGD.pop) h += agdPopHtml();
   if (AGD.form) h += agdFormHtml();
+  if (AGD.imp) h += agdImpHtml();
   root.innerHTML = h;
   var b2 = document.getElementById('agd-body');
   if (b2) b2.scrollTop = AGD.scroll != null ? AGD.scroll : AGD_HH * 7;
@@ -30088,6 +30107,10 @@ function agdBind(root) {
   });
   root.addEventListener('change', function(ev) {
     var id = ev.target.id;
+    if (id === 'agd-imp-arq') { agdImpArquivos(ev.target.files); return; }
+    if (id === 'agd-imp-desde' && AGD.imp) { AGD.imp.desde = ev.target.value; agdRender(); return; }
+    if (id === 'agd-imp-ag' && AGD.imp) { AGD.imp.ag = ev.target.value; AGD.imp.confApagar = false; agdSub(agdImpCaminho(AGD.imp.ag)); agdRender(); return; }
+    if (ev.target.hasAttribute && ev.target.hasAttribute('data-impcal') && AGD.imp) { AGD.imp.marc[ev.target.getAttribute('data-impcal')] = ev.target.checked; agdRender(); return; }
     if (id === 'agd-quem') { AGD.quem = ev.target.value; AGD.pop = null; agdOuvir(); agdRender(); return; }
     if (id === 'agd-f-dt') { var hz = document.getElementById('agd-f-horas'); if (hz) hz.style.display = ev.target.checked ? 'none' : ''; return; }
     if (id === 'agd-f-rep') { var al = document.getElementById('agd-f-ate-l'); if (al) al.style.display = ev.target.value ? '' : 'none'; return; }
@@ -30095,11 +30118,15 @@ function agdBind(root) {
     if (id === 'agd-f-fim' && AGD.form) AGD.form.fim = ev.target.value;
   });
   root.addEventListener('keydown', function(ev) {
+    if (AGD.imp && ev.key === 'Escape') { AGD.imp = null; agdRender(); return; }
     if (!AGD.form) return;
     if (ev.key === 'Escape') { AGD.form = null; agdRender(); }
     if (ev.key === 'Enter' && ev.target.id === 'agd-f-tit') { ev.preventDefault(); agdSalvar(); }
   });
   root.addEventListener('pointerdown', agdArrIni);
+  root.addEventListener('dragover', function(ev) { if (AGD.imp && AGD.imp.passo === 1) { ev.preventDefault(); var d = document.getElementById('agd-imp-drop'); if (d) d.classList.add('sobre'); } });
+  root.addEventListener('dragleave', function(ev) { var d = document.getElementById('agd-imp-drop'); if (d && !d.contains(ev.relatedTarget)) d.classList.remove('sobre'); });
+  root.addEventListener('drop', function(ev) { if (!(AGD.imp && AGD.imp.passo === 1)) return; ev.preventDefault(); agdImpArquivos(ev.dataTransfer && ev.dataTransfer.files); });
 }
 function agdAcao(a, el, ev) {
   var e = AGD.pop && AGD.evs[AGD.pop.key];
@@ -30124,6 +30151,12 @@ function agdAcao(a, el, ev) {
     case 'ir-tel': if (e) { agdIrTel(e.base); return; } break;
     case 'cancelar': AGD.form = null; break;
     case 'fundo-form': if (ev.target !== el) return; AGD.form = null; break;
+    case 'importar': agdImpAbrir(); agdSub(agdImpCaminho(currentUser)); return;
+    case 'imp-fundo': if (ev.target !== el) return; AGD.imp = null; break;
+    case 'imp-fechar': AGD.imp = null; break;
+    case 'imp-voltar': AGD.imp.passo = 1; AGD.imp.erro = ''; break;
+    case 'imp-ok': agdImpSalvar(); return;
+    case 'imp-apagar': agdImpApagar(); return;
     case 'salvar': agdSalvar(); return;
   }
   agdRender();
@@ -30158,6 +30191,209 @@ function agdArrFim() {
   var upd = d.rs ? { fim: agdHora(agdMin(d.e.ini) + dur) } : { data: dia, ini: agdHora(ini), fim: agdHora(Math.min(24 * 60 - 1, ini + dur)) };
   upd.editadoPor = currentUser; upd.editadoEm = Date.now();
   Promise.resolve(dbRef(agdCaminhoEv(d.e)).update(upd)).then(function() { agdAviso(d.rs ? 'Duração alterada' : 'Horário alterado: ' + agdHoraTxt(upd.ini)); }).catch(function(x) { agdAviso('Não salvou: ' + (x && x.message || x)); agdRender(); });
+  agdRender();
+}
+
+
+/* ══ IMPORTAR DO GOOGLE AGENDA (28/10/2026) ══
+   Lê o arquivo que o Google Agenda exporta (.zip com um .ics por agenda, ou um .ics só) e grava como compromissos.
+   O id vem do UID do Google: importar de novo atualiza em vez de duplicar. Os importados ficam com origem 'google'. */
+function agdIcsLinhas(txt) { return String(txt || '').replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '').split(/\r?\n/); }
+function agdIcsUnesc(v) { return String(v || '').replace(/\\n/gi, '\n').replace(/\\([,;\\:])/g, '$1').trim(); }
+function agdHash(s) { var h = 5381; s = String(s); for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+// minutos que o fuso tz está à frente de UTC naquele instante
+function agdTzOff(tz, utcMs) {
+  try {
+    var f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    var p = {}; f.formatToParts(new Date(utcMs)).forEach(function(x) { p[x.type] = x.value; });
+    return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - utcMs) / 60000;
+  } catch (e) { return null; }
+}
+// {data, hora, diaTodo, ms} no horário deste aparelho
+function agdIcsData(pr) {
+  if (!pr) return null;
+  var v = String(pr.v || '').trim(), par = pr.p || '';
+  var md = v.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (md || /VALUE=DATE(;|$)/i.test(par)) { md = md || v.match(/^(\d{4})(\d{2})(\d{2})/); if (!md) return null; return { data: md[1] + '-' + md[2] + '-' + md[3], diaTodo: true, ms: new Date(+md[1], +md[2] - 1, +md[3]).getTime() }; }
+  var m = v.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?(Z)?$/); if (!m) return null;
+  var d, tz = (par.match(/TZID=([^;:]+)/i) || [])[1];
+  if (m[7]) d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]));
+  else if (tz) { var guess = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]), off = agdTzOff(tz.replace(/"/g, ''), guess);
+    d = off == null ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) : new Date(guess - off * 60000);
+    if (off != null) { var off2 = agdTzOff(tz.replace(/"/g, ''), d.getTime()); if (off2 != null && off2 !== off) d = new Date(guess - off2 * 60000); } }
+  else d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+  return { data: agdIso(d), hora: agdHora(d.getHours() * 60 + d.getMinutes()), diaTodo: false, ms: d.getTime() };
+}
+// lê um .ics: { nome, eventos: [VEVENT como {props, multi}] }
+function agdIcsLer(txt, arquivo) {
+  var linhas = agdIcsLinhas(txt), nome = '', evs = [], cur = null, prof = 0;
+  linhas.forEach(function(l) {
+    if (!l) return;
+    if (/^BEGIN:VEVENT/i.test(l)) { cur = { p: {}, ex: [] }; prof = 0; return; }
+    if (/^END:VEVENT/i.test(l)) { if (cur) evs.push(cur); cur = null; return; }
+    if (cur && /^BEGIN:/i.test(l)) { prof++; return; } // VALARM etc.
+    if (cur && /^END:/i.test(l)) { prof--; return; }
+    var i = l.indexOf(':'); if (i < 0) return;
+    var cab = l.slice(0, i), val = l.slice(i + 1), j = cab.indexOf(';'), nm = (j < 0 ? cab : cab.slice(0, j)).toUpperCase(), par = j < 0 ? '' : cab.slice(j + 1);
+    if (!cur) { if (nm === 'X-WR-CALNAME') nome = agdIcsUnesc(val); return; }
+    if (prof > 0) return;
+    if (nm === 'EXDATE') { val.split(',').forEach(function(x) { cur.ex.push({ v: x, p: par }); }); return; }
+    cur.p[nm] = { v: val, p: par };
+  });
+  return { nome: nome || String(arquivo || 'Agenda').replace(/\.ics$/i, '').replace(/_[^_]*$/, '') || 'Agenda', eventos: evs };
+}
+var AGD_WD = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+function agdRrule(s) { var r = {}; String(s || '').split(';').forEach(function(kv) { var k = kv.split('='); if (k[0]) r[k[0].toUpperCase()] = k[1] || ''; }); return r; }
+// devolve as datas (iso) em que a regra cai, de 'ini' até 'lim'
+function agdRruleDatas(r, ini, lim, ex) {
+  var out = [], iv = Math.max(1, +r.INTERVAL || 1), cnt = +r.COUNT || 0, ate = r.UNTIL ? agdIcsData({ v: r.UNTIL, p: /^\d{8}$/.test(r.UNTIL) ? 'VALUE=DATE' : '' }) : null;
+  var fim = ate && ate.data < lim ? ate.data : lim, d0 = agdData(ini), wd0 = d0.getDay(), n = 0;
+  var bd = (r.BYDAY || '').split(',').filter(Boolean).map(function(x) { var m = x.match(/^([+-]?\d+)?([A-Z]{2})$/); return m ? { n: m[1] ? +m[1] : 0, d: AGD_WD[m[2]] } : null; }).filter(Boolean);
+  var bmd = (r.BYMONTHDAY || '').split(',').filter(Boolean).map(Number);
+  for (var iso = ini, k = 0; iso <= fim && k < 3000; iso = agdSoma(iso, 1), k++) {
+    var d = agdData(iso), ok = false, dias = Math.round((d - d0) / 864e5);
+    if (r.FREQ === 'DAILY') ok = dias % iv === 0 && (!bd.length || bd.some(function(b) { return b.d === d.getDay(); }));
+    else if (r.FREQ === 'WEEKLY') { var sem = Math.floor((dias + wd0) / 7); ok = sem % iv === 0 && (bd.length ? bd.some(function(b) { return b.d === d.getDay(); }) : d.getDay() === wd0); }
+    else if (r.FREQ === 'MONTHLY') { var mes = (d.getFullYear() - d0.getFullYear()) * 12 + d.getMonth() - d0.getMonth();
+      if (mes % iv === 0) {
+        if (bmd.length) { var ult = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); ok = bmd.some(function(x) { return x > 0 ? x === d.getDate() : ult + x + 1 === d.getDate(); }); }
+        else if (bd.length) ok = bd.some(function(b) { if (b.d !== d.getDay()) return false; if (!b.n) return true; var nth = Math.ceil(d.getDate() / 7), ult2 = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); return b.n > 0 ? nth === b.n : Math.ceil((ult2 - d.getDate() + 1) / 7) === -b.n; });
+        else ok = d.getDate() === d0.getDate(); } }
+    else if (r.FREQ === 'YEARLY') ok = (d.getFullYear() - d0.getFullYear()) % iv === 0 && d.getMonth() === d0.getMonth() && d.getDate() === d0.getDate();
+    if (!ok) continue;
+    n++; if (!ex[iso]) out.push(iso);
+    if (cnt && n >= cnt) break;
+    if (out.length >= 500) break;
+  }
+  return out;
+}
+// transforma os VEVENTs em compromissos da agenda do guia: [{id, rec}]
+function agdIcsConverter(cal, desde) {
+  var lim = agdSoma(agdHoje(), 365), out = [], mestres = {}, trocados = [];
+  cal.eventos.forEach(function(e) {
+    var P = e.p; if (P.STATUS && /CANCELLED/i.test(P.STATUS.v)) return;
+    var ini = agdIcsData(P.DTSTART); if (!ini) return;
+    var fim = agdIcsData(P.DTEND) || (ini.diaTodo ? { data: agdSoma(ini.data, 1), diaTodo: true } : { data: ini.data, hora: agdHora(agdMin(ini.hora) + 60), ms: ini.ms + 3600e3 });
+    var uid = P.UID ? P.UID.v : agdHash(JSON.stringify(P)), recId = P['RECURRENCE-ID'] ? agdIcsData(P['RECURRENCE-ID']) : null;
+    var desc = agdIcsUnesc(P.DESCRIPTION && P.DESCRIPTION.v).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '');
+    var local = agdIcsUnesc(P.LOCATION && P.LOCATION.v);
+    var base = { tit: (agdIcsUnesc(P.SUMMARY && P.SUMMARY.v) || '(sem título)').slice(0, 120), diaTodo: ini.diaTodo, ini: ini.diaTodo ? '' : ini.hora, fim: '', desc: ((local ? 'Local: ' + local + (desc ? '\n' : '') : '') + desc).slice(0, 2000),
+      cliente: '', tel: '', lembrete: 0, origem: 'google', agendaGoogle: cal.nome.slice(0, 80), uid: uid.slice(0, 200) };
+    if (!ini.diaTodo) base.fim = fim.data === ini.data ? fim.hora : '23:59';
+    if (!ini.diaTodo && agdMin(base.fim) <= agdMin(base.ini)) base.fim = agdHora(agdMin(base.ini) + 30);
+    var diasTodo = ini.diaTodo ? Math.max(1, Math.round((agdData(fim.data) - agdData(ini.data)) / 864e5)) : 1;
+    if (recId) { trocados.push({ uid: uid, dia: recId.data }); if (ini.data >= desde) out.push({ id: 'g' + agdHash(uid + '|' + recId.data), rec: Object.assign({}, base, { data: ini.data, rep: '', ate: '' }) }); return; }
+    var ex = {}; e.ex.forEach(function(x) { var d = agdIcsData(x); if (d) ex[d.data] = true; });
+    var r = P.RRULE ? agdRrule(P.RRULE.v) : null, idb = 'g' + agdHash(uid);
+    if (!r && diasTodo > 1) r = { FREQ: 'DAILY', UNTIL: agdSoma(ini.data, diasTodo - 1).replace(/-/g, '') }; // evento de vários dias
+    if (!r) { if (ini.data >= desde) out.push({ id: idb, rec: Object.assign({}, base, { data: ini.data, rep: '', ate: '' }) }); return; }
+    var iv = Math.max(1, +r.INTERVAL || 1), bd = (r.BYDAY || '').split(',').filter(Boolean).sort().join(','), d0 = agdData(ini.data), wd = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][d0.getDay()];
+    var rep = null;
+    if (iv === 1 && !r.BYMONTH && !r.BYSETPOS) {
+      if (r.FREQ === 'DAILY' && !bd) rep = 'dia';
+      else if ((r.FREQ === 'DAILY' || r.FREQ === 'WEEKLY') && bd === 'FR,MO,TH,TU,WE') rep = 'uteis';
+      else if (r.FREQ === 'WEEKLY' && (!bd || bd === wd)) rep = 'semana';
+      else if (r.FREQ === 'MONTHLY' && !bd && (!r.BYMONTHDAY || +r.BYMONTHDAY === d0.getDate())) rep = 'mes';
+    }
+    var datas = agdRruleDatas(r, ini.data, rep ? '9999-12-31' : lim, rep ? {} : ex);
+    if (!datas.length) return;
+    if (rep) {
+      var ate = (r.UNTIL || r.COUNT) ? datas[datas.length - 1] : '';
+      if (ate && ate < desde) return;
+      var exObj = {}; Object.keys(ex).forEach(function(k) { if (k >= desde) exObj[k] = true; });
+      var rec = Object.assign({}, base, { data: ini.data, rep: rep, ate: ate });
+      if (Object.keys(exObj).length) rec.excecoes = exObj;
+      mestres[uid] = rec; out.push({ id: idb, rec: rec });
+    } else datas.forEach(function(iso) { if (iso >= desde) out.push({ id: 'g' + agdHash(uid + '|' + iso), rec: Object.assign({}, base, { data: iso, rep: '', ate: '' }) }); });
+  });
+  // dia de uma repetição que foi mudado no Google: sai da repetição (a versão mudada entra como compromisso solto)
+  trocados.forEach(function(t) { var m = mestres[t.uid]; if (m) { m.excecoes = m.excecoes || {}; m.excecoes[t.dia] = true; } });
+  return out;
+}
+function agdImpDesde(op) { return op === 'tudo' ? '0000-01-01' : op === '30' ? agdSoma(agdHoje(), -30) : agdHoje(); }
+function agdImpLista() {
+  var I = AGD.imp, desde = agdImpDesde(I.desde), todos = [];
+  I.cals.forEach(function(c, i) { if (I.marc[i] === false) return; todos = todos.concat(agdIcsConverter(c, desde)); });
+  return todos;
+}
+function agdImpAbrir() { AGD.pop = null; AGD.imp = { passo: 1, cals: [], marc: {}, desde: '30', ag: currentUser, erro: '', lendo: false }; agdRender(); }
+function agdImpArquivos(files) {
+  var I = AGD.imp; if (!I || !files || !files.length) return;
+  I.lendo = true; I.erro = ''; agdRender();
+  var cals = [];
+  var lerUm = function(f) {
+    if (/\.zip$/i.test(f.name) || f.type === 'application/zip' || f.type === 'application/x-zip-compressed') {
+      return agdJsZip().then(function(JSZip) { return JSZip.loadAsync(f); }).then(function(z) {
+        var ps = []; z.forEach(function(path, ent) { if (!ent.dir && /\.ics$/i.test(path)) ps.push(ent.async('string').then(function(t) { cals.push(agdIcsLer(t, path.split('/').pop())); })); });
+        return Promise.all(ps);
+      });
+    }
+    return f.text().then(function(t) { if (!/BEGIN:VCALENDAR/i.test(t)) throw new Error('o arquivo ' + f.name + ' não é de agenda (.ics)'); cals.push(agdIcsLer(t, f.name)); });
+  };
+  Promise.all(Array.prototype.map.call(files, lerUm)).then(function() {
+    cals = cals.filter(function(c) { return c.eventos.length; });
+    if (!cals.length) throw new Error('não achei nenhum compromisso no arquivo');
+    // feriados e aniversários do Google vêm desmarcados
+    I.cals = cals; I.marc = {}; cals.forEach(function(c, i) { if (/feriad|holiday|anivers|birthday|contatos|contacts/i.test(c.nome)) I.marc[i] = false; });
+    I.passo = 2; I.lendo = false; agdRender();
+  }).catch(function(e) { I.lendo = false; I.erro = 'Não consegui ler: ' + (e && e.message || e); agdRender(); });
+}
+function agdJsZip() {
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  return new Promise(function(ok, nao) {
+    var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = function() { window.JSZip ? ok(window.JSZip) : nao(new Error('leitor de .zip não carregou')); };
+    s.onerror = function() { nao(new Error('sem internet para abrir o .zip. Descompacte o arquivo e envie o .ics')); };
+    document.head.appendChild(s);
+  });
+}
+function agdImpHtml() {
+  var I = AGD.imp, ges = agdGestao(), h = '<div class="agd-fundo" data-a="imp-fundo"><div class="agd-form" data-form="1"><h3>Importar do Google Agenda</h3>';
+  if (I.passo === 1) {
+    h += '<ol class="agd-passos"><li>No computador, abra <b>calendar.google.com</b>.</li><li>Clique na engrenagem <b>Configurações</b> → <b>Importar e exportar</b> → <b>Exportar</b>. O Google baixa um arquivo <b>.zip</b> com as suas agendas.</li>' +
+      '<li>Envie esse arquivo aqui (pode ser o .zip ou um .ics).</li></ol>' +
+      '<label class="agd-drop" id="agd-imp-drop"><input type="file" id="agd-imp-arq" accept=".ics,.zip,text/calendar,application/zip" multiple hidden>' +
+      (I.lendo ? '<b>Lendo o arquivo…</b>' : '<b>Escolher arquivo</b><span>ou arraste o .zip / .ics para cá</span>') + '</label>' +
+      (I.erro ? '<div class="agd-erro">' + agdEsc(I.erro) + '</div>' : '') +
+      '<div class="rod"><button class="agd-btn" data-a="imp-fechar">Cancelar</button></div>';
+  } else {
+    var lista = agdImpLista(), rep = lista.filter(function(x) { return x.rec.rep; }).length;
+    var ags = '<option value="' + agdEsc(currentUser) + '"' + (I.ag === currentUser ? ' selected' : '') + '>Minha agenda</option>';
+    if (ges) ags += '<option value="equipe"' + (I.ag === 'equipe' ? ' selected' : '') + '>Agenda da equipe (todos veem)</option>' +
+      agdEquipe().filter(function(v) { return v !== currentUser; }).map(function(v) { return '<option value="' + agdEsc(v) + '"' + (I.ag === v ? ' selected' : '') + '>Agenda de ' + agdEsc(agdNome(v)) + '</option>'; }).join('');
+    h += '<div class="agd-sub">Agendas encontradas no arquivo. Marque as que quer trazer.</div><div class="agd-impcals">' + I.cals.map(function(c, i) {
+      return '<label class="chk"><input type="checkbox" data-impcal="' + i + '"' + (I.marc[i] === false ? '' : ' checked') + '> <span>' + agdEsc(c.nome) + '</span><em>' + c.eventos.length + ' no arquivo</em></label>'; }).join('') + '</div>' +
+      '<div class="agd-f"><label>Trazer compromissos<select id="agd-imp-desde"><option value="hoje"' + (I.desde === 'hoje' ? ' selected' : '') + '>De hoje em diante</option><option value="30"' + (I.desde === '30' ? ' selected' : '') + '>Dos últimos 30 dias em diante</option><option value="tudo"' + (I.desde === 'tudo' ? ' selected' : '') + '>Tudo, inclusive os antigos</option></select></label>' +
+      '<label>Colocar na<select id="agd-imp-ag">' + ags + '</select></label></div>' +
+      '<div class="agd-resumo"><b>' + lista.length + '</b> compromisso' + (lista.length === 1 ? '' : 's') + ' para importar' + (rep ? ' · ' + rep + ' com repetição' : '') + '.' +
+      '<br><span>Se importar de novo depois, o que já veio do Google é atualizado, sem duplicar.</span></div>' +
+      (lista.length ? '<div class="agd-prev">' + lista.slice().sort(function(a, b) { return a.rec.data < b.rec.data ? -1 : 1; }).slice(0, 8).map(function(x) {
+        var r = x.rec, d = agdData(r.data); return '<div><em>' + d.getDate() + ' ' + AGD_MESES[d.getMonth()].slice(0, 3) + (r.diaTodo ? '' : ' · ' + agdHoraTxt(r.ini)) + '</em><span>' + agdEsc(r.tit) + (r.rep ? ' ↻' : '') + '</span></div>'; }).join('') + (lista.length > 8 ? '<div><em></em><span>… e mais ' + (lista.length - 8) + '</span></div>' : '') + '</div>' : '') +
+      '<div class="rod"><button class="agd-btn dng" data-a="imp-apagar" title="Tira desta agenda tudo o que veio do Google">' + (I.confApagar ? 'Confirmar: apagar importados' : 'Apagar importados') + '</button><span style="flex:1"></span><button class="agd-btn" data-a="imp-voltar">Voltar</button><button class="agd-btn pri" data-a="imp-ok"' + (lista.length ? '' : ' disabled') + '>Importar ' + lista.length + '</button></div>';
+  }
+  return h + '</div></div>';
+}
+function agdImpCaminho(ag) { return ag === 'equipe' ? 'agenda/equipe' : 'agenda/pessoal/' + ag; }
+function agdImpSalvar() {
+  var I = AGD.imp, lista = agdImpLista(); if (!lista.length) return;
+  var ag = I.ag, upd = {}, agora = Date.now();
+  lista.forEach(function(x) { upd[x.id] = Object.assign({ cor: '#039BE5', criadoPor: currentUser, criadoEm: agora, editadoPor: currentUser, editadoEm: agora }, x.rec); });
+  var ids = Object.keys(upd), lotes = [];
+  for (var i = 0; i < ids.length; i += 400) { var o = {}; ids.slice(i, i + 400).forEach(function(k) { o[k] = upd[k]; }); lotes.push(o); }
+  var base = agdImpCaminho(ag);
+  AGD.imp = null; if (ag !== 'equipe') { AGD.quem = agdGestao() ? ag : currentUser; agdSub(base); }
+  agdAviso('Importando ' + ids.length + ' compromissos…'); agdRender();
+  lotes.reduce(function(p, o) { return p.then(function() { return dbRef(base).update(o); }); }, Promise.resolve())
+    .then(function() { agdAviso(ids.length + ' compromisso' + (ids.length === 1 ? '' : 's') + ' importado' + (ids.length === 1 ? '' : 's') + ' do Google'); })
+    .catch(function(e) { agdAviso('Não terminou de importar: ' + (e && e.message || e)); });
+}
+function agdImpApagar() {
+  var I = AGD.imp; if (!I.confApagar) { I.confApagar = true; agdRender(); return; }
+  var base = agdImpCaminho(I.ag), m = AGD.c[base] || {}, upd = {}, n = 0;
+  Object.keys(m).forEach(function(k) { if (m[k] && m[k].origem === 'google') { upd[k] = null; n++; } });
+  I.confApagar = false;
+  if (!n) { agdAviso('Nada importado do Google nesta agenda'); agdRender(); return; }
+  Promise.resolve(dbRef(base).update(upd)).then(function() { agdAviso(n + ' compromisso' + (n === 1 ? '' : 's') + ' do Google apagado' + (n === 1 ? '' : 's')); });
   agdRender();
 }
 
