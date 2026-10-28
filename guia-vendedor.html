@@ -27816,7 +27816,7 @@ function dcRender() {
   abas.push(['config', 'Configurar']);
   var h = '<div class="dc-head"><h2 class="dc-tit">Discador</h2><div class="dc-abas">' +
     abas.map(function(a) { return '<button class="dc-aba' + (DC.aba === a[0] ? ' on' : '') + '" onclick="dcSetAba(\'' + a[0] + '\')">' + a[1] + '</button>'; }).join('') + '</div></div>';
-  if (DC.aba === 'discar' || DC.aba === 'funil' || fcEstado()) h += fcBandHtml();
+  if (DC.aba === 'discar' || fcEstado()) h += fcBandHtml();
   h += ({ discar: dcVDiscar, funil: dcVFunil, equipe: dcVEquipe, inativos: dcVInativos, hist: dcVHist, listas: dcVListas, config: dcVConfig })[DC.aba]();
   h += '<div class="dc-toast" id="dc-toast"></div>';
   var foco = document.activeElement && document.activeElement.id;
@@ -27990,172 +27990,252 @@ function dcFunilCardProsp(x, col) {
     '<div class="dc-kt">' + dcEsc(dcTel(x.tel)) + (info ? ' · ' + info : '') + '</div>' +
     (x.obs ? '<div class="dc-ko">' + dcEsc(String(x.obs).slice(0, 90)) + (String(x.obs).length > 90 ? '…' : '') + '</div>' : '') + '</div>';
 }
-/* ══ FUNIL (refeito em 28/10/2026) — negociações em destaque ══
-   Topo: números do funil (em negociação, fechado e perdido no mês, taxa de fechamento) e filtros de atenção.
-   Faixa "Para levar ao funil": quem falou com o cliente, retornos e tentativas, para virar negociação com um clique.
-   Quadro: Interessado → Orçamento enviado → Negociando, e ao lado o resultado do mês (Fechado / Perdido).
-   Card: valor, dias parado na etapa, próxima ação (atrasada em vermelho), produtos, o que trava, Ligar e WhatsApp. */
+/* ══ FUNIL (v2, 28/10/2026) — no padrão dos CRMs de venda (Pipedrive / HubSpot) ══
+   Uma barra de filtros, uma faixa de números, as etapas em seta com total em R$, cinco colunas iguais
+   (Interessado → Orçamento → Negociando → Fechado → Perdido) com cards compactos, e um painel lateral
+   com tudo da negociação (etapa, próxima ação, produtos, histórico, ganhar ou perder).
+   A prospecção do Discador fica recolhida numa linha e só aparece quando há cliente para levar ao funil. */
 var FN_ABERTAS = ['contato', 'orcamento', 'negociando'];
+var FN_ORDEM = ['contato', 'orcamento', 'negociando', 'fechado', 'perdido'];
+var FN_COR = { contato: '#3B82F6', orcamento: '#F59E0B', negociando: '#8B5CF6', fechado: '#22A06B', perdido: '#E5484D' };
+var FN_NOME = { contato: 'Interessado', orcamento: 'Orçamento enviado', negociando: 'Negociando', fechado: 'Fechado', perdido: 'Perdido' };
 var FN_PARADO_ALERTA = 5, FN_PARADO_CRITICO = 10;
-DC.funilFiltro = DC.funilFiltro || 'todas'; DC.funilProsp = DC.funilProsp == null ? true : DC.funilProsp; DC.funilAntigos = false;
+DC.funilFiltro = DC.funilFiltro || 'todas'; DC.funilProsp = false; DC.funilAntigos = false; DC.fxSel = null; DC.fxModo = null;
+var FN_IC = {
+  tel: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
+  wa: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.9 2.9 0 0 0-.9 2.2 5.1 5.1 0 0 0 1 2.7 11.6 11.6 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>',
+  cal: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>',
+  x: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+};
 function fnMoeda(v) { return 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
-function fnHoje() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-// quando a negociação entrou na etapa atual
+function fnIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function fnHoje() { return fnIso(new Date()); }
 function fnDesde(n) {
   if (n.etapaDesde) return new Date(n.etapaDesde).getTime();
   var h = (n.historico || []).filter(function(x) { return x && /^Movida para/i.test(x.texto || ''); });
-  var u = h.length ? h[h.length - 1].data : (n.dataCriacao || null);
-  var t = u ? new Date(u).getTime() : NaN;
+  var u = h.length ? h[h.length - 1].data : (n.dataCriacao || null), t = u ? new Date(u).getTime() : NaN;
   return isNaN(t) ? Date.now() : t;
 }
 function fnDiasParado(n) { return Math.max(0, Math.floor((Date.now() - fnDesde(n)) / 864e5)); }
 function fnNoMes(n) { var d = new Date(fnDesde(n)), h = new Date(); return d.getFullYear() === h.getFullYear() && d.getMonth() === h.getMonth(); }
 function fnAtrasada(n) { return !!(n.proximaData && n.proximaData < fnHoje()); }
 function fnDataTxt(iso) {
-  var h = fnHoje(); if (iso === h) return 'Hoje';
-  var am = new Date(); am.setDate(am.getDate() + 1); var amI = am.getFullYear() + '-' + String(am.getMonth() + 1).padStart(2, '0') + '-' + String(am.getDate()).padStart(2, '0');
-  if (iso === amI) return 'Amanhã';
+  if (!iso) return ''; if (iso === fnHoje()) return 'Hoje';
+  var a = new Date(); a.setDate(a.getDate() + 1); if (iso === fnIso(a)) return 'Amanhã';
+  var o = new Date(); o.setDate(o.getDate() - 1); if (iso === fnIso(o)) return 'Ontem';
   var p = String(iso).split('-'); return p[2] + '/' + p[1];
 }
 function fnIniciais(vn) { var n = (vendedores[vn] && vendedores[vn].nome) || vn || '?'; return n.split(/\s+/).map(function(x) { return x[0]; }).slice(0, 2).join('').toUpperCase(); }
 function fnFiltra(n) {
   var f = DC.funilFiltro;
+  if (FN_ABERTAS.indexOf(n.etapa) < 0) return f === 'todas';
   if (f === 'atrasadas') return fnAtrasada(n);
   if (f === 'paradas') return fnDiasParado(n) >= FN_PARADO_ALERTA;
   if (f === 'semacao') return !n.proximaData;
   return true;
 }
-function fnCard(n, et, gest, todos) {
-  var dias = fnDiasParado(n), atras = fnAtrasada(n), pode = n.vendedor === currentUser || gest, aberta = FN_ABERTAS.indexOf(n.etapa) >= 0;
-  var tel = dcDig(n.telefone || ''), id = dcEsc(n.vendedor) + "','" + dcEsc(n.id);
-  var h = '<article class="fn-card' + (atras && aberta ? ' atras' : '') + '"' + (pode ? ' draggable="true" ondragstart="dcFunilArrastar(event,\'n:' + dcEsc(n.vendedor) + ':' + dcEsc(n.id) + '\')" ondragend="dcFunilSoltou()"' : '') + ' onclick="abrirNegModal(\'' + id + '\')">';
-  h += '<div class="fn-h"><div class="fn-emp">' + (todos ? '<span class="fn-av" title="' + dcEsc(rtNome(n.vendedor)) + '">' + dcEsc(fnIniciais(n.vendedor)) + '</span>' : '') + '<b>' + dcEsc(n.empresa || '(sem nome)') + '</b></div>' +
-    '<span class="fn-val' + (n.valorEstimado ? '' : ' zero') + '">' + (n.valorEstimado ? fnMoeda(n.valorEstimado) : 'sem valor') + '</span></div>';
-  var sub = [n.contato, n.estado].filter(Boolean).map(dcEsc).join(' · ');
-  if (sub) h += '<div class="fn-sub">' + sub + '</div>';
-  if (n.produtos) h += '<div class="fn-prod" title="' + dcEsc(n.produtos) + '">' + dcEsc(n.produtos) + '</div>';
-  var tags = '';
-  if (aberta) tags += '<span class="fn-tag ' + (dias >= FN_PARADO_CRITICO ? 'crit' : dias >= FN_PARADO_ALERTA ? 'alerta' : '') + '" title="Dias nesta etapa">' + (dias === 0 ? 'Entrou hoje' : 'Parado há ' + dias + (dias === 1 ? ' dia' : ' dias')) + '</span>';
-  if (n.etapa === 'perdido') { var mi = n.motivoCategoria && NEG_MOTIVOS[n.motivoCategoria], ml = n.motivoCategoria === 'outro' && n.motivoOutro ? n.motivoOutro : (mi ? mi.label : (n.motivoPerda || '')); if (ml) tags += '<span class="fn-tag crit">' + dcEsc(ml) + '</span>'; }
-  else if (n.motivoCategoria && NEG_MOTIVOS[n.motivoCategoria]) tags += '<span class="fn-tag">' + dcEsc(n.motivoCategoria === 'outro' && n.motivoOutro ? n.motivoOutro : NEG_MOTIVOS[n.motivoCategoria].label) + '</span>';
-  if (n.concorrente) tags += '<span class="fn-tag">vs ' + dcEsc(n.concorrente) + (n.valorConcorrente ? ' ' + fnMoeda(n.valorConcorrente) : '') + '</span>';
-  if (tags) h += '<div class="fn-tags">' + tags + '</div>';
-  if (aberta && n.faltaFechar) h += '<div class="fn-trava"><b>Falta:</b> ' + dcEsc(n.faltaFechar) + '</div>';
-  else if (aberta && n.motivoTravando) h += '<div class="fn-trava"><b>Travando:</b> ' + dcEsc(n.motivoTravando) + '</div>';
-  if (aberta) h += '<div class="fn-prox' + (atras ? ' atras' : n.proximaData ? '' : ' sem') + '">' + (n.proximaData
-      ? '<b>' + (atras ? 'Atrasada · ' : '') + fnDataTxt(n.proximaData) + '</b>' + (n.proximaAcao ? ' · ' + dcEsc(n.proximaAcao) : '')
-      : 'Sem próxima ação definida') + '</div>';
-  h += '<div class="fn-f" onclick="event.stopPropagation()">';
-  if (tel.length >= 10 && pode) h += '<button class="fn-ac" title="Ligar pelo Discador" onclick="fnLigar(\'' + id + '\')">Ligar</button>' +
-    '<a class="fn-ac wa" title="Abrir conversa no WhatsApp" href="' + dcEsc(dcWaHref(tel)) + '"' + (dcPref().waModo === 'web' ? ' target="dc-whatsapp" rel="noopener"' : '') + ' onclick="fnWa(\'' + id + '\')">WhatsApp</a>';
-  if (pode && aberta) h += '<button class="fn-ac" title="Marcar a próxima ação" onclick="fnProxima(\'' + id + '\')">Próxima ação</button>';
-  if (n.etapa === 'fechado' && pode && !n.convertida) h += '<button class="fn-ac pri" onclick="abrirPedidoPopupConversao(\'' + id + '\')">Virar pedido</button>';
-  if (n.convertida) h += '<span class="fn-ok">Pedido lançado</span>';
-  if (pode && aberta) h += '<select class="fn-mover" title="Mudar de etapa" onchange="if(this.value)negMoverEtapa(\'' + id + '\',this.value)"><option value="">Mover…</option>' +
-    NEG_ETAPAS.filter(function(e) { return e.key !== n.etapa; }).map(function(e) { return '<option value="' + e.key + '">' + e.label + '</option>'; }).join('') + '</select>';
-  return h + '</div></article>';
+function fnNeg(vend, id) { return (negState.porVendedor[vend] || []).find(function(x) { return x.id === id; }); }
+function fnMotivo(n) { var mi = n.motivoCategoria && NEG_MOTIVOS[n.motivoCategoria]; return n.motivoCategoria === 'outro' && n.motivoOutro ? n.motivoOutro : (mi ? mi.label : (n.motivoPerda || '')); }
+function fnJs(s) { return dcEsc(String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'")); }
+
+/* ── card compacto ── */
+function fnCard(n, todos) {
+  var aberta = FN_ABERTAS.indexOf(n.etapa) >= 0, dias = fnDiasParado(n), atras = aberta && fnAtrasada(n);
+  var pode = n.vendedor === currentUser || dcGestao(), tel = dcDig(n.telefone || ''), ids = "'" + fnJs(n.vendedor) + "','" + fnJs(n.id) + "'";
+  var sel = DC.fxSel && DC.fxSel.vend === n.vendedor && DC.fxSel.id === n.id;
+  var h = '<div class="fx-card' + (sel ? ' sel' : '') + '"' + (pode ? ' draggable="true" ondragstart="dcFunilArrastar(event,\'n:' + fnJs(n.vendedor) + ':' + fnJs(n.id) + '\')" ondragend="dcFunilSoltou()"' : '') + ' onclick="fxAbrir(' + ids + ')">';
+  h += '<div class="fx-c1"><span class="fx-emp">' + dcEsc(n.empresa || '(sem nome)') + '</span>' + (todos ? '<span class="fx-av" title="' + dcEsc(rtNome(n.vendedor)) + '">' + dcEsc(fnIniciais(n.vendedor)) + '</span>' : '') + '</div>';
+  h += '<div class="fx-c2"><span class="fx-val">' + (n.valorEstimado ? fnMoeda(n.valorEstimado) : '<i>sem valor</i>') + '</span>' + (n.contato ? '<span class="fx-cont">' + dcEsc(n.contato) + '</span>' : '') + '</div>';
+  if (n.produtos && aberta) h += '<div class="fx-prod">' + dcEsc(n.produtos) + '</div>';
+  if (aberta) {
+    var st = atras ? 'atras' : n.proximaData ? 'ok' : 'sem';
+    h += '<div class="fx-c3"><span class="fx-acao ' + st + '" title="Próxima ação">' + FN_IC.cal + '<span>' + (n.proximaData ? (atras ? 'Atrasada · ' : '') + fnDataTxt(n.proximaData) + (n.proximaAcao ? ' · ' + dcEsc(n.proximaAcao) : '') : 'Sem próxima ação') + '</span></span>' +
+      (dias >= 1 ? '<span class="fx-dias' + (dias >= FN_PARADO_CRITICO ? ' crit' : dias >= FN_PARADO_ALERTA ? ' alerta' : '') + '" title="Dias nesta etapa">' + dias + 'd</span>' : '') + '</div>';
+  } else if (n.etapa === 'perdido') { var mt = fnMotivo(n); if (mt) h += '<div class="fx-c3"><span class="fx-motivo">' + dcEsc(mt) + '</span></div>'; }
+  else if (n.etapa === 'fechado') h += '<div class="fx-c3"><span class="fx-ped ' + (n.convertida ? 'ok' : '') + '">' + (n.convertida ? 'Pedido lançado' : 'Falta lançar o pedido') + '</span></div>';
+  if (pode && tel.length >= 10 && aberta) h += '<div class="fx-rap" onclick="event.stopPropagation()"><button title="Ligar pelo Discador" onclick="fnLigar(' + ids + ')">' + FN_IC.tel + '</button>' +
+    '<a class="wa" title="WhatsApp" href="' + dcEsc(dcWaHref(tel)) + '"' + (dcPref().waModo === 'web' ? ' target="dc-whatsapp" rel="noopener"' : '') + ' onclick="fnWa(' + ids + ')">' + FN_IC.wa + '</a></div>';
+  return h + '</div>';
 }
-function fnColuna(et, lista, gest, todos, extraCls) {
-  var tot = lista.reduce(function(s, n) { return s + (Number(n.valorEstimado) || 0); }, 0);
-  var vis = lista.filter(fnFiltra);
-  return '<section class="fn-col ' + (extraCls || '') + '" data-col="' + et.key + '" style="--c:' + et.cor + '" ondragover="dcFunilSobre(event)" ondragleave="this.classList.remove(\'over\')" ondrop="dcFunilDrop(event,\'' + et.key + '\')">' +
-    '<div class="fn-colh"><div><span class="fn-dot"></span>' + et.label + '<em>' + lista.length + '</em></div><b>' + fnMoeda(tot) + '</b></div>' +
-    '<div class="fn-cards">' + (vis.length ? vis.map(function(n) { return fnCard(n, et, gest, todos); }).join('')
-      : '<div class="fn-vazio">' + (lista.length ? 'Nada com este filtro' : (et.key === 'contato' ? 'Arraste um cliente da faixa acima ou clique em <b>Nova negociação</b>' : 'Arraste uma negociação para cá')) + '</div>') + '</div></section>';
-}
-function fnProspHtml(m, quem) {
-  var grupos = [['falou', 'Falou com o cliente', '#1F8A5B'], ['retorno', 'Retorno agendado', '#2F6FB3'], ['tentando', 'Tentando contato', '#B7791F']];
-  var total = grupos.reduce(function(s, g) { return s + m.prosp[g[0]].length; }, 0), aLigar = m.prosp.aligar.length, pode = quem === currentUser;
-  var h = '<section class="fn-prosp' + (DC.funilProsp ? '' : ' fechada') + '"><button class="fn-prosp-h" onclick="DC.funilProsp=!DC.funilProsp;dcRender()"><span>Para levar ao funil</span><em>' + total + '</em>' +
-    '<small>Clientes que você já trabalhou no Discador e ainda não viraram negociação</small><i>' + (DC.funilProsp ? '▴' : '▾') + '</i></button>';
-  if (!DC.funilProsp) return h + '</section>';
-  h += '<div class="fn-prosp-g">' + grupos.map(function(g) {
-    var it = m.prosp[g[0]], lim = DC.funilMais[g[0]] ? it.length : 4;
-    return '<div class="fn-pg" style="--c:' + g[2] + '"><div class="fn-pgh"><span class="fn-dot"></span>' + g[1] + '<em>' + it.length + '</em></div>' +
-      (it.length ? it.slice(0, lim).map(function(x) {
-        var id = x.tipo === 'ret' ? 'r:' + x.i : 'l:' + x.lista + ':' + x.i, info = '';
-        if (x.tipo === 'ret' && x.quando) { var venc = new Date(x.quando) <= new Date(); info = '<span class="' + (venc ? 'atras' : '') + '">' + dcEsc(new Date(x.quando).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) + '</span>'; }
-        else if (x.em) info = dcEsc(new Date(x.em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })) + (x.n > 1 ? ' · ' + x.n + ' tentativas' : '');
-        return '<div class="fn-pc"' + (pode ? ' draggable="true" ondragstart="dcFunilArrastar(event,\'' + id + '\')" ondragend="dcFunilSoltou()"' : '') + '>' +
-          '<div class="fn-pcx"><b>' + dcEsc(x.empresa || x.nome || dcTel(x.tel)) + '</b><small>' + dcEsc(dcTel(x.tel)) + (info ? ' · ' + info : '') + '</small>' + (x.obs ? '<small class="obs">' + dcEsc(String(x.obs).slice(0, 80)) + '</small>' : '') + '</div>' +
-          (pode ? '<div class="fn-pca"><button class="fn-ac" title="Ligar" onclick="' + (x.tipo === 'ret' ? 'dcAbrirRetorno(' + x.i + ')' : 'dcDiscarDaqui(\'' + dcEsc(x.lista) + '\',' + x.i + ')') + '">Ligar</button>' +
-            '<button class="fn-ac pri" title="Abrir negociação em Interessado" onclick="fnLevar(\'' + id + '\')">Negociar</button></div>' : '') + '</div>';
-      }).join('') + (it.length > lim ? '<button class="fn-mais" onclick="DC.funilMais[\'' + g[0] + '\']=1;dcRender()">Ver todos (' + it.length + ')</button>' : '')
-        : '<div class="fn-vazio pq">Ninguém aqui</div>') + '</div>';
-  }).join('') + '</div>';
-  if (aLigar && pode) h += '<div class="fn-aligar"><b>' + aLigar + '</b> cliente' + (aLigar > 1 ? 's' : '') + ' ainda na fila para ligar · <a href="#" onclick="dcSetAba(\'discar\');return false">Ir para o Discador</a></div>';
-  return h + '</section>';
-}
+
+/* ── tela ── */
 function dcVFunil() {
   var m = dcFunilMontar(), gest = dcGestao(), todos = m.quem === 'todos';
-  var abertas = [], fech = (m.neg.fechado || []), perd = (m.neg.perdido || []);
-  FN_ABERTAS.forEach(function(k) { abertas = abertas.concat(m.neg[k] || []); });
-  var fechMes = fech.filter(fnNoMes), perdMes = perd.filter(fnNoMes);
+  var abertas = []; FN_ABERTAS.forEach(function(k) { abertas = abertas.concat(m.neg[k] || []); });
+  var fech = m.neg.fechado || [], perd = m.neg.perdido || [], fechMes = fech.filter(fnNoMes), perdMes = perd.filter(fnNoMes);
   var soma = function(l) { return l.reduce(function(s, n) { return s + (Number(n.valorEstimado) || 0); }, 0); };
-  var nAtras = abertas.filter(fnAtrasada).length, nParadas = abertas.filter(function(n) { return fnDiasParado(n) >= FN_PARADO_ALERTA; }).length, nSem = abertas.filter(function(n) { return !n.proximaData; }).length;
+  var nAtras = abertas.filter(fnAtrasada).length, nPar = abertas.filter(function(n) { return fnDiasParado(n) >= FN_PARADO_ALERTA; }).length, nSem = abertas.filter(function(n) { return !n.proximaData; }).length;
   var taxa = fechMes.length + perdMes.length ? Math.round(fechMes.length / (fechMes.length + perdMes.length) * 100) : null;
-  var mesNome = new Date().toLocaleDateString('pt-BR', { month: 'long' });
-  var h = '<div class="fn">';
-  // barra de ferramentas
-  h += '<div class="fn-bar">' +
-    (gest ? '<select class="fn-sel" onchange="dcFunilVend(this.value)"><option value="' + dcEsc(currentUser) + '">Meu funil</option>' +
+  var ticket = fechMes.length ? soma(fechMes) / fechMes.length : null;
+  var mes = new Date().toLocaleDateString('pt-BR', { month: 'long' });
+  var h = '<div class="fx">';
+  // barra
+  var opt = function(v, t) { return '<option value="' + v + '"' + (DC.funilFiltro === v ? ' selected' : '') + '>' + t + '</option>'; };
+  h += '<div class="fx-top"><div class="fx-tl">' +
+    (gest ? '<select class="fx-in" onchange="dcFunilVend(this.value)" title="De quem é o funil"><option value="' + dcEsc(currentUser) + '">Meu funil</option>' +
       CK_EQUIPE.filter(function(v) { return v !== currentUser && vendedores[v]; }).map(function(v) { return '<option value="' + v + '"' + (m.quem === v ? ' selected' : '') + '>' + dcEsc(rtNome(v)) + '</option>'; }).join('') +
       '<option value="todos"' + (todos ? ' selected' : '') + '>Toda a equipe</option></select>' : '') +
-    '<input id="dc-fbusca" class="fn-busca" placeholder="Buscar cliente ou telefone" value="' + dcEsc(DC.funilBusca) + '" oninput="dcFunilBuscar(this.value)">' +
-    '<span class="fn-sp"></span>' +
-    (gest ? '<button class="dc-btn" onclick="negState.filtroVend=(dcFunilQuem()===\'todos\'?\'todos\':dcFunilQuem());abrirRelatorioNeg()">Relatório</button>' : '') +
-    '<button class="dc-btn dc-pri" onclick="abrirNegModal()">+ Nova negociação</button></div>';
+    '<div class="fx-busca"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="dc-fbusca" placeholder="Buscar negociação" value="' + dcEsc(DC.funilBusca) + '" oninput="dcFunilBuscar(this.value)"></div>' +
+    '<select class="fx-in" onchange="DC.funilFiltro=this.value;dcRender()" title="Filtrar">' + opt('todas', 'Todas as negociações') + opt('atrasadas', 'Próxima ação atrasada (' + nAtras + ')') + opt('paradas', 'Paradas há ' + FN_PARADO_ALERTA + '+ dias (' + nPar + ')') + opt('semacao', 'Sem próxima ação (' + nSem + ')') + '</select>' +
+    '</div><div class="fx-tr">' + (gest ? '<button class="fx-btn" onclick="negState.filtroVend=(dcFunilQuem()===\'todos\'?\'todos\':dcFunilQuem());abrirRelatorioNeg()">Relatório</button>' : '') +
+    '<button class="fx-btn pri" onclick="abrirNegModal()">+ Negociação</button></div></div>';
   // números
-  h += '<div class="fn-kpis">' +
-    '<div class="fn-kpi"><small>Em negociação</small><b>' + fnMoeda(soma(abertas)) + '</b><span>' + abertas.length + ' negociaç' + (abertas.length === 1 ? 'ão' : 'ões') + ' abertas</span></div>' +
-    '<div class="fn-kpi ok"><small>Fechado em ' + mesNome + '</small><b>' + fnMoeda(soma(fechMes)) + '</b><span>' + fechMes.length + ' negócio' + (fechMes.length === 1 ? '' : 's') + '</span></div>' +
-    '<div class="fn-kpi nok"><small>Perdido em ' + mesNome + '</small><b>' + fnMoeda(soma(perdMes)) + '</b><span>' + perdMes.length + ' negócio' + (perdMes.length === 1 ? '' : 's') + '</span></div>' +
-    '<div class="fn-kpi"><small>Taxa de fechamento</small><b>' + (taxa == null ? '—' : taxa + '%') + '</b><span>fechados ÷ (fechados + perdidos) no mês</span></div></div>';
-  // filtros de atenção
-  var ch = function(k, t, n, cls) { return '<button class="fn-chip ' + (cls || '') + (DC.funilFiltro === k ? ' on' : '') + '" onclick="DC.funilFiltro=\'' + k + '\';dcRender()">' + t + (n != null ? ' <em>' + n + '</em>' : '') + '</button>'; };
-  h += '<div class="fn-chips">' + ch('todas', 'Todas', abertas.length) + ch('atrasadas', 'Próxima ação atrasada', nAtras, nAtras ? 'crit' : '') + ch('paradas', 'Paradas há ' + FN_PARADO_ALERTA + '+ dias', nParadas, nParadas ? 'alerta' : '') + ch('semacao', 'Sem próxima ação', nSem, nSem ? 'alerta' : '') + '</div>';
-  // faixa de prospecção
-  if (!todos) h += fnProspHtml(m, m.quem);
-  // quadro
-  var ordenar = function(l) { return l.slice().sort(function(a, b) { var aa = fnAtrasada(a) ? 0 : 1, bb = fnAtrasada(b) ? 0 : 1; return aa - bb || (a.proximaData || '9999').localeCompare(b.proximaData || '9999') || (Number(b.valorEstimado) || 0) - (Number(a.valorEstimado) || 0); }); };
-  h += '<div class="fn-board">';
-  NEG_ETAPAS.filter(function(e) { return FN_ABERTAS.indexOf(e.key) >= 0; }).forEach(function(et) { h += fnColuna(et, ordenar(m.neg[et.key] || []), gest, todos); });
-  var etF = NEG_ETAPAS.find(function(e) { return e.key === 'fechado'; }), etP = NEG_ETAPAS.find(function(e) { return e.key === 'perdido'; });
-  var verF = DC.funilAntigos ? fech : fechMes, verP = DC.funilAntigos ? perd : perdMes;
-  var recentes = function(l) { return l.slice().sort(function(a, b) { return fnDesde(b) - fnDesde(a); }); };
-  h += '<div class="fn-res"><div class="fn-resh">Resultado ' + (DC.funilAntigos ? '(todos)' : 'de ' + mesNome) + '<button onclick="DC.funilAntigos=!DC.funilAntigos;dcRender()">' + (DC.funilAntigos ? 'Só este mês' : 'Ver anteriores') + '</button></div>' +
-    fnColuna(etF, recentes(verF), gest, todos, 'res ok') + fnColuna(etP, recentes(verP), gest, todos, 'res nok') + '</div>';
-  h += '</div></div>';
+  h += '<div class="fx-stats">' +
+    '<div><small>Em aberto</small><b>' + fnMoeda(soma(abertas)) + '</b><span>' + abertas.length + ' negociaç' + (abertas.length === 1 ? 'ão' : 'ões') + '</span></div>' +
+    '<div><small>Fechado em ' + mes + '</small><b class="g">' + fnMoeda(soma(fechMes)) + '</b><span>' + fechMes.length + ' negócio' + (fechMes.length === 1 ? '' : 's') + '</span></div>' +
+    '<div><small>Perdido em ' + mes + '</small><b class="r">' + fnMoeda(soma(perdMes)) + '</b><span>' + perdMes.length + ' negócio' + (perdMes.length === 1 ? '' : 's') + '</span></div>' +
+    '<div><small>Taxa de fechamento</small><b>' + (taxa == null ? '–' : taxa + '%') + '</b><span>no mês</span></div>' +
+    '<div><small>Ticket médio</small><b>' + (ticket == null ? '–' : fnMoeda(ticket)) + '</b><span>fechados no mês</span></div></div>';
+  // avisos (só quando há algo)
+  var av = [];
+  if (nAtras && DC.funilFiltro !== 'atrasadas') av.push('<button onclick="DC.funilFiltro=\'atrasadas\';dcRender()"><i class="r"></i><b>' + nAtras + '</b> com a próxima ação atrasada</button>');
+  if (nSem && DC.funilFiltro !== 'semacao') av.push('<button onclick="DC.funilFiltro=\'semacao\';dcRender()"><i class="a"></i><b>' + nSem + '</b> sem próxima ação</button>');
+  if (DC.funilFiltro !== 'todas') av.push('<button onclick="DC.funilFiltro=\'todas\';dcRender()" class="limpa">Mostrar todas</button>');
+  // prospecção recolhida
+  var prospN = todos ? 0 : (m.prosp.falou.length + m.prosp.retorno.length + m.prosp.tentando.length);
+  if (av.length || prospN) {
+    h += '<div class="fx-avisos">' + av.join('') + '<span class="fx-sp"></span>' +
+      (prospN ? '<button class="fx-prosp-bt' + (DC.funilProsp ? ' on' : '') + '" onclick="DC.funilProsp=!DC.funilProsp;dcRender()"><b>' + prospN + '</b> cliente' + (prospN > 1 ? 's' : '') + ' do Discador para virar negociação <span>' + (DC.funilProsp ? 'Fechar' : 'Ver') + '</span></button>' : '') + '</div>';
+  }
+  if (prospN && DC.funilProsp) h += fxProspHtml(m);
+  // etapas em seta
+  var cols = FN_ORDEM.map(function(k) {
+    var l = (m.neg[k] || []); if (k === 'fechado' || k === 'perdido') l = DC.funilAntigos ? l : l.filter(fnNoMes);
+    return { k: k, l: l };
+  });
+  h += '<div class="fx-board-w"><div class="fx-board">';
+  h += '<div class="fx-etapas">' + cols.map(function(c, i) {
+    var sub = fnMoeda(soma(c.l)) + ' · ' + c.l.length;
+    return '<div class="fx-et' + (i === 0 ? ' pri' : '') + '" style="--c:' + FN_COR[c.k] + '"><b>' + FN_NOME[c.k] + '</b><span>' + sub + ((c.k === 'fechado' || c.k === 'perdido') && !DC.funilAntigos ? ' · ' + mes : '') + '</span></div>';
+  }).join('') + '</div>';
+  var ordenar = function(l, k) {
+    if (k === 'fechado' || k === 'perdido') return l.slice().sort(function(a, b) { return fnDesde(b) - fnDesde(a); });
+    return l.slice().sort(function(a, b) { var x = fnAtrasada(a) ? 0 : 1, y = fnAtrasada(b) ? 0 : 1; return x - y || (a.proximaData || '9999').localeCompare(b.proximaData || '9999') || (Number(b.valorEstimado) || 0) - (Number(a.valorEstimado) || 0); });
+  };
+  h += '<div class="fx-cols">' + cols.map(function(c) {
+    var vis = ordenar(c.l, c.k).filter(fnFiltra);
+    var antigos = (c.k === 'fechado' || c.k === 'perdido') ? (m.neg[c.k] || []).length - (m.neg[c.k] || []).filter(fnNoMes).length : 0;
+    return '<div class="fx-col" style="--c:' + FN_COR[c.k] + '" data-nome="' + FN_NOME[c.k] + ' · ' + fnMoeda(soma(c.l)) + ' · ' + c.l.length + '" data-col="' + c.k + '" ondragover="dcFunilSobre(event)" ondragleave="this.classList.remove(\'over\')" ondrop="fxDrop(event,\'' + c.k + '\')">' +
+      vis.map(function(n) { return fnCard(n, todos); }).join('') +
+      (!vis.length ? '<div class="fx-vazio">' + (c.l.length ? 'Nenhuma neste filtro' : c.k === 'contato' ? 'Nenhuma negociação' : '') + '</div>' : '') +
+      (antigos && !DC.funilAntigos ? '<button class="fx-ant" onclick="DC.funilAntigos=true;dcRender()">+ ' + antigos + ' de meses anteriores</button>' : '') +
+      (DC.funilAntigos && (c.k === 'fechado' || c.k === 'perdido') ? '<button class="fx-ant" onclick="DC.funilAntigos=false;dcRender()">Só ' + mes + '</button>' : '') +
+      '</div>';
+  }).join('') + '</div></div></div>';
+  if (!abertas.length && !fech.length && !perd.length) h += '<div class="fx-primeira"><b>Seu funil ainda está vazio.</b> Crie uma negociação com <b>+ Negociação</b>' + (prospN ? ' ou leve um cliente do Discador para cá.' : ', ou marque "Levou para o funil" no resultado de uma ligação.') + '</div>';
+  h += '</div>';
+  h += fxDrawerHtml();
   return h;
 }
-// ações dos cards
-function fnNeg(vend, id) { return (negState.porVendedor[vend] || []).find(function(x) { return x.id === id; }); }
-function fnLigar(vend, id) {
-  var n = fnNeg(vend, id); if (!n) return;
-  DC.avulso = { tel: dcDig(n.telefone), nome: n.contato || '', empresa: n.empresa || '', obs: n.proximaAcao || '' }; DC.call = null; DC.aba = 'discar'; dcPararAuto(true); dcRender();
+function fxProspHtml(m) {
+  var linhas = [];
+  [['falou', 'Falou com o cliente', '#22A06B'], ['retorno', 'Retorno agendado', '#3B82F6'], ['tentando', 'Tentando contato', '#F59E0B']].forEach(function(g) {
+    m.prosp[g[0]].forEach(function(x) { linhas.push({ x: x, g: g }); });
+  });
+  var lim = DC.funilMais.prosp ? linhas.length : 8;
+  return '<div class="fx-prosp"><table><thead><tr><th>Cliente</th><th>Telefone</th><th>Situação</th><th>Última anotação</th><th></th></tr></thead><tbody>' +
+    linhas.slice(0, lim).map(function(r) {
+      var x = r.x, id = x.tipo === 'ret' ? 'r:' + x.i : 'l:' + x.lista + ':' + x.i, sit = r.g[1];
+      if (x.tipo === 'ret' && x.quando) { var venc = new Date(x.quando) <= new Date(); sit = '<span class="' + (venc ? 'r' : '') + '">Retorno ' + dcEsc(new Date(x.quando).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) + '</span>'; }
+      else if (r.g[0] === 'tentando') sit = 'Tentando' + (x.n > 1 ? ' · ' + x.n + 'x' : '');
+      return '<tr draggable="true" ondragstart="dcFunilArrastar(event,\'' + fnJs(id) + '\')" ondragend="dcFunilSoltou()"><td><i style="background:' + r.g[2] + '"></i><b>' + dcEsc(x.empresa || x.nome || '') + '</b>' + (x.empresa && x.nome ? '<small>' + dcEsc(x.nome) + '</small>' : '') + '</td>' +
+        '<td>' + dcEsc(dcTel(x.tel)) + '</td><td>' + sit + '</td><td class="obs">' + dcEsc(String(x.obs || '').slice(0, 90)) + '</td>' +
+        '<td class="ac"><button class="fx-btn sm" onclick="' + (x.tipo === 'ret' ? 'dcAbrirRetorno(' + x.i + ')' : 'dcDiscarDaqui(\'' + fnJs(x.lista) + '\',' + x.i + ')') + '">Ligar</button><button class="fx-btn sm pri" onclick="fnLevar(\'' + fnJs(id) + '\')">Abrir negociação</button></td></tr>';
+    }).join('') + '</tbody></table>' + (linhas.length > lim ? '<button class="fx-ant" onclick="DC.funilMais.prosp=1;dcRender()">Ver todos (' + linhas.length + ')</button>' : '') + '</div>';
 }
-function fnWa(vend, id) { var n = fnNeg(vend, id); if (!n) return; try { negAnotar(vend, id, 'Conversa aberta no WhatsApp.'); } catch (e) {} }
+
+/* ── painel lateral ── */
+function fxAbrir(vend, id) { DC.fxSel = { vend: vend, id: id }; DC.fxModo = null; dcRender(); }
+function fxFechar() { DC.fxSel = null; DC.fxModo = null; dcRender(); }
+function fxDrawerHtml() {
+  if (!DC.fxSel) return '';
+  var n = fnNeg(DC.fxSel.vend, DC.fxSel.id); if (!n) { DC.fxSel = null; return ''; }
+  var pode = n.vendedor === currentUser || dcGestao(), aberta = FN_ABERTAS.indexOf(n.etapa) >= 0, ids = "'" + fnJs(n.vendedor) + "','" + fnJs(n.id) + "'";
+  var tel = dcDig(n.telefone || ''), dias = fnDiasParado(n);
+  var h = '<div class="fx-veu" onclick="fxFechar()"></div><aside class="fx-dw" id="fx-dw" role="dialog" aria-label="Negociação">';
+  h += '<div class="fx-dw-h"><div><small>' + (dcGestao() ? dcEsc(rtNome(n.vendedor)) + ' · ' : '') + 'Negociação</small><h3>' + dcEsc(n.empresa || '(sem nome)') + '</h3>' +
+    '<div class="fx-dw-v">' + (n.valorEstimado ? fnMoeda(n.valorEstimado) : 'Sem valor') + '<span>' + FN_NOME[n.etapa] + (aberta ? ' há ' + (dias === 0 ? 'menos de 1 dia' : dias + (dias === 1 ? ' dia' : ' dias')) : '') + '</span></div></div>' +
+    '<button class="fx-x" onclick="fxFechar()" title="Fechar">' + FN_IC.x + '</button></div>';
+  // etapas
+  h += '<div class="fx-dw-et">' + FN_ABERTAS.map(function(k) {
+    var i = FN_ORDEM.indexOf(k), at = FN_ORDEM.indexOf(n.etapa), cls = k === n.etapa ? 'on' : (aberta && i < at ? 'feito' : '');
+    return '<button class="' + cls + '" style="--c:' + FN_COR[k] + '"' + (pode && k !== n.etapa ? ' onclick="fxMover(' + ids + ',\'' + k + '\')"' : ' disabled') + '>' + FN_NOME[k] + '</button>';
+  }).join('') + '</div>';
+  if (pode) {
+    if (DC.fxModo === 'perder') {
+      h += '<div class="fx-dw-perder"><b>Por que perdeu?</b><select id="fx-mot">' + Object.keys(NEG_MOTIVOS).map(function(k) { return '<option value="' + k + '"' + (n.motivoCategoria === k ? ' selected' : '') + '>' + NEG_MOTIVOS[k].label + '</option>'; }).join('') + '</select>' +
+        '<input id="fx-mot-txt" placeholder="Detalhe (opcional): ex. fechou com a Gesso Rio por R$ 39.800" value="' + dcEsc(n.motivoPerda || '') + '">' +
+        '<div class="fx-row"><button class="fx-btn" onclick="DC.fxModo=null;dcRender()">Cancelar</button><button class="fx-btn dng" onclick="fxPerder(' + ids + ')">Marcar como perdido</button></div></div>';
+    } else if (aberta) h += '<div class="fx-dw-res"><button class="fx-btn ganho" onclick="fxMover(' + ids + ',\'fechado\')">Fechado (ganho)</button><button class="fx-btn dng" onclick="DC.fxModo=\'perder\';dcRender()">Perdido</button></div>';
+    else h += '<div class="fx-dw-res">' + (n.etapa === 'fechado' && !n.convertida ? '<button class="fx-btn pri" onclick="DC.fxSel=null;dcRender();abrirPedidoPopupConversao(' + ids + ')">Lançar pedido</button>' : '') + '<button class="fx-btn" onclick="fxMover(' + ids + ',\'negociando\')">Reabrir negociação</button></div>';
+  }
+  // próxima ação
+  if (aberta) {
+    var atras = fnAtrasada(n);
+    h += '<section class="fx-sec"><h4>Próxima ação</h4>' + (pode
+      ? '<div class="fx-prox' + (atras ? ' atras' : '') + '"><input type="date" id="fx-pdata" value="' + dcEsc(n.proximaData || '') + '"><input id="fx-pacao" placeholder="O que fazer? Ex.: ligar para fechar" value="' + dcEsc(n.proximaAcao || '') + '"><button class="fx-btn pri" onclick="fxSalvarProx(' + ids + ')">Salvar</button></div>' +
+        (atras ? '<div class="fx-alerta">Atrasada desde ' + dcEsc(fnDataTxt(n.proximaData)) + '</div>' : !n.proximaData ? '<div class="fx-alerta a">Sem próxima ação: marque quando falar de novo com o cliente</div>' : '')
+      : '<p>' + (n.proximaData ? dcEsc(fnDataTxt(n.proximaData)) + ' · ' : '') + dcEsc(n.proximaAcao || 'Sem próxima ação') + '</p>') + '</section>';
+  }
+  // contato
+  h += '<section class="fx-sec"><h4>Contato</h4><div class="fx-kv"><span>Pessoa</span><b>' + dcEsc(n.contato || '–') + '</b><span>Telefone</span><b>' + dcEsc(n.telefone || '–') + '</b><span>UF</span><b>' + dcEsc(n.estado || '–') + '</b></div>' +
+    (tel.length >= 10 && pode ? '<div class="fx-row"><button class="fx-btn" onclick="fnLigar(' + ids + ')">' + FN_IC.tel + ' Ligar</button><a class="fx-btn wa" href="' + dcEsc(dcWaHref(tel)) + '"' + (dcPref().waModo === 'web' ? ' target="dc-whatsapp" rel="noopener"' : '') + ' onclick="fnWa(' + ids + ')">' + FN_IC.wa + ' WhatsApp</a></div>' : '') + '</section>';
+  // detalhes
+  var det = [['Produtos do orçamento', n.produtos], ['O que falta para fechar', n.faltaFechar], ['Observações', n.motivoTravando],
+    ['Concorrente', n.concorrente ? n.concorrente + (n.valorConcorrente ? ' · ' + fnMoeda(n.valorConcorrente) : '') : ''], [n.etapa === 'perdido' ? 'Motivo da perda' : 'Motivo de não fechar', fnMotivo(n) + (n.etapa === 'perdido' && n.motivoPerda && fnMotivo(n) !== n.motivoPerda ? ' · ' + n.motivoPerda : '')]].filter(function(x) { return x[1]; });
+  h += '<section class="fx-sec"><h4>Detalhes' + (pode ? '<button class="fx-link" onclick="DC.fxSel=null;dcRender();abrirNegModal(' + ids + ')">Editar</button>' : '') + '</h4>' +
+    (det.length ? det.map(function(x) { return '<div class="fx-det"><span>' + x[0] + '</span><p>' + dcEsc(x[1]) + '</p></div>'; }).join('') : '<p class="fx-mud">Sem produtos ou observações. Use Editar para completar.</p>') + '</section>';
+  // histórico
+  var hist = (n.historico || []).slice().sort(function(a, b) { return new Date(b.data) - new Date(a.data); });
+  h += '<section class="fx-sec"><h4>Histórico</h4>' + (pode ? '<div class="fx-nota"><input id="fx-nota" placeholder="Escreva uma nota sobre a conversa" onkeydown="if(event.key===\'Enter\')fxNota(' + ids + ')"><button class="fx-btn" onclick="fxNota(' + ids + ')">Adicionar</button></div>' : '') +
+    '<ol class="fx-hist">' + (hist.length ? hist.slice(0, 30).map(function(x) { var d = new Date(x.data); return '<li><time>' + (isNaN(d) ? '' : dcEsc(d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))) + '</time><span>' + dcEsc(x.texto || '') + '</span></li>'; }).join('') : '<li><span class="fx-mud">Sem histórico.</span></li>') + '</ol></section>';
+  return h + '</aside>';
+}
+/* ── ações ── */
 function negAnotar(vend, id, texto, extra) {
   return dbRef('negociacoes/' + vend + '/' + id).once('value').then(function(snap) {
     var n = snap.val(); if (!n) return;
-    n.historico = n.historico || []; n.historico.push({ data: new Date().toISOString(), texto: texto });
+    n.historico = n.historico || []; if (texto) n.historico.push({ data: new Date().toISOString(), texto: texto });
     if (extra) Object.keys(extra).forEach(function(k) { n[k] = extra[k]; });
     return dbRef('negociacoes/' + vend + '/' + id).set(n);
   });
 }
-function fnProxima(vend, id) {
-  var n = fnNeg(vend, id); if (!n) return;
-  var acao = prompt('Próxima ação para ' + (n.empresa || 'o cliente') + ':', n.proximaAcao || ''); if (acao === null) return;
-  var sug = n.proximaData && n.proximaData >= fnHoje() ? n.proximaData.split('-').reverse().join('/') : '';
-  var dt = prompt('Quando? (dd/mm ou dd/mm/aaaa — vazio = amanhã)', sug); if (dt === null) return;
-  var iso;
-  dt = dt.trim();
-  if (!dt) { var a = new Date(); a.setDate(a.getDate() + 1); iso = a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2, '0') + '-' + String(a.getDate()).padStart(2, '0'); }
-  else { var p = dt.split(/[\/\-.]/); var y = p[2] ? (p[2].length === 2 ? '20' + p[2] : p[2]) : String(new Date().getFullYear()); if (!p[1]) { dcAviso('Use dd/mm'); return; } iso = y + '-' + String(p[1]).padStart(2, '0') + '-' + String(p[0]).padStart(2, '0'); if (isNaN(new Date(iso).getTime())) { dcAviso('Data inválida'); return; } }
-  negAnotar(vend, id, 'Próxima ação: ' + (acao || '(sem descrição)') + ' em ' + iso.split('-').reverse().join('/'), { proximaAcao: acao.trim(), proximaData: iso }).then(function() { dcAviso('Próxima ação marcada'); });
+function fxMover(vend, id, etapa, extra) {
+  var e = Object.assign({ etapa: etapa, etapaDesde: new Date().toISOString() }, extra || {});
+  return negAnotar(vend, id, 'Movida para: ' + FN_NOME[etapa], e).then(function() { dcAviso(etapa === 'fechado' ? 'Negócio fechado' : etapa === 'perdido' ? 'Marcada como perdida' : 'Movida para ' + FN_NOME[etapa]); });
 }
-// "Negociar" na faixa de prospecção: abre a negociação em Interessado
+function fxPerder(vend, id) {
+  var cat = (document.getElementById('fx-mot') || {}).value || 'outro', txt = ((document.getElementById('fx-mot-txt') || {}).value || '').trim();
+  DC.fxModo = null;
+  fxMover(vend, id, 'perdido', { motivoCategoria: cat, motivoPerda: txt, motivoOutro: cat === 'outro' ? txt : '' });
+}
+function fxSalvarProx(vend, id) {
+  var d = (document.getElementById('fx-pdata') || {}).value || '', a = ((document.getElementById('fx-pacao') || {}).value || '').trim();
+  if (!d) { dcAviso('Escolha a data da próxima ação'); return; }
+  negAnotar(vend, id, 'Próxima ação: ' + (a || '(sem descrição)') + ' em ' + d.split('-').reverse().join('/'), { proximaData: d, proximaAcao: a }).then(function() { dcAviso('Próxima ação salva'); });
+}
+function fxNota(vend, id) {
+  var el = document.getElementById('fx-nota'), t = el ? el.value.trim() : ''; if (!t) return;
+  el.value = ''; negAnotar(vend, id, t).then(function() { dcAviso('Nota adicionada'); });
+}
+function fxDrop(ev, col) {
+  var id = DC.arrastando || (ev.dataTransfer && ev.dataTransfer.getData('text/plain')) || '';
+  if (id.indexOf('n:') === 0) {
+    ev.preventDefault(); ev.currentTarget.classList.remove('over'); DC.arrastando = null;
+    var p = id.split(':'), vend = p[1], nid = p.slice(2).join(':'), n = fnNeg(vend, nid);
+    if (!n || n.etapa === col) return;
+    if (col === 'perdido') { DC.fxSel = { vend: vend, id: nid }; DC.fxModo = 'perder'; dcRender(); return; } // pergunta o motivo no painel
+    fxMover(vend, nid, col); return;
+  }
+  dcFunilDrop(ev, col);
+}
+function fnLigar(vend, id) {
+  var n = fnNeg(vend, id); if (!n) return;
+  DC.fxSel = null; DC.avulso = { tel: dcDig(n.telefone), nome: n.contato || '', empresa: n.empresa || '', obs: n.proximaAcao || '' }; DC.call = null; DC.aba = 'discar'; dcPararAuto(true); dcRender();
+}
+function fnWa(vend, id) { try { negAnotar(vend, id, 'Conversa aberta no WhatsApp.'); } catch (e) {} }
 function fnLevar(id) { DC.arrastando = id; var falso = { preventDefault: function() {}, currentTarget: { classList: { remove: function() {} } }, dataTransfer: null }; dcFunilDrop(falso, 'contato'); }
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && typeof DC !== 'undefined' && DC.fxSel) fxFechar(); });
 
 function dcFunilVend(v) { DC.funilVend = v; DC.funilMais = {}; negState.filtroVend = 'todos'; dcRender(); }
 function dcFunilBuscar(v) { DC.funilBusca = v; clearTimeout(dcFunilBuscar.t); dcFunilBuscar.t = setTimeout(dcRender, 250); }
@@ -28191,6 +28271,7 @@ function dcFunilAtualizar() {
   if (typeof DC === 'undefined' || DC.aba !== 'funil') return;
   var tab = document.getElementById('tab-discador'); if (!tab || !tab.classList.contains('active')) return;
   if (DC.arrastando) { DC.funilPend = true; return; }
+  var ae = document.activeElement; if (ae && ae.closest && ae.closest('#fx-dw') && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) { clearTimeout(dcFunilAtualizar.t); dcFunilAtualizar.t = setTimeout(dcFunilAtualizar, 1500); return; }
   clearTimeout(dcFunilAtualizar.t); dcFunilAtualizar.t = setTimeout(dcRender, 150);
 }
 
@@ -30712,94 +30793,148 @@ setInterval(function() { var tab = document.getElementById('tab-agenda'); if (ta
 window.addEventListener('resize', function() { if (AGD.pop) agdPosPop(); });
 </script>
 <style>
-/* ══ FUNIL (refeito em 28/10/2026) ══ */
-.fn{display:flex;flex-direction:column;gap:14px;color:var(--txt)}
-.fn-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.fn-sel,.fn-busca{font:inherit;font-size:13.5px;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:9px;padding:9px 12px}
-.fn-busca{flex:1;min-width:200px;max-width:420px}
-.fn-sp{flex:1}
-.fn-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.fn-kpi{background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
-.fn-kpi small{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:none}
-.fn-kpi b{font-size:24px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fn-kpi span{font-size:12px;color:var(--muted)}
-.fn-kpi.ok b{color:#2E9E6A}
-.fn-kpi.nok b{color:#D9534F}
-.fn-chips{display:flex;flex-wrap:wrap;gap:8px}
-.fn-chip{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--txt-2);border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.fn-chip em{font-style:normal;font-size:11.5px;background:var(--surface-3);color:var(--txt-2);border-radius:999px;padding:0 7px;min-width:20px;text-align:center}
-.fn-chip.crit em{background:#D9534F;color:#fff}
-.fn-chip.alerta em{background:#E0A526;color:#1b1300}
-.fn-chip.on{border-color:var(--acc);background:var(--acc-soft);color:var(--acc-txt)}
-.fn-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin-right:8px;flex:none}
-/* faixa de prospecção */
-.fn-prosp{background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);overflow:hidden}
-.fn-prosp-h{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;color:var(--txt);font:inherit;font-size:14px;font-weight:700;padding:13px 16px;cursor:pointer;text-align:left;flex-wrap:wrap}
-.fn-prosp-h em{font-style:normal;font-size:12px;background:var(--surface-3);border-radius:999px;padding:1px 8px;color:var(--txt-2)}
-.fn-prosp-h small{font-weight:400;color:var(--muted);font-size:12.5px}
-.fn-prosp-h i{margin-left:auto;font-style:normal;color:var(--muted)}
-.fn-prosp-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 16px 14px}
-.fn-pg{display:flex;flex-direction:column;gap:6px;min-width:0}
-.fn-pgh{display:flex;align-items:center;font-size:12.5px;font-weight:700;color:var(--txt-2);padding:2px 0 4px}
-.fn-pgh em{font-style:normal;margin-left:6px;color:var(--muted);font-weight:600}
-.fn-pc{display:flex;gap:8px;align-items:center;justify-content:space-between;background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--c);border-radius:8px;padding:7px 9px;cursor:grab;min-width:0}
-.fn-pcx{display:flex;flex-direction:column;min-width:0}
-.fn-pcx b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fn-pcx small{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fn-pcx small.obs{color:var(--txt-2);font-style:italic}
-.fn-pcx .atras{color:#D9534F;font-weight:700}
-.fn-pca{display:flex;gap:4px;flex:none}
-.fn-mais{font:inherit;font-size:12px;font-weight:600;border:none;background:none;color:var(--acc-txt);cursor:pointer;text-align:left;padding:2px 0}
-.fn-aligar{border-top:1px solid var(--line);padding:10px 16px;font-size:12.5px;color:var(--muted)}
-.fn-aligar a{color:var(--acc-txt);font-weight:600}
+/* ══ FUNIL v2 (28/10/2026) ══ */
+.fx{display:flex;flex-direction:column;gap:12px;color:var(--txt);font-size:13.5px}
+.fx-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.fx-tl,.fx-tr{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fx-in{font:inherit;font-size:13px;height:36px;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:8px;padding:0 10px;cursor:pointer}
+.fx-busca{display:flex;align-items:center;gap:6px;height:36px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:0 10px;color:var(--muted);min-width:240px}
+.fx-busca input{border:none !important;background:none !important;outline:none;font:inherit;font-size:13px;color:var(--txt);width:100%;padding:0 !important;box-shadow:none !important;height:auto !important}
+.fx-btn{display:inline-flex;align-items:center;gap:6px;height:36px;font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:8px;padding:0 14px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.fx-btn:hover{background:var(--surface-3)}
+.fx-btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.fx-btn.pri:hover{filter:brightness(1.06);background:var(--acc)}
+.fx-btn.ganho{background:#22A06B;border-color:#22A06B;color:#fff}
+.fx-btn.dng{color:#E5484D;border-color:color-mix(in srgb,#E5484D 50%,var(--line))}
+.fx-btn.wa{color:#1FA855}
+.fx-btn.sm{height:28px;padding:0 10px;font-size:12px}
+.fx-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.fx-stats>div{padding:12px 16px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.fx-stats>div+div{border-left:1px solid var(--line)}
+.fx-stats small{font-size:11.5px;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-stats b{font-size:20px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fx-stats b.g{color:#22A06B}.fx-stats b.r{color:#E5484D}
+.fx-stats span{font-size:11.5px;color:var(--faint)}
+.fx-avisos{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fx-avisos>button{display:inline-flex;align-items:center;gap:7px;font:inherit;font-size:12.5px;color:var(--txt-2);background:none;border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}
+.fx-avisos>button:hover{background:var(--surface-3)}
+.fx-avisos i{width:8px;height:8px;border-radius:50%}
+.fx-avisos i.r{background:#E5484D}.fx-avisos i.a{background:#F59E0B}
+.fx-avisos .limpa{color:var(--acc-txt);border-color:transparent}
+.fx-sp{flex:1}
+.fx-avisos .fx-prosp-bt{border-color:color-mix(in srgb,#3B82F6 45%,var(--line));color:var(--txt)}
+.fx-prosp-bt span{color:#3B82F6;font-weight:700;margin-left:4px}
+.fx-prosp-bt.on{background:color-mix(in srgb,#3B82F6 10%,var(--surface))}
+.fx-prosp{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:auto}
+.fx-prosp table{width:100%;border-collapse:collapse;font-size:13px}
+.fx-prosp th{text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.fx-prosp td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.fx-prosp tr:last-child td{border-bottom:none}
+.fx-prosp tbody tr{cursor:grab}
+.fx-prosp tbody tr:hover{background:var(--surface-2)}
+.fx-prosp td i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}
+.fx-prosp td small{display:block;color:var(--muted);font-size:11.5px;margin-left:16px}
+.fx-prosp td .r{color:#E5484D;font-weight:600}
+.fx-prosp td.obs{color:var(--muted);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx-prosp td.ac{white-space:nowrap;text-align:right}
+.fx-prosp td.ac .fx-btn+.fx-btn{margin-left:6px}
 /* quadro */
-.fn-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(240px,.85fr);gap:12px;align-items:start}
-.fn-col{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;min-width:0;transition:border-color .12s,background .12s}
-.fn-col.over{border-color:var(--c);background:color-mix(in srgb,var(--c) 10%,var(--surface-2))}
-.fn-colh{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px 10px;border-bottom:3px solid var(--c);font-size:13.5px;font-weight:700}
-.fn-colh div{display:flex;align-items:center;min-width:0}
-.fn-colh em{font-style:normal;font-weight:600;color:var(--muted);margin-left:8px;font-size:12.5px}
-.fn-colh b{font-size:13px;font-variant-numeric:tabular-nums;color:var(--txt-2);white-space:nowrap}
-.fn-cards{display:flex;flex-direction:column;gap:8px;padding:10px;min-height:80px}
-.fn-vazio{border:1.5px dashed var(--line-strong);border-radius:10px;padding:18px 12px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.5}
-.fn-vazio.pq{padding:8px;font-size:12px}
-.fn-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 12px 9px;cursor:pointer;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,.12);transition:box-shadow .12s,transform .12s}
-.fn-card:hover{box-shadow:0 6px 18px rgba(0,0,0,.22);transform:translateY(-1px)}
-.fn-card.atras{border-color:color-mix(in srgb,#D9534F 55%,var(--line))}
-.fn-card .fn-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.fn-emp{display:flex;align-items:center;gap:7px;min-width:0}
-.fn-emp b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.fn-av{flex:none;width:22px;height:22px;border-radius:50%;background:var(--acc-soft);color:var(--acc-txt);font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
-.fn-val{font-size:14px;font-weight:800;color:#2E9E6A;white-space:nowrap;font-variant-numeric:tabular-nums}
-.fn-val.zero{font-size:11.5px;font-weight:600;color:var(--faint)}
-.fn-sub{font-size:12px;color:var(--muted);margin-top:-3px}
-.fn-prod{font-size:12px;color:var(--txt-2);background:var(--surface-3);border-radius:6px;padding:5px 8px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.fn-tags{display:flex;flex-wrap:wrap;gap:5px}
-.fn-tag{font-size:11px;font-weight:600;border-radius:6px;padding:2px 7px;background:var(--surface-3);color:var(--txt-2)}
-.fn-tag.alerta{background:color-mix(in srgb,#E0A526 22%,var(--surface));color:#E0A526}
-.fn-tag.crit{background:color-mix(in srgb,#D9534F 20%,var(--surface));color:#E5625D}
-.fn-trava{font-size:12px;color:var(--txt-2);border-left:2px solid #E0A526;padding:1px 0 1px 8px}
-.fn-prox{font-size:12px;color:var(--txt-2)}
-.fn-prox b{font-weight:700;color:var(--txt)}
-.fn-prox.atras,.fn-prox.atras b{color:#E5625D}
-.fn-prox.sem{color:#E0A526;font-weight:600}
-.fn-card .fn-f{display:flex;flex-wrap:wrap;gap:5px;align-items:center;border-top:1px solid var(--line);padding-top:8px;margin-top:2px}
-.fn-ac{font:inherit;font-size:11.5px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--txt-2);border-radius:7px;padding:4px 9px;cursor:pointer;text-decoration:none;line-height:1.3}
-.fn-ac:hover{background:var(--surface-3);color:var(--txt)}
-.fn-ac.wa{color:#25A55F;border-color:color-mix(in srgb,#25A55F 45%,var(--line))}
-.fn-ac.pri{background:var(--acc);border-color:var(--acc);color:#fff}
-.fn-ok{font-size:11.5px;font-weight:700;color:#2E9E6A}
-.fn-card select.fn-mover{margin-left:auto;font:inherit;font-size:11.5px !important;border:1px solid var(--line) !important;background:var(--surface) !important;color:var(--muted) !important;border-radius:7px !important;padding:3px 6px !important;height:auto !important;min-height:0 !important;width:auto !important;cursor:pointer;max-width:110px;box-shadow:none !important}
-/* resultado do mês */
-.fn-res{display:flex;flex-direction:column;gap:10px;min-width:0}
-.fn-resh{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:var(--muted);padding:0 2px}
-.fn-resh button{font:inherit;font-size:12px;font-weight:600;border:none;background:none;color:var(--acc-txt);cursor:pointer}
-.fn-col.res .fn-cards{max-height:340px;overflow:auto;min-height:56px}
-.fn-col.res .fn-card{padding:9px 10px 7px}
-.fn-col.res .fn-card .fn-prod,.fn-col.res .fn-card .fn-sub{display:none}
-@media (max-width:1180px){.fn-board{grid-template-columns:repeat(3,minmax(0,1fr))}.fn-res{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr 1fr;align-items:start}.fn-resh{flex-direction:column;align-items:flex-start;gap:4px}}
-@media (max-width:900px){.fn-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.fn-prosp-g{grid-template-columns:1fr}}
-@media (max-width:760px){.fn-board{grid-template-columns:1fr}.fn-res{display:flex;align-items:stretch}.fn-resh{flex-direction:row;align-items:center}.fn-kpi b{font-size:20px}.fn-busca{max-width:none;flex-basis:100%}.fn-sp{display:none}}
+.fx-board-w{overflow-x:auto;padding-bottom:4px}
+.fx-board{min-width:1000px;display:flex;flex-direction:column;gap:8px}
+.fx-etapas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.fx-et{position:relative;background:color-mix(in srgb,var(--c) 13%,var(--surface));padding:9px 22px 9px 26px;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%);display:flex;flex-direction:column;min-width:0}
+.fx-et.pri{clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%);padding-left:14px;border-radius:8px 0 0 8px}
+.fx-et:last-child{clip-path:polygon(0 0,100% 0,100% 100%,0 100%,12px 50%);border-radius:0 8px 8px 0}
+.fx-et b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-et b::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:7px;vertical-align:1px}
+.fx-et span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.fx-cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch}
+.fx-col{background:var(--surface-2);border:1px dashed transparent;border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:6px;min-height:340px;min-width:0;transition:background .12s,border-color .12s}
+.fx-col.over{border-color:var(--c);background:color-mix(in srgb,var(--c) 9%,var(--surface-2))}
+.fx-vazio{color:var(--faint);font-size:12px;text-align:center;padding:16px 4px}
+.fx-ant{font:inherit;font-size:12px;font-weight:600;border:none;background:none;color:var(--muted);cursor:pointer;padding:6px;text-align:center}
+.fx-ant:hover{color:var(--acc-txt)}
+.fx-card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;cursor:pointer;display:flex;flex-direction:column;gap:3px;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.fx-card:hover{border-color:var(--line-strong);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.fx-card.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.fx-c1{display:flex;align-items:center;gap:6px;min-width:0}
+.fx-emp{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.fx-av{flex:none;width:20px;height:20px;border-radius:50%;background:var(--surface-3);color:var(--txt-2);font-size:9.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.fx-c2{display:flex;align-items:baseline;gap:6px;min-width:0;font-size:12.5px}
+.fx-val{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fx-val i{font-weight:400;font-style:normal;color:var(--faint)}
+.fx-cont{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-cont::before{content:'·';margin-right:6px;color:var(--faint)}
+.fx-prod{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-c3{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:3px;font-size:12px;min-width:0}
+.fx-acao{display:flex;align-items:center;gap:5px;min-width:0;color:var(--muted)}
+.fx-acao span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-acao svg{flex:none}
+.fx-acao.ok svg{color:#22A06B}
+.fx-acao.atras{color:#E5484D;font-weight:600}
+.fx-acao.sem{color:#C98A0B}
+.fx-dias{flex:none;font-size:11px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
+.fx-dias.alerta{color:#C98A0B}.fx-dias.crit{color:#E5484D}
+.fx-motivo{font-size:11.5px;color:#E5484D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-ped{font-size:11.5px;color:#C98A0B;font-weight:600}.fx-ped.ok{color:#22A06B}
+.fx-rap{position:absolute;top:6px;right:6px;display:none;gap:4px}
+.fx-card:hover .fx-rap{display:flex}
+.fx-rap button,.fx-rap a{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--txt-2);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.fx-rap button:hover,.fx-rap a:hover{background:var(--surface-3);color:var(--txt)}
+.fx-rap a.wa{color:#1FA855}
+@media (hover:none){.fx-rap{display:flex;position:static;margin-top:4px}}
+.fx-primeira{text-align:center;color:var(--muted);font-size:13px;padding:2px 0 8px}
+/* painel lateral */
+.fx-veu{position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:9998}
+.fx-dw{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--surface);color:var(--txt);z-index:9999;box-shadow:-12px 0 40px rgba(0,0,0,.3);overflow-y:auto;display:flex;flex-direction:column}
+.fx-dw-h{display:flex;justify-content:space-between;gap:12px;padding:20px 22px 14px;border-bottom:1px solid var(--line)}
+.fx-dw-h small{font-size:11.5px;color:var(--muted)}
+.fx-dw-h h3{margin:2px 0 6px;font-size:20px;font-weight:700;line-height:1.25}
+.fx-dw-v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.fx-dw-v span{font-size:12.5px;font-weight:500;color:var(--muted)}
+.fx-x{width:34px;height:34px;flex:none;border-radius:8px;border:none;background:none;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.fx-x:hover{background:var(--surface-3);color:var(--txt)}
+.fx-dw-et{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:14px 22px 0}
+.fx-dw-et button{font:inherit;font-size:12px;font-weight:600;border:none;background:var(--surface-3);color:var(--muted);padding:8px 4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-dw-et button:first-child{border-radius:7px 0 0 7px}.fx-dw-et button:last-child{border-radius:0 7px 7px 0}
+.fx-dw-et button.feito{background:color-mix(in srgb,var(--c) 25%,var(--surface-3));color:var(--txt-2)}
+.fx-dw-et button.on{background:var(--c);color:#fff;cursor:default}
+.fx-dw-et button:not(.on):not([disabled]):hover{color:var(--txt)}
+.fx-dw-res{display:flex;gap:8px;padding:10px 22px 4px}
+.fx-dw-res .fx-btn{flex:1;justify-content:center}
+.fx-dw-perder{margin:12px 22px 0;padding:12px;border:1px solid color-mix(in srgb,#E5484D 40%,var(--line));border-radius:10px;display:flex;flex-direction:column;gap:8px}
+.fx-dw-perder select,.fx-dw-perder input,.fx-prox input,.fx-nota input{font:inherit;font-size:13px;height:36px;border:1px solid var(--line);background:var(--surface-2);color:var(--txt);border-radius:8px;padding:0 10px;box-sizing:border-box;width:100%}
+.fx-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.fx-sec{padding:16px 22px;border-top:1px solid var(--line);margin-top:12px}
+.fx-sec+.fx-sec{margin-top:0}
+.fx-sec h4{margin:0 0 10px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.fx-link{font:inherit;font-size:12.5px;font-weight:600;text-transform:none;letter-spacing:0;border:none;background:none;color:var(--acc-txt);cursor:pointer}
+.fx-prox{display:grid;grid-template-columns:150px 1fr auto;gap:8px}
+.fx-prox.atras input[type=date]{border-color:#E5484D;color:#E5484D}
+.fx-alerta{margin-top:8px;font-size:12.5px;color:#E5484D;font-weight:600}
+.fx-alerta.a{color:#C98A0B}
+.fx-kv{display:grid;grid-template-columns:80px 1fr;gap:6px 10px;font-size:13px;margin-bottom:10px}
+.fx-kv span{color:var(--muted)}
+.fx-kv b{font-weight:500}
+.fx-det{margin-bottom:10px}
+.fx-det span{font-size:12px;color:var(--muted)}
+.fx-det p{margin:2px 0 0;white-space:pre-wrap;line-height:1.45}
+.fx-mud{color:var(--muted);font-size:12.5px;margin:0}
+.fx-nota{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:12px}
+.fx-hist{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.fx-hist li{position:relative;display:flex;flex-direction:column;gap:1px;font-size:13px}
+.fx-hist li::before{content:'';position:absolute;left:-19px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--line-strong)}
+.fx-hist time{font-size:11.5px;color:var(--faint)}
+@media (max-width:900px){.fx-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fx-stats>div{border-left:none !important;border-top:1px solid var(--line)}.fx-stats>div:nth-child(-n+2){border-top:none}}
+@media (max-width:760px){
+  .fx-busca{min-width:0;flex:1 1 100%}.fx-tl,.fx-tr{width:100%}.fx-tr .fx-btn{flex:1;justify-content:center}
+  .fx-board{min-width:0}.fx-etapas{display:none}
+  .fx-cols{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:6px}
+  .fx-col{flex:0 0 86%;scroll-snap-align:start;min-height:220px}
+  .fx-col::before{content:attr(data-nome);font-weight:700;font-size:13px;padding:4px 4px 2px;border-bottom:3px solid var(--c);margin-bottom:4px}
+  .fx-prox{grid-template-columns:1fr}
+  .fx-prosp td.obs,.fx-prosp th:nth-child(4){display:none}
+}
 </style>
 </body>
 </html>
