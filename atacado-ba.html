@@ -30759,10 +30759,20 @@ function agdSementeAtividades() {
   Promise.resolve(flag.once('value')).then(function(snap) {
     if (snap && snap.val()) return;
     var pessoas = ['BRUNO','NIVIA'].filter(function(v) { return vendedores[v]; });
-    var ev = { tit: 'Atividades diárias', data: '2026-10-29', diaTodo: true, ini: '', fim: '', rep: 'rodizio', ate: '', rodizio: { pessoas: pessoas },
+    var ev = { tit: 'Atividades diárias', data: '2026-10-29', diaTodo: false, ini: '17:30', fim: '18:00', rep: 'rodizio', ate: '', rodizio: { pessoas: pessoas },
       desc: '• Retirar o lixo\n• Organizar a sala\n• Dar atenção especial à área do café (limpar a bancada, organizar os itens e manter o espaço limpo)',
       cliente: '', tel: '', lembrete: 10, cor: '#039BE5', criadoPor: 'ANACAROLINA', criadoEm: Date.now(), editadoPor: 'ANACAROLINA', editadoEm: Date.now() };
     return Promise.resolve(dbRef('agenda/equipe/rodizio_atividades').set(ev)).then(function() { return flag.set(true); });
+  }).then(function() {
+    // 28/10/2026 (17h52): horário fixo das 17h30 às 18h para a arrumação (antes era dia inteiro)
+    var f2 = dbRef('agenda/migracoes/atividades_diarias_v2');
+    return Promise.resolve(f2.once('value')).then(function(snap) {
+      if (snap && snap.val()) return;
+      return Promise.resolve(dbRef('agenda/equipe/rodizio_atividades').once('value')).then(function(s2) {
+        if (!s2 || !s2.val()) return;
+        return Promise.resolve(dbRef('agenda/equipe/rodizio_atividades').update({ diaTodo: false, ini: '17:30', fim: '18:00', editadoPor: 'ANACAROLINA', editadoEm: Date.now() }));
+      }).then(function() { return f2.set(true); });
+    });
   }).catch(function(e) { AGD.semente = false; console.warn('agenda: escala de atividades', e); });
 }
 function agdLembrar() {
