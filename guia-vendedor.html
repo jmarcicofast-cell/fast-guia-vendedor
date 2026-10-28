@@ -30023,6 +30023,12 @@ setTimeout(appMostrarBotao, 1500);
 .agd-prev em{font-style:normal;color:var(--muted)}
 .agd-prev span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .agd-btn[disabled]{opacity:.5;cursor:default}
+.agd-rod{margin:-2px 0 12px;display:flex;flex-direction:column;gap:6px}
+.agd-rod small{color:var(--muted);font-size:12px}
+.agd-rod div{display:flex;flex-wrap:wrap;gap:6px}
+.agd-rod button{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--surface-2);color:var(--txt-2);border-radius:999px;padding:5px 11px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.agd-rod button.on{border-color:var(--acc);background:var(--acc-soft);color:var(--acc-txt);font-weight:600}
+.agd-rod button em{font-style:normal;background:var(--acc);color:#fff;border-radius:999px;min-width:18px;height:18px;font-size:11px;display:inline-flex;align-items:center;justify-content:center}
 .agd-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#202124;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:9100;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 @media (max-width:860px){
   .agd-wrap{grid-template-columns:1fr}
@@ -30056,7 +30062,24 @@ var AGD_FONTES = [
 var AGD_CORES = ['#1A73E8', '#039BE5', '#0B8043', '#33B679', '#F6BF26', '#F4511E', '#D50000', '#E67C73', '#8E24AA', '#7986CB', '#616161'];
 var AGD_MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 var AGD_SEM = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
-var AGD_REP = [['', 'Não se repete'], ['dia', 'Todos os dias'], ['uteis', 'Todos os dias úteis (seg a sex)'], ['semana', 'Toda semana'], ['mes', 'Todo mês']];
+var AGD_REP = [['', 'Não se repete'], ['dia', 'Todos os dias'], ['uteis', 'Todos os dias úteis (seg a sex)'], ['semana', 'Toda semana'], ['mes', 'Todo mês'], ['rodizio', 'Rodízio entre pessoas (seg a sex)']];
+/* ══ RODÍZIO (28/10/2026) — um compromisso da equipe que cai a cada dia útil para uma pessoa, na ordem da lista.
+   Feriados nacionais não contam (ninguém perde a vez); um dia excluído à mão conta como a vez de quem era. */
+function agdPascoa(y) { var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451), mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1; return new Date(y, mes - 1, dia); }
+var AGD_FER = {};
+function agdFeriado(iso) {
+  var y = +iso.slice(0, 4);
+  if (!AGD_FER[y]) { var f = {}; ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25'].forEach(function(md) { f[y + '-' + md] = 1; });
+    var sx = agdPascoa(y); sx.setDate(sx.getDate() - 2); f[agdIso(sx)] = 1; AGD_FER[y] = f; }
+  return !!AGD_FER[y][iso];
+}
+function agdUtil(iso) { var w = agdData(iso).getDay(); return w >= 1 && w <= 5 && !agdFeriado(iso); }
+// de quem é a vez neste dia (ou null)
+function agdRodizioDe(ev, iso) {
+  var ps = ev && ev.rodizio && agdLista(ev.rodizio.pessoas); if (!ps || !ps.length || !agdOcorre(ev, iso)) return null;
+  var n = 0; for (var d = ev.data; d < iso; d = agdSoma(d, 1)) if (agdUtil(d)) n++;
+  return ps[n % ps.length];
+}
 var AGD_LEMB = [[0, 'Sem lembrete'], [5, '5 minutos antes'], [10, '10 minutos antes'], [30, '30 minutos antes'], [60, '1 hora antes'], [1440, '1 dia antes']];
 var AGD_HH = 54; // altura de uma hora na grade (px)
 var AGD_H0 = 8, AGD_H1 = 18; // 28/10/2026: a grade mostra só das 8h às 18h (compromisso fora disso aparece colado na borda)
@@ -30122,6 +30145,7 @@ function agdOcorre(ev, iso) {
     case 'uteis': return d.getDay() >= 1 && d.getDay() <= 5;
     case 'semana': return d.getDay() === o.getDay();
     case 'mes': return d.getDate() === o.getDate();
+    case 'rodizio': return agdUtil(iso);
     default: return iso === ev.data;
   }
 }
@@ -30137,6 +30161,13 @@ function agdEventos(iso) {
   });
   if (agdCalOn('equipe')) { var eq = AGD.c['agenda/equipe'] || {};
     Object.keys(eq).forEach(function(id) { var ev = eq[id]; if (!ev || !agdOcorre(ev, iso)) return;
+      if (ev.rep === 'rodizio') {
+        var vez = agdRodizioDe(ev, iso); if (!vez) return;
+        var tudo = agdGestao() && (AGD.quem === currentUser || AGD.quem === 'todos' || !AGD.quem);
+        if (!tudo && pessoas.indexOf(vez) < 0) return;
+        push({ fonte: 'equipe', id: id, dono: vez, vez: vez, tit: (ev.tit || 'Rodízio') + ' · ' + (vez === currentUser && !tudo ? 'sua vez' : agdNome(vez)), base: ev, ini: ev.diaTodo ? null : ev.ini, fim: ev.diaTodo ? null : ev.fim, cor: ev.cor || '#039BE5', editavel: true });
+        return;
+      }
       push({ fonte: 'equipe', id: id, tit: ev.tit || '(sem título)', base: ev, ini: ev.diaTodo ? null : ev.ini, fim: ev.diaTodo ? null : ev.fim, cor: ev.cor || '#8E24AA', editavel: true }); }); }
   if (agdCalOn('ret')) pessoas.forEach(function(p) {
     agdLista(AGD.c['discador/estado/' + p + '/retornos']).forEach(function(r, i) {
@@ -30152,7 +30183,7 @@ function agdEventos(iso) {
       push({ fonte: 'neg', id: n.id || n.empresa, dono: p, tit: pre(p) + 'Funil: ' + (n.empresa || n.contato || 'negociação') + (n.proximaAcao ? ' — ' + n.proximaAcao : ''), ini: null, cor: '#F4511E', leve: true, n: n });
     });
   });
-  if (agdCalOn('rotina') && wd >= 1 && wd <= 5) pessoas.forEach(function(p) {
+  if (agdCalOn('rotina') && agdUtil(iso)) pessoas.forEach(function(p) {
     var mod = AGD.c['rotinaGestora/' + p + '/modelo'];
     if (!mod && p === currentUser && typeof rtnPadrao === 'function' && typeof acVe === 'function' && acVe(p, 'rotina')) mod = AGD.rotPad = AGD.rotPad || rtnPadrao(); // rotina sugerida, enquanto não foi salva
     if (!mod) return;
@@ -30319,6 +30350,10 @@ function agdPopHtml() {
     '<h3 style="--c:' + e.cor + '"><i></i><span>' + agdEsc(e.tit) + '</span></h3>' +
     '<div class="q">' + AGD_SEM[dd.getDay()].replace(/^./, function(c) { return c.toUpperCase(); }) + ', ' + dd.getDate() + ' de ' + AGD_MESES[dd.getMonth()] + ' · ' + agdEsc(agdQuando(e)) +
     (b.rep ? '<br>' + agdEsc((AGD_REP.find(function(r) { return r[0] === b.rep; }) || ['', ''])[1]) + (b.ate ? ' até ' + agdEsc(agdData(b.ate).toLocaleDateString('pt-BR')) : '') : '') + '</div>';
+  if (b.rep === 'rodizio' && b.rodizio) {
+    var psR = agdLista(b.rodizio.pessoas), vezR = e.vez || agdRodizioDe(b, e.dia);
+    h += '<div class="l"><span>↻</span><span>Nesta data: <b>' + agdEsc(agdNome(vezR)) + '</b><br>Ordem: ' + psR.map(function(v) { return v === vezR ? '<b>' + agdEsc(agdNome(v)) + '</b>' : agdEsc(agdNome(v)); }).join(' → ') + '<br><small style="color:var(--muted)">Feriados nacionais não contam</small></span></div>';
+  }
   var fonte = AGD_FONTES.find(function(f) { return f.k === e.fonte; });
   h += '<div class="l"><span>▣</span><span>' + agdEsc(e.fonte === 'pessoal' ? 'Agenda de ' + agdNome(e.dono) : fonte.t) + (b.criadoPor && b.criadoPor !== e.dono ? ' · criado por ' + agdEsc(agdNome(b.criadoPor)) : '') + '</span></div>';
   if (b.cliente || b.tel) h += '<div class="l"><span>☎</span><span>' + agdEsc(b.cliente || '') + (b.tel ? (b.cliente ? ' · ' : '') + agdEsc(typeof dcTel === 'function' ? dcTel(b.tel) : b.tel) : '') + '</span></div>';
@@ -30353,14 +30388,14 @@ function agdNovo(iso, ini, diaTodo) {
   if (!ini && !diaTodo) ini = agdHora(Math.min(22 * 60, (hAg + (mAg > 0 ? 1 : 0)) * 60));
   var dono = agdGestao() && AGD.quem && AGD.quem !== 'todos' ? AGD.quem : currentUser;
   AGD.pop = null;
-  AGD.form = { novo: true, id: agdId(), ag: dono, tit: '', data: iso || AGD.ref, diaTodo: !!diaTodo, ini: ini || '09:00', fim: agdHora(agdMin(ini || '09:00') + 60), rep: '', ate: '', cliente: '', tel: '', desc: '', lembrete: 10, cor: '#1A73E8', foco: true };
+  AGD.form = { novo: true, id: agdId(), ag: dono, tit: '', data: iso || AGD.ref, diaTodo: !!diaTodo, ini: ini || '09:00', fim: agdHora(agdMin(ini || '09:00') + 60), rep: '', ate: '', rod: [], cliente: '', tel: '', desc: '', lembrete: 10, cor: '#1A73E8', foco: true };
   agdRender();
 }
 function agdEditar(e) {
   var b = e.base || {};
   AGD.pop = null;
   AGD.form = { novo: false, id: e.id, ag: e.fonte === 'equipe' ? 'equipe' : e.dono, agOrig: e.fonte === 'equipe' ? 'equipe' : e.dono, tit: b.tit || '', data: b.data, diaTodo: !!b.diaTodo, ini: b.ini || '09:00', fim: b.fim || agdHora(agdMin(b.ini || '09:00') + 60),
-    rep: b.rep || '', ate: b.ate || '', cliente: b.cliente || '', tel: b.tel || '', desc: b.desc || '', lembrete: b.lembrete != null ? +b.lembrete : 0, cor: b.cor || (e.fonte === 'equipe' ? '#8E24AA' : '#1A73E8'), base: b, foco: true };
+    rep: b.rep || '', ate: b.ate || '', rod: (b.rodizio && agdLista(b.rodizio.pessoas)) || [], cliente: b.cliente || '', tel: b.tel || '', desc: b.desc || '', lembrete: b.lembrete != null ? +b.lembrete : 0, cor: b.cor || (e.fonte === 'equipe' ? '#8E24AA' : '#1A73E8'), base: b, foco: true };
   agdRender();
 }
 function agdFormHtml() {
@@ -30374,8 +30409,10 @@ function agdFormHtml() {
     '<div class="agd-f"><label>Data<input type="date" id="agd-f-data" value="' + agdEsc(f.data) + '"></label>' +
     '<label class="chk"><input type="checkbox" id="agd-f-dt"' + (f.diaTodo ? ' checked' : '') + '> Dia inteiro</label></div>' +
     '<div class="agd-f" id="agd-f-horas"' + (f.diaTodo ? ' style="display:none"' : '') + '><label>Início<input type="time" id="agd-f-ini" step="900" value="' + agdEsc(f.ini) + '"></label><label>Fim<input type="time" id="agd-f-fim" step="900" value="' + agdEsc(f.fim) + '"></label></div>' +
-    '<div class="agd-f"><label>Repetir<select id="agd-f-rep">' + AGD_REP.map(function(r) { return '<option value="' + r[0] + '"' + sel(r[0], f.rep) + '>' + r[1] + '</option>'; }).join('') + '</select></label>' +
+    '<div class="agd-f"><label>Repetir<select id="agd-f-rep">' + AGD_REP.filter(function(r) { return r[0] !== 'rodizio' || ges || f.rep === 'rodizio'; }).map(function(r) { return '<option value="' + r[0] + '"' + sel(r[0], f.rep) + '>' + r[1] + '</option>'; }).join('') + '</select></label>' +
     '<label id="agd-f-ate-l"' + (f.rep ? '' : ' style="display:none"') + '>Até (opcional)<input type="date" id="agd-f-ate" value="' + agdEsc(f.ate) + '"></label></div>' +
+    (f.rep === 'rodizio' ? '<div class="agd-rod"><small>Clique nas pessoas na ordem do rodízio. A partir da data acima, cada dia útil é a vez de uma.</small><div>' + agdEquipe().map(function(v) { var i = (f.rod || []).indexOf(v);
+      return '<button type="button" data-rod="' + agdEsc(v) + '" class="' + (i >= 0 ? 'on' : '') + '">' + (i >= 0 ? '<em>' + (i + 1) + '</em>' : '') + agdEsc(agdNome(v)) + '</button>'; }).join('') + '</div></div>' : '') +
     '<div class="agd-f"><label>Agenda<select id="agd-f-ag">' + ags + '</select></label><label>Lembrete<select id="agd-f-lem">' + AGD_LEMB.map(function(r) { return '<option value="' + r[0] + '"' + sel(r[0], f.lembrete) + '>' + r[1] + '</option>'; }).join('') + '</select></label></div>' +
     '<div class="agd-f"><label>Cliente (opcional)<input id="agd-f-cli" value="' + agdEsc(f.cliente) + '" placeholder="Loja ou contato"></label><label>Telefone (opcional)<input id="agd-f-tel" inputmode="tel" value="' + agdEsc(f.tel) + '" placeholder="(21) 99999-9999"></label></div>' +
     '<div class="agd-f"><label style="min-width:100%">Descrição<textarea id="agd-f-desc" rows="3" placeholder="Anotações, pauta, link da reunião…">' + agdEsc(f.desc) + '</textarea></label></div>' +
@@ -30386,7 +30423,7 @@ function agdLerForm() {
   var f = AGD.form, v = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
   f.tit = v('agd-f-tit').trim(); f.data = v('agd-f-data') || f.data; f.diaTodo = !!(document.getElementById('agd-f-dt') || {}).checked;
   f.ini = v('agd-f-ini') || f.ini; f.fim = v('agd-f-fim') || f.fim; f.rep = v('agd-f-rep'); f.ate = f.rep ? v('agd-f-ate') : '';
-  f.ag = v('agd-f-ag') || f.ag; f.lembrete = +v('agd-f-lem') || 0; f.cliente = v('agd-f-cli').trim(); f.tel = (typeof dcDig === 'function' ? dcDig(v('agd-f-tel')) : v('agd-f-tel').replace(/\D/g, '')); f.desc = v('agd-f-desc').trim();
+  f.ag = f.rep === 'rodizio' ? 'equipe' : (v('agd-f-ag') || f.ag); f.lembrete = +v('agd-f-lem') || 0; f.cliente = v('agd-f-cli').trim(); f.tel = (typeof dcDig === 'function' ? dcDig(v('agd-f-tel')) : v('agd-f-tel').replace(/\D/g, '')); f.desc = v('agd-f-desc').trim();
 }
 function agdSalvar() {
   agdLerForm(); var f = AGD.form;
@@ -30394,10 +30431,12 @@ function agdSalvar() {
   if (!f.data) { agdAviso('Escolha a data'); return; }
   if (!f.diaTodo && agdMin(f.fim) <= agdMin(f.ini)) f.fim = agdHora(agdMin(f.ini) + 60);
   if (f.ate && f.ate < f.data) f.ate = '';
+  if (f.rep === 'rodizio' && (f.rod || []).length < 2) { agdAviso('Escolha ao menos 2 pessoas para o rodízio'); return; }
   var b = f.base || {};
   var rec = { tit: f.tit.slice(0, 120), data: f.data, diaTodo: f.diaTodo, ini: f.diaTodo ? '' : f.ini, fim: f.diaTodo ? '' : f.fim, rep: f.rep || '', ate: f.ate || '', cliente: f.cliente.slice(0, 100), tel: f.tel.slice(0, 15), desc: f.desc.slice(0, 2000),
     lembrete: f.lembrete || 0, cor: f.cor, criadoPor: b.criadoPor || currentUser, criadoEm: b.criadoEm || Date.now(), editadoPor: currentUser, editadoEm: Date.now() };
   if (b.excecoes && b.rep === rec.rep && b.data === rec.data) rec.excecoes = b.excecoes;
+  if (rec.rep === 'rodizio') { rec.rodizio = { pessoas: f.rod.slice() }; f.ag = 'equipe'; }
   var caminho = function(ag) { return ag === 'equipe' ? 'agenda/equipe/' + f.id : 'agenda/pessoal/' + ag + '/' + f.id; };
   var ps = [];
   if (!f.novo && f.agOrig && f.agOrig !== f.ag) ps.push(dbRef(caminho(f.agOrig)).remove()); // mudou de agenda
@@ -30455,6 +30494,7 @@ function agdBind(root) {
   root.addEventListener('click', function(ev) {
     if (AGD.arrastou) { AGD.arrastou = false; return; }
     var t = ev.target, el;
+    if ((el = t.closest('[data-rod]')) && AGD.form) { agdLerForm(); var rv = el.getAttribute('data-rod'), rl = AGD.form.rod = AGD.form.rod || [], ri = rl.indexOf(rv); if (ri >= 0) rl.splice(ri, 1); else rl.push(rv); agdRender(); return; }
     if ((el = t.closest('[data-cor]')) && AGD.form) { agdLerForm(); AGD.form.cor = el.getAttribute('data-cor'); root.querySelectorAll('.agd-cores button').forEach(function(b) { b.classList.toggle('on', b === el); }); return; }
     if (t.closest('[data-form]') && !t.closest('[data-a]')) return;
     if ((el = t.closest('[data-a]'))) { agdAcao(el.getAttribute('data-a'), el, ev); return; }
@@ -30475,7 +30515,7 @@ function agdBind(root) {
     if (ev.target.hasAttribute && ev.target.hasAttribute('data-impcal') && AGD.imp) { AGD.imp.marc[ev.target.getAttribute('data-impcal')] = ev.target.checked; agdRender(); return; }
     if (id === 'agd-quem') { AGD.quem = ev.target.value; AGD.pop = null; agdOuvir(); agdRender(); return; }
     if (id === 'agd-f-dt') { var hz = document.getElementById('agd-f-horas'); if (hz) hz.style.display = ev.target.checked ? 'none' : ''; return; }
-    if (id === 'agd-f-rep') { var al = document.getElementById('agd-f-ate-l'); if (al) al.style.display = ev.target.value ? '' : 'none'; return; }
+    if (id === 'agd-f-rep') { if (AGD.form && (ev.target.value === 'rodizio' || AGD.form.rep === 'rodizio')) { agdLerForm(); if (AGD.form.rep === 'rodizio') { AGD.form.diaTodo = true; } agdRender(); return; } var al = document.getElementById('agd-f-ate-l'); if (al) al.style.display = ev.target.value ? '' : 'none'; return; }
     if (id === 'agd-f-ini') { var fi = document.getElementById('agd-f-fim'), f = AGD.form; if (fi && f) { var dur = Math.max(15, agdMin(f.fim) - agdMin(f.ini)); f.ini = ev.target.value; fi.value = agdHora(agdMin(f.ini) + dur); f.fim = fi.value; } }
     if (id === 'agd-f-fim' && AGD.form) AGD.form.fim = ev.target.value;
   });
@@ -30528,6 +30568,7 @@ function agdAcao(a, el, ev) {
 /* quem pode mover: compromissos (quem pode editar), retornos e próximas ações do Funil (o dono ou a gestão) */
 function agdPodeMover(e) {
   if (!e) return false;
+  if (e.base && e.base.rep === 'rodizio') return false;
   if (e.fonte === 'pessoal' || e.fonte === 'equipe') return agdPodeEditar(e);
   if (e.fonte === 'ret' || e.fonte === 'neg') return e.dono === currentUser || agdGestao();
   return false;
@@ -30883,8 +30924,21 @@ function agdNovosVistos() {
   try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
 }
 /* ── lembretes (com o guia aberto, em qualquer aba) ── */
+function agdSementeAtividades() {
+  if (AGD.semente || typeof OP_ATUAL === 'undefined' || OP_ATUAL.k !== 'tv') return; AGD.semente = true;
+  var flag = dbRef('agenda/migracoes/atividades_diarias_v1');
+  Promise.resolve(flag.once('value')).then(function(snap) {
+    if (snap && snap.val()) return;
+    var pessoas = ['WELLINGTON', 'JONATAS', 'PEDRO', 'VITOR', 'BREDER', 'ANTONIO', 'ELIZIANE'].filter(function(v) { return vendedores[v]; });
+    var ev = { tit: 'Atividades diárias', data: '2026-10-29', diaTodo: true, ini: '', fim: '', rep: 'rodizio', ate: '', rodizio: { pessoas: pessoas },
+      desc: '• Retirar o lixo\n• Organizar a sala\n• Dar atenção especial à área do café (limpar a bancada, organizar os itens e manter o espaço limpo)',
+      cliente: '', tel: '', lembrete: 10, cor: '#039BE5', criadoPor: 'JULIANA', criadoEm: Date.now(), editadoPor: 'JULIANA', editadoEm: Date.now() };
+    return Promise.resolve(dbRef('agenda/equipe/rodizio_atividades').set(ev)).then(function() { return flag.set(true); });
+  }).catch(function(e) { AGD.semente = false; console.warn('agenda: escala de atividades', e); });
+}
 function agdLembrar() {
   if (!currentUser || typeof dbRef !== 'function') return;
+  try { agdSementeAtividades(); } catch (e) {}
   agdSub('agenda/pessoal/' + currentUser); agdSub('agenda/equipe');
   var hoje = agdHoje(), amanha = agdSoma(hoje, 1), agora = Date.now();
   var lista = [];
@@ -30892,9 +30946,11 @@ function agdLembrar() {
     var m = AGD.c[x[0]] || {};
     Object.keys(m).forEach(function(id) { var ev = m[id]; if (!ev || !ev.lembrete) return;
       [hoje, amanha].forEach(function(dia) { if (!agdOcorre(ev, dia)) return;
+        if (ev.rep === 'rodizio' && agdRodizioDe(ev, dia) !== currentUser) return;
         var ini = agdData(dia); ini.setHours(0, 0, 0, 0); if (!ev.diaTodo && ev.ini) ini = new Date(ini.getTime() + agdMin(ev.ini) * 60000); else ini.setHours(8, 0, 0, 0);
         var aviso = ini.getTime() - ev.lembrete * 60000;
-        if (agora >= aviso && agora < ini.getTime() + 60000) lista.push({ id: id, dia: dia, ev: ev, ini: ini }); });
+        var ate = ev.diaTodo || !ev.ini ? new Date(agdData(dia).setHours(18, 0, 0, 0)).getTime() : ini.getTime() + 60000;
+        if (agora >= aviso && agora < ate) lista.push({ id: id, dia: dia, ev: ev, ini: ini }); });
     });
   });
   lista.forEach(function(x) {
