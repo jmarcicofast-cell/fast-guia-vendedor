@@ -3061,7 +3061,7 @@ function pdResumoCopiar() {
       <div class="ped-field">
         <label>Etapa</label>
         <select id="neg-etapa" onchange="negToggleMotivoPerda()">
-          <option value="contato">Contato</option>
+          <option value="contato">Interessado</option>
           <option value="orcamento">Orçamento enviado</option>
           <option value="negociando">Negociando</option>
           <option value="fechado">Fechado</option>
@@ -3075,6 +3075,10 @@ function pdResumoCopiar() {
       <div class="ped-field">
         <label>Data da próxima ação</label>
         <input type="date" id="neg-proxima-data">
+      </div>
+      <div class="ped-field" style="grid-column:1/-1;">
+        <label>Produtos do orçamento</label>
+        <textarea id="neg-produtos" rows="2" placeholder="Ex: 200 placas ST 12,5 · 400 montantes 48 · 30 cx parafuso" style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:6px;font-size:13px;outline:none;font-family:inherit;resize:vertical;"></textarea>
       </div>
       <div class="ped-field" id="neg-motivo-perda-field" style="display:none;">
         <label>Motivo da perda</label>
@@ -13119,6 +13123,7 @@ function negMoverEtapa(vend, id, novaEtapa) {
     var n = snap.val();
     if (!n) return;
     n.etapa = novaEtapa;
+    n.etapaDesde = new Date().toISOString();
     if (motivo !== null) n.motivoPerda = motivo;
     n.historico = n.historico || [];
     n.historico.push({ data: new Date().toISOString(), texto: 'Movida para: ' + (NEG_ETAPAS.find(function(e){return e.key===novaEtapa;})||{}).label });
@@ -13160,6 +13165,7 @@ function abrirNegModal(vend, id) {
   document.getElementById('neg-valor-concorrente').value = '';
   document.getElementById('neg-motivo-travando').value = '';
   document.getElementById('neg-falta-fechar').value = '';
+  if (document.getElementById('neg-produtos')) document.getElementById('neg-produtos').value = '';
   document.getElementById('neg-motivo-outro').value = '';
   negToggleMotivoPerda();
   negToggleMotivoOutro();
@@ -13191,6 +13197,7 @@ function abrirNegModal(vend, id) {
       document.getElementById('neg-valor-concorrente').value = n.valorConcorrente ? String(n.valorConcorrente).replace('.', ',') : '';
       document.getElementById('neg-motivo-travando').value = n.motivoTravando || '';
       document.getElementById('neg-falta-fechar').value = n.faltaFechar || '';
+      if (document.getElementById('neg-produtos')) document.getElementById('neg-produtos').value = n.produtos || '';
       document.getElementById('neg-motivo-outro').value = n.motivoOutro || '';
       negToggleMotivoPerda();
       negToggleMotivoOutro();
@@ -13272,6 +13279,7 @@ function negSalvar() {
     valorConcorrente: parseValorMonetario(document.getElementById('neg-valor-concorrente').value) || 0,
     motivoTravando: document.getElementById('neg-motivo-travando').value.trim(),
     faltaFechar: document.getElementById('neg-falta-fechar').value.trim(),
+    produtos: (document.getElementById('neg-produtos') ? document.getElementById('neg-produtos').value.trim() : ''),
     vendedor: vend
   };
 
@@ -13282,12 +13290,17 @@ function negSalvar() {
       dados.id = id;
       dados.dataCriacao = atual.dataCriacao || new Date().toISOString();
       dados.historico = atual.historico || [];
+      // etapaDesde: quando entrou na etapa (o Funil conta os dias parado a partir daqui)
+      if (atual.etapa !== dados.etapa) { dados.etapaDesde = new Date().toISOString(); dados.historico.push({ data: dados.etapaDesde, texto: 'Movida para: ' + (NEG_ETAPAS.find(function(e){return e.key===dados.etapa;})||{}).label }); }
+      else if (atual.etapaDesde) dados.etapaDesde = atual.etapaDesde;
+      ['convertida', 'pedidoId', 'pedidoChamado', 'origem'].forEach(function(c) { if (atual[c] !== undefined && dados[c] === undefined) dados[c] = atual[c]; });
       dbRef('negociacoes/' + vend + '/' + id).set(dados).then(fecharNegModal);
     });
   } else {
     var novoId = 'neg_' + Date.now();
     dados.id = novoId;
     dados.dataCriacao = new Date().toISOString();
+    dados.etapaDesde = dados.dataCriacao;
     dados.historico = [{ data: new Date().toISOString(), texto: 'Negociação criada.' }];
     dbRef('negociacoes/' + vend + '/' + novoId).set(dados).then(fecharNegModal);
   }
@@ -27806,41 +27819,173 @@ function dcFunilCardProsp(x, col) {
     '<div class="dc-kt">' + dcEsc(dcTel(x.tel)) + (info ? ' · ' + info : '') + '</div>' +
     (x.obs ? '<div class="dc-ko">' + dcEsc(String(x.obs).slice(0, 90)) + (String(x.obs).length > 90 ? '…' : '') + '</div>' : '') + '</div>';
 }
-function dcVFunil() {
-  var m = dcFunilMontar(), hoje = new Date().toISOString().split('T')[0], gest = dcGestao();
-  var nm = function(v) { return dcEsc(vendedores[v] ? vendedores[v].nome : v); };
-  var abertas = []; ['contato', 'orcamento', 'negociando'].forEach(function(k) { abertas = abertas.concat(m.neg[k] || []); });
-  var soma = abertas.reduce(function(s, n) { return s + (Number(n.valorEstimado) || 0); }, 0);
-  var h = '<div class="dc-card" style="margin-bottom:14px"><div class="dc-row" style="justify-content:space-between;gap:12px">' +
-    '<div class="dc-row" style="gap:10px;flex:1;min-width:240px">' +
-    (gest ? '<select onchange="dcFunilVend(this.value)" style="min-width:170px"><option value="' + dcEsc(currentUser) + '">Meu funil</option>' +
-      CK_EQUIPE.filter(function(v) { return v !== currentUser; }).map(function(v) { return '<option value="' + v + '"' + (m.quem === v ? ' selected' : '') + '>' + nm(v) + '</option>'; }).join('') +
-      '<option value="todos"' + (m.quem === 'todos' ? ' selected' : '') + '>Toda a equipe</option></select>' : '') +
-    '<input id="dc-fbusca" placeholder="Buscar cliente, telefone ou lista" value="' + dcEsc(DC.funilBusca) + '" oninput="dcFunilBuscar(this.value)" style="flex:1;min-width:160px"></div>' +
-    '<div class="dc-row" style="gap:8px"><span class="dc-sub">Em negociação: <b style="color:var(--txt)">R$ ' + soma.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '</b></span>' +
-    (gest ? '<button class="dc-btn" onclick="negState.filtroVend=(dcFunilQuem()===\'todos\'?\'todos\':dcFunilQuem());abrirRelatorioNeg()">Relatório</button>' : '') +
-    '<button class="dc-btn dc-pri" onclick="abrirNegModal()">+ Nova negociação</button></div></div>' +
-    '<div class="dc-sub" style="margin-top:8px">As 4 primeiras colunas andam sozinhas com o resultado das ligações. Arraste um cliente para <b>Interessado</b>, <b>Orçamento</b> ou outra etapa de negociação para abrir a negociação.</div></div>';
-  h += '<div class="dc-kb-wrap"><div class="dc-kb">';
-  DC_FUNIL_PROSP.forEach(function(c) {
-    var it = m.prosp[c.k], lim = DC.funilMais[c.k] ? it.length : DC_FUNIL_MAX;
-    h += '<div class="dc-kcol" data-col="' + c.k + '" ondragover="dcFunilSobre(event)" ondragleave="this.classList.remove(\'over\')" ondrop="dcFunilDrop(event,\'' + c.k + '\')">' +
-      '<div class="dc-kh" style="border-color:' + c.cor + '"><span>' + c.t + '</span><b>' + it.length + '</b></div>' +
-      (it.length ? it.slice(0, lim).map(function(x) { return dcFunilCardProsp(x, c.k); }).join('') : '<div class="dc-kvazio">Nenhum</div>') +
-      (it.length > lim ? '<button class="dc-btn dc-mini" style="width:100%;justify-content:center" onclick="DC.funilMais[\'' + c.k + '\']=1;dcRender()">+ ' + (it.length - lim) + ' clientes</button>' : '') + '</div>';
-  });
-  h += '<div class="dc-ksep" aria-hidden="true"></div>';
-  NEG_ETAPAS.forEach(function(et) {
-    var it = m.neg[et.key] || [];
-    h += '<div class="dc-kcol neg" data-col="' + et.key + '" ondragover="dcFunilSobre(event)" ondragleave="this.classList.remove(\'over\')" ondrop="dcFunilDrop(event,\'' + et.key + '\')">' +
-      '<div class="dc-kh" style="border-color:' + et.cor + '"><span>' + et.label + '</span><b>' + it.length + '</b></div>' +
-      (it.length ? it.map(function(n) {
-        var pode = n.vendedor === currentUser || gest;
-        return '<div class="dc-kneg"' + (pode ? ' draggable="true" ondragstart="dcFunilArrastar(event,\'n:' + dcEsc(n.vendedor) + ':' + dcEsc(n.id) + '\')" ondragend="dcFunilSoltou()"' : '') + '>' + negCardHtml(n, et, hoje) + '</div>';
-      }).join('') : '<div class="dc-kvazio">Nenhuma</div>') + '</div>';
-  });
-  return h + '</div></div>';
+/* ══ FUNIL (refeito em 28/10/2026) — negociações em destaque ══
+   Topo: números do funil (em negociação, fechado e perdido no mês, taxa de fechamento) e filtros de atenção.
+   Faixa "Para levar ao funil": quem falou com o cliente, retornos e tentativas, para virar negociação com um clique.
+   Quadro: Interessado → Orçamento enviado → Negociando, e ao lado o resultado do mês (Fechado / Perdido).
+   Card: valor, dias parado na etapa, próxima ação (atrasada em vermelho), produtos, o que trava, Ligar e WhatsApp. */
+var FN_ABERTAS = ['contato', 'orcamento', 'negociando'];
+var FN_PARADO_ALERTA = 5, FN_PARADO_CRITICO = 10;
+DC.funilFiltro = DC.funilFiltro || 'todas'; DC.funilProsp = DC.funilProsp == null ? true : DC.funilProsp; DC.funilAntigos = false;
+function fnMoeda(v) { return 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+function fnHoje() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+// quando a negociação entrou na etapa atual
+function fnDesde(n) {
+  if (n.etapaDesde) return new Date(n.etapaDesde).getTime();
+  var h = (n.historico || []).filter(function(x) { return x && /^Movida para/i.test(x.texto || ''); });
+  var u = h.length ? h[h.length - 1].data : (n.dataCriacao || null);
+  var t = u ? new Date(u).getTime() : NaN;
+  return isNaN(t) ? Date.now() : t;
 }
+function fnDiasParado(n) { return Math.max(0, Math.floor((Date.now() - fnDesde(n)) / 864e5)); }
+function fnNoMes(n) { var d = new Date(fnDesde(n)), h = new Date(); return d.getFullYear() === h.getFullYear() && d.getMonth() === h.getMonth(); }
+function fnAtrasada(n) { return !!(n.proximaData && n.proximaData < fnHoje()); }
+function fnDataTxt(iso) {
+  var h = fnHoje(); if (iso === h) return 'Hoje';
+  var am = new Date(); am.setDate(am.getDate() + 1); var amI = am.getFullYear() + '-' + String(am.getMonth() + 1).padStart(2, '0') + '-' + String(am.getDate()).padStart(2, '0');
+  if (iso === amI) return 'Amanhã';
+  var p = String(iso).split('-'); return p[2] + '/' + p[1];
+}
+function fnIniciais(vn) { var n = (vendedores[vn] && vendedores[vn].nome) || vn || '?'; return n.split(/\s+/).map(function(x) { return x[0]; }).slice(0, 2).join('').toUpperCase(); }
+function fnFiltra(n) {
+  var f = DC.funilFiltro;
+  if (f === 'atrasadas') return fnAtrasada(n);
+  if (f === 'paradas') return fnDiasParado(n) >= FN_PARADO_ALERTA;
+  if (f === 'semacao') return !n.proximaData;
+  return true;
+}
+function fnCard(n, et, gest, todos) {
+  var dias = fnDiasParado(n), atras = fnAtrasada(n), pode = n.vendedor === currentUser || gest, aberta = FN_ABERTAS.indexOf(n.etapa) >= 0;
+  var tel = dcDig(n.telefone || ''), id = dcEsc(n.vendedor) + "','" + dcEsc(n.id);
+  var h = '<article class="fn-card' + (atras && aberta ? ' atras' : '') + '"' + (pode ? ' draggable="true" ondragstart="dcFunilArrastar(event,\'n:' + dcEsc(n.vendedor) + ':' + dcEsc(n.id) + '\')" ondragend="dcFunilSoltou()"' : '') + ' onclick="abrirNegModal(\'' + id + '\')">';
+  h += '<div class="fn-h"><div class="fn-emp">' + (todos ? '<span class="fn-av" title="' + dcEsc(rtNome(n.vendedor)) + '">' + dcEsc(fnIniciais(n.vendedor)) + '</span>' : '') + '<b>' + dcEsc(n.empresa || '(sem nome)') + '</b></div>' +
+    '<span class="fn-val' + (n.valorEstimado ? '' : ' zero') + '">' + (n.valorEstimado ? fnMoeda(n.valorEstimado) : 'sem valor') + '</span></div>';
+  var sub = [n.contato, n.estado].filter(Boolean).map(dcEsc).join(' · ');
+  if (sub) h += '<div class="fn-sub">' + sub + '</div>';
+  if (n.produtos) h += '<div class="fn-prod" title="' + dcEsc(n.produtos) + '">' + dcEsc(n.produtos) + '</div>';
+  var tags = '';
+  if (aberta) tags += '<span class="fn-tag ' + (dias >= FN_PARADO_CRITICO ? 'crit' : dias >= FN_PARADO_ALERTA ? 'alerta' : '') + '" title="Dias nesta etapa">' + (dias === 0 ? 'Entrou hoje' : 'Parado há ' + dias + (dias === 1 ? ' dia' : ' dias')) + '</span>';
+  if (n.etapa === 'perdido') { var mi = n.motivoCategoria && NEG_MOTIVOS[n.motivoCategoria], ml = n.motivoCategoria === 'outro' && n.motivoOutro ? n.motivoOutro : (mi ? mi.label : (n.motivoPerda || '')); if (ml) tags += '<span class="fn-tag crit">' + dcEsc(ml) + '</span>'; }
+  else if (n.motivoCategoria && NEG_MOTIVOS[n.motivoCategoria]) tags += '<span class="fn-tag">' + dcEsc(n.motivoCategoria === 'outro' && n.motivoOutro ? n.motivoOutro : NEG_MOTIVOS[n.motivoCategoria].label) + '</span>';
+  if (n.concorrente) tags += '<span class="fn-tag">vs ' + dcEsc(n.concorrente) + (n.valorConcorrente ? ' ' + fnMoeda(n.valorConcorrente) : '') + '</span>';
+  if (tags) h += '<div class="fn-tags">' + tags + '</div>';
+  if (aberta && n.faltaFechar) h += '<div class="fn-trava"><b>Falta:</b> ' + dcEsc(n.faltaFechar) + '</div>';
+  else if (aberta && n.motivoTravando) h += '<div class="fn-trava"><b>Travando:</b> ' + dcEsc(n.motivoTravando) + '</div>';
+  if (aberta) h += '<div class="fn-prox' + (atras ? ' atras' : n.proximaData ? '' : ' sem') + '">' + (n.proximaData
+      ? '<b>' + (atras ? 'Atrasada · ' : '') + fnDataTxt(n.proximaData) + '</b>' + (n.proximaAcao ? ' · ' + dcEsc(n.proximaAcao) : '')
+      : 'Sem próxima ação definida') + '</div>';
+  h += '<div class="fn-f" onclick="event.stopPropagation()">';
+  if (tel.length >= 10 && pode) h += '<button class="fn-ac" title="Ligar pelo Discador" onclick="fnLigar(\'' + id + '\')">Ligar</button>' +
+    '<a class="fn-ac wa" title="Abrir conversa no WhatsApp" href="' + dcEsc(dcWaHref(tel)) + '"' + (dcPref().waModo === 'web' ? ' target="dc-whatsapp" rel="noopener"' : '') + ' onclick="fnWa(\'' + id + '\')">WhatsApp</a>';
+  if (pode && aberta) h += '<button class="fn-ac" title="Marcar a próxima ação" onclick="fnProxima(\'' + id + '\')">Próxima ação</button>';
+  if (n.etapa === 'fechado' && pode && !n.convertida) h += '<button class="fn-ac pri" onclick="abrirPedidoPopupConversao(\'' + id + '\')">Virar pedido</button>';
+  if (n.convertida) h += '<span class="fn-ok">Pedido lançado</span>';
+  if (pode && aberta) h += '<select class="fn-mover" title="Mudar de etapa" onchange="if(this.value)negMoverEtapa(\'' + id + '\',this.value)"><option value="">Mover…</option>' +
+    NEG_ETAPAS.filter(function(e) { return e.key !== n.etapa; }).map(function(e) { return '<option value="' + e.key + '">' + e.label + '</option>'; }).join('') + '</select>';
+  return h + '</div></article>';
+}
+function fnColuna(et, lista, gest, todos, extraCls) {
+  var tot = lista.reduce(function(s, n) { return s + (Number(n.valorEstimado) || 0); }, 0);
+  var vis = lista.filter(fnFiltra);
+  return '<section class="fn-col ' + (extraCls || '') + '" data-col="' + et.key + '" style="--c:' + et.cor + '" ondragover="dcFunilSobre(event)" ondragleave="this.classList.remove(\'over\')" ondrop="dcFunilDrop(event,\'' + et.key + '\')">' +
+    '<div class="fn-colh"><div><span class="fn-dot"></span>' + et.label + '<em>' + lista.length + '</em></div><b>' + fnMoeda(tot) + '</b></div>' +
+    '<div class="fn-cards">' + (vis.length ? vis.map(function(n) { return fnCard(n, et, gest, todos); }).join('')
+      : '<div class="fn-vazio">' + (lista.length ? 'Nada com este filtro' : (et.key === 'contato' ? 'Arraste um cliente da faixa acima ou clique em <b>Nova negociação</b>' : 'Arraste uma negociação para cá')) + '</div>') + '</div></section>';
+}
+function fnProspHtml(m, quem) {
+  var grupos = [['falou', 'Falou com o cliente', '#1F8A5B'], ['retorno', 'Retorno agendado', '#2F6FB3'], ['tentando', 'Tentando contato', '#B7791F']];
+  var total = grupos.reduce(function(s, g) { return s + m.prosp[g[0]].length; }, 0), aLigar = m.prosp.aligar.length, pode = quem === currentUser;
+  var h = '<section class="fn-prosp' + (DC.funilProsp ? '' : ' fechada') + '"><button class="fn-prosp-h" onclick="DC.funilProsp=!DC.funilProsp;dcRender()"><span>Para levar ao funil</span><em>' + total + '</em>' +
+    '<small>Clientes que você já trabalhou no Discador e ainda não viraram negociação</small><i>' + (DC.funilProsp ? '▴' : '▾') + '</i></button>';
+  if (!DC.funilProsp) return h + '</section>';
+  h += '<div class="fn-prosp-g">' + grupos.map(function(g) {
+    var it = m.prosp[g[0]], lim = DC.funilMais[g[0]] ? it.length : 4;
+    return '<div class="fn-pg" style="--c:' + g[2] + '"><div class="fn-pgh"><span class="fn-dot"></span>' + g[1] + '<em>' + it.length + '</em></div>' +
+      (it.length ? it.slice(0, lim).map(function(x) {
+        var id = x.tipo === 'ret' ? 'r:' + x.i : 'l:' + x.lista + ':' + x.i, info = '';
+        if (x.tipo === 'ret' && x.quando) { var venc = new Date(x.quando) <= new Date(); info = '<span class="' + (venc ? 'atras' : '') + '">' + dcEsc(new Date(x.quando).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) + '</span>'; }
+        else if (x.em) info = dcEsc(new Date(x.em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })) + (x.n > 1 ? ' · ' + x.n + ' tentativas' : '');
+        return '<div class="fn-pc"' + (pode ? ' draggable="true" ondragstart="dcFunilArrastar(event,\'' + id + '\')" ondragend="dcFunilSoltou()"' : '') + '>' +
+          '<div class="fn-pcx"><b>' + dcEsc(x.empresa || x.nome || dcTel(x.tel)) + '</b><small>' + dcEsc(dcTel(x.tel)) + (info ? ' · ' + info : '') + '</small>' + (x.obs ? '<small class="obs">' + dcEsc(String(x.obs).slice(0, 80)) + '</small>' : '') + '</div>' +
+          (pode ? '<div class="fn-pca"><button class="fn-ac" title="Ligar" onclick="' + (x.tipo === 'ret' ? 'dcAbrirRetorno(' + x.i + ')' : 'dcDiscarDaqui(\'' + dcEsc(x.lista) + '\',' + x.i + ')') + '">Ligar</button>' +
+            '<button class="fn-ac pri" title="Abrir negociação em Interessado" onclick="fnLevar(\'' + id + '\')">Negociar</button></div>' : '') + '</div>';
+      }).join('') + (it.length > lim ? '<button class="fn-mais" onclick="DC.funilMais[\'' + g[0] + '\']=1;dcRender()">Ver todos (' + it.length + ')</button>' : '')
+        : '<div class="fn-vazio pq">Ninguém aqui</div>') + '</div>';
+  }).join('') + '</div>';
+  if (aLigar && pode) h += '<div class="fn-aligar"><b>' + aLigar + '</b> cliente' + (aLigar > 1 ? 's' : '') + ' ainda na fila para ligar · <a href="#" onclick="dcSetAba(\'discar\');return false">Ir para o Discador</a></div>';
+  return h + '</section>';
+}
+function dcVFunil() {
+  var m = dcFunilMontar(), gest = dcGestao(), todos = m.quem === 'todos';
+  var abertas = [], fech = (m.neg.fechado || []), perd = (m.neg.perdido || []);
+  FN_ABERTAS.forEach(function(k) { abertas = abertas.concat(m.neg[k] || []); });
+  var fechMes = fech.filter(fnNoMes), perdMes = perd.filter(fnNoMes);
+  var soma = function(l) { return l.reduce(function(s, n) { return s + (Number(n.valorEstimado) || 0); }, 0); };
+  var nAtras = abertas.filter(fnAtrasada).length, nParadas = abertas.filter(function(n) { return fnDiasParado(n) >= FN_PARADO_ALERTA; }).length, nSem = abertas.filter(function(n) { return !n.proximaData; }).length;
+  var taxa = fechMes.length + perdMes.length ? Math.round(fechMes.length / (fechMes.length + perdMes.length) * 100) : null;
+  var mesNome = new Date().toLocaleDateString('pt-BR', { month: 'long' });
+  var h = '<div class="fn">';
+  // barra de ferramentas
+  h += '<div class="fn-bar">' +
+    (gest ? '<select class="fn-sel" onchange="dcFunilVend(this.value)"><option value="' + dcEsc(currentUser) + '">Meu funil</option>' +
+      CK_EQUIPE.filter(function(v) { return v !== currentUser && vendedores[v]; }).map(function(v) { return '<option value="' + v + '"' + (m.quem === v ? ' selected' : '') + '>' + dcEsc(rtNome(v)) + '</option>'; }).join('') +
+      '<option value="todos"' + (todos ? ' selected' : '') + '>Toda a equipe</option></select>' : '') +
+    '<input id="dc-fbusca" class="fn-busca" placeholder="Buscar cliente ou telefone" value="' + dcEsc(DC.funilBusca) + '" oninput="dcFunilBuscar(this.value)">' +
+    '<span class="fn-sp"></span>' +
+    (gest ? '<button class="dc-btn" onclick="negState.filtroVend=(dcFunilQuem()===\'todos\'?\'todos\':dcFunilQuem());abrirRelatorioNeg()">Relatório</button>' : '') +
+    '<button class="dc-btn dc-pri" onclick="abrirNegModal()">+ Nova negociação</button></div>';
+  // números
+  h += '<div class="fn-kpis">' +
+    '<div class="fn-kpi"><small>Em negociação</small><b>' + fnMoeda(soma(abertas)) + '</b><span>' + abertas.length + ' negociaç' + (abertas.length === 1 ? 'ão' : 'ões') + ' abertas</span></div>' +
+    '<div class="fn-kpi ok"><small>Fechado em ' + mesNome + '</small><b>' + fnMoeda(soma(fechMes)) + '</b><span>' + fechMes.length + ' negócio' + (fechMes.length === 1 ? '' : 's') + '</span></div>' +
+    '<div class="fn-kpi nok"><small>Perdido em ' + mesNome + '</small><b>' + fnMoeda(soma(perdMes)) + '</b><span>' + perdMes.length + ' negócio' + (perdMes.length === 1 ? '' : 's') + '</span></div>' +
+    '<div class="fn-kpi"><small>Taxa de fechamento</small><b>' + (taxa == null ? '—' : taxa + '%') + '</b><span>fechados ÷ (fechados + perdidos) no mês</span></div></div>';
+  // filtros de atenção
+  var ch = function(k, t, n, cls) { return '<button class="fn-chip ' + (cls || '') + (DC.funilFiltro === k ? ' on' : '') + '" onclick="DC.funilFiltro=\'' + k + '\';dcRender()">' + t + (n != null ? ' <em>' + n + '</em>' : '') + '</button>'; };
+  h += '<div class="fn-chips">' + ch('todas', 'Todas', abertas.length) + ch('atrasadas', 'Próxima ação atrasada', nAtras, nAtras ? 'crit' : '') + ch('paradas', 'Paradas há ' + FN_PARADO_ALERTA + '+ dias', nParadas, nParadas ? 'alerta' : '') + ch('semacao', 'Sem próxima ação', nSem, nSem ? 'alerta' : '') + '</div>';
+  // faixa de prospecção
+  if (!todos) h += fnProspHtml(m, m.quem);
+  // quadro
+  var ordenar = function(l) { return l.slice().sort(function(a, b) { var aa = fnAtrasada(a) ? 0 : 1, bb = fnAtrasada(b) ? 0 : 1; return aa - bb || (a.proximaData || '9999').localeCompare(b.proximaData || '9999') || (Number(b.valorEstimado) || 0) - (Number(a.valorEstimado) || 0); }); };
+  h += '<div class="fn-board">';
+  NEG_ETAPAS.filter(function(e) { return FN_ABERTAS.indexOf(e.key) >= 0; }).forEach(function(et) { h += fnColuna(et, ordenar(m.neg[et.key] || []), gest, todos); });
+  var etF = NEG_ETAPAS.find(function(e) { return e.key === 'fechado'; }), etP = NEG_ETAPAS.find(function(e) { return e.key === 'perdido'; });
+  var verF = DC.funilAntigos ? fech : fechMes, verP = DC.funilAntigos ? perd : perdMes;
+  var recentes = function(l) { return l.slice().sort(function(a, b) { return fnDesde(b) - fnDesde(a); }); };
+  h += '<div class="fn-res"><div class="fn-resh">Resultado ' + (DC.funilAntigos ? '(todos)' : 'de ' + mesNome) + '<button onclick="DC.funilAntigos=!DC.funilAntigos;dcRender()">' + (DC.funilAntigos ? 'Só este mês' : 'Ver anteriores') + '</button></div>' +
+    fnColuna(etF, recentes(verF), gest, todos, 'res ok') + fnColuna(etP, recentes(verP), gest, todos, 'res nok') + '</div>';
+  h += '</div></div>';
+  return h;
+}
+// ações dos cards
+function fnNeg(vend, id) { return (negState.porVendedor[vend] || []).find(function(x) { return x.id === id; }); }
+function fnLigar(vend, id) {
+  var n = fnNeg(vend, id); if (!n) return;
+  DC.avulso = { tel: dcDig(n.telefone), nome: n.contato || '', empresa: n.empresa || '', obs: n.proximaAcao || '' }; DC.call = null; DC.aba = 'discar'; dcPararAuto(true); dcRender();
+}
+function fnWa(vend, id) { var n = fnNeg(vend, id); if (!n) return; try { negAnotar(vend, id, 'Conversa aberta no WhatsApp.'); } catch (e) {} }
+function negAnotar(vend, id, texto, extra) {
+  return dbRef('negociacoes/' + vend + '/' + id).once('value').then(function(snap) {
+    var n = snap.val(); if (!n) return;
+    n.historico = n.historico || []; n.historico.push({ data: new Date().toISOString(), texto: texto });
+    if (extra) Object.keys(extra).forEach(function(k) { n[k] = extra[k]; });
+    return dbRef('negociacoes/' + vend + '/' + id).set(n);
+  });
+}
+function fnProxima(vend, id) {
+  var n = fnNeg(vend, id); if (!n) return;
+  var acao = prompt('Próxima ação para ' + (n.empresa || 'o cliente') + ':', n.proximaAcao || ''); if (acao === null) return;
+  var sug = n.proximaData && n.proximaData >= fnHoje() ? n.proximaData.split('-').reverse().join('/') : '';
+  var dt = prompt('Quando? (dd/mm ou dd/mm/aaaa — vazio = amanhã)', sug); if (dt === null) return;
+  var iso;
+  dt = dt.trim();
+  if (!dt) { var a = new Date(); a.setDate(a.getDate() + 1); iso = a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2, '0') + '-' + String(a.getDate()).padStart(2, '0'); }
+  else { var p = dt.split(/[\/\-.]/); var y = p[2] ? (p[2].length === 2 ? '20' + p[2] : p[2]) : String(new Date().getFullYear()); if (!p[1]) { dcAviso('Use dd/mm'); return; } iso = y + '-' + String(p[1]).padStart(2, '0') + '-' + String(p[0]).padStart(2, '0'); if (isNaN(new Date(iso).getTime())) { dcAviso('Data inválida'); return; } }
+  negAnotar(vend, id, 'Próxima ação: ' + (acao || '(sem descrição)') + ' em ' + iso.split('-').reverse().join('/'), { proximaAcao: acao.trim(), proximaData: iso }).then(function() { dcAviso('Próxima ação marcada'); });
+}
+// "Negociar" na faixa de prospecção: abre a negociação em Interessado
+function fnLevar(id) { DC.arrastando = id; var falso = { preventDefault: function() {}, currentTarget: { classList: { remove: function() {} } }, dataTransfer: null }; dcFunilDrop(falso, 'contato'); }
+
 function dcFunilVend(v) { DC.funilVend = v; DC.funilMais = {}; negState.filtroVend = 'todos'; dcRender(); }
 function dcFunilBuscar(v) { DC.funilBusca = v; clearTimeout(dcFunilBuscar.t); dcFunilBuscar.t = setTimeout(dcRender, 250); }
 function dcFunilArrastar(ev, id) { DC.arrastando = id; try { ev.dataTransfer.setData('text/plain', id); ev.dataTransfer.effectAllowed = 'move'; } catch (e) {} }
@@ -29124,7 +29269,7 @@ function dcAbrirNegociacao(a, obs, quando, listaNome, etapa, motivo) {
   var id = 'neg_' + Date.now(), agora = new Date().toISOString();
   var n = { id: id, empresa: a.empresa || a.nome || dcTel(a.tel), contato: a.nome || '', telefone: dcTel(a.tel), estado: '', valorEstimado: 0, etapa: etapa || 'orcamento',
     proximaAcao: obs || '', proximaData: quando ? String(quando).slice(0, 10) : '', motivoPerda: motivo || '', motivoCategoria: '', motivoOutro: '', concorrente: '', valorConcorrente: 0,
-    motivoTravando: '', faltaFechar: '', vendedor: currentUser, origem: 'discador', dataCriacao: agora,
+    motivoTravando: '', faltaFechar: '', vendedor: currentUser, origem: 'discador', dataCriacao: agora, etapaDesde: agora,
     historico: [{ data: agora, texto: 'Negociação aberta pelo Discador' + (listaNome ? ' (lista ' + listaNome + ')' : '') + '.' }] };
   Promise.resolve(dbRef('negociacoes/' + currentUser + '/' + id).set(n)).then(function() { dcAviso('Negociação aberta no Funil'); })
     .catch(function(e) { dcAviso('Não abriu a negociação: ' + (e && e.message)); });
@@ -30395,5 +30540,95 @@ setInterval(function() { try { if (currentUser && !AGD.subs['agenda/pessoal/' + 
 setInterval(function() { var tab = document.getElementById('tab-agenda'); if (tab && tab.classList.contains('active') && !AGD.form && !AGD.drag && !AGD.pop && (AGD.vista === 'dia' || AGD.vista === 'semana')) agdRender(); }, 5 * 60 * 1000);
 window.addEventListener('resize', function() { if (AGD.pop) agdPosPop(); });
 </script>
+<style>
+/* ══ FUNIL (refeito em 28/10/2026) ══ */
+.fn{display:flex;flex-direction:column;gap:14px;color:var(--txt)}
+.fn-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.fn-sel,.fn-busca{font:inherit;font-size:13.5px;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:9px;padding:9px 12px}
+.fn-busca{flex:1;min-width:200px;max-width:420px}
+.fn-sp{flex:1}
+.fn-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.fn-kpi{background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fn-kpi small{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:none}
+.fn-kpi b{font-size:24px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fn-kpi span{font-size:12px;color:var(--muted)}
+.fn-kpi.ok b{color:#2E9E6A}
+.fn-kpi.nok b{color:#D9534F}
+.fn-chips{display:flex;flex-wrap:wrap;gap:8px}
+.fn-chip{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--txt-2);border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.fn-chip em{font-style:normal;font-size:11.5px;background:var(--surface-3);color:var(--txt-2);border-radius:999px;padding:0 7px;min-width:20px;text-align:center}
+.fn-chip.crit em{background:#D9534F;color:#fff}
+.fn-chip.alerta em{background:#E0A526;color:#1b1300}
+.fn-chip.on{border-color:var(--acc);background:var(--acc-soft);color:var(--acc-txt)}
+.fn-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin-right:8px;flex:none}
+/* faixa de prospecção */
+.fn-prosp{background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);overflow:hidden}
+.fn-prosp-h{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;color:var(--txt);font:inherit;font-size:14px;font-weight:700;padding:13px 16px;cursor:pointer;text-align:left;flex-wrap:wrap}
+.fn-prosp-h em{font-style:normal;font-size:12px;background:var(--surface-3);border-radius:999px;padding:1px 8px;color:var(--txt-2)}
+.fn-prosp-h small{font-weight:400;color:var(--muted);font-size:12.5px}
+.fn-prosp-h i{margin-left:auto;font-style:normal;color:var(--muted)}
+.fn-prosp-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 16px 14px}
+.fn-pg{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fn-pgh{display:flex;align-items:center;font-size:12.5px;font-weight:700;color:var(--txt-2);padding:2px 0 4px}
+.fn-pgh em{font-style:normal;margin-left:6px;color:var(--muted);font-weight:600}
+.fn-pc{display:flex;gap:8px;align-items:center;justify-content:space-between;background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--c);border-radius:8px;padding:7px 9px;cursor:grab;min-width:0}
+.fn-pcx{display:flex;flex-direction:column;min-width:0}
+.fn-pcx b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fn-pcx small{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fn-pcx small.obs{color:var(--txt-2);font-style:italic}
+.fn-pcx .atras{color:#D9534F;font-weight:700}
+.fn-pca{display:flex;gap:4px;flex:none}
+.fn-mais{font:inherit;font-size:12px;font-weight:600;border:none;background:none;color:var(--acc-txt);cursor:pointer;text-align:left;padding:2px 0}
+.fn-aligar{border-top:1px solid var(--line);padding:10px 16px;font-size:12.5px;color:var(--muted)}
+.fn-aligar a{color:var(--acc-txt);font-weight:600}
+/* quadro */
+.fn-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(240px,.85fr);gap:12px;align-items:start}
+.fn-col{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;min-width:0;transition:border-color .12s,background .12s}
+.fn-col.over{border-color:var(--c);background:color-mix(in srgb,var(--c) 10%,var(--surface-2))}
+.fn-colh{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px 10px;border-bottom:3px solid var(--c);font-size:13.5px;font-weight:700}
+.fn-colh div{display:flex;align-items:center;min-width:0}
+.fn-colh em{font-style:normal;font-weight:600;color:var(--muted);margin-left:8px;font-size:12.5px}
+.fn-colh b{font-size:13px;font-variant-numeric:tabular-nums;color:var(--txt-2);white-space:nowrap}
+.fn-cards{display:flex;flex-direction:column;gap:8px;padding:10px;min-height:80px}
+.fn-vazio{border:1.5px dashed var(--line-strong);border-radius:10px;padding:18px 12px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.5}
+.fn-vazio.pq{padding:8px;font-size:12px}
+.fn-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 12px 9px;cursor:pointer;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,.12);transition:box-shadow .12s,transform .12s}
+.fn-card:hover{box-shadow:0 6px 18px rgba(0,0,0,.22);transform:translateY(-1px)}
+.fn-card.atras{border-color:color-mix(in srgb,#D9534F 55%,var(--line))}
+.fn-card .fn-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.fn-emp{display:flex;align-items:center;gap:7px;min-width:0}
+.fn-emp b{font-size:14px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fn-av{flex:none;width:22px;height:22px;border-radius:50%;background:var(--acc-soft);color:var(--acc-txt);font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+.fn-val{font-size:14px;font-weight:800;color:#2E9E6A;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fn-val.zero{font-size:11.5px;font-weight:600;color:var(--faint)}
+.fn-sub{font-size:12px;color:var(--muted);margin-top:-3px}
+.fn-prod{font-size:12px;color:var(--txt-2);background:var(--surface-3);border-radius:6px;padding:5px 8px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fn-tags{display:flex;flex-wrap:wrap;gap:5px}
+.fn-tag{font-size:11px;font-weight:600;border-radius:6px;padding:2px 7px;background:var(--surface-3);color:var(--txt-2)}
+.fn-tag.alerta{background:color-mix(in srgb,#E0A526 22%,var(--surface));color:#E0A526}
+.fn-tag.crit{background:color-mix(in srgb,#D9534F 20%,var(--surface));color:#E5625D}
+.fn-trava{font-size:12px;color:var(--txt-2);border-left:2px solid #E0A526;padding:1px 0 1px 8px}
+.fn-prox{font-size:12px;color:var(--txt-2)}
+.fn-prox b{font-weight:700;color:var(--txt)}
+.fn-prox.atras,.fn-prox.atras b{color:#E5625D}
+.fn-prox.sem{color:#E0A526;font-weight:600}
+.fn-card .fn-f{display:flex;flex-wrap:wrap;gap:5px;align-items:center;border-top:1px solid var(--line);padding-top:8px;margin-top:2px}
+.fn-ac{font:inherit;font-size:11.5px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--txt-2);border-radius:7px;padding:4px 9px;cursor:pointer;text-decoration:none;line-height:1.3}
+.fn-ac:hover{background:var(--surface-3);color:var(--txt)}
+.fn-ac.wa{color:#25A55F;border-color:color-mix(in srgb,#25A55F 45%,var(--line))}
+.fn-ac.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.fn-ok{font-size:11.5px;font-weight:700;color:#2E9E6A}
+.fn-card select.fn-mover{margin-left:auto;font:inherit;font-size:11.5px !important;border:1px solid var(--line) !important;background:var(--surface) !important;color:var(--muted) !important;border-radius:7px !important;padding:3px 6px !important;height:auto !important;min-height:0 !important;width:auto !important;cursor:pointer;max-width:110px;box-shadow:none !important}
+/* resultado do mês */
+.fn-res{display:flex;flex-direction:column;gap:10px;min-width:0}
+.fn-resh{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:var(--muted);padding:0 2px}
+.fn-resh button{font:inherit;font-size:12px;font-weight:600;border:none;background:none;color:var(--acc-txt);cursor:pointer}
+.fn-col.res .fn-cards{max-height:340px;overflow:auto;min-height:56px}
+.fn-col.res .fn-card{padding:9px 10px 7px}
+.fn-col.res .fn-card .fn-prod,.fn-col.res .fn-card .fn-sub{display:none}
+@media (max-width:1180px){.fn-board{grid-template-columns:repeat(3,minmax(0,1fr))}.fn-res{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr 1fr;align-items:start}.fn-resh{flex-direction:column;align-items:flex-start;gap:4px}}
+@media (max-width:900px){.fn-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.fn-prosp-g{grid-template-columns:1fr}}
+@media (max-width:760px){.fn-board{grid-template-columns:1fr}.fn-res{display:flex;align-items:stretch}.fn-resh{flex-direction:row;align-items:center}.fn-kpi b{font-size:20px}.fn-busca{max-width:none;flex-basis:100%}.fn-sp{display:none}}
+</style>
 </body>
 </html>
