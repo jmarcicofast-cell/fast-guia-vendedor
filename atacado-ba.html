@@ -29411,7 +29411,12 @@ setTimeout(appMostrarBotao, 1500);
 .agd-agora{position:absolute;left:-1px;right:0;height:2px;background:#EA4335;z-index:3;pointer-events:none}
 .agd-agora::before{content:'';position:absolute;left:-6px;top:-5px;width:12px;height:12px;border-radius:50%;background:#EA4335}
 .agd-ev{position:absolute;border-radius:6px;padding:3px 7px;font-size:12px;line-height:1.3;overflow:hidden;cursor:pointer;background:var(--c);color:#fff;border:1px solid var(--surface);z-index:2}
-.agd-ev[data-arr]{touch-action:none}
+.agd-ev[data-arr]{touch-action:none;cursor:grab}
+[data-mv]{cursor:grab}
+@media (pointer:fine){[data-mv]{touch-action:none}}
+.agd-alvo{outline:2px dashed var(--acc);outline-offset:-2px;background-color:var(--acc-soft) !important}
+.agd-fantasma{position:fixed !important;z-index:9500;pointer-events:none;opacity:.92;box-shadow:0 10px 28px rgba(0,0,0,.4);border-radius:6px;background:var(--surface)}
+.agd-fantasma[data-hora]::after{content:attr(data-hora);margin-left:8px;font-weight:700;color:var(--acc-txt)}
 .agd-ev.fundo{z-index:1;opacity:.75;padding:2px 6px;font-size:11px}
 .agd-ev.fundo b{font-weight:500;overflow:hidden;text-overflow:ellipsis}
 .agd-ev.fundo:hover{opacity:1}
@@ -29617,7 +29622,7 @@ function agdEventos(iso) {
       if (!r || !r.quando || String(r.quando).slice(0, 10) !== iso) return;
       if (typeof dcDesqDe === 'function' && dcDesqDe(r)) return;
       var ini = String(r.quando).slice(11, 16) || '09:00';
-      push({ fonte: 'ret', id: p + '_' + i, dono: p, tit: pre(p) + 'Retorno: ' + (r.empresa || r.nome || (typeof dcTel === 'function' ? dcTel(r.tel) : r.tel)), ini: ini, fim: agdHora(agdMin(ini) + 30), cor: '#0B8043', leve: true, r: r });
+      push({ fonte: 'ret', id: p + '_' + i, dono: p, tit: pre(p) + 'Retorno: ' + (r.empresa || r.nome || (typeof dcTel === 'function' ? dcTel(r.tel) : r.tel)), ini: ini, fim: agdHora(agdMin(ini) + 30), cor: '#0B8043', leve: true, r: r, ri: i });
     });
   });
   if (agdCalOn('neg')) pessoas.forEach(function(p) {
@@ -29720,7 +29725,7 @@ function agdGradeHtml() {
     return '<div class="agd-dh' + (d === hoje ? ' hoje' : '') + '" data-ir="' + d + '"><small>' + AGD_SEM[dd.getDay()] + '</small><b>' + dd.getDate() + '</b></div>'; }).join('') + '</div>';
   h += '<div class="agd-row agd-ad"><div>dia<br>todo</div>' + evDias.map(function(l, i) {
     return '<div data-diatodo="' + dias[i] + '">' + l.filter(function(e) { return !e.ini; }).map(function(e) {
-      return '<button class="agd-chip' + (e.leve ? ' leve' : '') + '" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '" title="' + agdEsc(e.tit) + '">' + agdEsc(e.tit) + '</button>'; }).join('') + '</div>'; }).join('') + '</div>';
+      return '<button class="agd-chip' + (e.leve ? ' leve' : '') + '" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '"' + agdMvAttr(e) + ' title="' + agdEsc(e.tit) + '">' + agdEsc(e.tit) + '</button>'; }).join('') + '</div>'; }).join('') + '</div>';
   h += '<div class="agd-body" id="agd-body"><div class="agd-row"><div class="agd-hrs" style="height:' + AGD_HH * AGD_NH + 'px">';
   for (var x = AGD_H0; x < AGD_H1; x++) h += '<span style="top:' + ((x - AGD_H0) * AGD_HH + (x === AGD_H0 ? 8 : 0)) + 'px">' + x + 'h</span>';
   h += '</div>';
@@ -29737,9 +29742,9 @@ function agdGradeHtml() {
     agdLayout(comHora.filter(function(e) { return e.fonte !== 'rotina'; })).forEach(function(e) {
       var a = agdMin(e.ini), b = Math.max(a + 15, agdMin(e.fim) || a + 60), fx = agdFaixa(a, b), top = fx.top, alt = Math.max(18, fx.alt - 2);
       var w = (100 - x0) / e._n, curto = alt < 34;
-      var podeArr = e.editavel && agdPodeEditar(e) && !e.base.rep;
+      var podeArr = agdPodeMover(e), podeRs = e.editavel && agdPodeEditar(e) && !e.base.rep;
       h += '<div class="agd-ev' + (e.leve ? ' leve' : '') + (curto ? ' curto' : '') + '" data-ev="' + agdReg(e) + '"' + (podeArr ? ' data-arr="1"' : '') + ' style="--c:' + e.cor + ';top:' + top + 'px;height:' + alt + 'px;left:calc(' + (x0 + e._i * w) + '% + 1px);width:calc(' + w + '% - 3px)" title="' + agdEsc(e.tit + ' · ' + agdQuando(e)) + '">' +
-        '<b>' + agdEsc(e.tit) + '</b><small>' + agdEsc(agdQuando(e)) + '</small>' + (podeArr ? '<div class="agd-rs" data-rs="1"></div>' : '') + '</div>';
+        '<b>' + agdEsc(e.tit) + '</b><small>' + agdEsc(agdQuando(e)) + '</small>' + (podeRs ? '<div class="agd-rs" data-rs="1"></div>' : '') + '</div>';
     });
     if (d === hoje && mAg >= AGD_H0 * 60 && mAg <= AGD_H1 * 60) h += '<div class="agd-agora" style="top:' + agdY(mAg) + 'px"></div>';
     h += '</div>';
@@ -29760,11 +29765,11 @@ function agdLayout(evs) {
 }
 function agdMesHtml() {
   var it = agdIntervalo(), m = agdData(AGD.ref).getMonth(), hoje = agdHoje(), h = '<div class="agd-mes">' + AGD_SEM.map(function(s) { return '<div class="wd">' + s + '</div>'; }).join('');
-  for (var i = 0; i < 42; i++) { var iso = agdSoma(it[0], i), dd = agdData(iso), l = agdEventos(iso), max = 3;
+  for (var i = 0; i < 42; i++) { var iso = agdSoma(it[0], i), dd = agdData(iso), l = agdEventos(iso).filter(function(e) { return e.fonte !== 'rotina'; }), max = 3; // a rotina diária fica só no Dia e na Semana
     h += '<div class="agd-cel' + (dd.getMonth() !== m ? ' fora' : '') + (iso === hoje ? ' hoje' : '') + '" data-cel="' + iso + '"><span class="n" data-ir="' + iso + '">' + dd.getDate() + '</span>' +
       l.slice(0, l.length > max + 1 ? max : max + 1).map(function(e) {
-        return e.ini ? '<button class="agd-pt" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '" title="' + agdEsc(e.tit) + '"><i></i><em>' + agdHoraTxt(e.ini) + '</em><span>' + agdEsc(e.tit) + '</span></button>'
-          : '<button class="agd-chip' + (e.leve ? ' leve' : '') + '" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '" title="' + agdEsc(e.tit) + '">' + agdEsc(e.tit) + '</button>'; }).join('') +
+        return e.ini ? '<button class="agd-pt" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '"' + agdMvAttr(e) + ' title="' + agdEsc(e.tit) + '"><i></i><em>' + agdHoraTxt(e.ini) + '</em><span>' + agdEsc(e.tit) + '</span></button>'
+          : '<button class="agd-chip' + (e.leve ? ' leve' : '') + '" style="--c:' + e.cor + '" data-ev="' + agdReg(e) + '"' + agdMvAttr(e) + ' title="' + agdEsc(e.tit) + '">' + agdEsc(e.tit) + '</button>'; }).join('') +
       (l.length > max + 1 ? '<button class="agd-mais" data-ir="' + iso + '">+ ' + (l.length - max) + ' mais</button>' : '') + '</div>'; }
   return h + '</div>';
 }
@@ -29999,18 +30004,78 @@ function agdAcao(a, el, ev) {
 }
 
 /* ── arrastar para mudar o horário (ou a borda de baixo para mudar a duração) ── */
+/* quem pode mover: compromissos (quem pode editar), retornos e próximas ações do Funil (o dono ou a gestão) */
+function agdPodeMover(e) {
+  if (!e) return false;
+  if (e.fonte === 'pessoal' || e.fonte === 'equipe') return agdPodeEditar(e);
+  if (e.fonte === 'ret' || e.fonte === 'neg') return e.dono === currentUser || agdGestao();
+  return false;
+}
+function agdMvAttr(e) { return agdPodeMover(e) ? ' data-mv="1"' : ''; }
+/* grava a mudança de dia/horário de qualquer tipo de tarefa. novo = {data, ini?, fim?} */
+function agdMover(e, novo) {
+  var quem = currentUser, agora = Date.now(), pr, txt;
+  var mesmo = novo.data === e.dia && (novo.ini || null) === (e.ini || null) && (novo.fim == null || novo.fim === e.fim);
+  if (mesmo) { agdRender(); return; }
+  var quando = function() { var d = agdData(novo.data); return d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + (novo.ini ? ' às ' + agdHoraTxt(novo.ini) : ''); };
+  if (e.fonte === 'pessoal' || e.fonte === 'equipe') {
+    var b = e.base || {}, upd = { data: novo.data, editadoPor: quem, editadoEm: agora };
+    if (novo.ini) {
+      var dur = e.ini ? Math.max(15, (agdMin(e.fim) || agdMin(e.ini) + 60) - agdMin(e.ini)) : 60;
+      upd.ini = novo.ini; upd.fim = novo.fim || agdHora(Math.min(24 * 60 - 1, agdMin(novo.ini) + dur)); upd.diaTodo = false;
+    }
+    if (b.rep) { // repetição: move só este dia (o dia sai da repetição e vira um compromisso solto)
+      var copia = Object.assign({}, b, upd, { rep: '', ate: '', criadoEm: b.criadoEm || agora });
+      delete copia.excecoes;
+      var base = e.fonte === 'equipe' ? 'agenda/equipe/' : 'agenda/pessoal/' + e.dono + '/';
+      pr = Promise.all([dbRef(agdCaminhoEv(e) + '/excecoes/' + e.dia).set(true), dbRef(base + agdId()).set(copia)]);
+      txt = 'Movido só este dia para ' + quando();
+    } else { pr = dbRef(agdCaminhoEv(e)).update(upd); txt = 'Movido para ' + quando(); }
+  } else if (e.fonte === 'ret') {
+    var hora = novo.ini || String(e.r.quando || '').slice(11, 16) || '09:00';
+    novo.ini = hora;
+    pr = dbRef('discador/estado/' + e.dono + '/retornos/' + e.ri + '/quando').set(novo.data + 'T' + hora);
+    txt = 'Retorno remarcado para ' + quando();
+  } else if (e.fonte === 'neg') {
+    var m = AGD.c['negociacoes/' + e.dono] || {}, k = Object.keys(m).find(function(x) { return m[x] && m[x].id === e.n.id; }) || e.n.id;
+    novo.ini = null;
+    pr = dbRef('negociacoes/' + e.dono + '/' + k).update({ proximaData: novo.data });
+    txt = 'Próxima ação do Funil para ' + quando();
+  } else { agdRender(); return; }
+  Promise.resolve(pr).then(function() { agdAviso(txt); }).catch(function(x) { agdAviso('Não salvou: ' + (x && x.message || x)); agdRender(); });
+  agdRender();
+}
+/* ── arrastar: na grade (horário e dia; a borda de baixo muda a duração) e no mês / faixa "dia todo" (muda o dia) ── */
 function agdArrIni(ev) {
-  var el = ev.target.closest('.agd-ev[data-arr]'); if (!el || ev.button > 0) return;
-  var e = AGD.evs[el.getAttribute('data-ev')]; if (!e) return;
-  AGD.drag = { el: el, e: e, y0: ev.clientY, x0: ev.clientX, top0: parseFloat(el.style.top), alt0: parseFloat(el.style.height), rs: !!ev.target.closest('[data-rs]'), col: el.parentNode, mov: false, id: ev.pointerId };
+  if (ev.button > 0) return;
+  var el = ev.target.closest('.agd-ev[data-arr]'), chip = !el && ev.target.closest('[data-mv]');
+  if (!el && !chip) return;
+  var e = AGD.evs[(el || chip).getAttribute('data-ev')]; if (!e) return;
+  AGD.drag = el ? { el: el, e: e, y0: ev.clientY, x0: ev.clientX, top0: parseFloat(el.style.top), alt0: parseFloat(el.style.height), rs: !!ev.target.closest('[data-rs]'), mov: false }
+    : { chip: chip, e: e, y0: ev.clientY, x0: ev.clientX, mov: false };
   document.addEventListener('pointermove', agdArrMove); document.addEventListener('pointerup', agdArrFim); document.addEventListener('pointercancel', agdArrFim);
+}
+function agdAlvoChip(x, y) {
+  var els = document.elementsFromPoint(x, y);
+  for (var i = 0; i < els.length; i++) { var a = els[i]; if (!a.getAttribute) continue;
+    if (a.hasAttribute('data-cel') || a.hasAttribute('data-diatodo') || a.hasAttribute('data-col')) return a; }
+  return null;
 }
 function agdArrMove(ev) {
   var d = AGD.drag; if (!d) return;
   var dy = ev.clientY - d.y0, dx = ev.clientX - d.x0;
   if (!d.mov && Math.abs(dy) < 5 && Math.abs(dx) < 5) return;
-  if (!d.mov) { d.mov = true; d.el.classList.add('arrastando'); }
   ev.preventDefault();
+  if (d.chip) {
+    if (!d.mov) { d.mov = true; var r = d.chip.getBoundingClientRect(); d.fant = d.chip.cloneNode(true); d.fant.className += ' agd-fantasma'; d.fant.style.width = Math.max(140, r.width) + 'px'; document.body.appendChild(d.fant); d.chip.style.opacity = '.35'; d.dx = ev.clientX - r.left; d.dy = ev.clientY - r.top; }
+    d.fant.style.left = (ev.clientX - d.dx) + 'px'; d.fant.style.top = (ev.clientY - d.dy) + 'px';
+    var a = agdAlvoChip(ev.clientX, ev.clientY);
+    if (a !== d.alvo) { if (d.alvo) d.alvo.classList.remove('agd-alvo'); d.alvo = a; if (a) a.classList.add('agd-alvo'); }
+    if (a && a.hasAttribute('data-col') && d.e.fonte !== 'neg') { var rc = a.getBoundingClientRect(); d.min = AGD_H0 * 60 + Math.floor(((ev.clientY - rc.top) / AGD_HH * 60) / 15) * 15; d.fant.setAttribute('data-hora', agdHoraTxt(agdHora(d.min))); }
+    else { d.min = null; d.fant.removeAttribute('data-hora'); }
+    return;
+  }
+  if (!d.mov) { d.mov = true; d.el.classList.add('arrastando'); }
   var passo = AGD_HH / 4, sn = Math.round(dy / passo) * passo;
   if (d.rs) { d.el.style.height = Math.max(passo - 2, d.alt0 + sn) + 'px'; return; }
   d.el.style.top = Math.max(0, Math.min(AGD_HH * AGD_NH - d.alt0, d.top0 + sn)) + 'px';
@@ -30021,13 +30086,23 @@ function agdArrFim() {
   var d = AGD.drag; document.removeEventListener('pointermove', agdArrMove); document.removeEventListener('pointerup', agdArrFim); document.removeEventListener('pointercancel', agdArrFim);
   AGD.drag = null; if (!d || !d.mov) { if (AGD.pendente) agdRender(); return; }
   AGD.arrastou = true; setTimeout(function() { AGD.arrastou = false; }, 50);
+  if (d.chip) {
+    if (d.fant) d.fant.remove(); if (d.alvo) d.alvo.classList.remove('agd-alvo');
+    var a = d.alvo; if (!a) { agdRender(); return; }
+    var dia = a.getAttribute('data-cel') || a.getAttribute('data-diatodo') || a.getAttribute('data-col');
+    var novo = { data: dia, ini: d.e.ini || null, fim: d.e.fim || null };
+    if (d.min != null) { novo.ini = agdHora(d.min); novo.fim = null; } // soltou numa hora da grade
+    agdMover(d.e, novo); return;
+  }
   var top = parseFloat(d.el.style.top), alt = parseFloat(d.el.style.height) + 2;
   var ini = AGD_H0 * 60 + Math.round(top / AGD_HH * 60 / 15) * 15, dur = Math.max(15, Math.round(alt / AGD_HH * 60 / 15) * 15);
-  var dia = d.el.parentNode.getAttribute('data-col') || d.e.dia;
-  var upd = d.rs ? { fim: agdHora(agdMin(d.e.ini) + dur) } : { data: dia, ini: agdHora(ini), fim: agdHora(Math.min(24 * 60 - 1, ini + dur)) };
-  upd.editadoPor = currentUser; upd.editadoEm = Date.now();
-  Promise.resolve(dbRef(agdCaminhoEv(d.e)).update(upd)).then(function() { agdAviso(d.rs ? 'Duração alterada' : 'Horário alterado: ' + agdHoraTxt(upd.ini)); }).catch(function(x) { agdAviso('Não salvou: ' + (x && x.message || x)); agdRender(); });
-  agdRender();
+  var dia2 = d.el.parentNode.getAttribute('data-col') || d.e.dia;
+  if (d.rs) {
+    var fim = agdHora(agdMin(d.e.ini) + dur);
+    Promise.resolve(dbRef(agdCaminhoEv(d.e)).update({ fim: fim, editadoPor: currentUser, editadoEm: Date.now() })).then(function() { agdAviso('Duração alterada'); }).catch(function(x) { agdAviso('Não salvou: ' + (x && x.message || x)); });
+    agdRender(); return;
+  }
+  agdMover(d.e, { data: dia2, ini: agdHora(ini), fim: agdHora(Math.min(24 * 60 - 1, ini + dur)) });
 }
 
 
