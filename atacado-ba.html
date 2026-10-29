@@ -25670,6 +25670,11 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
 .ag-ceu.azul .horiz { background: linear-gradient(180deg, rgba(160,215,255,0), rgba(120,190,245,.35) 40%, rgba(10,40,90,.9)); filter: blur(2px); }
 .ag-ceu.fogo .horiz { background: linear-gradient(180deg, rgba(20,6,12,0), rgba(20,6,12,.85) 45%, #0C0408); }
 .ag-ceu .vinheta { inset: 0; background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.55) 100%); }
+.ag-ceu-tit { position: fixed; left: 0; right: 0; top: 9vh; z-index: 99992; text-align: center; padding: 0 20px; pointer-events: none; color: #fff; }
+.ag-ceu-tit h2 { margin: 0; font-family: 'Archivo', var(--font, system-ui), sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -.01em; line-height: 1; font-size: clamp(30px, 6.6vw, 76px); color: #FFD23F; animation: agImpacto .55s cubic-bezier(.2,1.6,.4,1) .15s both; }
+.ag-ceu-tit.azul h2 { text-shadow: 0 4px 0 #0A2A63, 0 12px 34px rgba(0,0,0,.6); }
+.ag-ceu-tit.fogo h2 { text-shadow: 0 4px 0 #6E0F22, 0 12px 34px rgba(0,0,0,.6); }
+.ag-ceu-tit p { margin: 12px 0 0; font-size: clamp(16px, 2.4vw, 24px); font-weight: 700; text-shadow: 0 2px 10px rgba(0,0,0,.7); animation: agSobe .5s ease-out .45s both; }
 .ag-voo .ave, .ag-voo-sombra .ave { position: relative; }
 .ag-fasa, .ag-fbob { position: absolute; inset: 0; width: 100%; height: 100%; display: block; user-select: none; }
 .ag-voo .ag-fasa, .ag-voo .ag-fbob { filter: drop-shadow(0 12px 16px rgba(0,0,0,.35)); }
@@ -25924,33 +25929,33 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     return m;
   }
   function berro(ctx, saida, t, d, f0, vol){
-    // núcleo: duas serras levemente desafinadas, com rouquidão (modulação de amplitude áspera) e saturação
-    var o = ctx.createOscillator(), o2 = ctx.createOscillator(); o.type = o2.type = 'sawtooth'; o2.detune.value = -18;
+    // grito de gavião/águia: começa no alto, rasgado e chiado, e só cai no final ("kiiiiii-arr")
+    var o = ctx.createOscillator(), o2 = ctx.createOscillator(); o.type = 'sawtooth'; o2.type = 'square'; o2.detune.value = 25;
     [o, o2].forEach(function(x){
-      x.frequency.setValueAtTime(f0 * .9, t);
-      x.frequency.linearRampToValueAtTime(f0 * 1.14, t + d * .14);
-      x.frequency.linearRampToValueAtTime(f0 * 1.05, t + d * .5);
-      x.frequency.exponentialRampToValueAtTime(f0 * .58, t + d);
+      x.frequency.setValueAtTime(f0 * 1.04, t);
+      x.frequency.linearRampToValueAtTime(f0, t + d * .08);
+      x.frequency.linearRampToValueAtTime(f0 * .93, t + d * .7);
+      x.frequency.exponentialRampToValueAtTime(f0 * .66, t + d);
     });
-    var rouco = ctx.createGain(); rouco.gain.value = .55;
-    var lfo = ctx.createOscillator(), lfoG = ctx.createGain(); lfo.type = 'sawtooth'; lfo.frequency.value = 58; lfoG.gain.value = .45;
+    var rouco = ctx.createGain(); rouco.gain.value = .5;
+    var lfo = ctx.createOscillator(), lfoG = ctx.createGain(); lfo.type = 'square'; lfo.frequency.value = 95; lfoG.gain.value = .5;
     lfo.connect(lfoG); lfoG.connect(rouco.gain);
-    var sat = ctx.createWaveShaper(); sat.curve = curvaRasgada(14); sat.oversample = '4x';
-    o.connect(rouco); o2.connect(rouco); rouco.connect(sat);
-    // formantes: corpo grave + rasgo agudo
-    var f1 = ctx.createBiquadFilter(), f2 = ctx.createBiquadFilter(), g1 = ctx.createGain(), g2 = ctx.createGain();
-    f1.type = 'bandpass'; f1.Q.value = 2.2; f1.frequency.setValueAtTime(f0 * 1.1, t); f1.frequency.exponentialRampToValueAtTime(f0 * .7, t + d);
-    f2.type = 'bandpass'; f2.Q.value = 3.5; f2.frequency.setValueAtTime(f0 * 2.2, t); f2.frequency.linearRampToValueAtTime(f0 * 2.5, t + d * .15); f2.frequency.exponentialRampToValueAtTime(f0 * 1.5, t + d);
-    g1.gain.value = .9; g2.gain.value = .55;
-    sat.connect(f1); sat.connect(f2); f1.connect(g1); f2.connect(g2);
-    // sopro áspero do grito (ruído afinado junto)
-    var nz = ruido(ctx, d), nf = ctx.createBiquadFilter(), ng = ctx.createGain();
-    nf.type = 'bandpass'; nf.Q.value = 5; nf.frequency.setValueAtTime(f0 * 2.1, t); nf.frequency.linearRampToValueAtTime(f0 * 2.4, t + d * .15); nf.frequency.exponentialRampToValueAtTime(f0 * 1.4, t + d);
-    ng.gain.value = .7; nz.connect(nf); nf.connect(ng);
+    var sat = ctx.createWaveShaper(); sat.curve = curvaRasgada(30); sat.oversample = '4x';
+    var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1600; hp.Q.value = .7;
+    var tom = ctx.createGain(); tom.gain.value = .45;
+    o.connect(rouco); o2.connect(rouco); rouco.connect(sat); sat.connect(hp); hp.connect(tom);
+    // chiado do grito: ruído em duas faixas agudas
+    var nz = ruido(ctx, d), nb = ctx.createBiquadFilter(), nb2 = ctx.createBiquadFilter(), ng = ctx.createGain(), ng2 = ctx.createGain(), nRouco = ctx.createGain();
+    nRouco.gain.value = .6; lfoG.connect(nRouco.gain);
+    nb.type = 'bandpass'; nb.Q.value = 4; nb.frequency.setValueAtTime(f0 * 1.15, t); nb.frequency.linearRampToValueAtTime(f0 * 1.05, t + d * .7); nb.frequency.exponentialRampToValueAtTime(f0 * .75, t + d);
+    nb2.type = 'bandpass'; nb2.Q.value = 2.5; nb2.frequency.value = f0 * 1.8;
+    ng.gain.value = .9; ng2.gain.value = .35;
+    nz.connect(nRouco); nRouco.connect(nb); nRouco.connect(nb2); nb.connect(ng); nb2.connect(ng2);
     var env = ctx.createGain();
-    env.gain.setValueAtTime(.0001, t); env.gain.exponentialRampToValueAtTime(.42 * vol, t + .06);
-    env.gain.linearRampToValueAtTime(.36 * vol, t + d * .6); env.gain.exponentialRampToValueAtTime(.0001, t + d);
-    g1.connect(env); g2.connect(env); ng.connect(env); env.connect(saida);
+    env.gain.setValueAtTime(.0001, t); env.gain.exponentialRampToValueAtTime(.5 * vol, t + .025);
+    env.gain.linearRampToValueAtTime(.42 * vol, t + d * .72); env.gain.exponentialRampToValueAtTime(.0001, t + d);
+    var lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4800; lp.Q.value = .8;
+    tom.connect(env); ng.connect(env); ng2.connect(env); env.connect(lp); lp.connect(saida);
     [o, o2, lfo, nz].forEach(function(x){ x.start(t); x.stop(t + d + .05); });
   }
   function batida(ctx, saida, t, forca){ // "vuumf" grave de cada batida de asa
@@ -25961,8 +25966,8 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   }
   function gritoEm(ctx, t0){
     var s = saidaGrito(ctx);
-    berro(ctx, s, t0, 1.55, 1180, 1);
-    berro(ctx, s, t0 + 1.75, .85, 1020, .75);
+    berro(ctx, s, t0, 1.0, 2650, 1);
+    berro(ctx, s, t0 + 1.2, .7, 2500, .8);
   }
   window._aguiaGritoEm = gritoEm;
   function grito(){
@@ -26018,6 +26023,13 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     ceu.setAttribute('aria-hidden', 'true');
     ceu.innerHTML = '<div class="raios"></div><div class="sol"></div><div class="nuvens"><i></i><i></i><i></i><i></i></div><div class="vento"></div><div class="horiz"></div><div class="vinheta"></div>';
     document.body.appendChild(ceu);
+    var tit = null;
+    if (op.titulo) {
+      tit = document.createElement('div'); tit.className = 'ag-ceu-tit ' + (modo === 'ataque' ? 'fogo' : 'azul'); tit.setAttribute('role', 'alert');
+      tit.innerHTML = '<h2>' + op.titulo + '</h2>' + (op.sub ? '<p>' + op.sub + '</p>' : '');
+      document.body.appendChild(tit);
+      tit.animate([{ opacity: 0 }, { opacity: 1, offset: .12 }, { opacity: 1, offset: .88 }, { opacity: 0 }], { duration: DUR + 250, fill: 'forwards' });
+    }
     ceu.animate([{ opacity: 0 }, { opacity: 1, offset: .1 }, { opacity: 1, offset: .86 }, { opacity: 0 }], { duration: DUR + 250, easing: 'ease-in-out', fill: 'forwards' });
     var sombra = cria('ag-voo-sombra'), voo = cria('ag-voo');
     wrap.classList.remove('ag-dorme'); wrap.classList.add('ag-saiu');
@@ -26040,7 +26052,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     if (!op.mudo) { somDoVoo(dir, DUR / 1000); setTimeout(grito, modo === 'ataque' ? 250 : 500); }
     function fim(){
       if (!RZ.ativo) return; RZ.ativo = false;
-      voo.remove(); sombra.remove(); ceu.remove(); wrap.classList.remove('ag-saiu');
+      voo.remove(); sombra.remove(); ceu.remove(); if (tit) tit.remove(); wrap.classList.remove('ag-saiu');
       bird.classList.remove('ag-pousa'); void bird.offsetWidth; bird.classList.add('ag-pousa');
       setTimeout(function(){ bird.classList.remove('ag-pousa'); }, 800);
       agendarSono();
@@ -26087,7 +26099,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     var ev = AG.fila.shift(); AG.ocupado = true;
     // rasante só nas super metas (as que abrem a tela cheia): depois da tela cheia, ela cruza a tela
     // super meta: depois da tela cheia, a águia dá o rasante
-    if (ev.epico && ev._palcoFeito && !ev._rzFeito) { ev._rzFeito = true; razante({ extras: ev.extras }); }
+    if (ev.epico && ev._palcoFeito && !ev._rzFeito) { ev._rzFeito = true; razante({ extras: ev.extras, titulo: ev.titulo, sub: ev.epico[1] }); }
     if (ev.epico && !ev._palcoFeito) { ev._palcoFeito = true; ev.confete = 0; palco(ev.epico[0], ev.epico[1], function(){ AG.fila.unshift(ev); AG.ocupado = false; mostrarDaFila(); }); return; }
     var b = document.createElement('div');
     b.className = 'ag-balao' + (ev.grande ? ' grande' : '');
@@ -26157,7 +26169,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       b.querySelectorAll('[data-cfg]').forEach(function(x){
         x.onclick = function(){
           if (x.dataset.cfg === 'som') { lsSet('fgvba_ag_som', silencio() ? '1' : '0'); x.textContent = silencio() ? 'Ligar som' : 'Desligar som'; if (!silencio()) som('pequeno'); }
-          else if (x.dataset.cfg === 'rasante') { fecharBalao(); setTimeout(function(){ razante({ forcar: true }); }, 300); }
+          else if (x.dataset.cfg === 'rasante') { fecharBalao(); setTimeout(function(){ razante({ forcar: true, titulo: 'SUPER META BATIDA! 🏆', sub: 'É assim que a águia comemora' }); }, 300); }
           else { fecharBalao(); esconder(true); }
         };
       });
