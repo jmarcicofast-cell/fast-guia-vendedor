@@ -941,6 +941,119 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
 .dc-ct tr.feito td{opacity:.5}
 .dc-ct tr.prox td{background:rgba(31,138,92,.08)}
 .dc-mini{padding:3px 10px;font-size:12px}
+/* ══ DISCADOR v2 (29/10/2026) — visual repaginado ══ */
+#dc-root .dc-head{justify-content:space-between;margin-bottom:18px}
+#dc-root .dc-tit{font-size:26px;font-weight:800;letter-spacing:-.01em}
+#dc-root .dc-abas{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;gap:2px}
+#dc-root .dc-aba{border:0;border-radius:9px;padding:8px 14px;color:var(--muted);transition:background .15s,color .15s}
+#dc-root .dc-aba:hover{color:var(--txt);background:var(--surface-2)}
+#dc-root .dc-aba.on{background:var(--acc);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+#dc-root .dc-card{border:1px solid var(--line);border-radius:16px;padding:20px}
+#dc-root .dc-eyebrow{font-size:11.5px;letter-spacing:.09em;margin-bottom:12px}
+#dc-root .dc-btn{border-radius:10px;padding:8px 14px;transition:background .15s,border-color .15s,transform .1s}
+#dc-root .dc-btn:active{transform:translateY(1px)}
+#dc-root .dz-ghost{background:transparent;border-color:transparent;color:var(--muted)}
+#dc-root .dz-ghost:hover{background:var(--surface-2);color:var(--txt)}
+#dc-root .dz-perigo{color:#E5484D!important;border-color:#E5484D!important}
+#dc-root .dc-bar{height:6px}
+#dc-root .dc-bar i{background:var(--acc);border-radius:99px}
+/* discar */
+#dc-root .dz-call{padding:0;overflow:hidden}
+html body #dc-root input.dc-edit.dc-edit{background:transparent!important;border:1px dashed transparent!important;border-radius:8px!important;box-shadow:none!important}
+html body #dc-root input.dc-edit.dc-edit:hover{border-color:var(--line)!important}
+html body #dc-root input.dc-edit.dc-edit:focus{border:1px solid var(--dc-ok)!important;background:var(--surface-2)!important}
+#dc-root .dz-lcorpo input.dc-edit{border-color:transparent}
+#dc-root .dz-lcorpo input.dc-edit:hover{border-color:var(--line)}
+.dz .dz-call>*:not(.dz-top){margin-left:22px;margin-right:22px}
+.dz-top{display:grid;grid-template-columns:minmax(200px,1.3fr) minmax(160px,1fr) auto;gap:14px 20px;align-items:center;padding:14px 22px;background:var(--surface-2);border-bottom:1px solid var(--line);margin-bottom:20px}
+@media (max-width:760px){.dz-top{grid-template-columns:1fr}}
+.dz-lista{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.dz-lista select{text-transform:none;letter-spacing:0;font-weight:600}
+.dz-prog-t{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+.dz-prog-t b{color:var(--txt)}
+.dz-prog-s{font-size:11.5px;color:var(--muted);margin-top:5px}
+.dz-nav{display:flex;gap:6px}
+.dz-navb{background:var(--surface)}
+.dz-quem{display:flex;gap:16px;align-items:center;margin-bottom:6px}
+.dz-av{flex:none;width:58px;height:58px;border-radius:16px;display:grid;place-items:center;font-weight:800;font-size:20px;color:#fff;background:linear-gradient(135deg,var(--acc),color-mix(in srgb,var(--acc) 55%,#000));box-shadow:0 6px 16px rgba(0,0,0,.2)}
+.dz-id{min-width:0;flex:1}
+.dz-tag{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.dz-loc{font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);color:var(--txt)}
+#dc-root .dz-emp{font-size:26px!important;font-weight:800;line-height:1.15;color:var(--txt);padding:0 6px;margin-left:-7px}
+#dc-root .dz-nome{font-size:15px!important;color:var(--muted);padding:0 6px;margin-left:-7px;margin-top:2px}
+.dz-nota{font-size:13px;color:var(--txt);background:var(--surface-2);border-radius:10px;padding:8px 12px;margin-top:10px}
+.dz-nota b{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-right:6px}
+.dz-telrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 4px}
+#dc-root .dz-telrow .dc-num{font-size:30px!important;margin-left:-7px}
+#dc-root .dz-salvar{margin-left:auto;opacity:0;pointer-events:none;transition:opacity .2s}
+#dc-root .dz-salvar.sujo{opacity:1;pointer-events:auto;background:var(--dc-ok);border-color:var(--dc-ok);color:#fff}
+.dz-aviso{margin:6px 0 4px!important}
+.dz-ligar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;margin:16px 0 4px;padding:16px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line)}
+#dc-root .dz-ligar .dc-ligar{box-shadow:0 6px 18px color-mix(in srgb,var(--acc) 35%,transparent)}
+#dc-root .dz-ligar .dc-ligar2{box-shadow:none;background:var(--surface)}
+#dc-root .dz-ligar .dc-timer{margin-left:auto;font-size:24px;padding:4px 12px;border-radius:10px;background:var(--surface)}
+.dz-dica{font-size:12.5px;color:var(--muted)}
+.dz-bloq{font-weight:700;color:#E5484D}.dz-bloq.azul{color:#2F6FB3}
+.dz-sec{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px}
+#dc-root .dc-resb{position:relative;min-height:46px;padding:10px 12px 10px 16px;border-radius:12px;background:var(--surface);overflow:hidden;transition:transform .1s,border-color .15s,background .15s}
+#dc-root .dc-resb::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--rc,var(--line))}
+#dc-root .dc-resb:hover{border-color:var(--rc,var(--muted));background:color-mix(in srgb,var(--rc,#888) 10%,var(--surface));transform:translateY(-1px)}
+#dc-root .dc-resb i{display:none}
+#dc-root .dc-resb .dc-kbd{opacity:.5}
+.dz-obs{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(170px,1fr);gap:12px;margin-top:14px}
+@media (max-width:640px){.dz-obs{grid-template-columns:1fr}}
+#dc-root .dz-obs textarea{height:100%;min-height:86px}
+.dz-ret{display:flex;flex-direction:column;gap:8px}
+#dc-root .dz-retb{border-color:#2F6FB3;color:#2F6FB3;justify-content:center}
+#dc-root .dz-retb:hover{background:color-mix(in srgb,#2F6FB3 12%,var(--surface))}
+.dz-mais{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:18px;padding-top:12px;border-top:1px solid var(--line)}
+.dz .dz-call>.dc-hist,.dz .dz-call>details{margin-bottom:18px}
+.dz .dz-call>.dz-mais:last-child{padding-bottom:18px}
+.dz-vazio{padding:10px 0 24px!important}
+.dz-dia .dz-meta{display:flex;justify-content:space-between;align-items:flex-end}
+.dz-meta-n b{font-size:34px;font-weight:800;line-height:1;color:var(--txt);font-variant-numeric:tabular-nums}
+.dz-meta-n span{display:block;font-size:12.5px;color:var(--muted);margin-top:4px}
+.dz-meta-p{font-size:18px;font-weight:800;color:var(--acc-txt,var(--acc))}
+#dc-root .dz-bar{height:10px;margin:10px 0 6px}
+.dz-meta-s{font-size:11.5px;color:var(--muted);margin-bottom:14px}
+.dz-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dz-kpis>div{background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.dz-kpis b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--txt)}
+.dz-kpis span{font-size:11.5px;color:var(--muted)}
+.dz-teclado summary{cursor:pointer;font-size:12.5px;color:var(--muted);margin-top:10px;list-style:none}
+.dz-teclado summary::before{content:"⌨ ";}
+.dz-teclado[open] summary{margin-bottom:8px}
+/* listas */
+.dz-lt{display:flex;flex-direction:column;gap:6px}
+.dz-ltop{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.dz-ltop .dc-busca-l{flex:1;margin:0;background:var(--surface)!important}
+#dc-root .dz-nova{white-space:nowrap;padding:11px 18px}
+.dz-lform{margin-bottom:14px}
+.dz-lform-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.dz-lform-g{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:18px}
+@media (max-width:800px){.dz-lform-g{grid-template-columns:1fr}}
+.dz-lsec{margin-top:14px}
+.dz-lsec-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin-bottom:10px}
+.dz-lsec-h h3{margin:0;font-size:17px;font-weight:800;color:var(--txt)}
+.dz-lsec-h h3 span{font-size:12px;font-weight:700;color:var(--muted);background:var(--surface-2);border-radius:99px;padding:1px 8px;margin-left:4px;vertical-align:2px}
+.dz-lcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.dz-lcard[open]{box-shadow:var(--card-shadow)}
+.dz-lsum{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:14px 18px;cursor:pointer;list-style:none}
+.dz-lsum::-webkit-details-marker{display:none}
+.dz-lsum:hover{background:var(--surface-2)}
+.dz-lseta{color:var(--muted);transition:transform .15s;font-size:12px}
+.dz-lcard[open] .dz-lseta{transform:rotate(90deg)}
+.dz-linfo{flex:1;min-width:180px}
+.dz-linfo b{font-size:15px;color:var(--txt)}
+.dz-lprog{display:flex;align-items:center;gap:8px;width:150px;font-size:12px;color:var(--muted);font-weight:700}
+.dz-lprog .dc-bar{flex:1;margin:0}
+.dz-lacoes{display:flex;gap:6px;flex-wrap:wrap}
+.dz-lcorpo{padding:0 18px 14px}
+#dc-root .dz-lcorpo .dc-ctwrap{margin-top:0;border-radius:10px;max-height:420px}
+#dc-root .dz-lcorpo .dc-ct td{padding:5px 10px}
+#dc-root .dz-lcorpo .dc-ct th{background:var(--surface-2);padding:8px 10px}
+#dc-root .dz-lcorpo .dc-ct .dc-edit{min-width:140px}
+.dz-regras{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;align-items:start}
 /* ── Ciclo de foco (23/10/2026): 40 min ligando · 20 min negociando · 5 min respirando ── */
 .fc-band{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:14px 18px;margin-bottom:16px;border-left:6px solid var(--fc-cor,var(--line));color:var(--txt)}
 .fc-band.off{border-left-color:var(--line)}
@@ -28027,56 +28140,68 @@ function dcFimListaHtml(l, total) {
 function dcVDiscar() {
   var a = dcAlvo(), l = dcLista(), r = dcResumo(DC.itens), p = dcPref(), live = dcNoAr();
   var total = l ? l.contatos.length : 0, pos = dcPos();
-  var meta = dcMetaHoje();
-  var h = dcEqAvisoHtml() + '<div class="dc-grid"><div class="dc-col">';
-  h += '<div class="dc-card"><div class="dc-row" style="justify-content:space-between;margin-bottom:12px">' +
-    '<label class="dc-lab" style="flex:1;min-width:200px">Lista em discagem<select id="dc-sel" onchange="dcEscolherLista(this.value)"><option value="">' + (DC.listas.length ? 'Escolha uma lista' : 'Nenhuma lista cadastrada') + '</option>' +
-    DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === DC.listaId ? ' selected' : '') + '>' + (x.para ? '' : x.inatPara ? '' : '') + dcEsc(x.nome) + ' · ' + x.contatos.length + ' contatos' + (x.para ? ' · ' + dcPrazoCurto(x) : '') + '</option>'; }).join('') + '</select></label>' +
-    (l ? '<div class="dc-row"><button class="dc-btn" onclick="dcMover(-1)">Voltar um</button>' + (a && !DC.avulso ? '<button class="dc-btn" onclick="dcMover(1)">Pular</button>' : '') + '</div>' : '') + '</div>';
+  var meta = dcMetaHoje(), feitos = Math.min(pos, total), pct = total ? Math.round(feitos / total * 100) : 0;
+  var h = dcEqAvisoHtml() + '<div class="dc-grid dz"><div class="dc-col">';
+  // ── barra da lista: qual lista, progresso e navegação
+  h += '<div class="dc-card dz-call"><div class="dz-top">' +
+    '<label class="dz-lista"><span>Lista em discagem</span><select id="dc-sel" onchange="dcEscolherLista(this.value)"><option value="">' + (DC.listas.length ? 'Escolha uma lista' : 'Nenhuma lista cadastrada') + '</option>' +
+    DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === DC.listaId ? ' selected' : '') + '>' + dcEsc(x.nome) + ' · ' + x.contatos.length + ' contatos' + (x.para ? ' · ' + dcPrazoCurto(x) : '') + '</option>'; }).join('') + '</select></label>' +
+    (l ? '<div class="dz-prog"><div class="dz-prog-t"><span><b>' + feitos + '</b> de ' + total + ' trabalhados</span><span>' + pct + '%</span></div><div class="dc-bar"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="dz-prog-s">Discagem automática ' + (p.auto ? '<b>ligada</b> · ' + p.espera + 's entre ligações' : 'desligada') + '</div></div>' +
+      '<div class="dz-nav"><button class="dc-btn dz-navb" onclick="dcMover(-1)" title="Voltar para o contato anterior">‹ Voltar</button>' + (a && !DC.avulso ? '<button class="dc-btn dz-navb" onclick="dcMover(1)" title="Pular este contato">Pular ›</button>' : '') + '</div>' : '') +
+    '</div>';
   if (l && l.para) h += dcPrazoBanner(l);
   if (l && l.inatPara) h += dcInatBanner(l);
   if (a) {
+    var quem = String(a.empresa || a.nome || '').trim(), ini = quem ? quem.split(/\s+/).filter(Boolean).slice(0, 2).map(function(w) { return w[0]; }).join('').toUpperCase() : '#';
+    var loc = typeof dcLocalidade === 'function' ? dcLocalidade(a) : '';
     h += dcConcFaixaHtml(a) + dcDesqFaixaHtml(a) + dcDonoFaixaHtml(a);
-    h += '<div class="dc-eyebrow">' + (DC.avulso ? (DC.avulso.retIdx != null ? 'Retorno agendado' : 'Ligação avulsa') : 'Contato ' + (pos + 1) + ' de ' + total) + '</div>' +
-      '<input class="dc-nome dc-edit" value="' + dcEsc(a.nome || '') + '" id="dc-enome" placeholder="Nome do contato ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
-      '<input class="dc-emp dc-edit" value="' + dcEsc(a.empresa || '') + '" id="dc-eemp" placeholder="Empresa / loja ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
-      (a.obs ? '<div class="dc-emp">Anotação: ' + dcEsc(a.obs) + '</div>' : '') + dcHistHtml(a) +
-      '<div class="dc-row" style="margin-top:8px"><button class="dc-btn dc-pri" id="dc-salvar" onclick="dcSalvarCard()">✓ Salvar alterações</button>' +
-      (dcLista() && dcLista().equipe && !DC.avulso ? (function() { var i = dcPos(), st = dcEqStatus(l.contatos[i]);
-          return st === 'meu' ? '<span class="dc-sub">Assumido por você · ' + dcEqPrazo(l.contatos[i]) + '</span><button class="dc-btn dc-mini" onclick="dcLiberar(' + i + ')">Devolver</button>'
-            : '<button class="dc-btn dc-assumir" onclick="dcAssumir(' + i + ')">Assumir este cliente</button><span class="dc-sub">fica com você por ' + DC_ASSUMIR_DIAS + ' dias</span>'; })()
-        : '<button class="dc-btn" onclick="dcParaEquipe(dcAlvo())">Disponibilizar para a equipe</button>') + '</div>' +
-      '<div class="dc-row" style="margin:12px 0"><input class="dc-num dc-edit dc-num-ed" id="dc-num" value="' + dcEsc(dcTel(a.tel)) + '" inputmode="tel" placeholder="Número ✎" title="Clique para corrigir o número e aperte Enter para salvar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();event.stopPropagation();dcSalvarCard()}"><button class="dc-btn" onclick="dcCopiar()">Copiar</button>' + (dcConcBloq(a) ? '' : '<button class="dc-btn" title="Cadastrar este número como concorrente: ele some da fila de todos" onclick="dcConcMarcar(dcAlvo())">É concorrente</button>') +
-      (DC.avulso && l ? '<button class="dc-btn" onclick="dcSalvarAvulsoNaLista()">+ Salvar na lista ' + dcEsc(l.nome) + '</button>' : '') +
-      (DC.avulso ? '<button class="dc-btn" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') + '</div>' +
-      (dcSemDDD(a.tel) ? '<div class="dc-prazo quase" style="margin:-4px 0 12px"><b>Número sem DDD</b> — a ligação não completa. Coloque o DDD no número acima e aperte <b>Enter</b> para salvar.' +
+    h += '<div class="dz-quem"><div class="dz-av" aria-hidden="true">' + dcEsc(ini) + '</div><div class="dz-id">' +
+      '<div class="dz-tag">' + (DC.avulso ? (DC.avulso.retIdx != null ? 'Retorno agendado' : 'Ligação avulsa') : 'Contato ' + (pos + 1) + ' de ' + total) + (loc ? '<span class="dz-loc">' + dcEsc(loc) + '</span>' : '') + '</div>' +
+      '<input class="dz-emp dc-edit" value="' + dcEsc(a.empresa || '') + '" id="dc-eemp" placeholder="Nome da loja ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
+      '<input class="dz-nome dc-edit" value="' + dcEsc(a.nome || '') + '" id="dc-enome" placeholder="Nome do contato ✎" title="Clique para editar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\')dcSalvarCard()">' +
+      '</div></div>' +
+      (a.obs ? '<div class="dz-nota"><b>Anotação</b> ' + dcEsc(a.obs) + '</div>' : '') +
+      '<div class="dz-telrow"><input class="dc-num dc-edit dc-num-ed" id="dc-num" value="' + dcEsc(dcTel(a.tel)) + '" inputmode="tel" placeholder="Número ✎" title="Clique para corrigir o número e aperte Enter para salvar" oninput="dcSujo()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();event.stopPropagation();dcSalvarCard()}">' +
+      '<button class="dc-btn dz-ghost" onclick="dcCopiar()" title="Copiar o número">Copiar</button>' +
+      '<button class="dc-btn dz-salvar" id="dc-salvar" onclick="dcSalvarCard()">✓ Salvar alterações</button></div>' +
+      (dcSemDDD(a.tel) ? '<div class="dc-prazo quase dz-aviso"><b>Número sem DDD</b> — a ligação não completa. Coloque o DDD no número acima e aperte <b>Enter</b> para salvar.' +
         (DC.pausaDDD ? '<div class="dc-sub">⏸️ A discagem automática parou aqui. Corrigindo o número, ela continua sozinha; se não souber o DDD, clique em <b>Pular</b>.</div>' : '') + '</div>' : '') +
-      '<div class="dc-row" style="gap:12px 16px">' + (dcConcBloq(a) ? '<span class="dc-sub" style="color:#C2413B;font-weight:600">Ligação bloqueada: concorrente</span>' : dcDesqDe(a) ? '<span class="dc-sub" style="color:#6B2737;font-weight:600">Ligação bloqueada: lead desqualificado</span>' : dcDonoBloq(a) ? '<span class="dc-sub" style="color:#2F6FB3;font-weight:600">Ligação bloqueada: cliente com ' + dcDonoNome(dcDonoOutro(a)) + '</span>' : dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live)) +
+      '<div class="dz-ligar">' + (dcConcBloq(a) ? '<span class="dz-bloq">Ligação bloqueada: concorrente</span>' : dcDesqDe(a) ? '<span class="dz-bloq">Ligação bloqueada: lead desqualificado</span>' : dcDonoBloq(a) ? '<span class="dz-bloq azul">Ligação bloqueada: cliente com ' + dcDonoNome(dcDonoOutro(a)) + '</span>' : dcBotaoLigar(a, p.canal, true, live) + dcBotaoLigar(a, p.canal === 'wa' ? 'micro' : 'wa', false, live)) +
       '<span class="dc-timer' + (live ? ' live' : '') + '" id="dc-timer">' + dcClock(dcSeg()) + '</span>' +
-      (live ? '<button class="dc-btn dc-deslig" onclick="dcDesliguei()">Desliguei <span class="dc-kbd">D</span></button>' : (DC.call ? '<span class="dc-sub">Ligação encerrada · marque o resultado</span>' : '')) + '</div>' +
-      '<div class="dc-eyebrow" style="margin-top:16px">Como foi a ligação?</div><div class="dc-res">' +
-      DC_RES.map(function(x, i) { return '<button class="dc-resb" onclick="dcRegistrar(\'' + x.k + '\')"><span><i style="background:' + x.cor + '"></i>' + x.t + '</span><span class="dc-kbd">' + (i + 1) + '</span></button>'; }).join('') + '</div>' +
-      '<div class="dc-row" style="margin-top:10px;align-items:flex-start"><textarea id="dc-obs" data-k="' + dcEsc(dcAlvoKey()) + '" rows="2" placeholder="Anotação (opcional): o que o cliente disse, produto, valor…" style="flex:2;min-width:200px"></textarea>' +
-      '<div style="flex:1;min-width:170px"><label class="dc-lab">Retornar em<input type="datetime-local" id="dc-quando"></label>' +
-      '<button class="dc-btn" style="margin-top:6px;width:100%;border-color:#2F6FB3;color:#2F6FB3;font-weight:600" onclick="dcRegistrar(\'retornar\')">Agendar retorno nesta data</button></div></div>' +
-      (DC.auto ? '<div class="dc-auto">Discando o próximo em <b id="dc-auton">' + DC.auto.n + '</b>s <button class="dc-btn dc-pri" onclick="dcPularContagem()">Ligar agora <span class="dc-kbd">Enter</span></button> <button class="dc-btn" onclick="dcPararAuto()">Parar <span class="dc-kbd">Esc</span></button></div>' : '');
+      (live ? '<button class="dc-btn dc-deslig" onclick="dcDesliguei()">Desliguei <span class="dc-kbd">D</span></button>' : (DC.call ? '<span class="dz-dica">Ligação encerrada · marque o resultado</span>' : '')) + '</div>' +
+      '<div class="dz-sec">Como foi a ligação?</div><div class="dc-res">' +
+      DC_RES.map(function(x, i) { return '<button class="dc-resb" style="--rc:' + x.cor + '" onclick="dcRegistrar(\'' + x.k + '\')"><span><i style="background:' + x.cor + '"></i>' + x.t + '</span><span class="dc-kbd">' + (i + 1) + '</span></button>'; }).join('') + '</div>' +
+      '<div class="dz-obs"><textarea id="dc-obs" data-k="' + dcEsc(dcAlvoKey()) + '" rows="2" placeholder="Anotação (opcional): o que o cliente disse, produto, valor…"></textarea>' +
+      '<div class="dz-ret"><label class="dc-lab">Retornar em<input type="datetime-local" id="dc-quando"></label>' +
+      '<button class="dc-btn dz-retb" onclick="dcRegistrar(\'retornar\')">Agendar retorno</button></div></div>' +
+      (DC.auto ? '<div class="dc-auto">Discando o próximo em <b id="dc-auton">' + DC.auto.n + '</b>s <button class="dc-btn dc-pri" onclick="dcPularContagem()">Ligar agora <span class="dc-kbd">Enter</span></button> <button class="dc-btn" onclick="dcPararAuto()">Parar <span class="dc-kbd">Esc</span></button></div>' : '') +
+      '<div class="dz-mais">' +
+      (dcLista() && dcLista().equipe && !DC.avulso ? (function() { var i = dcPos(), st = dcEqStatus(l.contatos[i]);
+          return st === 'meu' ? '<span class="dc-sub">Assumido por você · ' + dcEqPrazo(l.contatos[i]) + '</span><button class="dc-btn dz-ghost" onclick="dcLiberar(' + i + ')">Devolver</button>'
+            : '<button class="dc-btn dc-assumir" onclick="dcAssumir(' + i + ')">Assumir este cliente</button><span class="dc-sub">fica com você por ' + DC_ASSUMIR_DIAS + ' dias</span>'; })()
+        : '<button class="dc-btn dz-ghost" onclick="dcParaEquipe(dcAlvo())">Passar para a equipe</button>') +
+      (dcConcBloq(a) ? '' : '<button class="dc-btn dz-ghost" title="Cadastrar este número como concorrente: ele some da fila de todos" onclick="dcConcMarcar(dcAlvo())">É concorrente</button>') +
+      (DC.avulso && l ? '<button class="dc-btn dz-ghost" onclick="dcSalvarAvulsoNaLista()">+ Salvar na lista ' + dcEsc(l.nome) + '</button>' : '') +
+      (DC.avulso ? '<button class="dc-btn dz-ghost" onclick="dcSairAvulso()">Voltar para a lista</button>' : '') +
+      '</div>' + dcHistHtml(a);
   } else {
-    h += '<div class="dc-vazio">' + (!DC.listas.length ? 'Cadastre uma lista em <b>Listas de clientes</b> para discar em sequência. Enquanto isso, use o teclado ao lado para um número avulso.'
+    h += '<div class="dc-vazio dz-vazio">' + (!DC.listas.length ? 'Cadastre uma lista em <b>Listas de clientes</b> para discar em sequência. Enquanto isso, use o teclado ao lado para um número avulso.'
       : !l ? 'Escolha uma lista acima para começar.' : dcFimListaHtml(l, total)) + '</div>';
   }
   h += '</div>';
   if (a) h += dcHistCardHtml(a);
-  if (l) h += '<div class="dc-sub">Lista: ' + Math.min(pos, total) + ' de ' + total + ' trabalhados · discagem automática ' + (p.auto ? 'ligada (' + p.espera + 's)' : 'desligada') + '</div>';
   h += '</div><div class="dc-col">';
-  h += '<div class="dc-card"><div class="dc-eyebrow">Meu dia no discador</div><div class="dc-stats">' +
-    '<div><b>' + r.total + '</b><span>ligações</span></div><div><b>' + r.contaMeta + '</b><span>atendidas (com WhatsApp) · ' + (r.total ? Math.round(r.contaMeta / r.total * 100) : 0) + '%</span></div>' +
-    '<div><b>' + dcDur(r.seg) + '</b><span>tempo falando</span></div><div><b>' + r.pedidos + '</b><span>pedidos fechados</span></div></div>' +
-    (meta && meta.alvo > 0 ? '<div class="dc-meta"><div class="dc-sub">Meta de ligações hoje (Rota da Meta: atendidas + contatos pelo WhatsApp): <b>' + meta.feitas + '</b> de ' + meta.alvo + '</div><div class="dc-bar"><i style="width:' + Math.min(100, Math.round(meta.feitas / meta.alvo * 100)) + '%"></i></div></div>' : '') +
-    '</div>';
+  // ── meu dia
+  var mPct = meta && meta.alvo > 0 ? Math.min(100, Math.round(meta.feitas / meta.alvo * 100)) : 0;
+  h += '<div class="dc-card dz-dia"><div class="dc-eyebrow">Meu dia no discador</div>' +
+    (meta && meta.alvo > 0 ? '<div class="dz-meta"><div class="dz-meta-n"><b>' + meta.feitas + '</b><span>de ' + meta.alvo + ' na meta de hoje</span></div><div class="dz-meta-p">' + mPct + '%</div></div><div class="dc-bar dz-bar"><i style="width:' + mPct + '%"></i></div><div class="dz-meta-s">Conta atendidas e contatos pelo WhatsApp (Rota da Meta)</div>' : '') +
+    '<div class="dz-kpis"><div><b>' + r.total + '</b><span>Ligações</span></div><div><b>' + r.contaMeta + '</b><span>Atendidas · ' + (r.total ? Math.round(r.contaMeta / r.total * 100) : 0) + '%</span></div>' +
+    '<div><b>' + dcDur(r.seg).replace(/ 00s$/, '') + '</b><span>Falando</span></div><div><b>' + r.pedidos + '</b><span>Pedidos</span></div></div></div>';
   h += '<div class="dc-card"><div class="dc-eyebrow">Retornos agendados</div>' + dcRetornosHtml() + '</div>';
   h += dcAgCardHtml();
   h += '<div class="dc-card"><div class="dc-eyebrow">Ligar para um número</div><div class="dc-row"><input id="dc-pad" inputmode="tel" placeholder="(21) 99999-9999" value="' + dcEsc(DC.pad) + '" oninput="DC.pad=this.value" style="flex:1;min-width:0"><button class="dc-btn dc-pri" onclick="dcUsarPad()">Usar</button></div>' +
-    '<div class="dc-pad">' + ['1','2','3','4','5','6','7','8','9','*','0','⌫'].map(function(k) { return '<button onclick="dcTecla(\'' + k + '\')">' + k + '</button>'; }).join('') + '</div></div>';
+    '<details class="dz-teclado"' + (DC.tecladoAberto ? ' open' : '') + ' ontoggle="DC.tecladoAberto=this.open"><summary>Teclado</summary><div class="dc-pad">' + ['1','2','3','4','5','6','7','8','9','*','0','⌫'].map(function(k) { return '<button onclick="dcTecla(\'' + k + '\')">' + k + '</button>'; }).join('') + '</div></details></div>';
   return h + '</div></div>';
 }
 
@@ -29185,7 +29310,31 @@ function dcParse(txt) {
 }
 function dcVListas() {
   var dest = DC.listaDestino && DC.listas.some(function(x) { return x.id === DC.listaDestino; }) ? DC.listaDestino : '';
-  return '<div class="dc-grid"><div class="dc-col"><div class="dc-card" id="dc-form-lista"><div class="dc-eyebrow">' + (dest ? 'Adicionar clientes' : 'Nova lista') + '</div>' +
+  var formAberto = !!(dest || DC.lForm || !DC.listas.length);
+  var posicoes = (DC.estado && DC.estado.posicoes) || {};
+  function cab(l, leitura) {
+    var feitos = Math.min(posicoes[l.id] || 0, l.contatos.length), pct = l.contatos.length ? Math.round(feitos / l.contatos.length * 100) : 0, id = dcEsc(l.id);
+    return '<summary class="dz-lsum"><span class="dz-lseta" aria-hidden="true">▸</span><div class="dz-linfo"><b>' + (l.equipe ? '👥 ' : '') + dcEsc(l.nome) + '</b>' +
+      '<div class="dc-sub">' + l.contatos.length + ' contatos' + (l.equipe ? ' · disponível para todos' : '') + (l.criadoPor ? ' · ' + dcEsc(typeof rtNome === 'function' ? rtNome(l.criadoPor) : l.criadoPor) : '') + (l.criado ? ' · ' + new Date(l.criado).toLocaleDateString('pt-BR') : '') + '</div></div>' +
+      (leitura || l.equipe ? '' : '<div class="dz-lprog" title="' + feitos + ' de ' + l.contatos.length + ' trabalhados"><div class="dc-bar"><i style="width:' + pct + '%"></i></div><span>' + pct + '%</span></div>') +
+      '<div class="dz-lacoes" onclick="event.preventDefault();event.stopPropagation()">' +
+      (leitura ? '' : '<button class="dc-btn dc-pri" onclick="dcEscolherLista(\'' + id + '\');dcSetAba(\'discar\')">Discar</button><button class="dc-btn" onclick="dcAddNaLista(\'' + id + '\')">+ Clientes</button>') +
+      (leitura || dcGestao() || (!l.equipe && l.criadoPor === currentUser) ? '<button class="dc-btn dz-ghost' + (DC.confirmDel === l.id ? ' dz-perigo' : '') + '" onclick="dcExcluirLista(\'' + id + '\')">' + (DC.confirmDel === l.id ? 'Confirmar exclusão' : 'Excluir') + '</button>' : '') +
+      '</div></summary>';
+  }
+  function bloco(l, leitura) {
+    DC.lAberta = DC.lAberta || {};
+    return '<details class="dc-lbloco dz-lcard" data-id="' + dcEsc(l.id) + '"' + (DC.lAberta[l.id] ? ' open' : '') + ' ontoggle="DC.lAberta[this.dataset.id]=this.open">' + cab(l, leitura) + '<div class="dz-lcorpo">' + dcTabelaContatos(l, leitura) + '</div></details>';
+  }
+  var h = '<div class="dz-lt">';
+  // barra de cima: pesquisa + nova lista
+  h += '<div class="dz-ltop"><div class="dc-busca-l"><span aria-hidden="true">🔍</span><input id="dc-lbusca" type="search" autocomplete="off" placeholder="Pesquisar cliente: número, nome, loja, cidade, UF ou DDD" value="' + dcEsc(DC.lbusca || '') + '" oninput="DC.lbusca=this.value;dcAplicarBusca()" onkeydown="if(event.key===\'Escape\'){this.value=\'\';DC.lbusca=\'\';dcAplicarBusca()}"><button type="button" class="dc-btn" onclick="var i=document.getElementById(\'dc-lbusca\');DC.lbusca=i.value;dcAplicarBusca();i.focus()">Pesquisar</button></div>' +
+    '<button class="dc-btn dc-pri dz-nova" onclick="DC.lForm=!DC.lForm;DC.listaDestino=\'\';dcRender()">' + (formAberto && !dest ? 'Fechar' : '+ Nova lista') + '</button></div>' +
+    '<div class="dc-sub" id="dc-lbusca-res" style="margin:-4px 0 10px"></div>';
+  // formulário (aberto só quando precisa)
+  if (formAberto) h += '<div class="dc-card dz-lform" id="dc-form-lista"><div class="dz-lform-h"><div class="dc-eyebrow" style="margin:0">' + (dest ? 'Adicionar clientes à lista' : 'Nova lista') + '</div>' +
+    (DC.listas.length ? '<button class="dc-btn dz-ghost" onclick="DC.lForm=false;DC.listaDestino=\'\';dcRender()">Cancelar</button>' : '') + '</div>' +
+    '<div class="dz-lform-g"><div>' +
     '<label class="dc-lab">Salvar em<select id="dc-ldest" onchange="DC.listaDestino=this.value;dcRender()"><option value="">Criar uma lista nova</option>' +
     DC.listas.map(function(x) { return '<option value="' + dcEsc(x.id) + '"' + (x.id === dest ? ' selected' : '') + '>Adicionar à lista ' + dcEsc(x.nome) + ' (' + x.contatos.length + ')</option>'; }).join('') + '</select></label>' +
     (dest ? '' : '<label class="dc-lab" style="margin-top:10px">Nome da lista<input id="dc-lnome" placeholder="Ex.: Reativação lojistas SP — outubro"></label>') +
@@ -29194,22 +29343,20 @@ function dcVListas() {
         CK_EQUIPE.map(function(vn) { return '<option value="' + vn + '">' + dcEsc(typeof rtNome === 'function' ? rtNome(vn) : vn) + '</option>'; }).join('') + '</select></label>' +
       '<label class="dc-lab" style="flex:1;min-width:120px">Prazo de captação (dias)<input type="number" id="dc-lprazo" min="1" max="90" value="7"></label></div>' +
       '<div class="dc-sub" style="margin-top:6px">Lista direcionada: só o vendedor escolhido disca. O que ele não levar para o funil (negociação aberta ou pedido fechado) dentro do prazo fica livre para a equipe.</div>' : '') +
-    '<label class="dc-lab" style="margin-top:10px">Um contato por linha: nome, loja e telefone separados por ponto e vírgula ou tabulação. Pode colar direto do Excel.' +
-    '<textarea id="dc-ltxt" rows="9" oninput="dcPrevia()" placeholder="Carlos Souza; Casa do Drywall; (11) 98765-4321&#10;Marina Lopes; Gesso &amp; Cia; 21 3344-5566"></textarea></label>' +
-    '<div class="dc-row" style="margin-top:10px"><label class="dc-btn" for="dc-lfile">Abrir arquivo .csv</label><input type="file" id="dc-lfile" accept=".csv,.txt" style="display:none" onchange="dcArquivo(this)"><span class="dc-sub" id="dc-prev"></span></div>' +
-    '<button class="dc-btn dc-pri" style="margin-top:12px" onclick="dcSalvarLista()">' + (dest ? 'Adicionar à lista' : 'Salvar lista') + '</button></div></div>' +
-    '<div class="dc-col">' + dcConcCardHtml() + dcDesqCardHtml() + dcDirecionadasHtml() + '<div class="dc-card"><div class="dc-eyebrow">Minhas listas</div><div class="dc-sub" style="margin-bottom:6px">Só você vê e disca as listas que anexar. Para passar um contato para todos, use o botão <b>Equipe</b> na linha dele.</div>' +
-    '<div class="dc-busca-l"><span aria-hidden="true">🔍</span><input id="dc-lbusca" type="search" autocomplete="off" placeholder="Pesquisar cliente: número, nome, loja, cidade, UF ou DDD" value="' + dcEsc(DC.lbusca || '') + '" oninput="DC.lbusca=this.value;dcAplicarBusca()" onkeydown="if(event.key===\'Escape\'){this.value=\'\';DC.lbusca=\'\';dcAplicarBusca()}"><button type="button" class="dc-btn" onclick="var i=document.getElementById(\'dc-lbusca\');DC.lbusca=i.value;dcAplicarBusca();i.focus()">Pesquisar</button></div><div class="dc-sub" id="dc-lbusca-res" style="margin:4px 0 8px"></div>' +
-    (DC.listas.length ? DC.listas.map(function(l) {
-      return '<div class="dc-lbloco"><div class="dc-it"><div style="min-width:0"><b>' + (l.equipe ? '👥 ' : '') + dcEsc(l.nome) + '</b><div class="dc-sub">' + l.contatos.length + ' contatos · ' + (l.equipe ? 'disponível para todos · ' : '') + (l.criadoPor ? dcEsc(rtNome ? rtNome(l.criadoPor) : l.criadoPor) + ' · ' : '') + (l.criado ? new Date(l.criado).toLocaleDateString('pt-BR') : '') + '</div></div>' +
-        '<div class="dc-row"><button class="dc-btn" onclick="dcEscolherLista(\'' + dcEsc(l.id) + '\');dcSetAba(\'discar\')">Discar</button><button class="dc-btn" onclick="dcAddNaLista(\'' + dcEsc(l.id) + '\')">+ Clientes</button>' +
-        (dcGestao() || (!l.equipe && l.criadoPor === currentUser) ? '<button class="dc-btn" onclick="dcExcluirLista(\'' + dcEsc(l.id) + '\')">' + (DC.confirmDel === l.id ? 'Confirmar exclusão' : 'Excluir') + '</button>' : '') + '</div></div>' + dcTabelaContatos(l) + '</div>';
-    }).join('') + '<div class="dc-vazio" id="dc-lbusca-nada" style="display:none">Nenhum cliente encontrado nas suas listas.</div>' : '<div class="dc-vazio">Nenhuma lista ainda. A lista que você salvar aqui é só sua; cada vendedor anexa e disca as próprias listas.</div>') +
-    '</div>' + (dcGestao() && (DC.outrasListas || []).length ? '<div class="dc-card"><div class="dc-eyebrow">Listas dos vendedores (só você vê)</div>' +
-      DC.outrasListas.map(function(l) {
-        return '<div class="dc-lbloco"><div class="dc-it"><div style="min-width:0"><b>' + dcEsc(l.nome) + '</b><div class="dc-sub">' + l.contatos.length + ' contatos · ' + dcEsc(typeof rtNome === 'function' ? rtNome(l.criadoPor) : (l.criadoPor || '—')) + (l.criado ? ' · ' + new Date(l.criado).toLocaleDateString('pt-BR') : '') + '</div></div>' +
-          '<div class="dc-row"><button class="dc-btn" onclick="dcExcluirLista(\'' + dcEsc(l.id) + '\')">' + (DC.confirmDel === l.id ? 'Confirmar exclusão' : 'Excluir') + '</button></div></div>' + dcTabelaContatos(l, true) + '</div>';
-      }).join('') + '</div>' : '') + '</div></div>';
+    '</div><div>' +
+    '<label class="dc-lab">Um contato por linha: nome, loja e telefone separados por ponto e vírgula ou tabulação. Pode colar direto do Excel.' +
+    '<textarea id="dc-ltxt" rows="7" oninput="dcPrevia()" placeholder="Carlos Souza; Casa do Drywall; (11) 98765-4321&#10;Marina Lopes; Gesso &amp; Cia; 21 3344-5566"></textarea></label>' +
+    '<div class="dc-row" style="margin-top:10px"><label class="dc-btn" for="dc-lfile">Abrir arquivo .csv</label><input type="file" id="dc-lfile" accept=".csv,.txt" style="display:none" onchange="dcArquivo(this)"><span class="dc-sub" id="dc-prev"></span>' +
+    '<button class="dc-btn dc-pri" style="margin-left:auto" onclick="dcSalvarLista()">' + (dest ? 'Adicionar à lista' : 'Salvar lista') + '</button></div></div></div></div>';
+  // minhas listas
+  h += '<div class="dz-lsec"><div class="dz-lsec-h"><h3>Minhas listas <span>' + DC.listas.length + '</span></h3><span class="dc-sub">Só você vê e disca as listas que anexar. Para passar um contato para todos, use <b>Equipe</b> na linha dele.</span></div>' +
+    (DC.listas.length ? DC.listas.map(function(l) { return bloco(l); }).join('') + '<div class="dc-vazio" id="dc-lbusca-nada" style="display:none">Nenhum cliente encontrado nas suas listas.</div>'
+      : '<div class="dc-vazio">Nenhuma lista ainda. A lista que você salvar aqui é só sua; cada vendedor anexa e disca as próprias listas.</div>') + '</div>';
+  if (dcGestao() && (DC.outrasListas || []).length) h += '<div class="dz-lsec"><div class="dz-lsec-h"><h3>Listas dos vendedores <span>' + DC.outrasListas.length + '</span></h3><span class="dc-sub">Só você vê.</span></div>' +
+    DC.outrasListas.map(function(l) { return bloco(l, true); }).join('') + '</div>';
+  // regras da equipe
+  h += '<div class="dz-lsec"><div class="dz-lsec-h"><h3>Regras da equipe</h3><span class="dc-sub">Valem para todos os vendedores.</span></div><div class="dz-regras">' + dcConcCardHtml() + dcDesqCardHtml() + dcDirecionadasHtml() + '</div></div>';
+  return h + '</div>';
 }
 /* ── pesquisa nas listas: número, nome, loja, cidade, UF ou DDD ── */
 var DC_DDD = { 11:'SP São Paulo',12:'SP São José dos Campos Vale do Paraíba',13:'SP Santos Baixada Santista',14:'SP Bauru',15:'SP Sorocaba',16:'SP Ribeirão Preto',17:'SP São José do Rio Preto',18:'SP Presidente Prudente',19:'SP Campinas',
@@ -29242,6 +29389,7 @@ function dcAplicarBusca() {
       tr.style.display = ok ? '' : 'none'; tr.classList.toggle('dc-achado', !!q && ok); if (ok) n++;
     });
     bl.style.display = !q || n ? '' : 'none';
+    if (q && n && bl.tagName === 'DETAILS') bl.open = true;
     if (q && n) { achou += n; listas++; }
   });
   var res = document.getElementById('dc-lbusca-res'), nada = document.getElementById('dc-lbusca-nada');
