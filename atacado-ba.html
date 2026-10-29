@@ -1167,6 +1167,10 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 318px) !important; }
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/><rect x="7" y="12" width="4" height="4" rx="1"/></svg>
     Agenda
   </button>
+  <button class="nav-btn" id="nav-tarefas" draggable="true" data-nav-id="tarefas" onclick="showTab('tarefas',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg>
+    Tarefas
+  </button>
   <button class="nav-btn" id="nav-quadro" draggable="true" data-nav-id="quadro" onclick="showTab('quadro',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="6.5" y="6.5" width="4" height="10" rx="1"/><rect x="13.5" y="6.5" width="4" height="6" rx="1"/></svg>
     Quadro
@@ -3197,6 +3201,10 @@ function pdResumoCopiar() {
 
 <div id="tab-agenda" class="tab-content">
   <div class="page-section" style="max-width:100%;"><div id="agd-root"></div></div>
+</div>
+
+<div id="tab-tarefas" class="tab-content">
+  <div class="page-section" style="max-width:100%;"><div id="tf-root"></div></div>
 </div>
 
 <div id="tab-rota" class="tab-content">
@@ -15194,6 +15202,7 @@ function navAplicarOrdemSalva(){
   });
   // abas novas que ainda não estavam na ordem salva (28/10/2026: Agenda) ficam logo depois do Discador
   if (salvo.indexOf('agenda') < 0) { var ag = nav.querySelector('.nav-btn[data-nav-id="agenda"]'), dc = nav.querySelector('.nav-btn[data-nav-id="discador"]'); if (ag && dc) dc.after(ag); }
+  if (salvo.indexOf('tarefas') < 0) { var tfb = nav.querySelector('.nav-btn[data-nav-id="tarefas"]'), agb = nav.querySelector('.nav-btn[data-nav-id="agenda"]'); if (tfb && agb) agb.after(tfb); } // 29/10/2026: Tarefas logo depois da Agenda
 }
 
 function navSetupDragDrop(){
@@ -18540,6 +18549,7 @@ function showTab(name, btn) {
   if (name === 'minhasmetas') mmInit();
   if (name === 'rota' && typeof rtInit === 'function') rtInit();
   if (name === 'discador' && typeof dcInit === 'function') dcInit();
+  if (name === 'tarefas' && typeof tfInit === 'function') tfInit();
   if (name === 'agenda' && typeof agdInit === 'function') { agdInit(); if (typeof agdNovosVistos === 'function') agdNovosVistos(); }
   if (name === 'shopping' && typeof spInit === 'function') spInit();
   if (name === 'abastecimento' && typeof abInit === 'function') abInit();
@@ -26355,7 +26365,7 @@ var AC_PAGINAS = [
   ['minhasmetas', 'Minhas Metas'], ['tabela', 'Tabela de Produtos'], ['empresa', 'Empresa'], ['pedidos', 'Pedidos'],
   ['clientes', 'Base de Clientes'], ['abastecimento', 'Pedidos abertos'], ['central', 'Central Abast.'],
   ['shopping', 'Shopping de Preços'], ['treinamentos', 'Treinamentos'], ['reconhecimento', 'Ranking'],
-  ['rota', 'Rota da Meta'], ['agenda', 'Agenda'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
+  ['rota', 'Rota da Meta'], ['agenda', 'Agenda'], ['tarefas', 'Tarefas'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
   ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['parana', 'Plano PR'], ['rotina', 'Minha Rotina']
 ];
 var AC_PERFIS = [
@@ -29886,7 +29896,8 @@ var AGD_FONTES = [
   { k: 'ret',     t: 'Retornos do Discador', cor: '#0B8043' },
   { k: 'neg',     t: 'Próximas ações do Funil', cor: '#F4511E' },
   { k: 'rotina',  t: 'Minha Rotina',        cor: '#616161' },
-  { k: 'inat',    t: 'Prazo dos inativos',  cor: '#D50000' }
+  { k: 'inat',    t: 'Prazo dos inativos',  cor: '#D50000' },
+  { k: 'tar',     t: 'Tarefas e projetos',  cor: '#2564CF' }
 ];
 var AGD_CORES = ['#1A73E8', '#039BE5', '#0B8043', '#33B679', '#F6BF26', '#F4511E', '#D50000', '#E67C73', '#8E24AA', '#7986CB', '#616161'];
 var AGD_MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -29950,7 +29961,7 @@ function agdSub(path) {
 }
 function agdOuvir() {
   if (!currentUser) return;
-  agdSub('agenda/equipe'); agdSub('discador/inativos'); agdSub('discador/inatConfig');
+  agdSub('agenda/equipe'); agdSub('discador/inativos'); agdSub('discador/inatConfig'); agdSub('tarefas'); agdSub('projetos');
   agdPessoas().concat([currentUser]).forEach(function(p) {
     agdSub('agenda/pessoal/' + p); agdSub('discador/estado/' + p + '/retornos'); agdSub('negociacoes/' + p);
     if (typeof acVe === 'function' && acVe(p, 'rotina')) agdSub('rotinaGestora/' + p + '/modelo');
@@ -30025,6 +30036,18 @@ function agdEventos(iso) {
       (por[r.vn] = por[r.vn] || []).push(Object.assign({ k: k, fim: fim }, r)); });
     Object.keys(por).forEach(function(vn) { var l = por[vn].sort(function(a, b) { return a.fim - b.fim; });
       push({ fonte: 'inat', id: vn, dono: vn, tit: pre(vn) + 'Inativos vencem: ' + l.length + ' cliente' + (l.length > 1 ? 's' : ''), ini: null, cor: '#D50000', leve: true, lista: l }); }); }
+  if (agdCalOn('tar')) { // 29/10/2026: prazos das tarefas e entregas dos projetos
+    var tm = AGD.c['tarefas'] || {}, pm = AGD.c['projetos'] || {};
+    var membrosDe = function(p) { return Array.isArray(p.membros) ? p.membros : Object.keys(p.membros || {}).map(function(k) { return p.membros[k]; }); };
+    Object.keys(tm).forEach(function(id) { var t = tm[id]; if (!t || t.feita || t.prazo !== iso) return; var r = t.dono || t.criadoPor; if (pessoas.indexOf(r) < 0) return;
+      var pj = t.projeto && pm[t.projeto];
+      push({ fonte: 'tar', id: id, dono: r, tit: pre(r) + (pj ? (pj.tit || 'Projeto') + ': ' : 'Tarefa: ') + (t.tit || ''), ini: null, cor: (pj && pj.cor) || '#2564CF', leve: true, tk: Object.assign({ id: id }, t), pj: pj ? Object.assign({ id: t.projeto }, pj) : null });
+    });
+    Object.keys(pm).forEach(function(id) { var p = pm[id]; if (!p || p.status === 'entregue' || p.entrega !== iso) return;
+      if (!pessoas.some(function(v) { return v === p.resp || membrosDe(p).indexOf(v) >= 0; })) return;
+      push({ fonte: 'tar', id: 'p_' + id, dono: p.resp, tit: 'Entrega do projeto: ' + (p.tit || 'sem nome'), ini: null, cor: p.cor || '#6D28D9', leve: false, pj: Object.assign({ id: id }, p), entrega: true });
+    });
+  }
   return out.sort(function(a, b) { return (a.ini ? 1 : 0) - (b.ini ? 1 : 0) || String(a.ini || '').localeCompare(String(b.ini || '')) || String(a.tit).localeCompare(String(b.tit)); });
 }
 
@@ -30086,7 +30109,7 @@ function agdMiniHtml() {
     h += '<button class="' + cls + '" data-dia="' + iso + '">' + dd.getDate() + '</button>'; }
   return h + '</div></div>';
 }
-function agdTemAlgo(iso) { try { return agdEventos(iso).some(function(e) { return e.fonte === 'pessoal' || e.fonte === 'equipe' || e.fonte === 'ret'; }); } catch (e) { return false; } }
+function agdTemAlgo(iso) { try { return agdEventos(iso).some(function(e) { return e.fonte === 'pessoal' || e.fonte === 'equipe' || e.fonte === 'ret' || e.fonte === 'tar'; }); } catch (e) { return false; } }
 function agdCalsHtml() {
   var ges = agdGestao(), temRot = agdPessoas().some(function(p) { return typeof acVe === 'function' && acVe(p, 'rotina'); });
   return '<div class="agd-cals"><h4>Minhas agendas</h4>' + AGD_FONTES.filter(function(f) { return f.k !== 'rotina' || temRot; }).map(function(f) {
@@ -30183,6 +30206,11 @@ function agdPopHtml() {
     var psR = agdLista(b.rodizio.pessoas), vezR = e.vez || agdRodizioDe(b, e.dia);
     h += '<div class="l"><span>↻</span><span>Nesta data: <b>' + agdEsc(agdNome(vezR)) + '</b><br>Ordem: ' + psR.map(function(v) { return v === vezR ? '<b>' + agdEsc(agdNome(v)) + '</b>' : agdEsc(agdNome(v)); }).join(' → ') + '<br><small style="color:var(--muted)">Feriados nacionais não contam</small></span></div>';
   }
+  if (e.fonte === 'tar') {
+    if (e.pj) h += '<div class="l"><span>▣</span><span>Projeto: ' + agdEsc(e.pj.tit || 'sem nome') + (e.entrega ? ' · ' + agdEsc((typeof TF_STL !== 'undefined' && TF_STL[e.pj.status]) || '') : '') + '</span></div>';
+    if (e.tk) { var pT = Array.isArray(e.tk.passos) ? e.tk.passos : []; h += '<div class="l"><span>👤</span><span>' + agdEsc(agdNome(e.tk.dono || e.tk.criadoPor)) + (e.tk.criadoPor && e.tk.criadoPor !== (e.tk.dono || e.tk.criadoPor) ? ' · passada por ' + agdEsc(agdNome(e.tk.atribuidoPor || e.tk.criadoPor)) : '') + '</span></div>' +
+      (pT.length ? '<div class="l"><span>☑</span><span>' + pT.filter(function(x) { return x && x.feito; }).length + ' de ' + pT.length + ' etapas</span></div>' : '') + (e.tk.nota ? '<div class="l"><span>≡</span><span style="white-space:pre-wrap">' + agdEsc(String(e.tk.nota).slice(0, 300)) + '</span></div>' : ''); }
+  }
   var fonte = AGD_FONTES.find(function(f) { return f.k === e.fonte; });
   h += '<div class="l"><span>▣</span><span>' + agdEsc(e.fonte === 'pessoal' ? 'Agenda de ' + agdNome(e.dono) : fonte.t) + (b.criadoPor && b.criadoPor !== e.dono ? ' · criado por ' + agdEsc(agdNome(b.criadoPor)) : '') + '</span></div>';
   if (b.cliente || b.tel) h += '<div class="l"><span>☎</span><span>' + agdEsc(b.cliente || '') + (b.tel ? (b.cliente ? ' · ' : '') + agdEsc(typeof dcTel === 'function' ? dcTel(b.tel) : b.tel) : '') + '</span></div>';
@@ -30197,6 +30225,7 @@ function agdPopHtml() {
   if (e.fonte === 'neg') ac += '<button class="agd-btn pri" data-a="ir-neg">Abrir no Funil</button>';
   if (e.fonte === 'inat') ac += '<button class="agd-btn pri" data-a="ir-inat">' + (e.dono === currentUser ? 'Ligar para os inativos' : 'Ver inativos') + '</button>';
   if (e.fonte === 'rotina' && e.dono === currentUser) ac += '<button class="agd-btn" data-a="ir-rotina">Abrir Minha Rotina</button>';
+  if (e.fonte === 'tar') ac += '<button class="agd-btn pri" data-a="ir-tar">' + (e.entrega ? 'Abrir projeto' : 'Abrir tarefa') + '</button>';
   if ((e.fonte === 'pessoal' || e.fonte === 'equipe') && b.tel && e.dono === currentUser) ac += '<button class="agd-btn pri" data-a="ir-tel">Ligar pelo Discador</button>';
   if (AGD.pop.confirma === 'excluir') ac = b.rep ? '<button class="agd-btn dng" data-a="exc-um">Excluir só este dia</button><button class="agd-btn dng" data-a="exc-todos">Excluir todos</button><button class="agd-btn" data-a="exc-nao">Cancelar</button>'
     : '<button class="agd-btn dng" data-a="exc-todos">Excluir</button><button class="agd-btn" data-a="exc-nao">Cancelar</button>';
@@ -30379,6 +30408,7 @@ function agdAcao(a, el, ev) {
     case 'ir-neg': if (e) { agdIrNeg(e.n); return; } break;
     case 'ir-inat': if (e) { agdIrInat(e); return; } break;
     case 'ir-rotina': AGD.pop = null; agdIrAba('rotina'); return;
+    case 'ir-tar': if (e) { AGD.pop = null; if (typeof TF !== 'undefined') { if (e.entrega || !e.tk) { TF.vista = 'proj:' + e.pj.id; TF.projAba = 'etapas'; TF.sel = null; } else { TF.vista = e.tk.projeto ? 'proj:' + e.tk.projeto : 'planejado'; TF.projAba = 'etapas'; TF.sel = e.tk.id; } } agdIrAba('tarefas'); return; } break;
     case 'ir-tel': if (e) { agdIrTel(e.base); return; } break;
     case 'cancelar': AGD.form = null; break;
     case 'fundo-form': if (ev.target !== el) return; AGD.form = null; break;
@@ -30400,6 +30430,7 @@ function agdPodeMover(e) {
   if (e.base && e.base.rep === 'rodizio') return false;
   if (e.fonte === 'pessoal' || e.fonte === 'equipe') return agdPodeEditar(e);
   if (e.fonte === 'ret' || e.fonte === 'neg') return e.dono === currentUser || agdGestao();
+  if (e.fonte === 'tar' && typeof tfEdita === 'function') return e.entrega ? !!(TF.proj[e.pj.id] && tfProjEdita(TF.proj[e.pj.id])) : tfEdita(TF.tar[e.tk.id] || e.tk);
   return false;
 }
 function agdMvAttr(e) { return agdPodeMover(e) ? ' data-mv="1"' : ''; }
@@ -30432,6 +30463,11 @@ function agdMover(e, novo) {
     novo.ini = null;
     pr = dbRef('negociacoes/' + e.dono + '/' + k).update({ proximaData: novo.data });
     txt = 'Próxima ação do Funil para ' + quando();
+  } else if (e.fonte === 'tar') {
+    novo.ini = null;
+    var updT = { editadoEm: Date.now(), editadoPor: currentUser };
+    if (e.entrega) { updT.entrega = novo.data; pr = dbRef('projetos/' + e.pj.id).update(updT); txt = 'Entrega do projeto para ' + quando(); }
+    else { updT.prazo = novo.data; pr = dbRef('tarefas/' + e.tk.id).update(updT); txt = 'Tarefa para ' + quando(); }
   } else { agdRender(); return; }
   Promise.resolve(pr).then(function() { agdAviso(txt); }).catch(function(x) { agdAviso('Não salvou: ' + (x && x.message || x)); agdRender(); });
   agdRender();
@@ -30955,5 +30991,1001 @@ window.addEventListener('resize', function() { if (AGD.pop) agdPosPop(); });
   .fx-prosp td.obs,.fx-prosp th:nth-child(4){display:none}
 }
 </style>
+<style>
+/* ══ TAREFAS E PROJETOS (29/10/2026) ══ */
+#tf-root{--tf-azul:#2564CF;--tf-ok:#22A06B;--tf-info:#3B82F6;--tf-warn:#D97706;--tf-bad:#E5484D;color:var(--txt);font-size:14px}
+.tf{display:grid;grid-template-columns:250px minmax(0,1fr);background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);min-height:calc(100vh - 130px);overflow:clip;position:relative}
+.tf.com-det{grid-template-columns:250px minmax(0,1fr) 370px}
+/* lado */
+.tf-lado{background:var(--surface-2);border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tf-busca{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:0 10px;height:36px;color:var(--muted)}
+#tf-root .tf-busca input{border:none;background:none;box-shadow:none;outline:none;font:inherit;font-size:13.5px;color:var(--txt);width:100%;padding:0;height:34px}
+.tf-nav{display:flex;flex-direction:column;gap:1px}
+.tf-li{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;color:var(--txt);font:inherit;font-size:14px;padding:8px 10px;border-radius:6px;cursor:pointer;text-align:left;position:relative}
+.tf-li .ic{color:var(--c);display:inline-flex;width:20px;justify-content:center;flex:none}
+.tf-li .tx{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tf-li em{font-style:normal;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tf-li em.pc{font-size:11.5px}
+.tf-li:hover{background:var(--surface-3)}
+.tf-li.on{background:color-mix(in srgb,var(--c) 14%,var(--surface));font-weight:600}
+.tf-li.on::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--c)}
+.tf-li.sub .tx{color:var(--muted);font-size:13px}
+.tf-dot{width:7px;height:7px;border-radius:50%;background:var(--tf-bad);flex:none}
+.tf-pdot{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--c);flex:none}
+.tf-sep{height:1px;background:var(--line);margin:8px 6px}
+.tf-grp{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 2px 10px}
+.tf-grp-t{display:flex;align-items:center;gap:8px;font:inherit;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border:none;background:none;padding:4px 0;cursor:default}
+button.tf-grp-t{cursor:pointer}button.tf-grp-t:hover,button.tf-grp-t.on{color:var(--txt)}
+.tf-grp-t svg{width:15px;height:15px}
+.tf-mini{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:none;background:none;color:var(--muted);border-radius:6px;cursor:pointer;flex:none;text-decoration:none;font:inherit;font-size:11px}
+.tf-mini:hover{background:var(--surface-3);color:var(--txt)}
+.tf-mini svg{width:16px;height:16px}
+.tf-novalista{display:flex;align-items:center;gap:10px;padding:4px 10px;color:var(--tf-azul)}
+.tf-novalista svg{width:18px;height:18px;flex:none}
+#tf-root .tf-novalista input{border:none;background:none;box-shadow:none;font:inherit;font-size:14px;color:var(--txt);padding:6px 0;width:100%}
+#tf-root .tf-novalista input::placeholder{color:var(--tf-azul)}
+/* principal */
+.tf-main{padding:22px 30px 40px;min-width:0;background:var(--bg)}
+.tf-cab{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.tf-cab-t{flex:1;min-width:200px}
+.tf-cab h2{margin:0;font-size:26px;font-weight:700;color:var(--c);display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+.tf-cab h2 .ic svg{width:24px;height:24px}
+.tf-cab p{margin:3px 0 0;color:var(--muted);font-size:13.5px}
+.tf-cab p::first-letter{text-transform:uppercase}
+.tf-cab-a{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tf-menu-bt{display:none;width:36px;height:36px;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:8px;cursor:pointer;align-items:center;justify-content:center;flex:none}
+.tf-bt{display:inline-flex;align-items:center;gap:6px;height:36px;font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:8px;padding:0 14px;cursor:pointer;white-space:nowrap}
+.tf-bt:hover{background:var(--surface-3)}
+.tf-bt.pri{background:var(--tf-azul);border-color:var(--tf-azul);color:#fff}
+.tf-bt.pri:hover{filter:brightness(1.08);background:var(--tf-azul)}
+.tf-bt.sm{height:30px;padding:0 10px;font-size:12.5px}
+.tf-bt.dng{color:var(--tf-bad);border-color:color-mix(in srgb,var(--tf-bad) 45%,var(--line))}
+.tf-bt svg{width:15px;height:15px}
+#tf-root .tf-sel{font:inherit;font-size:13px;height:36px;border:1px solid var(--line);background:var(--surface);color:var(--txt);border-radius:8px;padding:0 10px;cursor:pointer}
+.tf-add{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.12);padding:6px 6px 6px 14px;margin-bottom:14px}
+.tf-add-ic{color:var(--tf-azul);display:inline-flex}
+#tf-root .tf-add input#tf-add,#tf-root .tf-add input#tf-etapa-nova{flex:1;min-width:0;border:none;background:none;box-shadow:none;font:inherit;font-size:14.5px;color:var(--txt);padding:8px 0}
+#tf-root .tf-add input#tf-add::placeholder,#tf-root .tf-add input#tf-etapa-nova::placeholder{color:var(--tf-azul)}
+#tf-root .tf-add-data{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);border-radius:6px;padding:5px 6px;height:32px}
+#tf-root .tf-add .tf-sel{height:32px;max-width:190px}
+.tf-itens{display:flex;flex-direction:column;gap:3px;margin-bottom:6px}
+.tf-it{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;background:var(--surface);border-radius:8px;padding:10px 12px 10px 14px;box-shadow:0 1px 2px rgba(0,0,0,.1);cursor:pointer;transition:background .1s}
+.tf-it:hover{background:color-mix(in srgb,var(--surface-3) 60%,var(--surface))}
+.tf-it.sel{background:color-mix(in srgb,var(--tf-azul) 12%,var(--surface))}
+.tf-it-t{font-size:14.5px;line-height:1.35;overflow-wrap:anywhere}
+.tf-it.feita .tf-it-t{text-decoration:line-through;color:var(--muted)}
+.tf-it-m{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:3px;font-size:12px;color:var(--muted)}
+.tf-it-m>b{font-weight:400;color:var(--faint)}
+.tf-it-m span{display:inline-flex;align-items:center;gap:4px}
+.tf-it-m svg{width:13px;height:13px}
+.tf-it-m .atr{color:var(--tf-bad);font-weight:600}
+.tf-it-m .hoje{color:var(--tf-azul);font-weight:600}
+.tf-it-m .pj{color:var(--c);font-weight:600}
+.tf-it-m .quem{color:var(--txt-2)}
+.tf-nova{font-style:normal;font-size:10.5px;font-weight:700;color:#fff;background:var(--tf-bad);border-radius:4px;padding:1px 5px;margin-right:6px;vertical-align:2px}
+.tf-av{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--c);color:#fff;font-size:10px;font-weight:700;flex:none}
+.tf-av.sm{width:18px;height:18px;font-size:8.5px}
+.tf-chk{width:20px;height:20px;border-radius:50%;border:2px solid var(--muted);background:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;color:transparent;flex:none;transition:all .12s}
+.tf-chk:hover:not([disabled]){color:var(--muted)}
+.tf-chk.on{background:var(--tf-azul);border-color:var(--tf-azul);color:#fff}
+.tf-chk.on:hover{color:#fff}
+.tf-chk[disabled]{opacity:.45;cursor:default}
+.tf-chk.lg{width:22px;height:22px}
+.tf-chk.sm{width:17px;height:17px}
+.tf-chk.sm svg{width:10px;height:10px}
+.tf-est{border:none;background:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;display:inline-flex}
+.tf-est:hover:not([disabled]){color:var(--tf-azul)}
+.tf-est.on{color:var(--tf-azul)}
+.tf-est[disabled]{opacity:.4;cursor:default}
+.tf-gr{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;margin:14px 0 6px;color:var(--txt)}
+.tf-gr em{font-style:normal;font-weight:500;color:var(--muted);font-size:13px}
+.tf-gr.atr{color:var(--tf-bad)}
+.tf-gr .tf-atr{font-size:12px;font-weight:600;color:var(--tf-bad);background:color-mix(in srgb,var(--tf-bad) 14%,var(--surface));border-radius:999px;padding:1px 8px}
+.tf-concl{display:inline-flex;align-items:center;gap:8px;border:none;background:var(--surface);color:var(--txt);font:inherit;font-size:13.5px;font-weight:600;padding:7px 12px;border-radius:6px;cursor:pointer;margin:14px 0 6px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tf-concl em{font-style:normal;color:var(--muted);font-weight:500}
+.tf-concl .sv{display:inline-flex;transition:transform .15s}.tf-concl .sv.ab{transform:rotate(90deg)}
+.tf-vazio{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;color:var(--muted);padding:48px 16px;font-size:13.5px}
+.tf-vazio b{color:var(--txt);font-size:15px}
+.tf-vazio.pq{padding:14px 8px;align-items:flex-start;text-align:left}
+/* detalhes */
+.tf-det{background:var(--surface-2);border-left:1px solid var(--line);padding:10px 12px 16px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:calc(100vh - 130px);position:sticky;top:0}
+.tf-det-top{display:flex;justify-content:flex-end}
+.tf-x{width:32px;height:32px;border:none;background:none;color:var(--muted);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.tf-x:hover{background:var(--surface-3);color:var(--txt)}
+.tf-card{background:var(--surface);border-radius:8px;border:1px solid var(--line);overflow:hidden}
+.tf-det-tit{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:flex-start;padding:12px 10px 8px 14px}
+.tf-det-tit .tf-chk{margin-top:4px}
+#tf-root .tf-det-tit textarea{border:none;background:none;box-shadow:none;resize:none;font:inherit;font-size:18px;font-weight:600;color:var(--txt);padding:2px 0;min-height:28px;overflow:hidden;line-height:1.35}
+.tf-passos{padding:0 10px 8px 14px;display:flex;flex-direction:column}
+.tf-passo{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;border-top:1px solid var(--line);padding:4px 0}
+.tf-passo.feito input{text-decoration:line-through;color:var(--muted)}
+.tf-passo.novo{grid-template-columns:auto 1fr;color:var(--tf-azul)}
+.tf-passo.novo svg{width:17px;height:17px}
+#tf-root .tf-passo input{border:none;background:none;box-shadow:none;font:inherit;font-size:13.5px;color:var(--txt);padding:7px 0;width:100%}
+#tf-root .tf-passo.novo input::placeholder{color:var(--tf-azul)}
+.tf-op{display:flex;align-items:center;gap:12px;width:100%;border:none;background:none;color:var(--txt-2);font:inherit;font-size:13.5px;padding:11px 14px;cursor:pointer;text-align:left;min-height:44px}
+.tf-op+.tf-op{border-top:1px solid var(--line)}
+.tf-op:hover{background:var(--surface-3)}
+.tf-op>svg{color:var(--muted);flex:none}
+.tf-op>span{flex:1}
+.tf-op.on{color:var(--tf-azul);font-weight:600}.tf-op.on>svg{color:var(--tf-azul)}
+.tf-op i{display:inline-flex;color:var(--muted)}
+#tf-root .tf-op input,#tf-root .tf-op select{font:inherit;font-size:13px;border:1px solid transparent;background:none;color:var(--txt);border-radius:6px;padding:4px 6px;max-width:190px;cursor:pointer;box-shadow:none}
+#tf-root .tf-op input:hover,#tf-root .tf-op select:hover{border-color:var(--line)}
+#tf-root .tf-nota{width:100%;box-sizing:border-box;border:none;background:none;box-shadow:none;resize:vertical;font:inherit;font-size:13.5px;color:var(--txt);padding:12px 14px;min-height:110px}
+.tf-det-rod{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);padding:6px 4px 0;margin-top:auto}
+/* projetos: lista estilo Ateliê */
+.tf-pkpi{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:14px}
+.tf-pkpi>div:not(.tf-pfil){display:flex;align-items:baseline;gap:6px}
+.tf-pkpi b{font-size:20px;font-variant-numeric:tabular-nums}
+.tf-pkpi span{font-size:12.5px;color:var(--muted)}
+.tf-pkpi .atr b{color:var(--tf-bad)}
+.tf-pfil,.tf-seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-left:auto}
+.tf-seg{margin-left:0}
+.tf-pfil button,.tf-seg button{display:inline-flex;align-items:center;gap:6px;border:none;background:var(--surface);color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;padding:7px 12px;cursor:pointer}
+.tf-pfil button+button,.tf-seg button+button{border-left:1px solid var(--line)}
+.tf-pfil button.on,.tf-seg button.on{background:color-mix(in srgb,var(--tf-azul) 13%,var(--surface));color:var(--tf-azul)}
+.tf-plist{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px 16px}
+.tf-prow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;padding:14px 4px;border-top:1px solid var(--line);cursor:pointer;align-items:center}
+.tf-prow:first-child{border-top:none}
+.tf-prow:hover{background:color-mix(in srgb,var(--surface-3) 50%,var(--surface))}
+.tf-prow .t{font-weight:600;font-size:15px;display:flex;align-items:center;gap:9px;min-width:0;overflow-wrap:anywhere}
+.tf-prow .s{color:var(--muted);font-size:13px;grid-column:1;min-width:0}
+.tf-prow .s .atr{color:var(--tf-bad);font-weight:600}
+.tf-prow .tf-prog{margin-top:7px;max-width:340px}
+.tf-prow .r{grid-row:1/3;grid-column:2;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.tf-prow .r small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tf-prog{height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+.tf-prog span{display:block;height:100%;background:var(--tf-ok);border-radius:3px;transition:width .3s}
+.tf-prog.lg{height:8px;margin-bottom:12px}
+.tf-pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;background:var(--surface-3);color:var(--muted)}
+.tf-pill.andamento{background:color-mix(in srgb,var(--tf-info) 16%,var(--surface));color:var(--tf-info)}
+.tf-pill.revisao{background:color-mix(in srgb,var(--tf-warn) 18%,var(--surface));color:var(--tf-warn)}
+.tf-pill.entregue{background:color-mix(in srgb,var(--tf-ok) 17%,var(--surface));color:var(--tf-ok)}
+/* quadro */
+.tf-board{display:grid;grid-template-columns:repeat(4,minmax(170px,1fr));gap:10px;overflow-x:auto;padding-bottom:6px}
+.tf-bcol{background:var(--surface-2);border:1px dashed transparent;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:8px;min-height:320px;transition:background .12s}
+.tf-bcol.over{border-color:var(--tf-azul);background:color-mix(in srgb,var(--tf-azul) 8%,var(--surface-2))}
+.tf-bcol-h{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 4px}
+.tf-bcol-h em{font-style:normal;font-size:12.5px;color:var(--muted)}
+.tf-pcard{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tf-pcard:hover{box-shadow:0 4px 14px rgba(0,0,0,.14)}
+.tf-pcard.arr{opacity:.5}
+.tf-pcard b{font-size:14px;line-height:1.3}
+.tf-pcard small{font-size:11.5px;color:var(--muted)}
+.tf-pmeta{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted);align-items:center}
+.tf-pmeta span{display:inline-flex;align-items:center;gap:4px}
+.tf-pmeta svg{width:13px;height:13px}
+.tf-pmeta .atr{color:var(--tf-bad);font-weight:600}
+.tf-bvazio{font-size:12px;color:var(--faint);text-align:center;padding:18px 6px}
+/* página do projeto */
+.tf-pcab{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;border-left:5px solid var(--c);padding-left:12px}
+.tf-pcab-l{display:flex;align-items:center;gap:8px;flex:none}
+.tf-voltar{display:inline-flex;align-items:center;gap:2px;border:none;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:6px 8px 6px 2px;border-radius:6px}
+.tf-voltar:hover{color:var(--txt);background:var(--surface-3)}
+.tf-voltar svg{width:16px;height:16px}
+#tf-root .tf-ptit{flex:1;min-width:220px;border:1px solid transparent;background:none;box-shadow:none;font:inherit;font-size:24px;font-weight:700;color:var(--txt);padding:4px 8px;border-radius:8px;letter-spacing:-.01em}
+#tf-root .tf-ptit:hover:not([disabled]),#tf-root .tf-ptit:focus{border-color:var(--line);background:var(--surface)}
+#tf-root .tf-pst{font:inherit;font-size:13px;font-weight:600;border:none;border-radius:999px;padding:6px 12px;cursor:pointer;background:var(--surface-3);color:var(--muted)}
+#tf-root .tf-pst.andamento{background:color-mix(in srgb,var(--tf-info) 16%,var(--surface));color:var(--tf-info)}
+#tf-root .tf-pst.revisao{background:color-mix(in srgb,var(--tf-warn) 18%,var(--surface));color:var(--tf-warn)}
+#tf-root .tf-pst.entregue{background:color-mix(in srgb,var(--tf-ok) 17%,var(--surface));color:var(--tf-ok)}
+.tf-pform{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.tf-f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--muted);font-weight:500;min-width:0}
+.tf-f.full{grid-column:1/-1}
+#tf-root .tf-f input,#tf-root .tf-f select{font:inherit;font-size:13.5px;height:36px;border:1px solid var(--line);background:var(--surface-2);color:var(--txt);border-radius:8px;padding:0 10px;width:100%;box-sizing:border-box}
+#tf-root .tf-f input.atr{color:var(--tf-bad);border-color:color-mix(in srgb,var(--tf-bad) 50%,var(--line))}
+.tf-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tf-chip{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 6px 3px 4px;font-size:13px;color:var(--txt)}
+.tf-chip button{border:none;background:none;color:var(--muted);cursor:pointer;display:inline-flex;padding:0}
+.tf-chip button svg{width:13px;height:13px}
+#tf-root .tf-f .tf-chip-add,#tf-root .tf-chip-add{width:auto;height:30px;font:inherit;font-size:12.5px;border:1px dashed var(--line-strong);background:none;color:var(--muted);border-radius:999px;padding:0 10px;cursor:pointer;width:auto}
+.tf-ptabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tf-ptabs button{border:none;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--muted);padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tf-ptabs button[aria-selected="true"]{color:var(--txt);border-bottom-color:var(--tf-azul)}
+.tf-ptabs .cnt{font-size:11.5px;background:var(--surface-3);border-radius:999px;padding:1px 7px;color:var(--muted);margin-left:2px}
+.tf-sect{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.tf-sect h3{margin:0 0 10px;font-size:15px;font-weight:700;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tf-sect h3 span{font-size:13px;font-weight:400;color:var(--muted)}
+#tf-root .tf-pdesc{width:100%;box-sizing:border-box;min-height:80px;font:inherit;font-size:13.5px;border:1px solid var(--line);background:var(--surface-2);color:var(--txt);border-radius:8px;padding:10px 12px;resize:vertical}
+.tf-etapas{display:flex;flex-direction:column;gap:14px}
+.tf-ebox{display:flex;flex-direction:column;gap:6px}
+.tf-erow{display:grid;grid-template-columns:auto minmax(0,1fr) 120px 145px auto auto;gap:8px;align-items:center}
+#tf-root .tf-erow input,#tf-root .tf-erow select,#tf-root .tf-srow input{font:inherit;font-size:14px;height:36px;border:1px solid var(--line);background:var(--surface-2);color:var(--txt);border-radius:8px;padding:0 10px;width:100%;box-sizing:border-box}
+#tf-root .tf-erow input.tx{font-weight:600}
+#tf-root .tf-erow select.quem{font-size:13px;padding:0 6px}
+#tf-root .tf-erow input.dt{font-size:13px}
+#tf-root .tf-erow input.dt.atr{color:var(--tf-bad);border-color:color-mix(in srgb,var(--tf-bad) 50%,var(--line))}
+.tf-erow.feito input.tx{text-decoration:line-through;color:var(--muted)}
+.tf-srow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;margin-left:30px;padding-left:12px;border-left:2px solid var(--line)}
+#tf-root .tf-srow input{height:32px;font-size:13.5px}
+.tf-srow.feito input{text-decoration:line-through;color:var(--muted)}
+.tf-addsub{align-self:flex-start;margin-left:42px;border:none;background:none;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;padding:2px 6px;border-radius:6px}
+.tf-addsub:hover{color:var(--tf-azul);background:var(--surface-3)}
+.tf-add.et{margin:14px 0 0;box-shadow:none;border:1px dashed var(--line-strong);background:none}
+.tf-links{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.tf-lrow{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1.4fr) auto auto;gap:8px;align-items:center;color:var(--muted)}
+#tf-root .tf-lrow input{font:inherit;font-size:13.5px;height:36px;border:1px solid var(--line);background:var(--surface-2);color:var(--txt);border-radius:8px;padding:0 10px;width:100%;box-sizing:border-box}
+.tf-drop{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px dashed var(--line-strong);border-radius:10px;padding:22px 12px;cursor:pointer;color:var(--muted);text-align:center;font-size:13.5px}
+.tf-drop svg{width:22px;height:22px}
+.tf-drop u{color:var(--tf-azul)}
+.tf-drop small{font-size:12px;color:var(--faint)}
+.tf-drop:hover,.tf-drop.on{border-color:var(--tf-azul);background:color-mix(in srgb,var(--tf-azul) 7%,var(--surface))}
+.tf-upmsg{font-size:12.5px;color:var(--muted);margin:6px 0}
+.tf-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:12px}
+.tf-gi{border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;background:var(--surface)}
+.tf-gi .th{height:116px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden}
+.tf-gi .th img{width:100%;height:100%;object-fit:cover}
+.tf-gi .ext{font-size:18px;font-weight:800;text-transform:uppercase;color:var(--muted);letter-spacing:.04em}
+.tf-gi .meta{padding:8px 10px 4px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tf-gi .meta b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tf-gi .meta small{font-size:11.5px;color:var(--muted)}
+.tf-gi .acts{display:flex;gap:2px;padding:4px 6px 8px}
+.tf-gi .acts button{display:inline-flex;align-items:center;gap:4px;border:none;background:none;font:inherit;font-size:12px;font-weight:600;color:var(--tf-azul);cursor:pointer;padding:4px 6px;border-radius:6px}
+.tf-gi .acts button:hover{background:var(--surface-3)}
+.tf-gi .acts button+button{color:var(--muted)}
+.tf-prod{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:4px 2px}
+/* telas menores */
+.tf-veu{display:none;position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:9998}
+@media (max-width:1180px){
+  .tf.com-det{grid-template-columns:250px minmax(0,1fr)}
+  .tf-det{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);max-height:none;z-index:9999;box-shadow:-12px 0 40px rgba(0,0,0,.3)}
+  .tf-veu.d{display:block}
+}
+@media (max-width:860px){.tf-veu.m{display:block}}
+@media (max-width:860px){
+  .tf,.tf.com-det{grid-template-columns:minmax(0,1fr);min-height:0}
+  .tf-lado{display:none}
+  .tf.menu-on .tf-lado{display:flex;position:fixed;top:0;left:0;bottom:0;width:min(300px,86vw);z-index:9999;overflow-y:auto;box-shadow:12px 0 40px rgba(0,0,0,.3)}
+  .tf-menu-bt{display:inline-flex}
+  .tf-main{padding:14px 12px 30px}
+  .tf-cab h2{font-size:22px}
+  .tf-pform{grid-template-columns:1fr 1fr}
+  .tf-erow{grid-template-columns:auto minmax(0,1fr) auto auto}
+  #tf-root .tf-erow select.quem,#tf-root .tf-erow input.dt{grid-column:2/3}
+  #tf-root .tf-erow input.dt{grid-row:3}
+  .tf-srow{margin-left:12px}
+  .tf-addsub{margin-left:24px}
+  .tf-lrow{grid-template-columns:auto minmax(0,1fr) auto auto}
+  #tf-root .tf-lrow input[data-lf="url"]{grid-column:2/3;grid-row:2}
+  .tf-add{flex-wrap:wrap}
+  #tf-root .tf-add input#tf-add{flex-basis:calc(100% - 40px)}
+  .tf-pfil{margin-left:0}
+}
+</style>
+<script>
+/* ══ TAREFAS E PROJETOS (29/10/2026) — tarefas no estilo do Microsoft To Do e projetos no estilo do CRM Ateliê Web ══
+   Firebase: tarefas/{id} · projetos/{id} · tarefasListas/{VN}/{id} · tarefasAnexos/{projeto}/{anexo} = {data}
+   Tarefa: tit, nota, feita, prazo, lembrete, rep, imp, meuDia{VN:data}, dono (responsável), lista, projeto, passos[{id,t,feito}]
+   Projeto: tit, desc, status (iniciar|andamento|revisao|entregue), resp, membros[], inicio, entrega, links[], anexos{}
+   As etapas de um projeto são tarefas do projeto (cada uma com responsável e prazo) e as sub-etapas são os passos da tarefa.
+   Os prazos entram na Agenda (fonte "Tarefas e projetos"). */
+var TF = { ligado: null, tar: {}, proj: {}, listas: {}, vista: null, sel: null, projModo: 'lista', projFiltro: 'ativos', projAba: 'etapas', eqFiltro: 'todos',
+  concl: {}, busca: '', menu: false, pend: false, arr: null, anx: {}, novas: {}, refs: [], foco: null, armado: null };
+var TF_ST = [['iniciar', 'A iniciar'], ['andamento', 'Em andamento'], ['revisao', 'Em revisão'], ['entregue', 'Entregue']];
+var TF_STL = {}; TF_ST.forEach(function(s) { TF_STL[s[0]] = s[1]; });
+var TF_REP = [['', 'Não se repete'], ['dia', 'Todo dia'], ['uteis', 'Dias úteis (seg a sex)'], ['semana', 'Toda semana'], ['mes', 'Todo mês']];
+var TF_CORES = ['#2564CF', '#0B7A75', '#8E24AA', '#C2410C', '#B5179E', '#2E7D32', '#1F6FEB', '#A16207'];
+var TF_IC = (function() {
+  var s = function(p, w) { return '<svg viewBox="0 0 24 24" width="' + (w || 18) + '" height="' + (w || 18) + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; };
+  return {
+    sol: s('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+    estrela: s('<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>'),
+    estrelaCheia: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg>',
+    cal: s('<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/>'),
+    pessoa: s('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+    casa: s('<path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'),
+    equipe: s('<circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.2A5.5 5.5 0 0 1 22 19.5"/>'),
+    enviar: s('<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>'),
+    lista: s('<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>'),
+    pasta: s('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+    mais: s('<path d="M12 5v14M5 12h14"/>'),
+    x: s('<path d="M6 6l12 12M18 6L6 18"/>'),
+    sino: s('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'),
+    repetir: s('<path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
+    nota: s('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>'),
+    lixo: s('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'),
+    clipe: s('<path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>'),
+    link: s('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>'),
+    busca: s('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>', 16),
+    menu: s('<path d="M3 6h18M3 12h18M3 18h18"/>'),
+    quadro: s('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/>', 16),
+    linhas: s('<path d="M3 6h18M3 12h18M3 18h18"/>', 16),
+    voltar: s('<path d="M15 18l-6-6 6-6"/>'),
+    seta: s('<path d="M9 18l6-6-6-6"/>', 14),
+    abrir: s('<path d="M15 3h6v6M10 14L21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>', 15),
+    baixar: s('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>', 15),
+    ok: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>'
+  };
+})();
+var TF_SMART = [
+  { k: 'meudia', t: 'Meu dia', ic: 'sol', cor: '#2564CF' },
+  { k: 'importante', t: 'Importante', ic: 'estrela', cor: '#C2185B' },
+  { k: 'planejado', t: 'Planejado', ic: 'cal', cor: '#0B7A75' },
+  { k: 'atribuidas', t: 'Atribuídas a mim', ic: 'pessoa', cor: '#2E7D32' },
+  { k: 'tarefas', t: 'Tarefas', ic: 'casa', cor: '#2564CF' }
+];
+
+/* ── utilitários ── */
+function tfEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+function tfIso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function tfHoje() { return tfIso(new Date()); }
+function tfData(iso) { var p = String(iso || '').slice(0, 10).split('-'); return new Date(+p[0], (+p[1] || 1) - 1, +p[2] || 1); }
+function tfSoma(iso, n) { var d = tfData(iso); d.setDate(d.getDate() + n); return tfIso(d); }
+function tfLs(k, d) { try { var v = localStorage.getItem('fgvba_tf_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+function tfLsSet(k, v) { try { localStorage.setItem('fgvba_tf_' + k, JSON.stringify(v)); } catch (e) {} }
+function tfId(p) { return (p || 't') + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function tfArr(x) { if (!x) return []; if (Array.isArray(x)) return x.filter(Boolean); return Object.keys(x).map(function(k) { return x[k]; }).filter(Boolean); }
+function tfNome(vn) { return (typeof rtNome === 'function' ? rtNome(vn) : vn) || vn || ''; }
+function tfPrimeiro(vn) { return String(tfNome(vn)).split(/\s+/)[0]; }
+function tfIniciais(vn) { return String(tfNome(vn) || '?').split(/\s+/).map(function(x) { return x[0]; }).slice(0, 2).join('').toUpperCase(); }
+function tfCorDe(s) { var h = 0; String(s || '').split('').forEach(function(c) { h = (h * 31 + c.charCodeAt(0)) | 0; }); return TF_CORES[Math.abs(h) % TF_CORES.length]; }
+function tfGestao() { return !!currentUser && typeof semPaineisGestao === 'function' && !semPaineisGestao(currentUser); }
+function tfAviso(m) { if (typeof agdAviso === 'function') agdAviso(m); else alert(m); }
+function tfDataTxt(iso, longo) {
+  if (!iso) return ''; var h = tfHoje();
+  if (iso === h) return 'Hoje'; if (iso === tfSoma(h, 1)) return 'Amanhã'; if (iso === tfSoma(h, -1)) return 'Ontem';
+  var d = tfData(iso), sem = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getDay()];
+  return (longo ? sem + ', ' : '') + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + (d.getFullYear() !== new Date().getFullYear() ? '/' + String(d.getFullYear()).slice(2) : '');
+}
+function tfPessoas() {
+  var me = currentUser;
+  return Object.keys(vendedores || {}).filter(function(k) { var v = vendedores[k]; return v && !v.bloqueado; })
+    .sort(function(a, b) { return (a === me ? -1 : b === me ? 1 : 0) || String(tfNome(a)).localeCompare(String(tfNome(b)), 'pt-BR'); });
+}
+
+/* ── permissões ── */
+function tfResp(t) { return t.dono || t.criadoPor; }
+function tfProjDe(t) { return t && t.projeto ? TF.proj[t.projeto] : null; }
+function tfProjMembro(p, vn) { vn = vn || currentUser; return !!p && (p.resp === vn || p.criadoPor === vn || tfArr(p.membros).indexOf(vn) >= 0); }
+function tfProjVe(p) {
+  if (!p) return false; if (tfGestao() || tfProjMembro(p)) return true;
+  return Object.keys(TF.tar).some(function(id) { var t = TF.tar[id]; return t && t.projeto === p.id && tfResp(t) === currentUser; });
+}
+function tfProjEdita(p) { return !!p && (tfGestao() || p.resp === currentUser || p.criadoPor === currentUser); }
+function tfVe(t) { if (!t) return false; if (tfResp(t) === currentUser || t.criadoPor === currentUser || tfGestao()) return true; var p = tfProjDe(t); return !!(p && tfProjVe(p)); }
+function tfEdita(t) { if (!t) return false; if (tfResp(t) === currentUser || t.criadoPor === currentUser || tfGestao()) return true; var p = tfProjDe(t); return !!(p && (tfProjEdita(p) || tfProjMembro(p))); }
+// para quem a pessoa pode passar a tarefa
+function tfPodeAtribuir(t) {
+  if (tfGestao()) return tfPessoas();
+  var p = tfProjDe(t), out = [currentUser];
+  if (p && (tfProjEdita(p) || tfProjMembro(p))) [p.resp].concat(tfArr(p.membros)).forEach(function(v) { if (v && out.indexOf(v) < 0 && vendedores[v]) out.push(v); });
+  if (t && t.dono && out.indexOf(t.dono) < 0) out.push(t.dono);
+  return out;
+}
+
+/* ── dados ── */
+function tfOuvir() {
+  if (!currentUser || TF.ligado === currentUser || typeof dbRef !== 'function') return;
+  TF.refs.forEach(function(r) { try { r.off && r.off(); } catch (e) {} });
+  TF.refs = []; TF.ligado = currentUser; TF.tar = {}; TF.proj = {}; TF.listas = {}; TF.novas = tfLs('novas_' + currentUser, {});
+  var ouvir = function(path, campo) {
+    var r = dbRef(path); TF.refs.push(r);
+    r.on('value', function(snap) {
+      var v = (snap && snap.val()) || {};
+      Object.keys(v).forEach(function(k) { if (v[k] && typeof v[k] === 'object') v[k].id = k; });
+      TF[campo] = v; tfDepoisDados(campo);
+    });
+  };
+  ouvir('tarefas', 'tar'); ouvir('projetos', 'proj'); ouvir('tarefasListas/' + currentUser, 'listas');
+}
+function tfDepoisDados(campo) {
+  if (campo === 'tar') { try { tfChecarNovas(); } catch (e) { console.warn('tarefas: novas', e); } }
+  tfSelo();
+  var tab = document.getElementById('tab-tarefas');
+  if (tab && tab.classList.contains('active')) tfRenderSeguro();
+}
+function tfRenderSeguro() {
+  var ae = document.activeElement, root = document.getElementById('tf-root');
+  if (root && ae && root.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== 'checkbox') { TF.pend = true; return; }
+  if (TF.arr) { TF.pend = true; return; }
+  clearTimeout(tfRenderSeguro.h); tfRenderSeguro.h = setTimeout(tfRender, 40);
+}
+function tfSalvar(t, campos, aviso) {
+  campos.editadoEm = Date.now(); campos.editadoPor = currentUser;
+  if (TF.tar[t.id]) Object.assign(TF.tar[t.id], campos);
+  return Promise.resolve(dbRef('tarefas/' + t.id).update(campos)).then(function() { if (aviso) tfAviso(aviso); })
+    .catch(function(e) { tfAviso('Não salvou: ' + (e && e.message || e)); });
+}
+function tfNova(tit, extra) {
+  var agora = Date.now(), id = tfId('t');
+  var t = Object.assign({ id: id, tit: String(tit || '').trim().slice(0, 200), nota: '', feita: false, imp: false, prazo: '', lembrete: '', rep: '', meuDia: {}, dono: currentUser, lista: '', projeto: '', passos: [],
+    criadoPor: currentUser, criadoEm: agora, ordem: agora }, extra || {});
+  if (t.dono && t.dono !== currentUser) { t.atribuidoPor = currentUser; t.atribuidoEm = agora; }
+  delete t.id; TF.tar[id] = Object.assign({ id: id }, t);
+  return Promise.resolve(dbRef('tarefas/' + id).set(t)).then(function() { return id; }).catch(function(e) { tfAviso('Não salvou: ' + (e && e.message || e)); });
+}
+function tfProxData(t) {
+  var d = t.prazo || tfHoje();
+  if (t.rep === 'dia') return tfSoma(d, 1);
+  if (t.rep === 'semana') return tfSoma(d, 7);
+  if (t.rep === 'mes') { var x = tfData(d), dia = x.getDate(); x.setDate(1); x.setMonth(x.getMonth() + 1); x.setDate(Math.min(dia, new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate())); return tfIso(x); }
+  if (t.rep === 'uteis') { var n = tfSoma(d, 1); for (var i = 0; i < 10; i++) { var w = tfData(n).getDay(); if (w >= 1 && w <= 5 && !(typeof agdFeriado === 'function' && agdFeriado(n))) break; n = tfSoma(n, 1); } return n; }
+  return '';
+}
+function tfConcluir(t, v) {
+  if (!tfEdita(t)) { tfAviso('Só quem é responsável pela tarefa pode concluir'); return; }
+  var c = { feita: !!v, feitaEm: v ? Date.now() : null, feitaPor: v ? currentUser : null };
+  var ps = tfArr(t.passos);
+  if (v && t.projeto && ps.length) c.passos = ps.map(function(p) { return Object.assign({}, p, { feito: true }); }); // estilo Ateliê: concluir a etapa conclui as sub-etapas
+  if (v && t.rep) { // repetição: nasce a próxima
+    var prox = { tit: t.tit, nota: t.nota || '', imp: !!t.imp, prazo: tfProxData(t), rep: t.rep, dono: t.dono || '', lista: t.lista || '', projeto: t.projeto || '',
+      passos: ps.map(function(p) { return { id: tfId('p'), t: p.t, feito: false }; }), repDe: t.id, lembrete: '' };
+    if (t.lembrete && t.prazo) { var hh = String(t.lembrete).slice(11, 16); if (hh) prox.lembrete = prox.prazo + 'T' + hh; }
+    if (t.atribuidoPor) { prox.atribuidoPor = t.atribuidoPor; }
+    c.rep = '';
+    tfNova(t.tit, prox).then(function() { tfAviso('Concluída. A próxima ficou para ' + tfDataTxt(prox.prazo)); });
+  }
+  tfSalvar(t, c);
+  if (v) tfFesta();
+}
+function tfFesta() { try { var a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = 880; o.connect(g); g.connect(a.destination); g.gain.setValueAtTime(.06, a.currentTime); g.gain.exponentialRampToValueAtTime(.0001, a.currentTime + .25); o.start(); o.stop(a.currentTime + .26); } catch (e) {} }
+function tfExcluir(t) {
+  delete TF.tar[t.id]; if (TF.sel === t.id) TF.sel = null;
+  Promise.resolve(dbRef('tarefas/' + t.id).remove()).then(function() { tfAviso('Tarefa excluída'); });
+  tfRender();
+}
+function tfProjSalvar(p, campos) {
+  campos.editadoEm = Date.now(); campos.editadoPor = currentUser;
+  if (TF.proj[p.id]) Object.assign(TF.proj[p.id], campos);
+  return Promise.resolve(dbRef('projetos/' + p.id).update(campos)).catch(function(e) { tfAviso('Não salvou: ' + (e && e.message || e)); });
+}
+function tfProjNovo() {
+  var id = tfId('p'), agora = Date.now();
+  var p = { tit: '', desc: '', status: 'iniciar', resp: currentUser, membros: [currentUser], inicio: tfHoje(), entrega: '', cor: TF_CORES[Math.floor(Math.random() * TF_CORES.length)], links: [], criadoPor: currentUser, criadoEm: agora };
+  TF.proj[id] = Object.assign({ id: id }, p);
+  TF.vista = 'proj:' + id; TF.projAba = 'etapas'; TF.sel = null; TF.foco = 'tf-ptit';
+  Promise.resolve(dbRef('projetos/' + id).set(p)).catch(function(e) { tfAviso('Não salvou: ' + (e && e.message || e)); });
+  tfRender();
+}
+function tfProjExcluir(p) {
+  var upd = {};
+  Object.keys(TF.tar).forEach(function(id) { if (TF.tar[id] && TF.tar[id].projeto === p.id) { upd['tarefas/' + id] = null; delete TF.tar[id]; } });
+  upd['projetos/' + p.id] = null; upd['tarefasAnexos/' + p.id] = null; delete TF.proj[p.id];
+  var ps = Object.keys(upd).map(function(k) { return dbRef(k).remove(); });
+  Promise.all(ps).then(function() { tfAviso('Projeto excluído'); });
+  TF.vista = 'projetos'; tfRender();
+}
+
+/* ── listas inteligentes ── */
+function tfTodas() { return Object.keys(TF.tar).map(function(k) { return TF.tar[k]; }).filter(function(t) { return t && t.tit != null && tfVe(t); }); }
+function tfNoMeuDia(t) { var h = tfHoje(); return (t.meuDia && t.meuDia[currentUser] === h) || (!t.feita && t.prazo && t.prazo <= h && tfResp(t) === currentUser); }
+function tfDaVista(v, todas) {
+  var me = currentUser, h = tfHoje();
+  todas = todas || tfTodas();
+  if (v === 'meudia') return todas.filter(function(t) { return tfNoMeuDia(t) || (t.feita && t.meuDia && t.meuDia[me] === h) || (t.feita && t.prazo === h && tfResp(t) === me); });
+  if (v === 'importante') return todas.filter(function(t) { return t.imp && (tfResp(t) === me || t.criadoPor === me); });
+  if (v === 'planejado') return todas.filter(function(t) { return t.prazo && tfResp(t) === me; });
+  if (v === 'atribuidas') return todas.filter(function(t) { return t.dono === me && t.criadoPor !== me; });
+  if (v === 'tarefas') return todas.filter(function(t) { return tfResp(t) === me && !t.projeto && !t.lista && t.criadoPor === me; });
+  if (v === 'delegadas') return todas.filter(function(t) { return t.dono && t.dono !== me && (t.atribuidoPor === me || t.criadoPor === me); });
+  if (v === 'equipe') return todas.filter(function(t) { return TF.eqFiltro === 'todos' || tfResp(t) === TF.eqFiltro; });
+  if (v === 'busca') { var q = (typeof ckSemAcento === 'function' ? ckSemAcento(TF.busca) : TF.busca.toUpperCase()).trim(); if (!q) return [];
+    return todas.filter(function(t) { var p = tfProjDe(t); var txt = [t.tit, t.nota, p && p.tit, tfArr(t.passos).map(function(x) { return x.t; }).join(' ')].join(' ');
+      return (typeof ckSemAcento === 'function' ? ckSemAcento(txt) : txt.toUpperCase()).indexOf(q) >= 0; }); }
+  if (v.indexOf('lista:') === 0) { var lid = v.slice(6); return todas.filter(function(t) { return t.lista === lid && (t.criadoPor === me || tfResp(t) === me); }); }
+  return [];
+}
+function tfPendentes(v) { return tfDaVista(v).filter(function(t) { return !t.feita; }).length; }
+function tfInfoVista(v) {
+  var s = TF_SMART.find(function(x) { return x.k === v; }); if (s) return s;
+  if (v === 'delegadas') return { k: v, t: 'Delegadas por mim', ic: 'enviar', cor: '#6D28D9' };
+  if (v === 'equipe') return { k: v, t: 'Tarefas da equipe', ic: 'equipe', cor: '#B45309' };
+  if (v === 'busca') return { k: v, t: 'Pesquisa: "' + TF.busca + '"', ic: 'busca', cor: '#2564CF' };
+  if (v.indexOf('lista:') === 0) { var l = TF.listas[v.slice(6)]; return { k: v, t: l ? l.nome : 'Lista', ic: 'lista', cor: (l && l.cor) || '#2564CF' }; }
+  return { k: v, t: '', ic: 'lista', cor: '#2564CF' };
+}
+
+/* ── tela ── */
+function tfInit() {
+  if (!currentUser) return;
+  tfOuvir();
+  if (TF.user !== currentUser) { TF.user = currentUser; TF.vista = tfLs('vista_' + currentUser, 'meudia'); TF.sel = null; }
+  if (!TF.vista) TF.vista = 'meudia';
+  if (TF.vista === 'atribuidas') tfMarcarVistas();
+  tfRender();
+}
+function tfIrVista(v) {
+  TF.vista = v; TF.sel = null; TF.menu = false; TF.armado = null; tfLsSet('vista_' + currentUser, v.indexOf('proj:') === 0 ? 'projetos' : v);
+  if (v === 'atribuidas') tfMarcarVistas();
+  tfRender();
+}
+function tfRender() {
+  var root = document.getElementById('tf-root'); if (!root || !currentUser) return;
+  tfBind(root);
+  var main = document.getElementById('tf-main'), sc = main ? main.scrollTop : 0, det = document.getElementById('tf-det'), scd = det ? det.scrollTop : 0;
+  if (TF.vista && TF.vista.indexOf('proj:') === 0 && !TF.proj[TF.vista.slice(5)]) TF.vista = 'projetos';
+  if (TF.sel && (!TF.tar[TF.sel] || !tfVe(TF.tar[TF.sel]))) TF.sel = null;
+  var v = TF.vista, corpo = v === 'projetos' ? tfProjetosHtml() : v.indexOf('proj:') === 0 ? tfProjetoHtml(TF.proj[v.slice(5)]) : tfListaHtml(v);
+  root.innerHTML = '<div class="tf' + (TF.sel ? ' com-det' : '') + (TF.menu ? ' menu-on' : '') + '">' + tfLadoHtml() +
+    '<section class="tf-main" id="tf-main">' + corpo + '</section>' + (TF.sel ? tfDetHtml(TF.tar[TF.sel]) : '') + (TF.menu || TF.sel ? '<div class="tf-veu' + (TF.menu ? ' m' : '') + (TF.sel ? ' d' : '') + '" data-a="veu"></div>' : '') + '</div>';
+  var m2 = document.getElementById('tf-main'); if (m2) m2.scrollTop = sc;
+  var d2 = document.getElementById('tf-det'); if (d2) d2.scrollTop = scd;
+  if (TF.foco) { var f = document.getElementById(TF.foco); TF.foco = null; if (f) { f.focus(); if (f.setSelectionRange && f.value) try { f.setSelectionRange(f.value.length, f.value.length); } catch (e) {} } }
+  tfAnexosThumbs();
+}
+function tfLadoHtml() {
+  var v = TF.vista, ges = tfGestao();
+  var item = function(k, t, ic, cor, n, extra) {
+    return '<button class="tf-li' + (v === k ? ' on' : '') + '" data-vista="' + tfEsc(k) + '" style="--c:' + cor + '"><span class="ic">' + (TF_IC[ic] || ic) + '</span><span class="tx">' + tfEsc(t) + '</span>' + (extra || '') + (n ? '<em>' + n + '</em>' : '') + '</button>';
+  };
+  var h = '<aside class="tf-lado"><div class="tf-busca">' + TF_IC.busca + '<input id="tf-busca" placeholder="Pesquisar" value="' + tfEsc(TF.busca) + '" autocomplete="off"></div><nav class="tf-nav">';
+  TF_SMART.forEach(function(s) { h += item(s.k, s.t, s.ic, s.cor, tfPendentes(s.k), s.k === 'atribuidas' && tfQtdNovas() ? '<i class="tf-dot" title="Novas"></i>' : ''); });
+  var nDel = tfPendentes('delegadas');
+  if (ges || nDel) h += '<div class="tf-sep"></div>';
+  if (ges) h += item('equipe', 'Tarefas da equipe', 'equipe', '#B45309', 0);
+  if (ges || nDel) h += item('delegadas', 'Delegadas por mim', 'enviar', '#6D28D9', nDel);
+  // projetos
+  var projs = Object.keys(TF.proj).map(function(k) { return TF.proj[k]; }).filter(function(p) { return p && p.status !== 'entregue' && tfProjVe(p); })
+    .sort(function(a, b) { return (a.entrega || '9').localeCompare(b.entrega || '9'); });
+  h += '<div class="tf-sep"></div><div class="tf-grp"><button class="tf-grp-t' + (v === 'projetos' ? ' on' : '') + '" data-vista="projetos">' + TF_IC.pasta + '<span>Projetos</span></button><button class="tf-mini" data-a="proj-novo" title="Novo projeto">' + TF_IC.mais + '</button></div>';
+  projs.slice(0, 12).forEach(function(p) { var pr = tfProg(p);
+    h += '<button class="tf-li pj' + (v === 'proj:' + p.id ? ' on' : '') + '" data-vista="proj:' + tfEsc(p.id) + '" style="--c:' + (p.cor || '#2564CF') + '"><span class="ic"><i class="tf-pdot"></i></span><span class="tx">' + tfEsc(p.tit || 'Projeto sem nome') + '</span><em class="pc">' + pr.pc + '%</em></button>'; });
+  if (projs.length > 12) h += '<button class="tf-li sub" data-vista="projetos"><span class="ic"></span><span class="tx">Ver todos (' + projs.length + ')</span></button>';
+  // listas próprias
+  var ls = Object.keys(TF.listas).map(function(k) { return TF.listas[k]; }).filter(Boolean).sort(function(a, b) { return (a.criadoEm || 0) - (b.criadoEm || 0); });
+  h += '<div class="tf-sep"></div><div class="tf-grp"><span class="tf-grp-t">' + TF_IC.lista + '<span>Minhas listas</span></span></div>';
+  ls.forEach(function(l) { h += item('lista:' + l.id, l.nome, 'lista', l.cor || '#2564CF', tfPendentes('lista:' + l.id)); });
+  h += '<div class="tf-novalista">' + TF_IC.mais + '<input id="tf-nl" placeholder="Nova lista" maxlength="60" autocomplete="off"></div>';
+  return h + '</nav></aside>';
+}
+function tfCab(info, sub, extra) {
+  return '<div class="tf-cab" style="--c:' + info.cor + '"><button class="tf-menu-bt" data-a="menu" title="Listas">' + TF_IC.menu + '</button><div class="tf-cab-t"><h2><span class="ic">' + (TF_IC[info.ic] || '') + '</span>' + tfEsc(info.t) + '</h2>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (extra || '') + '</div>';
+}
+function tfListaHtml(v) {
+  var info = tfInfoVista(v), todas = tfDaVista(v), me = currentUser, h = tfHoje();
+  var sub = '';
+  if (v === 'meudia') { var d = new Date(); sub = d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }); }
+  if (v === 'atribuidas') sub = 'Tarefas que outras pessoas passaram para você';
+  if (v === 'delegadas') sub = 'Tarefas que você passou para outras pessoas';
+  if (v === 'equipe') sub = 'Tudo o que está com a equipe';
+  var extra = '';
+  if (v === 'equipe') extra = '<select class="tf-sel" id="tf-eqf"><option value="todos">Todas as pessoas</option>' + tfPessoas().map(function(p) { return '<option value="' + tfEsc(p) + '"' + (TF.eqFiltro === p ? ' selected' : '') + '>' + tfEsc(tfNome(p)) + '</option>'; }).join('') + '</select>';
+  if (v.indexOf('lista:') === 0) extra = '<button class="tf-bt sm dng" data-a="lista-excluir">' + (TF.armado === 'lista' ? 'Confirmar exclusão' : 'Excluir lista') + '</button>';
+  var html = tfCab(info, sub ? tfEsc(sub) : '', extra);
+  // adicionar
+  if (v !== 'atribuidas' && v !== 'busca') {
+    var paraSel = (v === 'equipe' || v === 'delegadas') && tfGestao();
+    html += '<div class="tf-add">' + '<span class="tf-add-ic">' + TF_IC.mais + '</span><input id="tf-add" placeholder="Adicionar uma tarefa" maxlength="200" autocomplete="off">' +
+      (paraSel ? '<select class="tf-sel" id="tf-add-para" title="Para quem">' + tfPessoas().filter(function(p) { return p !== me; }).map(function(p) { return '<option value="' + tfEsc(p) + '"' + (TF.eqFiltro === p ? ' selected' : '') + '>Para ' + tfEsc(tfNome(p)) + '</option>'; }).join('') + '</select>' : '') +
+      '<input type="date" id="tf-add-data" class="tf-add-data" title="Data de conclusão"' + (v === 'planejado' ? ' value="' + h + '"' : '') + '><button class="tf-bt pri" data-a="add">Adicionar</button></div>';
+  }
+  var pend = todas.filter(function(t) { return !t.feita; }), feitas = todas.filter(function(t) { return t.feita; });
+  var ord = function(a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); };
+  var porData = function(a, b) { return (a.prazo || '9').localeCompare(b.prazo || '9') || ord(a, b); };
+  if (v === 'planejado') {
+    var grupos = [['Atrasadas', function(t) { return t.prazo < h; }], ['Hoje', function(t) { return t.prazo === h; }], ['Amanhã', function(t) { return t.prazo === tfSoma(h, 1); }],
+      ['Próximos 7 dias', function(t) { return t.prazo > tfSoma(h, 1) && t.prazo <= tfSoma(h, 7); }], ['Mais tarde', function(t) { return t.prazo > tfSoma(h, 7); }]];
+    var algum = false;
+    grupos.forEach(function(g) { var l = pend.filter(g[1]).sort(porData); if (!l.length) return; algum = true;
+      html += '<div class="tf-gr' + (g[0] === 'Atrasadas' ? ' atr' : '') + '">' + g[0] + ' <em>' + l.length + '</em></div><div class="tf-itens">' + l.map(tfItemHtml).join('') + '</div>'; });
+    if (!algum) html += tfVazio(v);
+  } else if (v === 'equipe') {
+    var porP = {}; pend.forEach(function(t) { (porP[tfResp(t)] = porP[tfResp(t)] || []).push(t); });
+    var ks = Object.keys(porP).sort(function(a, b) { return String(tfNome(a)).localeCompare(String(tfNome(b)), 'pt-BR'); });
+    ks.forEach(function(p) { var l = porP[p].sort(porData), at = l.filter(function(t) { return t.prazo && t.prazo < h; }).length;
+      html += '<div class="tf-gr pessoa"><span class="tf-av" style="--c:' + tfCorDe(p) + '">' + tfEsc(tfIniciais(p)) + '</span>' + tfEsc(tfNome(p)) + ' <em>' + l.length + '</em>' + (at ? '<span class="tf-atr">' + at + ' atrasada' + (at > 1 ? 's' : '') + '</span>' : '') + '</div><div class="tf-itens">' + l.map(tfItemHtml).join('') + '</div>'; });
+    if (!ks.length) html += tfVazio(v);
+  } else {
+    var l2 = v === 'meudia' || v === 'importante' ? pend.slice().sort(function(a, b) { return ((a.prazo && a.prazo < h) ? 0 : 1) - ((b.prazo && b.prazo < h) ? 0 : 1) || ord(a, b); }) : pend.slice().sort(v === 'delegadas' ? porData : ord);
+    html += l2.length ? '<div class="tf-itens">' + l2.map(tfItemHtml).join('') + '</div>' : tfVazio(v);
+  }
+  if (feitas.length && v !== 'equipe') {
+    var ab = !!TF.concl[v];
+    html += '<button class="tf-concl" data-a="concl">' + '<span class="sv' + (ab ? ' ab' : '') + '">' + TF_IC.seta + '</span>Concluídas <em>' + feitas.length + '</em></button>';
+    if (ab) html += '<div class="tf-itens">' + feitas.sort(function(a, b) { return (b.feitaEm || 0) - (a.feitaEm || 0); }).map(tfItemHtml).join('') + '</div>';
+  }
+  return html;
+}
+function tfVazio(v) {
+  var m = { meudia: ['Foco no seu dia', 'Adicione o que você quer fazer hoje. Tarefas com prazo para hoje ou atrasadas aparecem aqui sozinhas.'],
+    importante: ['Nada marcado como importante', 'Toque na estrela de uma tarefa para trazê-la para cá.'],
+    planejado: ['Nada com data', 'Tarefas com data de conclusão aparecem aqui, separadas por dia.'],
+    atribuidas: ['Nenhuma tarefa atribuída a você', 'Quando alguém passar uma tarefa ou uma etapa de projeto para você, ela aparece aqui.'],
+    tarefas: ['Tudo em dia', 'Escreva acima e aperte Enter para criar uma tarefa.'],
+    delegadas: ['Você não delegou tarefas', 'Ao escolher outro responsável numa tarefa, ela aparece aqui para você acompanhar.'],
+    equipe: ['Nenhuma tarefa pendente na equipe', 'Crie acima escolhendo para quem é.'],
+    busca: ['Nada encontrado', 'Tente outra palavra.'] }[v] || ['Lista vazia', 'Escreva acima e aperte Enter para criar uma tarefa.'];
+  return '<div class="tf-vazio"><b>' + m[0] + '</b><span>' + m[1] + '</span></div>';
+}
+function tfItemHtml(t) {
+  var me = currentUser, h = tfHoje(), pode = tfEdita(t), ps = tfArr(t.passos), p = tfProjDe(t), l = t.lista && TF.listas[t.lista];
+  var meta = [];
+  if (p) meta.push('<span class="pj" style="--c:' + (p.cor || '#2564CF') + '">' + TF_IC.pasta + tfEsc(p.tit || 'Projeto') + '</span>');
+  else if (l && TF.vista.indexOf('lista:') !== 0) meta.push('<span>' + tfEsc(l.nome) + '</span>');
+  if (t.meuDia && t.meuDia[me] === h && TF.vista !== 'meudia') meta.push('<span>' + TF_IC.sol + 'Meu dia</span>');
+  if (ps.length) meta.push('<span>' + ps.filter(function(x) { return x.feito; }).length + ' de ' + ps.length + '</span>');
+  if (t.prazo) meta.push('<span class="' + (!t.feita && t.prazo < h ? 'atr' : t.prazo === h ? 'hoje' : '') + '">' + TF_IC.cal + (!t.feita && t.prazo < h ? 'Atrasada, ' : '') + tfDataTxt(t.prazo, true) + '</span>');
+  if (t.lembrete && !t.feita) meta.push('<span>' + TF_IC.sino + tfDataTxt(String(t.lembrete).slice(0, 10)) + ' ' + String(t.lembrete).slice(11, 16) + '</span>');
+  if (t.rep) meta.push('<span>' + TF_IC.repetir + '</span>');
+  if (t.nota) meta.push('<span title="Tem anotação">' + TF_IC.nota + '</span>');
+  var resp = tfResp(t);
+  if (resp !== me) meta.push('<span class="quem"><span class="tf-av sm" style="--c:' + tfCorDe(resp) + '">' + tfEsc(tfIniciais(resp)) + '</span>' + tfEsc(tfPrimeiro(resp)) + '</span>');
+  else if (t.criadoPor && t.criadoPor !== me) meta.push('<span class="quem">de ' + tfEsc(tfPrimeiro(t.atribuidoPor || t.criadoPor)) + '</span>');
+  var nova = TF.novas[t.id] && !t.feita;
+  return '<div class="tf-it' + (t.feita ? ' feita' : '') + (TF.sel === t.id ? ' sel' : '') + '" data-t="' + tfEsc(t.id) + '">' +
+    '<button class="tf-chk' + (t.feita ? ' on' : '') + '" data-a="chk" title="' + (t.feita ? 'Marcar como não concluída' : 'Marcar como concluída') + '"' + (pode ? '' : ' disabled') + '>' + TF_IC.ok + '</button>' +
+    '<div class="tf-it-c"><div class="tf-it-t">' + (nova ? '<i class="tf-nova">Nova</i>' : '') + tfEsc(t.tit || '(sem título)') + '</div>' + (meta.length ? '<div class="tf-it-m">' + meta.join('<b>·</b>') + '</div>' : '') + '</div>' +
+    '<button class="tf-est' + (t.imp ? ' on' : '') + '" data-a="imp" title="' + (t.imp ? 'Tirar de importante' : 'Marcar como importante') + '"' + (pode ? '' : ' disabled') + '>' + (t.imp ? TF_IC.estrelaCheia : TF_IC.estrela) + '</button></div>';
+}
+
+/* ── painel de detalhes (como no To Do) ── */
+function tfDetHtml(t) {
+  if (!t) return '';
+  var me = currentUser, h = tfHoje(), pode = tfEdita(t), ps = tfArr(t.passos), dis = pode ? '' : ' disabled';
+  var noDia = t.meuDia && t.meuDia[me] === h;
+  var html = '<aside class="tf-det" id="tf-det"><div class="tf-det-top"><button class="tf-x" data-a="det-fechar" title="Fechar">' + TF_IC.x + '</button></div>';
+  html += '<div class="tf-card"><div class="tf-det-tit"><button class="tf-chk lg' + (t.feita ? ' on' : '') + '" data-a="chk-det"' + dis + '>' + TF_IC.ok + '</button>' +
+    '<textarea id="tf-d-tit" data-f="tit" rows="1"' + dis + '>' + tfEsc(t.tit) + '</textarea>' +
+    '<button class="tf-est' + (t.imp ? ' on' : '') + '" data-a="imp-det"' + dis + '>' + (t.imp ? TF_IC.estrelaCheia : TF_IC.estrela) + '</button></div>';
+  html += '<div class="tf-passos">' + ps.map(function(x, i) {
+    return '<div class="tf-passo' + (x.feito ? ' feito' : '') + '"><button class="tf-chk sm' + (x.feito ? ' on' : '') + '" data-a="passo-chk" data-i="' + i + '"' + dis + '>' + TF_IC.ok + '</button><input data-passo="' + i + '" value="' + tfEsc(x.t) + '"' + dis + ' aria-label="Etapa"><button class="tf-mini" data-a="passo-rm" data-i="' + i + '" title="Excluir etapa"' + dis + '>' + TF_IC.x + '</button></div>';
+  }).join('') + (pode ? '<div class="tf-passo novo">' + TF_IC.mais + '<input id="tf-d-passo" placeholder="' + (ps.length ? 'Próxima etapa' : 'Adicionar etapa') + '" maxlength="200" autocomplete="off"></div>' : '') + '</div></div>';
+  html += '<div class="tf-card"><button class="tf-op' + (noDia ? ' on' : '') + '" data-a="meudia"' + dis + '>' + TF_IC.sol + '<span>' + (noDia ? 'Adicionado a Meu dia' : 'Adicionar a Meu dia') + '</span>' + (noDia ? '<i data-a="meudia">' + TF_IC.x + '</i>' : '') + '</button></div>';
+  html += '<div class="tf-card">' +
+    '<label class="tf-op">' + TF_IC.sino + '<span>Lembrete</span><input type="datetime-local" data-f="lembrete" value="' + tfEsc(t.lembrete || '') + '"' + dis + '></label>' +
+    '<label class="tf-op">' + TF_IC.cal + '<span>Data de conclusão</span><input type="date" data-f="prazo" value="' + tfEsc(t.prazo || '') + '"' + dis + '></label>' +
+    '<label class="tf-op">' + TF_IC.repetir + '<span>Repetir</span><select data-f="rep"' + dis + '>' + TF_REP.map(function(r) { return '<option value="' + r[0] + '"' + ((t.rep || '') === r[0] ? ' selected' : '') + '>' + r[1] + '</option>'; }).join('') + '</select></label></div>';
+  var quem = tfPodeAtribuir(t);
+  var onde = '<option value="">Tarefas</option>' + Object.keys(TF.listas).map(function(k) { var l = TF.listas[k]; return l ? '<option value="l:' + tfEsc(k) + '"' + (t.lista === k ? ' selected' : '') + '>' + tfEsc(l.nome) + '</option>' : ''; }).join('') +
+    Object.keys(TF.proj).map(function(k) { var p = TF.proj[k]; return p && (tfProjVe(p) || t.projeto === k) && (p.status !== 'entregue' || t.projeto === k) ? '<option value="p:' + tfEsc(k) + '"' + (t.projeto === k ? ' selected' : '') + '>Projeto: ' + tfEsc(p.tit || 'sem nome') + '</option>' : ''; }).join('');
+  html += '<div class="tf-card">' +
+    '<label class="tf-op">' + TF_IC.pessoa + '<span>Responsável</span><select data-f="dono"' + dis + '>' + quem.map(function(p) { return '<option value="' + tfEsc(p) + '"' + (tfResp(t) === p ? ' selected' : '') + '>' + tfEsc(p === me ? tfNome(p) + ' (você)' : tfNome(p)) + '</option>'; }).join('') + '</select></label>' +
+    '<label class="tf-op">' + TF_IC.lista + '<span>Lista</span><select data-f="onde"' + dis + '>' + onde + '</select></label></div>';
+  html += '<div class="tf-card"><textarea class="tf-nota" data-f="nota" placeholder="Adicionar anotação"' + dis + '>' + tfEsc(t.nota || '') + '</textarea></div>';
+  var cri = new Date(t.criadoEm || Date.now());
+  html += '<div class="tf-det-rod"><span>Criada por ' + tfEsc(tfPrimeiro(t.criadoPor)) + ' em ' + cri.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) +
+    (t.feita && t.feitaEm ? '<br>Concluída por ' + tfEsc(tfPrimeiro(t.feitaPor)) + ' em ' + new Date(t.feitaEm).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '') + '</span>' +
+    (pode ? '<button class="tf-bt sm dng" data-a="tar-excluir">' + (TF.armado === 'tar:' + t.id ? 'Confirmar' : TF_IC.lixo) + '</button>' : '') + '</div>';
+  return html + '</aside>';
+}
+
+/* ── projetos (no estilo do Ateliê Web) ── */
+function tfTarefasDoProj(p) { return Object.keys(TF.tar).map(function(k) { return TF.tar[k]; }).filter(function(t) { return t && t.projeto === p.id; }).sort(function(a, b) { return (a.ordem || 0) - (b.ordem || 0); }); }
+function tfProg(p) {
+  var fs = [];
+  tfTarefasDoProj(p).forEach(function(t) { var ps = tfArr(t.passos); if (ps.length) ps.forEach(function(x) { fs.push(!!x.feito); }); else fs.push(!!t.feita); });
+  var f = fs.filter(Boolean).length; return { f: f, n: fs.length, pc: fs.length ? Math.round(f / fs.length * 100) : 0 };
+}
+function tfProjetosHtml() {
+  var h = tfHoje(), todos = Object.keys(TF.proj).map(function(k) { return TF.proj[k]; }).filter(function(p) { return p && tfProjVe(p); });
+  var lista = todos.filter(function(p) { return TF.projFiltro === 'todos' || (TF.projFiltro === 'entregues' ? p.status === 'entregue' : p.status !== 'entregue'); })
+    .sort(function(a, b) { return (a.status === 'entregue') - (b.status === 'entregue') || (a.entrega || '9').localeCompare(b.entrega || '9'); });
+  var nAt = todos.filter(function(p) { return p.status !== 'entregue'; }).length, nEnt = todos.length - nAt;
+  var atrasados = todos.filter(function(p) { return p.status !== 'entregue' && p.entrega && p.entrega < h; }).length;
+  var html = tfCab({ t: 'Projetos', ic: 'pasta', cor: '#6D28D9' }, tfEsc('Desenvolvimento dos projetos, etapas e entregas'),
+    '<div class="tf-cab-a"><div class="tf-seg">' + '<button class="' + (TF.projModo === 'lista' ? 'on' : '') + '" data-a="pmodo" data-m="lista">' + TF_IC.linhas + 'Lista</button><button class="' + (TF.projModo === 'quadro' ? 'on' : '') + '" data-a="pmodo" data-m="quadro">' + TF_IC.quadro + 'Quadro</button></div>' +
+    '<button class="tf-bt pri" data-a="proj-novo">+ Projeto</button></div>');
+  html += '<div class="tf-pkpi"><div><b>' + nAt + '</b><span>em andamento</span></div><div><b>' + nEnt + '</b><span>entregues</span></div><div class="' + (atrasados ? 'atr' : '') + '"><b>' + atrasados + '</b><span>com entrega atrasada</span></div>' +
+    '<div class="tf-pfil">' + [['ativos', 'Ativos'], ['entregues', 'Entregues'], ['todos', 'Todos']].map(function(f) { return '<button class="' + (TF.projFiltro === f[0] ? 'on' : '') + '" data-a="pfil" data-f="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div></div>';
+  if (TF.projModo === 'quadro') {
+    html += '<div class="tf-board">' + TF_ST.map(function(s) {
+      var col = todos.filter(function(p) { return (p.status || 'iniciar') === s[0]; }).sort(function(a, b) { return (a.entrega || '9').localeCompare(b.entrega || '9'); });
+      return '<div class="tf-bcol ' + s[0] + '" data-pcol="' + s[0] + '"><div class="tf-bcol-h"><span class="tf-pill ' + s[0] + '">' + s[1] + '</span><em>' + col.length + '</em></div>' +
+        col.map(function(p) { var pr = tfProg(p), atr = p.entrega && p.entrega < h && p.status !== 'entregue';
+          return '<div class="tf-pcard" draggable="' + (tfProjEdita(p) ? 'true' : 'false') + '" data-pid="' + tfEsc(p.id) + '" style="--c:' + (p.cor || '#2564CF') + '"><b>' + tfEsc(p.tit || 'Projeto sem nome') + '</b>' +
+            '<div class="tf-pmeta">' + (p.resp ? '<span class="tf-av sm" style="--c:' + tfCorDe(p.resp) + '">' + tfEsc(tfIniciais(p.resp)) + '</span>' + tfEsc(tfPrimeiro(p.resp)) : '') + (p.entrega ? '<span class="' + (atr ? 'atr' : '') + '">' + TF_IC.cal + tfDataTxt(p.entrega) + '</span>' : '') + '</div>' +
+            '<div class="tf-prog"><span style="width:' + pr.pc + '%"></span></div><small>' + pr.f + ' de ' + pr.n + ' etapas · ' + pr.pc + '%</small></div>'; }).join('') +
+        (!col.length ? '<div class="tf-bvazio">Arraste um projeto para cá</div>' : '') + '</div>';
+    }).join('') + '</div>';
+    return html;
+  }
+  if (!lista.length) return html + '<div class="tf-vazio"><b>' + (todos.length ? 'Nenhum projeto neste filtro' : 'Nenhum projeto ainda') + '</b><span>' + (todos.length ? '' : 'Crie um projeto para organizar um trabalho em etapas, com responsável e prazo para cada uma.') + '</span>' + (todos.length ? '' : '<button class="tf-bt pri" data-a="proj-novo">+ Projeto</button>') + '</div>';
+  return html + '<div class="tf-plist">' + lista.map(function(p) {
+    var pr = tfProg(p), atr = p.entrega && p.entrega < h && p.status !== 'entregue', nAnx = Object.keys(p.anexos || {}).length;
+    return '<div class="tf-prow" data-vista="proj:' + tfEsc(p.id) + '" style="--c:' + (p.cor || '#2564CF') + '"><div class="t"><i class="tf-pdot"></i>' + tfEsc(p.tit || 'Projeto sem nome') + '</div>' +
+      '<div class="s">' + (p.resp ? tfEsc(tfNome(p.resp)) : 'Sem responsável') + (p.entrega ? ' · <span class="' + (atr ? 'atr' : '') + '">entrega ' + tfDataTxt(p.entrega) + '</span>' : '') + ' · ' + pr.f + '/' + pr.n + ' etapas' + (nAnx ? ' · ' + nAnx + ' anexo' + (nAnx > 1 ? 's' : '') : '') +
+      '<div class="tf-prog"><span style="width:' + pr.pc + '%"></span></div></div><div class="r"><span class="tf-pill ' + (p.status || 'iniciar') + '">' + (TF_STL[p.status] || 'A iniciar') + '</span><small>' + pr.pc + '%</small></div></div>';
+  }).join('') + '</div>';
+}
+function tfProjetoHtml(p) {
+  if (!p) return '';
+  var ed = tfProjEdita(p), dis = ed ? '' : ' disabled', pr = tfProg(p), h = tfHoje(), ts = tfTarefasDoProj(p), membros = tfArr(p.membros);
+  var nAnx = Object.keys(p.anexos || {}).length, nLk = tfArr(p.links).length;
+  var html = '<div class="tf-pcab" style="--c:' + (p.cor || '#2564CF') + '"><div class="tf-pcab-l"><button class="tf-menu-bt" data-a="menu" title="Listas">' + TF_IC.menu + '</button><button class="tf-voltar" data-vista="projetos">' + TF_IC.voltar + 'Projetos</button></div>' +
+    '<input class="tf-ptit" id="tf-ptit" data-pf="tit" value="' + tfEsc(p.tit) + '" placeholder="Nome do projeto"' + dis + '>' +
+    '<div class="tf-pcab-r"><select class="tf-pst ' + (p.status || 'iniciar') + '" data-pf="status"' + dis + '>' + TF_ST.map(function(s) { return '<option value="' + s[0] + '"' + ((p.status || 'iniciar') === s[0] ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('') + '</select></div></div>';
+  html += '<div class="tf-pform">' +
+    '<label class="tf-f">Responsável<select data-pf="resp"' + dis + '><option value="">Sem responsável</option>' + tfPessoas().map(function(v) { return '<option value="' + tfEsc(v) + '"' + (p.resp === v ? ' selected' : '') + '>' + tfEsc(tfNome(v)) + '</option>'; }).join('') + '</select></label>' +
+    '<label class="tf-f">Início<input type="date" data-pf="inicio" value="' + tfEsc(p.inicio || '') + '"' + dis + '></label>' +
+    '<label class="tf-f">Entrega prevista<input type="date" data-pf="entrega" value="' + tfEsc(p.entrega || '') + '"' + dis + (p.entrega && p.entrega < h && p.status !== 'entregue' ? ' class="atr"' : '') + '></label>' +
+    '<div class="tf-f full">Equipe do projeto<div class="tf-chips">' + membros.map(function(v) { return '<span class="tf-chip"><span class="tf-av sm" style="--c:' + tfCorDe(v) + '">' + tfEsc(tfIniciais(v)) + '</span>' + tfEsc(tfNome(v)) + (ed && v !== p.resp ? '<button data-a="pmembro-rm" data-v="' + tfEsc(v) + '" title="Tirar">' + TF_IC.x + '</button>' : '') + '</span>'; }).join('') +
+      (ed ? '<select class="tf-chip-add" id="tf-pmembro"><option value="">+ Pessoa</option>' + tfPessoas().filter(function(v) { return membros.indexOf(v) < 0; }).map(function(v) { return '<option value="' + tfEsc(v) + '">' + tfEsc(tfNome(v)) + '</option>'; }).join('') + '</select>' : '') + '</div></div></div>';
+  html += '<div class="tf-ptabs" role="tablist">' + [['etapas', 'Etapas', pr.n], ['anexos', 'Anexos', nAnx], ['links', 'Links', nLk]].map(function(a) {
+    return '<button role="tab" aria-selected="' + (TF.projAba === a[0]) + '" data-a="paba" data-t="' + a[0] + '">' + a[1] + ' <span class="cnt">' + a[2] + '</span></button>'; }).join('') + '</div>';
+  if (TF.projAba === 'anexos') return html + tfAnexosHtml(p, ed) + tfProjRod(p, ed);
+  if (TF.projAba === 'links') return html + tfLinksHtml(p, ed) + tfProjRod(p, ed);
+  html += '<div class="tf-sect"><h3>Sobre o projeto</h3><textarea class="tf-pdesc" data-pf="desc" placeholder="Objetivo, o que será entregue, informações importantes"' + dis + '>' + tfEsc(p.desc || '') + '</textarea></div>';
+  html += '<div class="tf-sect"><h3>Etapas <span>' + pr.pc + '% concluído · ' + pr.f + ' de ' + pr.n + '</span></h3><div class="tf-prog lg"><span style="width:' + pr.pc + '%"></span></div><div class="tf-etapas">';
+  html += ts.map(function(t) {
+    var pode = tfEdita(t), d2 = pode ? '' : ' disabled', ps = tfArr(t.passos), atr = !t.feita && t.prazo && t.prazo < h;
+    var quem = tfPodeAtribuir(t);
+    return '<div class="tf-ebox"><div class="tf-erow' + (t.feita ? ' feito' : '') + '" data-t="' + tfEsc(t.id) + '"><button class="tf-chk' + (t.feita ? ' on' : '') + '" data-a="chk"' + d2 + '>' + TF_IC.ok + '</button>' +
+      '<input class="tx" data-tk="' + tfEsc(t.id) + '" data-f="tit" value="' + tfEsc(t.tit) + '" placeholder="Descreva a etapa"' + d2 + '>' +
+      '<select class="quem" data-tk="' + tfEsc(t.id) + '" data-f="dono" title="Responsável"' + d2 + '>' + quem.map(function(v) { return '<option value="' + tfEsc(v) + '"' + (tfResp(t) === v ? ' selected' : '') + '>' + tfEsc(tfPrimeiro(v)) + '</option>'; }).join('') + '</select>' +
+      '<input type="date" class="dt' + (atr ? ' atr' : '') + '" data-tk="' + tfEsc(t.id) + '" data-f="prazo" value="' + tfEsc(t.prazo || '') + '" title="Prazo"' + d2 + '>' +
+      '<button class="tf-mini" data-a="det" title="Detalhes, anotação e lembrete">' + TF_IC.nota + '</button>' +
+      (pode ? '<button class="tf-mini" data-a="etapa-rm" title="Excluir etapa">' + (TF.armado === 'tar:' + t.id ? '<b>ok?</b>' : TF_IC.x) + '</button>' : '') + '</div>' +
+      ps.map(function(x, i) { return '<div class="tf-srow' + (x.feito ? ' feito' : '') + '" data-t="' + tfEsc(t.id) + '"><button class="tf-chk sm' + (x.feito ? ' on' : '') + '" data-a="sub-chk" data-i="' + i + '"' + d2 + '>' + TF_IC.ok + '</button>' +
+        '<input data-tk="' + tfEsc(t.id) + '" data-sub="' + i + '" id="tf-sub-' + tfEsc(t.id) + '-' + i + '" value="' + tfEsc(x.t) + '" placeholder="Sub-etapa"' + d2 + '><button class="tf-mini" data-a="sub-rm" data-i="' + i + '" title="Excluir sub-etapa"' + d2 + '>' + TF_IC.x + '</button></div>'; }).join('') +
+      (pode ? '<button class="tf-addsub" data-a="sub-add" data-t="' + tfEsc(t.id) + '">+ Sub-etapa</button>' : '') + '</div>';
+  }).join('');
+  if (!ts.length) html += '<div class="tf-vazio pq"><span>Divida o projeto em etapas. Cada etapa pode ter um responsável, um prazo e sub-etapas.</span></div>';
+  html += '</div>' + (ed || tfProjMembro(p) ? '<div class="tf-add et">' + '<span class="tf-add-ic">' + TF_IC.mais + '</span><input id="tf-etapa-nova" placeholder="Nova etapa" maxlength="200" autocomplete="off"><button class="tf-bt" data-a="etapa-add">+ Etapa</button></div>' : '') + '</div>';
+  return html + tfProjRod(p, ed);
+}
+function tfProjRod(p, ed) {
+  return '<div class="tf-prod"><span>Criado por ' + tfEsc(tfPrimeiro(p.criadoPor)) + (p.criadoEm ? ' em ' + new Date(p.criadoEm).toLocaleDateString('pt-BR') : '') + '</span>' +
+    (ed ? '<button class="tf-bt sm dng" data-a="proj-excluir">' + (TF.armado === 'proj:' + p.id ? 'Confirmar: excluir projeto e etapas' : 'Excluir projeto') + '</button>' : '') + '</div>';
+}
+function tfLinksHtml(p, ed) {
+  var ls = tfArr(p.links), dis = ed ? '' : ' disabled';
+  return '<div class="tf-sect"><h3>Links</h3><div class="tf-links">' + ls.map(function(l, i) {
+    return '<div class="tf-lrow">' + TF_IC.link + '<input data-lk="' + i + '" data-lf="titulo" value="' + tfEsc(l.titulo) + '" placeholder="Planilha, site, pasta do Drive…"' + dis + '><input data-lk="' + i + '" data-lf="url" value="' + tfEsc(l.url) + '" placeholder="https://"' + dis + '>' +
+      (l.url ? '<a class="tf-mini" href="' + tfEsc(/^https?:\/\//i.test(l.url) ? l.url : 'https://' + l.url) + '" target="_blank" rel="noopener" title="Abrir">' + TF_IC.abrir + '</a>' : '') + (ed ? '<button class="tf-mini" data-a="link-rm" data-i="' + i + '" title="Tirar">' + TF_IC.x + '</button>' : '') + '</div>';
+  }).join('') + (!ls.length ? '<div class="tf-vazio pq"><span>Guarde aqui os links do projeto: planilhas, pastas, sites, formulários.</span></div>' : '') + '</div>' + (ed ? '<button class="tf-bt sm" data-a="link-add">+ Link</button>' : '') + '</div>';
+}
+function tfAnexosHtml(p, ed) {
+  var an = p.anexos || {}, ks = Object.keys(an).sort(function(a, b) { return (an[b].em || 0) - (an[a].em || 0); });
+  var pode = ed || tfProjMembro(p);
+  return '<div class="tf-sect">' + (pode ? '<label class="tf-drop" id="tf-drop">' + TF_IC.clipe + '<span>Arraste arquivos aqui ou <u>escolha no computador</u></span><small>Imagens, PDF, planilhas, documentos (até 7 MB cada)</small><input type="file" id="tf-arq" multiple hidden></label><div class="tf-upmsg" id="tf-upmsg"></div>' : '') +
+    (ks.length ? '<div class="tf-gal">' + ks.map(function(k) { var a = an[k], img = /^image\//.test(a.tipo || '');
+      return '<div class="tf-gi"><div class="th" data-a="anx-abrir" data-k="' + tfEsc(k) + '">' + (img ? '<img data-thumb="' + tfEsc(k) + '" alt="' + tfEsc(a.nome) + '">' : '<span class="ext">' + tfEsc((String(a.nome || '').split('.').pop() || 'arq').slice(0, 4)) + '</span>') + '</div>' +
+        '<div class="meta"><b title="' + tfEsc(a.nome) + '">' + tfEsc(a.nome) + '</b><small>' + tfTam(a.tam) + ' · ' + tfEsc(tfPrimeiro(a.por)) + ' · ' + new Date(a.em || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + '</small></div>' +
+        '<div class="acts"><button data-a="anx-baixar" data-k="' + tfEsc(k) + '">' + TF_IC.baixar + 'Baixar</button>' + (ed || a.por === currentUser ? '<button data-a="anx-rm" data-k="' + tfEsc(k) + '">' + (TF.armado === 'anx:' + k ? 'Confirmar' : 'Remover') + '</button>' : '') + '</div></div>'; }).join('') + '</div>'
+      : '<div class="tf-vazio pq"><span>Nenhum anexo ainda.</span></div>') + '</div>';
+}
+function tfTam(b) { b = b || 0; return b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB'; }
+function tfAnexoDados(pid, k) {
+  if (TF.anx[k]) return Promise.resolve(TF.anx[k]);
+  return Promise.resolve(dbRef('tarefasAnexos/' + pid + '/' + k).once('value')).then(function(s) { var v = s && s.val(); var d = v && v.data; if (d) TF.anx[k] = d; return d; });
+}
+function tfAnexosThumbs() {
+  var v = TF.vista; if (v.indexOf('proj:') !== 0 || TF.projAba !== 'anexos') return; var pid = v.slice(5);
+  document.querySelectorAll('#tf-root img[data-thumb]').forEach(function(img) { tfAnexoDados(pid, img.getAttribute('data-thumb')).then(function(d) { if (d) img.src = d; }); });
+}
+function tfBlob(dataUrl) { var p = String(dataUrl).split(','), mime = (p[0].match(/data:([^;]+)/) || [])[1] || 'application/octet-stream', bin = atob(p[1] || ''), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: mime }); }
+function tfAnexoAbrir(p, k, baixar) {
+  var a = (p.anexos || {})[k]; if (!a) return;
+  var w = !baixar ? window.open('', '_blank') : null;
+  tfAnexoDados(p.id, k).then(function(d) {
+    if (!d) { if (w) w.close(); tfAviso('Arquivo não encontrado'); return; }
+    var url = URL.createObjectURL(tfBlob(d));
+    if (baixar) { var el = document.createElement('a'); el.href = url; el.download = a.nome || 'arquivo'; document.body.appendChild(el); el.click(); el.remove(); }
+    else if (w) w.location.href = url;
+    setTimeout(function() { URL.revokeObjectURL(url); }, 60000);
+  });
+}
+function tfUpload(p, files) {
+  var msg = document.getElementById('tf-upmsg'), ok = 0, lista = Array.prototype.slice.call(files || []);
+  var ler = function(f) { return new Promise(function(res, rej) { var fr = new FileReader(); fr.onload = function() { res(fr.result); }; fr.onerror = rej; fr.readAsDataURL(f); }); };
+  var reduzir = function(f) {
+    return ler(f).then(function(src) { if (!/^image\/(jpe?g|png|webp)/.test(f.type) || f.size < 600 * 1024) return src;
+      return new Promise(function(res) { var img = new Image(); img.onload = function() { var max = 1800, s = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        var cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height); cx.drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', .82)); }; img.onerror = function() { res(src); }; img.src = src; }); });
+  };
+  var seq = Promise.resolve();
+  lista.forEach(function(f) {
+    seq = seq.then(function() {
+      if (f.size > 7 * 1048576) { tfAviso(f.name + ' passa de 7 MB e não foi anexado'); return; }
+      if (msg) msg.textContent = 'Enviando ' + f.name + '…';
+      return reduzir(f).then(function(d) {
+        var k = tfId('a'), meta = { nome: f.name, tipo: f.type || '', tam: Math.round((d.length - d.indexOf(',') - 1) * .75), por: currentUser, em: Date.now() };
+        TF.anx[k] = d;
+        return Promise.all([dbRef('tarefasAnexos/' + p.id + '/' + k).set({ data: d }), dbRef('projetos/' + p.id + '/anexos/' + k).set(meta)]).then(function() { ok++; });
+      }).catch(function(e) { tfAviso('Não anexou ' + f.name + ': ' + (e && e.message || e)); });
+    });
+  });
+  seq.then(function() { if (msg) msg.textContent = ''; if (ok) tfAviso(ok + ' arquivo' + (ok > 1 ? 's anexados' : ' anexado')); });
+}
+
+/* ── eventos ── */
+function tfBind(root) {
+  if (root._tf) return; root._tf = true;
+  root.addEventListener('click', function(ev) {
+    var t = ev.target, el;
+    if ((el = t.closest('[data-a]')) && !el.disabled) { tfAcao(el.getAttribute('data-a'), el, ev); return; }
+    if ((el = t.closest('[data-vista]'))) { tfIrVista(el.getAttribute('data-vista')); return; }
+    if ((el = t.closest('.tf-it'))) { var id = el.getAttribute('data-t'); TF.sel = TF.sel === id ? null : id; tfLerNova(id); TF.armado = null; tfRender(); return; }
+    if ((el = t.closest('.tf-pcard'))) { if (TF.arr) return; tfIrVista('proj:' + el.getAttribute('data-pid')); return; }
+  });
+  root.addEventListener('keydown', function(ev) {
+    var id = ev.target.id;
+    if (ev.key === 'Enter' && !ev.shiftKey) {
+      if (id === 'tf-add' || id === 'tf-add-data') { ev.preventDefault(); tfAcao('add'); return; }
+      if (id === 'tf-d-passo') { ev.preventDefault(); tfAddPasso(); return; }
+      if (id === 'tf-nl') { ev.preventDefault(); tfNovaLista(ev.target.value); return; }
+      if (id === 'tf-etapa-nova') { ev.preventDefault(); tfAcao('etapa-add'); return; }
+      if (id === 'tf-d-tit') { ev.preventDefault(); ev.target.blur(); return; }
+      if (ev.target.hasAttribute('data-sub')) { ev.preventDefault(); var tk = ev.target.getAttribute('data-tk'); ev.target.blur(); tfAddSub(tk); return; }
+      if (ev.target.hasAttribute('data-tk') || ev.target.hasAttribute('data-passo')) { ev.preventDefault(); ev.target.blur(); return; }
+    }
+    if (ev.key === 'Escape' && TF.sel) { TF.sel = null; tfRender(); }
+  });
+  root.addEventListener('input', function(ev) {
+    if (ev.target.id === 'tf-busca') { TF.busca = ev.target.value; clearTimeout(tfBind.hb); tfBind.hb = setTimeout(function() { if (TF.busca.trim()) { if (TF.vista !== 'busca') TF.vistaAntes = TF.vista; TF.vista = 'busca'; } else if (TF.vista === 'busca') TF.vista = TF.vistaAntes || 'meudia'; TF.foco = 'tf-busca'; TF.sel = null; tfRender(); }, 220); }
+    if (ev.target.id === 'tf-d-tit') { ev.target.style.height = 'auto'; ev.target.style.height = ev.target.scrollHeight + 'px'; }
+  });
+  root.addEventListener('change', function(ev) { tfMudou(ev.target); });
+  root.addEventListener('focusout', function() { setTimeout(function() { var ae = document.activeElement, r = document.getElementById('tf-root'); if (TF.pend && !(r && ae && r.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))) { TF.pend = false; tfRender(); } }, 30); });
+  // arrastar projetos entre colunas (quadro)
+  root.addEventListener('dragstart', function(ev) { var c = ev.target.closest && ev.target.closest('.tf-pcard'); if (!c) return; TF.arr = c.getAttribute('data-pid'); try { ev.dataTransfer.setData('text/plain', TF.arr); ev.dataTransfer.effectAllowed = 'move'; } catch (e) {} c.classList.add('arr'); });
+  root.addEventListener('dragend', function() { TF.arr = null; root.querySelectorAll('.tf-bcol.over').forEach(function(c) { c.classList.remove('over'); }); if (TF.pend) { TF.pend = false; tfRender(); } });
+  root.addEventListener('dragover', function(ev) { var c = ev.target.closest && ev.target.closest('[data-pcol]'); var dz = ev.target.closest && ev.target.closest('#tf-drop'); if (c && TF.arr) { ev.preventDefault(); root.querySelectorAll('.tf-bcol.over').forEach(function(x) { if (x !== c) x.classList.remove('over'); }); c.classList.add('over'); } if (dz) { ev.preventDefault(); dz.classList.add('on'); } });
+  root.addEventListener('dragleave', function(ev) { var dz = ev.target.closest && ev.target.closest('#tf-drop'); if (dz && !dz.contains(ev.relatedTarget)) dz.classList.remove('on'); });
+  root.addEventListener('drop', function(ev) {
+    var dz = ev.target.closest && ev.target.closest('#tf-drop');
+    if (dz) { ev.preventDefault(); dz.classList.remove('on'); var p = TF.proj[TF.vista.slice(5)]; if (p && ev.dataTransfer) tfUpload(p, ev.dataTransfer.files); return; }
+    var c = ev.target.closest && ev.target.closest('[data-pcol]'); if (!c || !TF.arr) return; ev.preventDefault();
+    var p2 = TF.proj[TF.arr], st = c.getAttribute('data-pcol'); TF.arr = null;
+    if (p2 && p2.status !== st && tfProjEdita(p2)) { tfProjSalvar(p2, { status: st }); tfAviso((p2.tit || 'Projeto') + ': ' + TF_STL[st]); }
+    tfRender();
+  });
+}
+function tfAcao(a, el, ev) {
+  var me = currentUser, it = el && el.closest && el.closest('[data-t]'), t = it ? TF.tar[it.getAttribute('data-t')] : null, sel = TF.sel ? TF.tar[TF.sel] : null;
+  var p = TF.vista.indexOf('proj:') === 0 ? TF.proj[TF.vista.slice(5)] : null;
+  if (ev) ev.stopPropagation();
+  switch (a) {
+    case 'menu': TF.menu = !TF.menu; tfRender(); return;
+    case 'veu': TF.menu = false; TF.sel = null; tfRender(); return;
+    case 'chk': if (t) tfConcluir(t, !t.feita); tfRender(); return;
+    case 'imp': if (t) tfSalvar(t, { imp: !t.imp }); tfRender(); return;
+    case 'chk-det': if (sel) tfConcluir(sel, !sel.feita); tfRender(); return;
+    case 'imp-det': if (sel) tfSalvar(sel, { imp: !sel.imp }); tfRender(); return;
+    case 'det': if (t) { TF.sel = t.id; tfRender(); } return;
+    case 'det-fechar': TF.sel = null; tfRender(); return;
+    case 'meudia': if (sel) { var md = Object.assign({}, sel.meuDia || {}), h = tfHoje(); if (md[me] === h) md[me] = null; else md[me] = h; tfSalvar(sel, { meuDia: md }); } tfRender(); return;
+    case 'passo-chk': if (sel) { var ps = tfArr(sel.passos).map(function(x) { return Object.assign({}, x); }), i = +el.getAttribute('data-i'); ps[i].feito = !ps[i].feito; tfSalvar(sel, { passos: ps }); } tfRender(); return;
+    case 'passo-rm': if (sel) { var ps2 = tfArr(sel.passos).slice(); ps2.splice(+el.getAttribute('data-i'), 1); tfSalvar(sel, { passos: ps2 }); } tfRender(); return;
+    case 'tar-excluir': if (sel) { if (TF.armado !== 'tar:' + sel.id) { TF.armado = 'tar:' + sel.id; tfRender(); return; } TF.armado = null; tfExcluir(sel); } return;
+    case 'concl': TF.concl[TF.vista] = !TF.concl[TF.vista]; tfRender(); return;
+    case 'add': tfAdd(); return;
+    case 'lista-excluir': {
+      var lid = TF.vista.slice(6); if (TF.armado !== 'lista') { TF.armado = 'lista'; tfRender(); return; } TF.armado = null;
+      Object.keys(TF.tar).forEach(function(k) { var x = TF.tar[k]; if (x && x.lista === lid) tfSalvar(x, { lista: '' }); });
+      delete TF.listas[lid]; dbRef('tarefasListas/' + me + '/' + lid).remove(); tfIrVista('tarefas'); tfAviso('Lista excluída. As tarefas dela foram para Tarefas.'); return; }
+    case 'proj-novo': tfProjNovo(); return;
+    case 'pmodo': TF.projModo = el.getAttribute('data-m'); tfLsSet('pmodo', TF.projModo); tfRender(); return;
+    case 'pfil': TF.projFiltro = el.getAttribute('data-f'); tfRender(); return;
+    case 'paba': TF.projAba = el.getAttribute('data-t'); TF.armado = null; tfRender(); return;
+    case 'pmembro-rm': if (p) { var mb = tfArr(p.membros).filter(function(v) { return v !== el.getAttribute('data-v'); }); tfProjSalvar(p, { membros: mb }); tfRender(); } return;
+    case 'etapa-add': {
+      var inp = document.getElementById('tf-etapa-nova'), tx = inp ? inp.value.trim() : ''; if (!p || !tx) { if (inp) inp.focus(); return; }
+      inp.value = ''; TF.foco = 'tf-etapa-nova';
+      tfNova(tx, { projeto: p.id, dono: p.resp || me, ordem: Date.now() }); tfRender(); return; }
+    case 'etapa-rm': if (t) { if (TF.armado !== 'tar:' + t.id) { TF.armado = 'tar:' + t.id; tfRender(); return; } TF.armado = null; tfExcluir(t); } return;
+    case 'sub-add': tfAddSub(el.getAttribute('data-t')); return;
+    case 'sub-chk': if (t) { var sp = tfArr(t.passos).map(function(x) { return Object.assign({}, x); }), si = +el.getAttribute('data-i'); sp[si].feito = !sp[si].feito;
+      var c = { passos: sp }; if (t.projeto) { var todas = sp.every(function(x) { return x.feito; }); if (todas !== !!t.feita) { c.feita = todas; c.feitaEm = todas ? Date.now() : null; c.feitaPor = todas ? me : null; } } // estilo Ateliê: todas as sub-etapas = etapa concluída
+      tfSalvar(t, c); tfRender(); } return;
+    case 'sub-rm': if (t) { var sp2 = tfArr(t.passos).slice(); sp2.splice(+el.getAttribute('data-i'), 1); tfSalvar(t, { passos: sp2 }); tfRender(); } return;
+    case 'link-add': if (p) { var ls = tfArr(p.links).concat([{ id: tfId('k'), titulo: '', url: '' }]); tfProjSalvar(p, { links: ls }); TF.foco = null; tfRender(); var ins = document.querySelectorAll('#tf-root [data-lf="titulo"]'); if (ins.length) ins[ins.length - 1].focus(); } return;
+    case 'link-rm': if (p) { var ls2 = tfArr(p.links).slice(); ls2.splice(+el.getAttribute('data-i'), 1); tfProjSalvar(p, { links: ls2 }); tfRender(); } return;
+    case 'anx-abrir': if (p) tfAnexoAbrir(p, el.getAttribute('data-k'), false); return;
+    case 'anx-baixar': if (p) tfAnexoAbrir(p, el.getAttribute('data-k'), true); return;
+    case 'anx-rm': if (p) { var k = el.getAttribute('data-k'); if (TF.armado !== 'anx:' + k) { TF.armado = 'anx:' + k; tfRender(); return; } TF.armado = null;
+      dbRef('tarefasAnexos/' + p.id + '/' + k).remove(); dbRef('projetos/' + p.id + '/anexos/' + k).remove(); if (p.anexos) delete p.anexos[k]; tfRender(); tfAviso('Anexo removido'); } return;
+    case 'proj-excluir': if (p) { if (TF.armado !== 'proj:' + p.id) { TF.armado = 'proj:' + p.id; tfRender(); return; } TF.armado = null; tfProjExcluir(p); } return;
+  }
+}
+function tfAdd() {
+  var inp = document.getElementById('tf-add'), tx = inp ? inp.value.trim() : ''; if (!tx) { if (inp) inp.focus(); return; }
+  var v = TF.vista, me = currentUser, h = tfHoje(), dt = (document.getElementById('tf-add-data') || {}).value || '', para = (document.getElementById('tf-add-para') || {}).value || '';
+  var ex = { prazo: dt };
+  if (v === 'meudia') { ex.meuDia = {}; ex.meuDia[me] = h; }
+  if (v === 'importante') ex.imp = true;
+  if (v === 'planejado' && !dt) ex.prazo = h;
+  if (v.indexOf('lista:') === 0) ex.lista = v.slice(6);
+  if (para) ex.dono = para;
+  inp.value = ''; TF.foco = 'tf-add';
+  tfNova(tx, ex).then(function() { if (para) tfAviso('Tarefa enviada para ' + tfNome(para)); });
+  tfRender();
+}
+function tfAddPasso() {
+  var t = TF.sel && TF.tar[TF.sel], inp = document.getElementById('tf-d-passo'), tx = inp ? inp.value.trim() : ''; if (!t || !tx) return;
+  var ps = tfArr(t.passos).concat([{ id: tfId('p'), t: tx.slice(0, 200), feito: false }]);
+  inp.value = ''; TF.foco = 'tf-d-passo'; tfSalvar(t, { passos: ps }); tfRender();
+}
+function tfAddSub(tid) {
+  var t = TF.tar[tid]; if (!t || !tfEdita(t)) return;
+  var ps = tfArr(t.passos).concat([{ id: tfId('p'), t: '', feito: false }]), c = { passos: ps };
+  if (t.projeto && t.feita) { c.feita = false; c.feitaEm = null; c.feitaPor = null; }
+  TF.foco = 'tf-sub-' + tid + '-' + (ps.length - 1); tfSalvar(t, c); tfRender();
+}
+function tfNovaLista(nome) {
+  nome = String(nome || '').trim(); if (!nome) return;
+  var id = tfId('l'), l = { nome: nome.slice(0, 60), cor: TF_CORES[Object.keys(TF.listas).length % TF_CORES.length], criadoEm: Date.now() };
+  TF.listas[id] = Object.assign({ id: id }, l);
+  dbRef('tarefasListas/' + currentUser + '/' + id).set(l);
+  tfIrVista('lista:' + id);
+}
+function tfMudou(el) {
+  var me = currentUser, f = el.getAttribute('data-f'), sel = TF.sel && TF.tar[TF.sel];
+  if (el.id === 'tf-eqf') { TF.eqFiltro = el.value; tfRender(); return; }
+  if (el.id === 'tf-pmembro') { var p0 = TF.proj[TF.vista.slice(5)]; if (p0 && el.value) { var mb = tfArr(p0.membros); if (mb.indexOf(el.value) < 0) mb.push(el.value); tfProjSalvar(p0, { membros: mb }); tfAviso(tfNome(el.value) + ' entrou no projeto'); } tfRender(); return; }
+  if (el.id === 'tf-arq') { var p1 = TF.proj[TF.vista.slice(5)]; if (p1) tfUpload(p1, el.files); return; }
+  // projeto
+  var pf = el.getAttribute('data-pf');
+  if (pf) { var p = TF.proj[TF.vista.slice(5)]; if (!p) return; var c = {}; c[pf] = pf === 'tit' ? el.value.trim().slice(0, 120) : el.value;
+    if (pf === 'resp' && el.value) { var m2 = tfArr(p.membros); if (m2.indexOf(el.value) < 0) { m2.push(el.value); c.membros = m2; } }
+    tfProjSalvar(p, c); if (pf === 'status') tfAviso('Projeto: ' + TF_STL[el.value]); if (pf !== 'tit' && pf !== 'desc') tfRender(); else TF.pend = true; return; }
+  // links
+  if (el.hasAttribute('data-lk')) { var p2 = TF.proj[TF.vista.slice(5)]; if (!p2) return; var ls = tfArr(p2.links).map(function(x) { return Object.assign({}, x); }), li = +el.getAttribute('data-lk'); if (ls[li]) { ls[li][el.getAttribute('data-lf')] = el.value.trim(); tfProjSalvar(p2, { links: ls }); } TF.pend = true; return; }
+  // etapas do projeto (edição em linha)
+  var tk = el.getAttribute('data-tk');
+  if (tk) { var t = TF.tar[tk]; if (!t || !tfEdita(t)) return;
+    if (el.hasAttribute('data-sub')) { var ps = tfArr(t.passos).map(function(x) { return Object.assign({}, x); }), si = +el.getAttribute('data-sub'); if (ps[si]) { ps[si].t = el.value.trim().slice(0, 200); tfSalvar(t, { passos: ps }); } TF.pend = true; return; }
+    tfAplicarCampo(t, f, el.value); return; }
+  // detalhes
+  if (el.hasAttribute('data-passo') && sel) { var pp = tfArr(sel.passos).map(function(x) { return Object.assign({}, x); }), pi = +el.getAttribute('data-passo'); if (pp[pi]) { pp[pi].t = el.value.trim().slice(0, 200); tfSalvar(sel, { passos: pp }); } TF.pend = true; return; }
+  if (f && sel) tfAplicarCampo(sel, f, el.value);
+}
+function tfAplicarCampo(t, f, val) {
+  var me = currentUser, c = {};
+  if (f === 'tit') { val = String(val).trim(); if (!val) { tfRender(); return; } c.tit = val.slice(0, 200); tfSalvar(t, c); TF.pend = true; return; }
+  if (f === 'nota') { c.nota = String(val).slice(0, 4000); tfSalvar(t, c); TF.pend = true; return; }
+  if (f === 'prazo') { c.prazo = val || ''; if (!val && t.rep) c.rep = ''; }
+  if (f === 'lembrete') c.lembrete = val || '';
+  if (f === 'rep') { c.rep = val; if (val && !t.prazo) c.prazo = tfHoje(); }
+  if (f === 'dono') { c.dono = val; if (val !== tfResp(t)) { c.atribuidoPor = me; c.atribuidoEm = Date.now(); } }
+  if (f === 'onde') { c.lista = val.indexOf('l:') === 0 ? val.slice(2) : ''; c.projeto = val.indexOf('p:') === 0 ? val.slice(2) : ''; if (c.projeto && !t.projeto) c.ordem = Date.now(); }
+  tfSalvar(t, c, f === 'dono' && val !== me ? 'Tarefa passada para ' + tfNome(val) : '');
+  tfRender();
+}
+
+/* ── avisos: tarefa nova para mim, lembrete, resumo do dia e número no menu ── */
+function tfQtdNovas() { return Object.keys(TF.novas || {}).filter(function(k) { var t = TF.tar[k]; return t && !t.feita && t.dono === currentUser; }).length; }
+function tfLerNova(id) { if (TF.novas[id]) { delete TF.novas[id]; tfLsSet('novas_' + currentUser, TF.novas); tfSelo(); } }
+function tfMarcarVistas() { if (Object.keys(TF.novas).length) { TF.novas = {}; tfLsSet('novas_' + currentUser, {}); tfSelo(); } }
+function tfChecarNovas() {
+  var me = currentUser; if (!me) return;
+  var ch = 'ultimo_' + me, ult = tfLs(ch, null), maior = ult || 0, novas = [];
+  if (ult == null) { tfLsSet(ch, Date.now()); return; }
+  Object.keys(TF.tar).forEach(function(k) { var t = TF.tar[k]; if (!t || t.dono !== me || t.feita) return;
+    var em = t.atribuidoEm || 0; if (!em || em <= ult) return; maior = Math.max(maior, em);
+    if (t.atribuidoPor && t.atribuidoPor !== me) novas.push(t); });
+  if (maior > ult) tfLsSet(ch, maior);
+  if (!novas.length) return;
+  novas.forEach(function(t) { TF.novas[t.id] = 1; }); tfLsSet('novas_' + me, TF.novas); tfSelo();
+  var um = novas.length === 1, n0 = novas[0], p0 = tfProjDe(n0);
+  var titulo = um ? (p0 ? 'Nova etapa para você no projeto ' + (p0.tit || '') : 'Nova tarefa para você') : novas.length + ' tarefas novas para você';
+  var texto = novas.slice(0, 3).map(function(t) { var p = tfProjDe(t); return '<b>' + tfEsc(t.tit) + '</b><br>' + (t.prazo ? 'até ' + tfEsc(tfDataTxt(t.prazo, true)) + ' · ' : '') + 'de ' + tfEsc(tfNome(t.atribuidoPor)) + (p && !um ? ' · ' + tfEsc(p.tit) : ''); }).join('<br><br>');
+  var abrir = function() { TF.vista = n0.projeto ? 'proj:' + n0.projeto : 'atribuidas'; TF.sel = n0.projeto ? null : n0.id; var b = document.getElementById('nav-tarefas'); if (b) showTab('tarefas', b); };
+  if (typeof window.aguiaAvisar === 'function') window.aguiaAvisar({ titulo: tfEsc(titulo), anim: 'ag-aponta', som: 'pequeno', texto: texto, dura: 20000, acoes: [{ rot: 'Ver tarefa', pri: true, fn: abrir }] });
+  try { if (window.Notification && Notification.permission === 'granted' && document.hidden) { var nt = new Notification(titulo, { body: novas.slice(0, 3).map(function(t) { return t.tit; }).join('\n'), tag: 'tf-novas' }); nt.onclick = function() { window.focus(); abrir(); nt.close(); }; } } catch (e) {}
+}
+function tfMinhasHoje() { var me = currentUser, h = tfHoje(); return Object.keys(TF.tar).map(function(k) { return TF.tar[k]; }).filter(function(t) { return t && !t.feita && tfResp(t) === me && t.prazo && t.prazo <= h; }); }
+function tfSelo() {
+  var b = document.getElementById('nav-tarefas'); if (!b || !currentUser) return;
+  var n = tfMinhasHoje().length + tfQtdNovas(), s = b.querySelector('.tf-selo');
+  if (!n) { if (s) s.remove(); return; }
+  if (!s) { s = document.createElement('span'); s.className = 'dc-selo tf-selo'; b.appendChild(s); }
+  s.textContent = n; s.title = 'Tarefas para hoje, atrasadas e novas';
+}
+function tfLembrar() {
+  if (!currentUser || typeof dbRef !== 'function') return;
+  tfOuvir();
+  var me = currentUser, agora = new Date(), aIso = tfIso(agora) + 'T' + String(agora.getHours()).padStart(2, '0') + ':' + String(agora.getMinutes()).padStart(2, '0');
+  // lembretes com horário
+  Object.keys(TF.tar).forEach(function(k) { var t = TF.tar[k]; if (!t || t.feita || !t.lembrete || tfResp(t) !== me || t.lembrete > aIso) return;
+    if (String(t.lembrete).slice(0, 10) !== tfIso(agora)) return; // só lembra no próprio dia
+    var ch = 'fgvba_tf_lem_' + me + '_' + t.id + '_' + t.lembrete;
+    try { if (localStorage.getItem(ch)) return; localStorage.setItem(ch, '1'); } catch (e) { if (TF['l' + ch]) return; TF['l' + ch] = 1; }
+    var abrir = function() { TF.vista = t.projeto ? 'proj:' + t.projeto : 'meudia'; TF.sel = t.id; var b = document.getElementById('nav-tarefas'); if (b) showTab('tarefas', b); };
+    if (typeof window.aguiaAvisar === 'function') window.aguiaAvisar({ titulo: 'Lembrete: ' + tfEsc(t.tit), anim: 'ag-aponta', som: 'pequeno', texto: (t.prazo ? 'Prazo: ' + tfEsc(tfDataTxt(t.prazo, true)) : 'Sem prazo definido') + (t.nota ? '<br>' + tfEsc(String(t.nota).slice(0, 140)) : ''), dura: 20000, acoes: [{ rot: 'Abrir tarefa', pri: true, fn: abrir }] });
+    try { if (window.Notification && Notification.permission === 'granted' && document.hidden) new Notification('Lembrete: ' + t.tit, { tag: 'tf-' + t.id }); } catch (e) {}
+  });
+  // resumo do dia, uma vez por dia
+  var hojeL = tfMinhasHoje(); if (!hojeL.length || agora.getHours() < 7) return;
+  var chR = 'fgvba_tf_resumo_' + me + '_' + tfHoje();
+  try { if (localStorage.getItem(chR)) return; localStorage.setItem(chR, '1'); } catch (e) { if (TF.resumo === chR) return; TF.resumo = chR; }
+  var atr = hojeL.filter(function(t) { return t.prazo < tfHoje(); }).length, hj = hojeL.length - atr;
+  var abrirD = function() { TF.vista = 'meudia'; TF.sel = null; var b = document.getElementById('nav-tarefas'); if (b) showTab('tarefas', b); };
+  if (typeof window.aguiaAvisar === 'function') setTimeout(function() { window.aguiaAvisar({ titulo: 'Suas tarefas de hoje', anim: 'ag-aponta', som: 'pequeno', texto: (hj ? '<b>' + hj + '</b> para hoje' : '') + (hj && atr ? ' · ' : '') + (atr ? '<b>' + atr + '</b> atrasada' + (atr > 1 ? 's' : '') : '') + '<br>' + hojeL.slice(0, 3).map(function(t) { return '• ' + tfEsc(t.tit); }).join('<br>'), dura: 15000, acoes: [{ rot: 'Abrir Meu dia', pri: true, fn: abrirD }] }); }, 6000);
+}
+setInterval(function() { try { tfLembrar(); tfSelo(); } catch (e) { console.warn('tarefas: lembrete', e); } }, 30000);
+setInterval(function() { try { if (currentUser && TF.ligado !== currentUser) { tfLembrar(); tfSelo(); } } catch (e) {} }, 3000);
+</script>
 </body>
 </html>
