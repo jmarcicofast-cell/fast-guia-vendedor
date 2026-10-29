@@ -146,15 +146,7 @@
       gap: 20px;
     }
     
-    /* Ranking cards */
-    #rank-cards {
-      grid-template-columns: repeat(3, 1fr);
-    }
-    
-    /* Pódio maior */
-    #rank-podio {
-      min-height: 240px;
-    }
+    /* Ranking: estilos próprios em .rk (29/10/2026) */
     
     /* Metas admin em 3 colunas */
     #tab-admin .page-section > div > div[style*="grid-template-columns:repeat(auto-fill,minmax(140px"] {
@@ -3214,40 +3206,27 @@ function pdResumoCopiar() {
 <div id="tab-reconhecimento" class="tab-content">
   <div class="page-section" style="max-width:100%;">
 
-    <!-- PÓDIO -->
-    <div style="margin-bottom:1.5rem;">
-      <h2 style="font-size:15px;font-weight:600;color:var(--txt);margin-bottom:4px;">Ranking</h2>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 4px;">As premiações do mês ficam na <a href="#" onclick="showTab('rota',document.getElementById('nav-rota'));return false;" style="font-weight:700;">Rota da Meta</a>.</p>
-      <p id="rank-sub" style="font-size:12px;color:var(--faint);">Este mês · % de atingimento da meta · atualizado em tempo real.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;align-items:center;">
-        <div id="rank-periodo" style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="qf-btn" onclick="rankSet('periodo','dia',this)">Hoje</button>
-          <button class="qf-btn" onclick="rankSet('periodo','semana',this)">Semana</button>
-          <button class="qf-btn active" onclick="rankSet('periodo','mes',this)">Mês</button>
-        </div>
-        <div id="rank-crit" style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="qf-btn active" id="rank-crit-pct" data-crit="pct" onclick="rankSet('crit','pct',this)">% da meta</button>
-          <button class="qf-btn" data-crit="valor" onclick="rankSet('crit','valor',this)">Vendido</button>
-          <button class="qf-btn" data-crit="fat" onclick="rankSet('crit','fat',this)" title="Pedidos faturados ou entregues — igual à Rota da Meta">Faturado</button>
-          <button class="qf-btn" data-crit="cargas" onclick="rankSet('crit','cargas',this)">Cargas</button>
-          <button class="qf-btn" data-crit="lig" onclick="rankSet('crit','lig',this)">Ligações</button>
+    <!-- RANKING (repaginado 29/10/2026) -->
+    <div class="rk">
+      <div class="rk-top">
+        <div class="rk-tit"><h2>Ranking</h2><p id="rank-sub"></p></div>
+        <div class="rk-ctl">
+          <div class="rk-seg" id="rank-periodo" role="tablist" aria-label="Período"></div>
+          <div class="rk-seg" id="rank-crit" role="tablist" aria-label="Critério"></div>
         </div>
       </div>
-    </div>
+      <div id="rank-resumo" class="rk-kpis"></div>
 
-    <!-- FOTOS DA EQUIPE (admin) -->
-    <div id="rank-fotos-admin" style="display:none;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1.5rem;">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px;">Fotos da equipe — clique numa foto pra trocar</div>
-      <div id="rank-fotos-grid" style="display:flex;flex-wrap:wrap;gap:16px;"></div>
-    </div>
+      <!-- FOTOS DA EQUIPE (admin) -->
+      <div id="rank-fotos-admin" class="rk-fotos" style="display:none;">
+        <div class="rk-sec-t">Fotos da equipe <span>clique numa foto para trocar</span></div>
+        <div id="rank-fotos-grid" style="display:flex;flex-wrap:wrap;gap:16px;"></div>
+      </div>
 
-    <!-- PÓDIO VISUAL -->
-    <div id="rank-podio" style="display:flex;align-items:flex-end;justify-content:center;gap:12px;margin-bottom:2rem;min-height:200px;">
-      <div style="text-align:center;color:var(--faint);font-size:13px;padding:2rem;">Carregando...</div>
+      <div id="rank-podio" class="rk-podio"></div>
+      <div id="rank-cards" class="rk-tab"></div>
+      <p class="rk-nota">Premiações do mês ficam na <a href="#" onclick="showTab('rota',document.getElementById('nav-rota'));return false;">Rota da Meta</a>.</p>
     </div>
-
-    <!-- CARDS DETALHADOS -->
-    <div id="rank-cards" style="display:grid;gap:12px;margin-bottom:2rem;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));"></div>
 
     <!-- PREMIAÇÕES DO MÊS — agora ficam na Rota da Meta (calculadas pelos pedidos) -->
     <div style="display:none;background:var(--ink);border-radius:14px;padding:1.5rem;">
@@ -3375,7 +3354,7 @@ function pdResumoCopiar() {
 
     <!-- FEED DE ENTREGAS DE PREMIAÇÃO -->
     <div style="margin-top:2rem;">
-      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txt);margin-bottom:1rem;">Feed de entregas de premiação</div>
+      <div class="rk-sec-t">Entregas de premiação</div>
 
       <div id="feed-form-post" style="display:none;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:1.1rem 1.25rem;margin-bottom:1.25rem;">
         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
@@ -9014,115 +8993,137 @@ function rankMetaPessoa(vn, per) {
   var v = (vendedores && vendedores[vn]) || {};
   return parseFloat(String((per === 'semana' ? v.metaSemana : v.meta) || '0').replace('R$ ', '').replace(/\./g, '').replace(',', '.')) || 0;
 }
-function rankSet(campo, valor, btn) {
-  RANK[campo] = valor;
-  if (btn && btn.parentNode) btn.parentNode.querySelectorAll('.qf-btn').forEach(function(b) { b.classList.toggle('active', b === btn); });
-  renderRanking(RANK.ped, RANK.lig);
+/* ══ RANKING (repaginado 29/10/2026) — resumo da equipe, pódio, classificação completa ══ */
+var RK_PER = [['dia', 'Hoje'], ['semana', 'Semana'], ['mes', 'Mês']];
+var RK_CRIT = [['pct', '% da meta'], ['valor', 'Vendido'], ['fat', 'Faturado'], ['cargas', 'Cargas'], ['lig', 'Ligações']];
+function rkEsc(x) { return String(x == null ? '' : x).replace(/[&<>"']/g, function(c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+function rkMoeda(n) { return 'R$ ' + Math.round(Number(n) || 0).toLocaleString('pt-BR'); }
+function rkInt(n) { return Math.round(Number(n) || 0).toLocaleString('pt-BR'); }
+// dias úteis de hoje até o fim do período (seg a sex, sem feriados nacionais)
+function rkDiasUteis(per) {
+  if (per === 'dia') return 1;
+  var d = new Date(), fim = new Date(d), n = 0;
+  if (per === 'semana') fim.setDate(d.getDate() + (5 - ((d.getDay() + 6) % 7)) - 1); else fim = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  for (var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x <= fim; x.setDate(x.getDate() + 1)) {
+    var w = x.getDay(), iso = rankDataStr(x);
+    if (w >= 1 && w <= 5 && !(typeof agdFeriado === 'function' && agdFeriado(iso))) n++;
+  }
+  return n;
+}
+function rkEquipe() {
+  var base = (typeof CK_EQUIPE !== 'undefined' && CK_EQUIPE.length) ? CK_EQUIPE : Object.keys(vendedores || {});
+  return base.filter(function(vn) { var v = vendedores[vn]; return v && !v.bloqueado && v.tipo !== 'administrativo' && v.tipo !== 'gestora'; });
 }
 function renderRanking(allPedidos, allLigacoes) {
   RANK.ped = allPedidos || RANK.ped; RANK.lig = allLigacoes || RANK.lig;
-  var per = RANK.periodo, iv = rankIntervalo(per);
-  var crit = RANK.crit;
-  if (crit === 'pct' && per === 'dia') crit = 'valor';   // não existe meta diária por vendedor aqui
-  var critBtnPct = document.getElementById('rank-crit-pct');
-  if (critBtnPct) critBtnPct.style.display = per === 'dia' ? 'none' : '';
-  if (RANK.crit === 'pct' && per === 'dia') document.querySelectorAll('#rank-crit .qf-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.crit === 'valor'); });
-
+  var per = RANK.periodo, iv = rankIntervalo(per), crit = RANK.crit;
+  if (crit === 'pct' && per === 'dia') crit = 'valor'; // não há meta diária por vendedor
+  var me = currentUser;
   function getValor(p) {
-    if (p.itens && p.itens.length > 0) {
-      return p.itens.reduce(function(s,it){ return s+Math.round(numSafe(it.qtd)*numSafe(it.vUnit)*100)/100; },0);
-    }
-    return Number(p.vTotal||0);
+    if (p.itens && p.itens.length > 0) return p.itens.reduce(function(sm, it) { return sm + Math.round(numSafe(it.qtd) * numSafe(it.vUnit) * 100) / 100; }, 0);
+    return Number(p.vTotal || 0);
   }
-  function brNum(x) { return parseFloat(String(x||'0').replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0; }
-  var fmt = function(n) { return 'R$ ' + Number(n).toLocaleString('pt-BR',{minimumFractionDigits:0, maximumFractionDigits:0}); };
-
-  var dados = ['BRUNO','NIVIA'].filter(function(vn) { return vendedores[vn]; }).map(function(vn) {
-    var peds = (RANK.ped[vn]||[]).filter(function(p){ return p.data && p.data >= iv.de && p.data <= iv.ate && p.status !== 'cancelado'; });
-    var total = peds.reduce(function(s,p){ return s+getValor(p); },0);
-    // faturado = pedidos faturados ou entregues (mesma regra da Rota da Meta)
-    var fat = peds.reduce(function(s,p){ return s + ((p.status === 'faturado' || p.status === 'entregue') ? getValor(p) : 0); },0);
+  var dados = rkEquipe().map(function(vn) {
+    var peds = (RANK.ped[vn] || []).filter(function(p) { return p.data && p.data >= iv.de && p.data <= iv.ate && p.status !== 'cancelado'; });
+    var total = peds.reduce(function(sm, p) { return sm + getValor(p); }, 0);
+    var fat = peds.reduce(function(sm, p) { return sm + ((p.status === 'faturado' || p.status === 'entregue') ? getValor(p) : 0); }, 0);
     var lig = 0, lm = RANK.lig[vn] || {};
     Object.keys(lm).forEach(function(d) { if (d >= iv.de && d <= iv.ate) lig += Number(lm[d]) || 0; });
     var meta = per === 'dia' ? 0 : rankMetaPessoa(vn, per);
-    var pct = meta > 0 ? Math.round((total/meta)*100) : 0;
-    return { vn: vn, nome: vendedores[vn].nome, total: total, fat: fat, meta: meta, pct: pct, pctFat: meta > 0 ? Math.round((fat/meta)*100) : 0, cargas: peds.length, lig: lig };
+    return { vn: vn, nome: vendedores[vn].nome, total: total, fat: fat, meta: meta, pct: meta > 0 ? Math.round(total / meta * 100) : 0, pctFat: meta > 0 ? Math.round(fat / meta * 100) : 0, cargas: peds.length, lig: lig };
   });
   var chave = { pct: 'pct', valor: 'total', fat: 'fat', cargas: 'cargas', lig: 'lig' }[crit];
-  dados.sort(function(a,b){ return (b[chave] - a[chave]) || (b.total - a.total); });
-  function principal(d) {
-    if (crit === 'pct') return d.pct + '%';
-    if (crit === 'cargas') return d.cargas + (d.cargas === 1 ? ' carga' : ' cargas');
-    if (crit === 'lig') return d.lig + ' lig.';
-    if (crit === 'fat') return fmt(d.fat);
-    return fmt(d.total);
-  }
-  function secundario(d) {
-    if (crit === 'fat') return 'de ' + fmt(d.total) + ' lançado';
-    return crit === 'valor' ? d.cargas + (d.cargas === 1 ? ' carga' : ' cargas') : fmt(d.total);
-  }
+  // desempate: quem vendeu mais, depois o nome
+  dados.sort(function(a, b) { return (b[chave] - a[chave]) || (b.total - a.total) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'); });
+  // posição: empate no critério divide a posição; quem está zerado fica sem posição
+  var pos = 0, ant = null;
+  dados.forEach(function(d, i) { var v = d[chave]; if (!v) { d.pos = null; return; } if (v !== ant) { pos = i + 1; ant = v; } d.pos = pos; });
+  var algum = dados.some(function(d) { return d[chave] > 0; });
+  var du = rkDiasUteis(per);
+  var principal = function(d) { return crit === 'pct' ? d.pct + '%' : crit === 'cargas' ? rkInt(d.cargas) : crit === 'lig' ? rkInt(d.lig) : rkMoeda(crit === 'fat' ? d.fat : d.total); };
+  var unid = function(d) { return crit === 'cargas' ? (d.cargas === 1 ? 'carga' : 'cargas') : crit === 'lig' ? (d.lig === 1 ? 'ligação atendida' : 'ligações atendidas') : crit === 'pct' ? 'da meta' : crit === 'fat' ? 'faturado' : 'vendido'; };
 
+  // controles
+  var segP = document.getElementById('rank-periodo'), segC = document.getElementById('rank-crit');
+  if (segP) segP.innerHTML = RK_PER.map(function(x) { return '<button role="tab" aria-selected="' + (RANK.periodo === x[0]) + '" class="' + (RANK.periodo === x[0] ? 'on' : '') + '" onclick="rankSet(\'periodo\',\'' + x[0] + '\')">' + x[1] + '</button>'; }).join('');
+  if (segC) segC.innerHTML = RK_CRIT.filter(function(x) { return !(x[0] === 'pct' && per === 'dia'); }).map(function(x) { return '<button role="tab" aria-selected="' + (crit === x[0]) + '" class="' + (crit === x[0] ? 'on' : '') + '" onclick="rankSet(\'crit\',\'' + x[0] + '\')"' + (x[0] === 'fat' ? ' title="Pedidos faturados ou entregues, como na Rota da Meta"' : x[0] === 'lig' ? ' title="Ligações atendidas, que contam para a meta"' : '') + '>' + x[1] + '</button>'; }).join('');
   var sub = document.getElementById('rank-sub');
-  if (sub) sub.textContent = ({ dia: 'Hoje', semana: 'Esta semana (seg. a hoje)', mes: 'Este mês' })[per] + ' · ' +
-    ({ pct: '% de atingimento da meta', valor: 'valor vendido', fat: 'valor faturado (faturados + entregues, como na Rota da Meta)', cargas: 'nº de cargas', lig: 'ligações lançadas na Rota da Meta' })[crit] + ' · atualizado em tempo real.';
+  if (sub) {
+    var hojeD = new Date(), perTxt = per === 'dia' ? hojeD.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+      : per === 'semana' ? 'Semana de ' + iv.de.split('-').reverse().slice(0, 2).join('/') + ' a ' + iv.ate.split('-').reverse().slice(0, 2).join('/')
+      : hojeD.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    sub.innerHTML = '<span class="rk-cap">' + rkEsc(perTxt) + '</span>' + (per !== 'dia' ? ' · ' + du + (du === 1 ? ' dia útil restante' : ' dias úteis restantes') : '') +
+      ' · <span class="rk-ao"><i></i>atualizado às ' + hojeD.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</span>';
+  }
 
-  var medalhas = ['🥇','🥈','🥉'];
-  var cores = ['#FFD700','#C0C0C0','#CD7F32'];
+  // resumo da equipe
+  var tot = dados.reduce(function(a, d) { a.total += d.total; a.fat += d.fat; a.meta += d.meta; a.cargas += d.cargas; a.lig += d.lig; return a; }, { total: 0, fat: 0, meta: 0, cargas: 0, lig: 0 });
+  var pctEq = tot.meta > 0 ? Math.round(tot.total / tot.meta * 100) : null;
+  var euI = dados.findIndex(function(d) { return d.vn === me; }), eu = euI >= 0 ? dados[euI] : null;
+  var res = document.getElementById('rank-resumo');
+  if (res) {
+    var faltaEq = Math.max(0, tot.meta - tot.total);
+    var k = '<div class="rk-kpi"><small>Vendido pela equipe</small><b>' + rkMoeda(tot.total) + '</b>' +
+      (pctEq != null ? '<div class="rk-bar"><i style="width:' + Math.min(100, pctEq) + '%"></i></div><span>' + pctEq + '% da meta de ' + rkMoeda(tot.meta) + (faltaEq ? ' · faltam ' + rkMoeda(faltaEq) : ' · meta batida') + '</span>' : '<span>' + rkInt(tot.cargas) + (tot.cargas === 1 ? ' carga' : ' cargas') + '</span>') + '</div>';
+    k += '<div class="rk-kpi"><small>Faturado</small><b>' + rkMoeda(tot.fat) + '</b><span>' + (tot.total ? Math.round(tot.fat / tot.total * 100) + '% do vendido' : 'faturados e entregues') + '</span></div>';
+    k += '<div class="rk-kpi"><small>Cargas</small><b>' + rkInt(tot.cargas) + '</b><span>' + (tot.cargas ? 'ticket médio ' + rkMoeda(tot.total / tot.cargas) : 'nenhuma no período') + '</span></div>';
+    k += '<div class="rk-kpi"><small>Ligações atendidas</small><b>' + rkInt(tot.lig) + '</b><span>' + (dados.length ? 'média de ' + rkInt(tot.lig / dados.length) + ' por pessoa' : '') + '</span></div>';
+    if (eu) {
+      var acima = eu.pos && eu.pos > 1 ? dados.filter(function(d) { return d.pos && d.pos < eu.pos; }).slice(-1)[0] : null, dif = acima ? acima[chave] - eu[chave] : 0;
+      k += '<div class="rk-kpi eu"><small>Sua posição</small><b>' + (eu.pos ? eu.pos + 'º <em>de ' + dados.length + '</em>' : '–') + '</b><span>' +
+        (!eu.pos ? 'Ainda sem resultado no período' : eu.pos === 1 ? 'Você lidera o ranking' : (crit === 'pct' ? dif + (dif === 1 ? ' ponto percentual' : ' pontos percentuais') : crit === 'cargas' ? dif + (dif === 1 ? ' carga' : ' cargas') : crit === 'lig' ? dif + (dif === 1 ? ' ligação' : ' ligações') : rkMoeda(dif)) + ' para passar ' + rkEsc(String(acima.nome).split(' ')[0])) + '</span></div>';
+    }
+    res.innerHTML = k;
+    res.style.gridTemplateColumns = 'repeat(' + (eu ? 5 : 4) + ',minmax(0,1fr))';
+  }
 
+  // pódio
   var podio = document.getElementById('rank-podio');
   if (podio) {
-    var order = dados.length >= 3 ? [dados[1], dados[0], dados[2]] : dados;
-    var heights = dados.length >= 3 ? ['130px','160px','110px'] : ['130px'];
-    var podiumCores = dados.length >= 3 ? ['#C0C0C0','#FFD700','#CD7F32'] : ['#FFD700'];
-    var podiumMed = dados.length >= 3 ? ['🥈','🥇','🥉'] : ['🥇'];
-    podio.innerHTML = order.map(function(d, i) {
-      var posLabel = i === 1 ? '1º' : (i === 0 ? '2º' : '3º');
-      return '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;max-width:200px;">' +
-        '<div style="font-size:32px;">' + podiumMed[i] + '</div>' +
-        avatarHTML(d.vn, d.nome, 52) +
-        '<div style="font-size:14px;font-weight:700;color:var(--txt);">' + d.nome + '</div>' +
-        '<div style="font-size:20px;font-weight:700;color:' + podiumCores[i] + ';">' + principal(d) + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);">' + secundario(d) + '</div>' +
-        '<div style="width:100%;background:' + podiumCores[i] + ';border-radius:8px 8px 0 0;height:' + heights[i] + ';display:flex;align-items:flex-start;justify-content:center;padding-top:10px;">' +
-          '<span style="font-size:11px;font-weight:600;color:' + (i===1?'#7A5500':'#333') + ';">' + posLabel + '</span>' +
-        '</div>' +
-      '</div>';
-    }).join('');
+    var top = dados.filter(function(d) { return d.pos && d.pos <= 3; }).slice(0, 3);
+    if (!algum) podio.innerHTML = '<div class="rk-vazio"><b>Ninguém pontuou ainda</b><span>' + (per === 'dia' ? 'O pódio de hoje aparece com o primeiro pedido ou ligação do dia.' : 'O pódio aparece assim que entrarem os primeiros resultados do período.') + '</span></div>';
+    else {
+      var ordem = top.length >= 3 ? [top[1], top[0], top[2]] : top.length === 2 ? [top[1], top[0]] : [top[0]];
+      podio.innerHTML = '<div class="rk-podio-in n' + ordem.length + '">' + ordem.map(function(d) {
+        var n = d.pos, cls = n === 1 ? 'ouro' : n === 2 ? 'prata' : 'bronze', base = crit === 'fat' ? d.pctFat : d.pct;
+        return '<div class="rk-pd ' + cls + (d.vn === me ? ' eu' : '') + '"><div class="rk-pd-card">' +
+          '<div class="rk-pd-av">' + avatarHTML(d.vn, d.nome, n === 1 ? 76 : 62) + '<span class="rk-pd-n">' + n + '</span></div>' +
+          '<div class="rk-pd-nome">' + rkEsc(d.nome) + (d.vn === me ? ' <em>você</em>' : '') + '</div>' +
+          '<div class="rk-pd-v">' + principal(d) + '</div><div class="rk-pd-u">' + unid(d) + '</div>' +
+          (d.meta > 0 && (crit === 'pct' || crit === 'valor' || crit === 'fat') ? '<div class="rk-bar"><i style="width:' + Math.min(100, base) + '%"></i></div><div class="rk-pd-s">' + (crit === 'pct' ? rkMoeda(d.total) + ' de ' + rkMoeda(d.meta) : base + '% da meta') + '</div>'
+            : '<div class="rk-pd-s">' + rkMoeda(d.total) + ' · ' + d.cargas + (d.cargas === 1 ? ' carga' : ' cargas') + '</div>') +
+          '</div><div class="rk-pd-base"><span>' + n + 'º</span></div></div>';
+      }).join('') + '</div>';
+    }
   }
 
-  var cards = document.getElementById('rank-cards');
-  if (cards) {
-    cards.innerHTML = dados.map(function(d, i) {
-      var base = crit === 'fat' ? d.fat : d.total, pctB = crit === 'fat' ? d.pctFat : d.pct;
-      var falta = Math.max(0, d.meta - base);
-      var barW = Math.min(pctB, 100);
-      var barCor = pctB >= 100 ? '#2E7D32' : pctB >= 80 ? '#E65100' : '#C41E1E';
-      var medalhaOuPos = medalhas[i] || ('#' + (i+1));
-      var corBorda = (i === 0 && currentUser === d.vn) ? '#C41E1E' : (cores[i] || (currentUser === d.vn ? '#C41E1E' : '#E2E0D8'));
-      var corPct = cores[i] || '#1C1C1C';
-      var rodape = d.meta > 0
-        ? '<div style="background:var(--surface-3);border-radius:20px;height:8px;overflow:hidden;margin-bottom:5px;"><div style="height:100%;border-radius:20px;background:' + barCor + ';width:' + barW + '%;transition:width .5s;"></div></div>' +
-          '<div style="font-size:11px;color:var(--muted);">' + (falta > 0 ? 'Falta ' + fmt(falta) + (crit === 'fat' ? ' faturar' : '') + ' para bater a meta' + (per === 'semana' ? ' da semana' : '') : 'Meta batida!') + '</div>'
-        : '<div style="font-size:11px;color:var(--muted);">' + d.cargas + (d.cargas === 1 ? ' carga' : ' cargas') + ' · ' + d.lig + ' ligações</div>';
-      return '<div style="background:var(--surface);border:2px solid ' + corBorda + ';border-radius:12px;padding:1.1rem 1.25rem;">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">' +
-          '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
-            '<span style="font-size:' + (medalhas[i] ? '24px' : '15px') + ';' + (medalhas[i] ? '' : 'font-weight:700;color:var(--muted);min-width:24px;text-align:center;') + '">' + medalhaOuPos + '</span>' +
-            avatarHTML(d.vn, d.nome, 40) +
-            '<div style="min-width:0;">' +
-              '<div style="font-size:15px;font-weight:700;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + d.nome + (currentUser === d.vn ? ' <span style="font-size:11px;color:var(--acc-txt);">(você)</span>' : '') + '</div>' +
-              '<div style="font-size:11px;color:var(--muted);white-space:nowrap;">' + (d.meta > 0 ? 'Meta: ' + fmt(d.meta) : secundario(d)) + '</div>' +
-            '</div>' +
-          '</div>' +
-          '<div style="text-align:right;flex-shrink:0;">' +
-            '<div style="font-size:20px;font-weight:800;color:' + corPct + ';white-space:nowrap;">' + principal(d) + '</div>' +
-            '<div style="font-size:12px;color:var(--muted);white-space:nowrap;">' + (crit === 'pct' ? fmt(d.total) : (d.meta > 0 ? pctB + (crit === 'fat' ? '% faturado' : '% da meta') : '')) + '</div>' +
-          '</div>' +
-        '</div>' + rodape +
-      '</div>';
+  // classificação completa
+  var tab = document.getElementById('rank-cards');
+  if (tab) {
+    var colAt = per !== 'dia';
+    var cols = [['valor', 'Vendido'], ['fat', 'Faturado'], ['cargas', 'Cargas'], ['lig', 'Ligações']];
+    var h = '<div class="rk-row rk-head' + (colAt ? '' : ' sem-at') + '"><span>#</span><span>Vendedor</span>' + (colAt ? '<span class="' + (crit === 'pct' ? 'ord' : '') + '">Atingimento da meta</span>' : '') +
+      cols.map(function(c) { return '<span class="num' + (crit === c[0] ? ' ord' : '') + '">' + c[1] + '</span>'; }).join('') + '</div>';
+    h += dados.map(function(d, i) {
+      var base = crit === 'fat' ? d.fat : d.total, pctB = crit === 'fat' ? d.pctFat : d.pct, falta = Math.max(0, d.meta - base);
+      var corBar = pctB >= 100 ? 'ok' : pctB >= 70 ? 'med' : 'baixo';
+      var atv = '';
+      if (colAt) atv = d.meta > 0 ? '<span class="rk-at"><span class="rk-at-l"><b>' + pctB + '%</b><em>' + (falta > 0 ? 'faltam ' + rkMoeda(falta) + (du > 0 ? ' · ' + rkMoeda(falta / du) + '/dia' : '') : 'meta batida') + '</em></span><span class="rk-bar ' + corBar + '"><i style="width:' + Math.min(100, pctB) + '%"></i></span></span>'
+        : '<span class="rk-at"><em>sem meta cadastrada</em></span>';
+      var nm = d.pos ? '<span class="rk-pos p' + (d.pos <= 3 ? d.pos : '') + '">' + d.pos + '</span>' : '<span class="rk-pos z">–</span>';
+      return '<div class="rk-row' + (colAt ? '' : ' sem-at') + (d.vn === me ? ' eu' : '') + (d.pos ? '' : ' zero') + '">' + nm +
+        '<span class="rk-vend">' + avatarHTML(d.vn, d.nome, 34) + '<span><b>' + rkEsc(d.nome) + (d.vn === me ? ' <em>você</em>' : '') + '</b><small>' + (d.meta > 0 ? 'Meta ' + rkMoeda(d.meta) : (per === 'dia' ? rkInt(d.lig) + ' ligações hoje' : 'sem meta')) + '</small></span></span>' + atv +
+        '<span class="num' + (crit === 'valor' || crit === 'pct' ? ' ord' : '') + '" data-l="Vendido">' + rkMoeda(d.total) + '</span>' +
+        '<span class="num' + (crit === 'fat' ? ' ord' : '') + '" data-l="Faturado">' + rkMoeda(d.fat) + '</span>' +
+        '<span class="num' + (crit === 'cargas' ? ' ord' : '') + '" data-l="Cargas">' + rkInt(d.cargas) + '</span>' +
+        '<span class="num' + (crit === 'lig' ? ' ord' : '') + '" data-l="Ligações">' + rkInt(d.lig) + '</span></div>';
     }).join('');
+    tab.innerHTML = '<div class="rk-tab-h"><span>Classificação</span><small>' + rkEsc({ pct: 'Ordenado pelo % da meta', valor: 'Ordenado pelo valor vendido', fat: 'Ordenado pelo valor faturado', cargas: 'Ordenado pelo número de cargas', lig: 'Ordenado pelas ligações atendidas' }[crit]) + (chave === 'total' ? '' : ' · empate desfeito pelo valor vendido') + '</small></div>' + h;
   }
 }
+// troca de período/critério (os botões são desenhados pelo próprio ranking)
+function rankSet(campo, valor) { RANK[campo] = valor; renderRanking(RANK.ped, RANK.lig); }
+setInterval(function() { try { var t = document.getElementById('tab-reconhecimento'); if (t && t.classList.contains('active') && RANK && RANK.ped) renderRanking(null, null); } catch (e) {} }, 60000);
 
 function renderPremiacoes(allPedidos) {
   var mesAtual = new Date().toISOString().slice(0,7);
@@ -32083,5 +32084,112 @@ function tfLembrar() {
 setInterval(function() { try { tfLembrar(); tfSelo(); } catch (e) { console.warn('tarefas: lembrete', e); } }, 30000);
 setInterval(function() { try { if (currentUser && TF.ligado !== currentUser) { tfLembrar(); tfSelo(); } } catch (e) {} }, 3000);
 </script>
+<style>
+/* ══ RANKING (repaginado 29/10/2026) ══ */
+.rk{--rk-ouro:#C9971C;--rk-prata:#8C96A5;--rk-bronze:#B26A3A;--rk-ok:#1F9D63;--rk-med:#D98A0B;--rk-baixo:#D64545;color:var(--txt);display:flex;flex-direction:column;gap:16px;margin-bottom:28px}
+.rk-top{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.rk-tit h2{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
+.rk-tit p{margin:4px 0 0;font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:0 6px;align-items:center}
+.rk-cap::first-letter{text-transform:uppercase}
+.rk-ao{display:inline-flex;align-items:center;gap:6px}
+.rk-ao i{width:7px;height:7px;border-radius:50%;background:var(--rk-ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--rk-ok) 22%,transparent)}
+.rk-ctl{display:flex;gap:10px;flex-wrap:wrap}
+.rk-seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.rk-seg button{border:none;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--muted);padding:6px 12px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.rk-seg button:hover{color:var(--txt)}
+.rk-seg button.on{background:var(--surface);color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.rk-kpis{display:grid;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rk-kpi{padding:14px 18px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.rk-kpi+.rk-kpi{border-left:1px solid var(--line)}
+.rk-kpi small{font-size:12px;color:var(--muted);font-weight:500}
+.rk-kpi b{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk-kpi b em{font-style:normal;font-size:14px;font-weight:500;color:var(--muted)}
+.rk-kpi span{font-size:12px;color:var(--muted)}
+.rk-kpi .rk-bar{margin:4px 0 2px}
+.rk-kpi.eu{background:color-mix(in srgb,var(--acc) 6%,var(--surface))}
+.rk-bar{display:block;height:6px;border-radius:999px;background:var(--surface-3);overflow:hidden}
+.rk-bar i{display:block;height:100%;border-radius:999px;background:var(--rk-ok);transition:width .5s}
+.rk-bar.med i{background:var(--rk-med)}.rk-bar.baixo i{background:var(--rk-baixo)}
+.rk-fotos{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.rk-sec-t{font-size:15px;font-weight:700;margin:0 0 12px;display:flex;align-items:baseline;gap:8px}
+.rk-sec-t span{font-size:12.5px;font-weight:400;color:var(--muted)}
+/* pódio */
+.rk-podio{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 18px 0;overflow:hidden}
+.rk-podio-in{display:flex;justify-content:center;align-items:flex-end;gap:14px;max-width:760px;margin:0 auto}
+.rk-pd{flex:1;max-width:240px;display:flex;flex-direction:column;align-items:stretch;min-width:0}
+.rk-pd-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:0 6px 14px}
+.rk-pd-av{position:relative;padding:4px;border-radius:50%;background:conic-gradient(from 210deg,var(--c1),var(--c2),var(--c1));margin-bottom:6px}
+.rk-pd-av>img,.rk-pd-av>div{border:3px solid var(--surface) !important;box-sizing:content-box}
+.rk-pd-n{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:var(--c1);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;border:3px solid var(--surface)}
+.rk-pd.ouro{--c1:var(--rk-ouro);--c2:#F2D27A}.rk-pd.prata{--c1:var(--rk-prata);--c2:#D7DCE3}.rk-pd.bronze{--c1:var(--rk-bronze);--c2:#E2A97E}
+.rk-pd-nome{font-size:14.5px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk-pd-nome em,.rk-vend em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--acc-txt);background:var(--acc-soft);border-radius:999px;padding:1px 7px;vertical-align:2px}
+.rk-pd-v{font-size:26px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--c1);line-height:1.1;margin-top:2px}
+.rk-pd.ouro .rk-pd-v{font-size:30px}
+.rk-pd-u{font-size:12px;color:var(--muted);margin-top:-2px}
+.rk-pd .rk-bar{width:80%;margin:8px auto 2px}
+.rk-pd-s{font-size:12px;color:var(--muted)}
+.rk-pd-base{border-radius:10px 10px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 26%,var(--surface)),color-mix(in srgb,var(--c1) 8%,var(--surface)));border:1px solid color-mix(in srgb,var(--c1) 35%,var(--line));border-bottom:none}
+.rk-pd-base span{font-size:15px;font-weight:800;color:var(--c1)}
+.rk-pd.ouro .rk-pd-base{height:96px}.rk-pd.prata .rk-pd-base{height:68px}.rk-pd.bronze .rk-pd-base{height:48px}
+.rk-pd.eu .rk-pd-nome{color:var(--acc-txt)}
+.rk-vazio{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:26px 10px 30px;color:var(--muted);font-size:13.5px}
+.rk-vazio b{color:var(--txt);font-size:15px}
+/* classificação */
+.rk-tab{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.rk-tab-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:14px 18px 10px}
+.rk-tab-h span{font-size:15px;font-weight:700}
+.rk-tab-h small{font-size:12px;color:var(--muted)}
+.rk-row{display:grid;grid-template-columns:44px minmax(190px,1.3fr) minmax(220px,1.6fr) repeat(4,minmax(86px,.6fr));gap:14px;align-items:center;padding:10px 18px;border-top:1px solid var(--line)}
+.rk-row.sem-at{grid-template-columns:44px minmax(190px,1.5fr) repeat(4,minmax(96px,.7fr))}
+.rk-head{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding-top:8px;padding-bottom:8px;background:var(--surface-2)}
+.rk-head span.ord{color:var(--txt)}
+.rk-head span.ord::after{content:' ↓'}
+.rk-row .num{text-align:right;font-variant-numeric:tabular-nums;font-size:13.5px;color:var(--txt-2);white-space:nowrap}
+.rk-row .num.ord{color:var(--txt);font-weight:700}
+.rk-head .num{color:var(--muted);font-size:11.5px;font-weight:600}
+.rk-head .num.ord{color:var(--txt)}
+.rk-row:not(.rk-head):hover{background:color-mix(in srgb,var(--surface-3) 45%,var(--surface))}
+.rk-row.eu{background:color-mix(in srgb,var(--acc) 7%,var(--surface));box-shadow:inset 3px 0 0 var(--acc)}
+.rk-row.zero{opacity:.62}
+.rk-pos{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--muted);background:var(--surface-3);font-variant-numeric:tabular-nums}
+.rk-pos.p1{background:var(--rk-ouro);color:#fff}.rk-pos.p2{background:var(--rk-prata);color:#fff}.rk-pos.p3{background:var(--rk-bronze);color:#fff}
+.rk-pos.z{background:none}
+.rk-vend{display:flex;align-items:center;gap:10px;min-width:0}
+.rk-vend>span{display:flex;flex-direction:column;min-width:0}
+.rk-vend b{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk-vend small{font-size:12px;color:var(--muted)}
+.rk-at{display:flex;flex-direction:column;gap:5px;min-width:0}
+.rk-at-l{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rk-at-l b{font-size:14px;font-variant-numeric:tabular-nums}
+.rk-at-l em,.rk-at>em{font-style:normal;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk-nota{font-size:12.5px;color:var(--muted);margin:-4px 2px 0}
+.rk-nota a{font-weight:600}
+@media (max-width:1100px){
+  .rk-kpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  .rk-kpi+.rk-kpi{border-left:none}
+  .rk-kpi{border-top:1px solid var(--line)}
+  .rk-kpi:nth-child(-n+2){border-top:none}
+  .rk-kpi:nth-child(even){border-left:1px solid var(--line)}
+  .rk-kpi.eu:last-child:nth-child(odd){grid-column:1/-1}
+}
+@media (max-width:900px){
+  .rk-head{display:none}
+  .rk-row,.rk-row.sem-at{grid-template-columns:34px minmax(0,1fr);gap:8px 12px;padding:12px 14px}
+  .rk-row .rk-at{grid-column:2}
+  .rk-row .num{grid-column:2;display:none}
+  .rk-row .num.ord{display:block;text-align:left;font-size:15px;grid-row:1;grid-column:2;justify-self:end;align-self:center}
+  .rk-row .rk-vend{grid-row:1;grid-column:2;padding-right:110px}
+  .rk-pd-v{font-size:20px}.rk-pd.ouro .rk-pd-v{font-size:23px}
+  .rk-podio-in{gap:8px}
+  .rk-pd .rk-bar,.rk-pd-s{display:none}
+}
+@media (max-width:520px){
+  .rk-seg{width:100%;overflow-x:auto}
+  .rk-seg button{flex:1;padding:6px 8px}
+  .rk-pd-nome{font-size:12.5px}
+  .rk-kpi b{font-size:18px}
+}
+</style>
 </body>
 </html>
