@@ -26066,7 +26066,6 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     }
     var ev = AG.fila.shift(); AG.ocupado = true;
     // rasante só nas super metas (as que abrem a tela cheia): depois da tela cheia, ela cruza a tela
-    if (ev.epico && ev._palcoFeito) razante({ extras: ev.extras });
     if (ev.epico && !ev._palcoFeito) { ev._palcoFeito = true; ev.confete = 0; palco(ev.epico[0], ev.epico[1], function(){ AG.fila.unshift(ev); AG.ocupado = false; mostrarDaFila(); }); return; }
     var b = document.createElement('div');
     b.className = 'ag-balao' + (ev.grande ? ' grande' : '');
@@ -26131,7 +26130,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
     if (!AG.user) return;
     if (AG.ultimoBalao) { fecharBalao(); return; }
     var vn = AG.user, frase;
-    var cfg = '<div class="cfg"><button type="button" data-cfg="som">' + (silencio() ? 'Ligar som' : 'Desligar som') + '</button><button type="button" data-cfg="rasante">🦅 Dar um rasante</button><button type="button" data-cfg="esconde">Esconder a águia</button></div>';
+    var cfg = '<div class="cfg"><button type="button" data-cfg="som">' + (silencio() ? 'Ligar som' : 'Desligar som') + '</button><button type="button" data-cfg="esconde">Esconder a águia</button></div>';
     var ligar = function(b){
       b.querySelectorAll('[data-cfg]').forEach(function(x){
         x.onclick = function(){
