@@ -31396,6 +31396,37 @@ button.tf-grp-t{cursor:pointer}button.tf-grp-t:hover,button.tf-grp-t.on{color:va
 .tf-gi .acts button:hover{background:var(--surface-3)}
 .tf-gi .acts button+button{color:var(--muted)}
 .tf-prod{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:4px 2px}
+/* quadro de tarefas */
+.tf-tboard{display:grid;grid-template-columns:repeat(3,minmax(200px,1fr));gap:10px;align-items:start}
+.tf-tcol{background:var(--surface-2);border:1px dashed transparent;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:7px;min-height:340px;transition:background .12s,border-color .12s}
+.tf-sect .tf-tcol{background:var(--surface-3)}
+.tf-tcol.over{border-color:var(--c);background:color-mix(in srgb,var(--c) 9%,var(--surface-2))}
+.tf-tcol-h{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 6px;border-bottom:3px solid var(--c);margin-bottom:2px}
+.tf-tcol-h span{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700}
+.tf-tcol-h i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.tf-tcol-h em{font-style:normal;font-size:12.5px;color:var(--muted)}
+.tf-tcard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;display:flex;flex-direction:column;gap:7px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tf-tcard[draggable="true"]{cursor:grab}
+.tf-tcard:hover{box-shadow:0 4px 14px rgba(0,0,0,.14)}
+.tf-tcard.sel{border-color:var(--tf-azul);box-shadow:0 0 0 1px var(--tf-azul)}
+.tf-tcard.atr{border-left:3px solid var(--tf-bad)}
+.tf-tcard.arr{opacity:.45}
+.tf-tc1{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:flex-start}
+.tf-tc1 .tf-chk{margin-top:1px}
+.tf-tc1 .tx{font-size:13.5px;line-height:1.35;overflow-wrap:anywhere}
+.tf-tc1 .tf-est{padding:0}
+.tf-tc1 .tf-est svg{width:16px;height:16px}
+.tf-tcard.feita .tx{text-decoration:line-through;color:var(--muted)}
+.tf-tc2{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tf-tc2 .tf-it-m{margin:0;gap:8px}
+.tf-tcard .tf-prog{height:4px}
+.tf-it-m .and{color:var(--tf-azul);font-weight:600}
+.tf-ant{font:inherit;font-size:12px;font-weight:600;border:none;background:none;color:var(--muted);cursor:pointer;padding:6px;text-align:center}
+.tf-ant:hover{color:var(--tf-azul)}
+.tf-sect h3 .tf-sp{flex:1}
+.tf-sect h3 .tf-seg{font-weight:400}
+.tf-sect .tf-tboard{margin-top:4px}
+@media (max-width:860px){.tf-tboard{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px}.tf-tcol{flex:0 0 84%;scroll-snap-align:start;min-height:220px}}
 /* telas menores */
 .tf-veu{display:none;position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:9998}
 @media (max-width:1180px){
@@ -31432,7 +31463,7 @@ button.tf-grp-t{cursor:pointer}button.tf-grp-t:hover,button.tf-grp-t.on{color:va
    As etapas de um projeto são tarefas do projeto (cada uma com responsável e prazo) e as sub-etapas são os passos da tarefa.
    Os prazos entram na Agenda (fonte "Tarefas e projetos"). */
 var TF = { ligado: null, tar: {}, proj: {}, listas: {}, vista: null, sel: null, projModo: 'lista', projFiltro: 'ativos', projAba: 'etapas', eqFiltro: 'todos',
-  concl: {}, busca: '', menu: false, pend: false, arr: null, anx: {}, novas: {}, refs: [], foco: null, armado: null };
+  concl: {}, busca: '', menu: false, pend: false, arr: null, arrT: null, anx: {}, novas: {}, refs: [], foco: null, armado: null, tmodo: null, emodo: null, qAntigas: false };
 var TF_ST = [['iniciar', 'A iniciar'], ['andamento', 'Em andamento'], ['revisao', 'Em revisão'], ['entregue', 'Entregue']];
 var TF_STL = {}; TF_ST.forEach(function(s) { TF_STL[s[0]] = s[1]; });
 var TF_REP = [['', 'Não se repete'], ['dia', 'Todo dia'], ['uteis', 'Dias úteis (seg a sex)'], ['semana', 'Toda semana'], ['mes', 'Todo mês']];
@@ -31549,7 +31580,7 @@ function tfDepoisDados(campo) {
 function tfRenderSeguro() {
   var ae = document.activeElement, root = document.getElementById('tf-root');
   if (root && ae && root.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && ae.type !== 'checkbox') { TF.pend = true; return; }
-  if (TF.arr) { TF.pend = true; return; }
+  if (TF.arr || TF.arrT) { TF.pend = true; return; }
   clearTimeout(tfRenderSeguro.h); tfRenderSeguro.h = setTimeout(tfRender, 40);
 }
 function tfSalvar(t, campos, aviso) {
@@ -31651,7 +31682,7 @@ function tfInfoVista(v) {
 function tfInit() {
   if (!currentUser) return;
   tfOuvir();
-  if (TF.user !== currentUser) { TF.user = currentUser; TF.vista = tfLs('vista_' + currentUser, 'meudia'); TF.sel = null; }
+  if (TF.user !== currentUser) { TF.user = currentUser; TF.vista = tfLs('vista_' + currentUser, 'meudia'); TF.sel = null; TF.tmodo = tfLs('tmodo_' + currentUser, 'lista'); TF.emodo = tfLs('emodo_' + currentUser, 'lista'); }
   if (!TF.vista) TF.vista = 'meudia';
   if (TF.vista === 'atribuidas') tfMarcarVistas();
   tfRender();
@@ -31713,6 +31744,7 @@ function tfListaHtml(v) {
   var extra = '';
   if (v === 'equipe') extra = '<select class="tf-sel" id="tf-eqf"><option value="todos">Todas as pessoas</option>' + tfPessoas().map(function(p) { return '<option value="' + tfEsc(p) + '"' + (TF.eqFiltro === p ? ' selected' : '') + '>' + tfEsc(tfNome(p)) + '</option>'; }).join('') + '</select>';
   if (v.indexOf('lista:') === 0) extra = '<button class="tf-bt sm dng" data-a="lista-excluir">' + (TF.armado === 'lista' ? 'Confirmar exclusão' : 'Excluir lista') + '</button>';
+  if (v !== 'busca') extra = '<div class="tf-cab-a">' + tfModoBt('tmodo') + extra + '</div>';
   var html = tfCab(info, sub ? tfEsc(sub) : '', extra);
   // adicionar
   if (v !== 'atribuidas' && v !== 'busca') {
@@ -31720,6 +31752,9 @@ function tfListaHtml(v) {
     html += '<div class="tf-add">' + '<span class="tf-add-ic">' + TF_IC.mais + '</span><input id="tf-add" placeholder="Adicionar uma tarefa" maxlength="200" autocomplete="off">' +
       (paraSel ? '<select class="tf-sel" id="tf-add-para" title="Para quem">' + tfPessoas().filter(function(p) { return p !== me; }).map(function(p) { return '<option value="' + tfEsc(p) + '"' + (TF.eqFiltro === p ? ' selected' : '') + '>Para ' + tfEsc(tfNome(p)) + '</option>'; }).join('') + '</select>' : '') +
       '<input type="date" id="tf-add-data" class="tf-add-data" title="Data de conclusão"' + (v === 'planejado' ? ' value="' + h + '"' : '') + '><button class="tf-bt pri" data-a="add">Adicionar</button></div>';
+  }
+  if (TF.tmodo === 'quadro' && v !== 'busca') {
+    return html + (todas.length ? tfQuadroHtml(todas, v) : tfVazio(v));
   }
   var pend = todas.filter(function(t) { return !t.feita; }), feitas = todas.filter(function(t) { return t.feita; });
   var ord = function(a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); };
@@ -31748,6 +31783,51 @@ function tfListaHtml(v) {
   }
   return html;
 }
+/* ── quadro de tarefas (29/10/2026): A fazer → Em andamento → Concluída ── */
+var TF_TCOL = [['fazer', 'A fazer', '#64748B'], ['andamento', 'Em andamento', '#2564CF'], ['feita', 'Concluída', '#22A06B']];
+function tfStatus(t) { return t.feita ? 'feita' : (t.status === 'andamento' ? 'andamento' : 'fazer'); }
+function tfModoBt(chave) {
+  var m = TF[chave] || 'lista';
+  return '<div class="tf-seg"><button class="' + (m === 'lista' ? 'on' : '') + '" data-a="tmodo" data-k="' + chave + '" data-m="lista">' + TF_IC.linhas + 'Lista</button><button class="' + (m === 'quadro' ? 'on' : '') + '" data-a="tmodo" data-k="' + chave + '" data-m="quadro">' + TF_IC.quadro + 'Quadro</button></div>';
+}
+function tfMoverStatus(t, col) {
+  if (!t || !tfEdita(t)) { tfAviso('Só quem é responsável pela tarefa pode mudar'); return; }
+  if (tfStatus(t) === col) return;
+  if (col === 'feita') { tfConcluir(t, true); return; }
+  var c = { status: col };
+  if (t.feita) { c.feita = false; c.feitaEm = null; c.feitaPor = null; }
+  tfSalvar(t, c, col === 'andamento' ? 'Em andamento: ' + (t.tit || '') : '');
+}
+function tfQuadroHtml(lista, ctx) {
+  var h = tfHoje(), semana = Date.now() - 7 * 864e5, me = currentUser;
+  var ord = function(a, b) { return ((a.prazo && a.prazo < h) ? 0 : 1) - ((b.prazo && b.prazo < h) ? 0 : 1) || (a.prazo || '9').localeCompare(b.prazo || '9') || (ctx === 'proj' ? (a.ordem || 0) - (b.ordem || 0) : (b.criadoEm || 0) - (a.criadoEm || 0)); };
+  return '<div class="tf-tboard">' + TF_TCOL.map(function(col) {
+    var l = lista.filter(function(t) { return tfStatus(t) === col[0]; }), antigas = 0;
+    if (col[0] === 'feita') { l.sort(function(a, b) { return (b.feitaEm || 0) - (a.feitaEm || 0); }); if (!TF.qAntigas && ctx !== 'proj') { var rec = l.filter(function(t) { return (t.feitaEm || 0) >= semana; }); antigas = l.length - rec.length; l = rec; } }
+    else l.sort(ord);
+    return '<div class="tf-tcol" data-tcol="' + col[0] + '" style="--c:' + col[2] + '"><div class="tf-tcol-h"><span><i></i>' + col[1] + '</span><em>' + l.length + '</em></div>' +
+      l.map(function(t) { return tfTCardHtml(t, ctx); }).join('') +
+      (!l.length ? '<div class="tf-bvazio">' + (col[0] === 'fazer' ? 'Nada a fazer aqui' : 'Arraste uma tarefa para cá') + '</div>' : '') +
+      (antigas ? '<button class="tf-ant" data-a="qantigas">+ ' + antigas + ' concluída' + (antigas > 1 ? 's' : '') + ' antes desta semana</button>' : '') +
+      (TF.qAntigas && col[0] === 'feita' && ctx !== 'proj' ? '<button class="tf-ant" data-a="qantigas">Mostrar só esta semana</button>' : '') + '</div>';
+  }).join('') + '</div>';
+}
+function tfTCardHtml(t, ctx) {
+  var me = currentUser, h = tfHoje(), pode = tfEdita(t), ps = tfArr(t.passos), p = tfProjDe(t), resp = tfResp(t), atr = !t.feita && t.prazo && t.prazo < h;
+  var meta = [];
+  if (p && ctx !== 'proj') meta.push('<span class="pj" style="--c:' + (p.cor || '#2564CF') + '">' + TF_IC.pasta + tfEsc(p.tit || 'Projeto') + '</span>');
+  if (t.prazo) meta.push('<span class="' + (atr ? 'atr' : t.prazo === h ? 'hoje' : '') + '">' + TF_IC.cal + (atr ? 'Atrasada, ' : '') + tfDataTxt(t.prazo) + '</span>');
+  if (ps.length) meta.push('<span>' + ps.filter(function(x) { return x.feito; }).length + '/' + ps.length + '</span>');
+  if (t.nota) meta.push('<span title="Tem anotação">' + TF_IC.nota + '</span>');
+  if (t.rep) meta.push('<span>' + TF_IC.repetir + '</span>');
+  var nova = TF.novas[t.id] && !t.feita;
+  return '<div class="tf-tcard' + (t.feita ? ' feita' : '') + (TF.sel === t.id ? ' sel' : '') + (atr ? ' atr' : '') + '" data-t="' + tfEsc(t.id) + '"' + (pode ? ' draggable="true"' : '') + '>' +
+    '<div class="tf-tc1"><button class="tf-chk sm' + (t.feita ? ' on' : '') + '" data-a="chk"' + (pode ? '' : ' disabled') + '>' + TF_IC.ok + '</button><span class="tx">' + (nova ? '<i class="tf-nova">Nova</i>' : '') + tfEsc(t.tit || '(sem título)') + '</span>' +
+    '<button class="tf-est' + (t.imp ? ' on' : '') + '" data-a="imp"' + (pode ? '' : ' disabled') + '>' + (t.imp ? TF_IC.estrelaCheia : TF_IC.estrela) + '</button></div>' +
+    (ps.length ? '<div class="tf-prog"><span style="width:' + Math.round(ps.filter(function(x) { return x.feito; }).length / ps.length * 100) + '%"></span></div>' : '') +
+    '<div class="tf-tc2">' + (meta.length ? '<div class="tf-it-m">' + meta.join('') + '</div>' : '<span></span>') +
+    '<span class="tf-av sm" style="--c:' + tfCorDe(resp) + '" title="' + tfEsc(tfNome(resp)) + '">' + tfEsc(tfIniciais(resp)) + '</span></div></div>';
+}
 function tfVazio(v) {
   var m = { meudia: ['Foco no seu dia', 'Adicione o que você quer fazer hoje. Tarefas com prazo para hoje ou atrasadas aparecem aqui sozinhas.'],
     importante: ['Nada marcado como importante', 'Toque na estrela de uma tarefa para trazê-la para cá.'],
@@ -31770,6 +31850,7 @@ function tfItemHtml(t) {
   if (t.lembrete && !t.feita) meta.push('<span>' + TF_IC.sino + tfDataTxt(String(t.lembrete).slice(0, 10)) + ' ' + String(t.lembrete).slice(11, 16) + '</span>');
   if (t.rep) meta.push('<span>' + TF_IC.repetir + '</span>');
   if (t.nota) meta.push('<span title="Tem anotação">' + TF_IC.nota + '</span>');
+  if (!t.feita && t.status === 'andamento') meta.unshift('<span class="and">Em andamento</span>');
   var resp = tfResp(t);
   if (resp !== me) meta.push('<span class="quem"><span class="tf-av sm" style="--c:' + tfCorDe(resp) + '">' + tfEsc(tfIniciais(resp)) + '</span>' + tfEsc(tfPrimeiro(resp)) + '</span>');
   else if (t.criadoPor && t.criadoPor !== me) meta.push('<span class="quem">de ' + tfEsc(tfPrimeiro(t.atribuidoPor || t.criadoPor)) + '</span>');
@@ -31802,7 +31883,8 @@ function tfDetHtml(t) {
     Object.keys(TF.proj).map(function(k) { var p = TF.proj[k]; return p && (tfProjVe(p) || t.projeto === k) && (p.status !== 'entregue' || t.projeto === k) ? '<option value="p:' + tfEsc(k) + '"' + (t.projeto === k ? ' selected' : '') + '>Projeto: ' + tfEsc(p.tit || 'sem nome') + '</option>' : ''; }).join('');
   html += '<div class="tf-card">' +
     '<label class="tf-op">' + TF_IC.pessoa + '<span>Responsável</span><select data-f="dono"' + dis + '>' + quem.map(function(p) { return '<option value="' + tfEsc(p) + '"' + (tfResp(t) === p ? ' selected' : '') + '>' + tfEsc(p === me ? tfNome(p) + ' (você)' : tfNome(p)) + '</option>'; }).join('') + '</select></label>' +
-    '<label class="tf-op">' + TF_IC.lista + '<span>Lista</span><select data-f="onde"' + dis + '>' + onde + '</select></label></div>';
+    '<label class="tf-op">' + TF_IC.lista + '<span>Lista</span><select data-f="onde"' + dis + '>' + onde + '</select></label>' +
+    '<label class="tf-op">' + TF_IC.quadro + '<span>Situação</span><select data-f="status"' + dis + '>' + TF_TCOL.map(function(c) { return '<option value="' + c[0] + '"' + (tfStatus(t) === c[0] ? ' selected' : '') + '>' + c[1] + '</option>'; }).join('') + '</select></label></div>';
   html += '<div class="tf-card"><textarea class="tf-nota" data-f="nota" placeholder="Adicionar anotação"' + dis + '>' + tfEsc(t.nota || '') + '</textarea></div>';
   var cri = new Date(t.criadoEm || Date.now());
   html += '<div class="tf-det-rod"><span>Criada por ' + tfEsc(tfPrimeiro(t.criadoPor)) + ' em ' + cri.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) +
@@ -31867,7 +31949,13 @@ function tfProjetoHtml(p) {
   if (TF.projAba === 'anexos') return html + tfAnexosHtml(p, ed) + tfProjRod(p, ed);
   if (TF.projAba === 'links') return html + tfLinksHtml(p, ed) + tfProjRod(p, ed);
   html += '<div class="tf-sect"><h3>Sobre o projeto</h3><textarea class="tf-pdesc" data-pf="desc" placeholder="Objetivo, o que será entregue, informações importantes"' + dis + '>' + tfEsc(p.desc || '') + '</textarea></div>';
-  html += '<div class="tf-sect"><h3>Etapas <span>' + pr.pc + '% concluído · ' + pr.f + ' de ' + pr.n + '</span></h3><div class="tf-prog lg"><span style="width:' + pr.pc + '%"></span></div><div class="tf-etapas">';
+  html += '<div class="tf-sect"><h3>Etapas <span>' + pr.pc + '% concluído · ' + pr.f + ' de ' + pr.n + '</span><span class="tf-sp"></span>' + tfModoBt('emodo') + '</h3><div class="tf-prog lg"><span style="width:' + pr.pc + '%"></span></div>';
+  if (TF.emodo === 'quadro') {
+    html += ts.length ? tfQuadroHtml(ts, 'proj') : '<div class="tf-vazio pq"><span>Divida o projeto em etapas. Cada etapa pode ter um responsável, um prazo e sub-etapas.</span></div>';
+    html += (ed || tfProjMembro(p) ? '<div class="tf-add et">' + '<span class="tf-add-ic">' + TF_IC.mais + '</span><input id="tf-etapa-nova" placeholder="Nova etapa" maxlength="200" autocomplete="off"><button class="tf-bt" data-a="etapa-add">+ Etapa</button></div>' : '') + '</div>';
+    return html + tfProjRod(p, ed);
+  }
+  html += '<div class="tf-etapas">';
   html += ts.map(function(t) {
     var pode = tfEdita(t), d2 = pode ? '' : ' disabled', ps = tfArr(t.passos), atr = !t.feita && t.prazo && t.prazo < h;
     var quem = tfPodeAtribuir(t);
@@ -31957,6 +32045,7 @@ function tfBind(root) {
     var t = ev.target, el;
     if ((el = t.closest('[data-a]')) && !el.disabled) { tfAcao(el.getAttribute('data-a'), el, ev); return; }
     if ((el = t.closest('[data-vista]'))) { tfIrVista(el.getAttribute('data-vista')); return; }
+    if ((el = t.closest('.tf-tcard'))) { if (TF.arrT) return; var idq = el.getAttribute('data-t'); TF.sel = TF.sel === idq ? null : idq; tfLerNova(idq); TF.armado = null; tfRender(); return; }
     if ((el = t.closest('.tf-it'))) { var id = el.getAttribute('data-t'); TF.sel = TF.sel === id ? null : id; tfLerNova(id); TF.armado = null; tfRender(); return; }
     if ((el = t.closest('.tf-pcard'))) { if (TF.arr) return; tfIrVista('proj:' + el.getAttribute('data-pid')); return; }
   });
@@ -31980,13 +32069,17 @@ function tfBind(root) {
   root.addEventListener('change', function(ev) { tfMudou(ev.target); });
   root.addEventListener('focusout', function() { setTimeout(function() { var ae = document.activeElement, r = document.getElementById('tf-root'); if (TF.pend && !(r && ae && r.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))) { TF.pend = false; tfRender(); } }, 30); });
   // arrastar projetos entre colunas (quadro)
-  root.addEventListener('dragstart', function(ev) { var c = ev.target.closest && ev.target.closest('.tf-pcard'); if (!c) return; TF.arr = c.getAttribute('data-pid'); try { ev.dataTransfer.setData('text/plain', TF.arr); ev.dataTransfer.effectAllowed = 'move'; } catch (e) {} c.classList.add('arr'); });
-  root.addEventListener('dragend', function() { TF.arr = null; root.querySelectorAll('.tf-bcol.over').forEach(function(c) { c.classList.remove('over'); }); if (TF.pend) { TF.pend = false; tfRender(); } });
-  root.addEventListener('dragover', function(ev) { var c = ev.target.closest && ev.target.closest('[data-pcol]'); var dz = ev.target.closest && ev.target.closest('#tf-drop'); if (c && TF.arr) { ev.preventDefault(); root.querySelectorAll('.tf-bcol.over').forEach(function(x) { if (x !== c) x.classList.remove('over'); }); c.classList.add('over'); } if (dz) { ev.preventDefault(); dz.classList.add('on'); } });
+  root.addEventListener('dragstart', function(ev) { var tc = ev.target.closest && ev.target.closest('.tf-tcard'); if (tc) { TF.arrT = tc.getAttribute('data-t'); try { ev.dataTransfer.setData('text/plain', TF.arrT); ev.dataTransfer.effectAllowed = 'move'; } catch (e) {} tc.classList.add('arr'); return; }
+    var c = ev.target.closest && ev.target.closest('.tf-pcard'); if (!c) return; TF.arr = c.getAttribute('data-pid'); try { ev.dataTransfer.setData('text/plain', TF.arr); ev.dataTransfer.effectAllowed = 'move'; } catch (e) {} c.classList.add('arr'); });
+  root.addEventListener('dragend', function() { TF.arr = null; setTimeout(function() { TF.arrT = null; }, 30); root.querySelectorAll('.tf-tcol.over').forEach(function(c) { c.classList.remove('over'); }); root.querySelectorAll('.tf-bcol.over').forEach(function(c) { c.classList.remove('over'); }); if (TF.pend) { TF.pend = false; tfRender(); } });
+  root.addEventListener('dragover', function(ev) { var tq = ev.target.closest && ev.target.closest('[data-tcol]'); if (tq && TF.arrT) { ev.preventDefault(); root.querySelectorAll('.tf-tcol.over').forEach(function(x) { if (x !== tq) x.classList.remove('over'); }); tq.classList.add('over'); return; }
+    var c = ev.target.closest && ev.target.closest('[data-pcol]'); var dz = ev.target.closest && ev.target.closest('#tf-drop'); if (c && TF.arr) { ev.preventDefault(); root.querySelectorAll('.tf-bcol.over').forEach(function(x) { if (x !== c) x.classList.remove('over'); }); c.classList.add('over'); } if (dz) { ev.preventDefault(); dz.classList.add('on'); } });
   root.addEventListener('dragleave', function(ev) { var dz = ev.target.closest && ev.target.closest('#tf-drop'); if (dz && !dz.contains(ev.relatedTarget)) dz.classList.remove('on'); });
   root.addEventListener('drop', function(ev) {
     var dz = ev.target.closest && ev.target.closest('#tf-drop');
     if (dz) { ev.preventDefault(); dz.classList.remove('on'); var p = TF.proj[TF.vista.slice(5)]; if (p && ev.dataTransfer) tfUpload(p, ev.dataTransfer.files); return; }
+    var tq = ev.target.closest && ev.target.closest('[data-tcol]');
+    if (tq && TF.arrT) { ev.preventDefault(); var tt = TF.tar[TF.arrT]; TF.arrT = null; tq.classList.remove('over'); if (tt) tfMoverStatus(tt, tq.getAttribute('data-tcol')); tfRender(); return; }
     var c = ev.target.closest && ev.target.closest('[data-pcol]'); if (!c || !TF.arr) return; ev.preventDefault();
     var p2 = TF.proj[TF.arr], st = c.getAttribute('data-pcol'); TF.arr = null;
     if (p2 && p2.status !== st && tfProjEdita(p2)) { tfProjSalvar(p2, { status: st }); tfAviso((p2.tit || 'Projeto') + ': ' + TF_STL[st]); }
@@ -31999,6 +32092,8 @@ function tfAcao(a, el, ev) {
   if (ev) ev.stopPropagation();
   switch (a) {
     case 'menu': TF.menu = !TF.menu; tfRender(); return;
+    case 'tmodo': { var kq = el.getAttribute('data-k'); TF[kq] = el.getAttribute('data-m'); tfLsSet(kq + '_' + me, TF[kq]); tfRender(); return; }
+    case 'qantigas': TF.qAntigas = !TF.qAntigas; tfRender(); return;
     case 'veu': TF.menu = false; TF.sel = null; tfRender(); return;
     case 'chk': if (t) tfConcluir(t, !t.feita); tfRender(); return;
     case 'imp': if (t) tfSalvar(t, { imp: !t.imp }); tfRender(); return;
@@ -32094,6 +32189,7 @@ function tfMudou(el) {
 }
 function tfAplicarCampo(t, f, val) {
   var me = currentUser, c = {};
+  if (f === 'status') { tfMoverStatus(t, val); tfRender(); return; }
   if (f === 'tit') { val = String(val).trim(); if (!val) { tfRender(); return; } c.tit = val.slice(0, 200); tfSalvar(t, c); TF.pend = true; return; }
   if (f === 'nota') { c.nota = String(val).slice(0, 4000); tfSalvar(t, c); TF.pend = true; return; }
   if (f === 'prazo') { c.prazo = val || ''; if (!val && t.rep) c.rep = ''; }
