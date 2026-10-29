@@ -26232,7 +26232,8 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       return;
     }
     var ev = AG.fila.shift(); AG.ocupado = true;
-    if (!ev._palcoFeito && !ev.epico && (ev.razante || ev.confete > 0 || ev.som === 'grande')) razante({ extras: ev.extras });
+    // rasante só nas super metas (as que abrem a tela cheia): depois da tela cheia, ela cruza a tela
+    if (ev.epico && ev._palcoFeito) razante({ extras: ev.extras });
     if (ev.epico && !ev._palcoFeito) { ev._palcoFeito = true; ev.confete = 0; palco(ev.epico[0], ev.epico[1], function(){ AG.fila.unshift(ev); AG.ocupado = false; mostrarDaFila(); }); return; }
     var b = document.createElement('div');
     b.className = 'ag-balao' + (ev.grande ? ' grande' : '');
@@ -26413,7 +26414,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
         AG.saudou = true;
         var h = new Date().getHours(), oi = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
         var falta = Math.max(0, n.metaMes - n.vMes);
-        avisar({ titulo: oi + ', ' + nome + '! 🦅', anim: 'ag-acena', razante: true,
+        avisar({ titulo: oi + ', ' + nome + '! 🦅', anim: 'ag-acena',
           texto: n.metaMes ? 'Você está em <b>' + Math.round(n.pctMes) + '%</b> da meta do mês' + (falta ? ' — faltam <b>' + rs(falta) + '</b>.' : '. Meta batida!') : 'Hoje é dia de caçar resultado. Bora!',
           barra: n.metaMes ? n.pctMes : null });
       }
@@ -26496,7 +26497,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
       if (!AG.saudou) {
         AG.saudou = true;
         var h = new Date().getHours(), oi = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
-        avisar({ titulo: oi + ', ' + esc(primeiroNome(AG.user)) + '! 🦅', anim: 'ag-acena', razante: true, texto: 'Vou te avisar quando a equipe bater metas. Clique em mim pra ver o resumo do dia.' });
+        avisar({ titulo: oi + ', ' + esc(primeiroNome(AG.user)) + '! 🦅', anim: 'ag-acena', texto: 'Vou te avisar quando a equipe bater metas. Clique em mim pra ver o resumo do dia.' });
       }
       return;
     }
@@ -26531,7 +26532,7 @@ setInterval(function() { if (MSN.on) msnRender(); }, 60000);
   setInterval(function(){
     if (!AG.user || AG.ocupado || document.hidden || wrap.classList.contains('ag-dorme')) return;
     var r = Math.random();
-    if (r < .12) razante({ mudo: true }); else if (r < .35) anima('ag-acena', 2600); else if (r < .5) anima('ag-joia', 1600);
+    if (r < .35) anima('ag-acena', 2600); else if (r < .5) anima('ag-joia', 1600);
   }, 75000);
   setInterval(function(){ try { lembrete(); } catch(e) {} }, 5000);
 
