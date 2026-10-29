@@ -1053,6 +1053,16 @@ html body #dc-root input.dc-edit.dc-edit:focus{border:1px solid var(--dc-ok)!imp
 #dc-root .dz-lcorpo .dc-ct td{padding:5px 10px}
 #dc-root .dz-lcorpo .dc-ct th{background:var(--surface-2);padding:8px 10px}
 #dc-root .dz-lcorpo .dc-ct .dc-edit{min-width:140px}
+.dz-dias{display:flex;gap:6px;align-items:flex-end;overflow-x:auto;padding:4px 2px 2px}
+.dz-dia1{flex:1 0 34px;max-width:64px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.dz-dia1 .n{font-weight:700;color:var(--txt);font-size:12px}
+.dz-dia1 .col{position:relative;width:70%;height:120px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.dz-dia1 .col i{position:absolute;left:0;right:0;bottom:0;border-radius:6px 6px 0 0}
+.dz-dia1 .col i.tot,.dz-leg i.tot{background:color-mix(in srgb,var(--acc) 35%,var(--surface-2))}
+.dz-dia1 .col i.at,.dz-leg i.at{background:var(--acc)}
+.dz-dia1 .w{font-size:10px;text-transform:uppercase}
+.dz-leg{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:10px}
+.dz-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .dz-regras{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;align-items:start}
 /* ── Ciclo de foco (23/10/2026): 40 min ligando · 20 min negociando · 5 min respirando ── */
 .fc-band{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:14px 18px;margin-bottom:16px;border-left:6px solid var(--fc-cor,var(--line));color:var(--txt)}
@@ -28092,7 +28102,7 @@ function dcMetaHoje() {
 function dcRender() {
   var root = document.getElementById('dc-root'); if (!root) return;
   var abas = [['discar', 'Discar'], ['funil', 'Funil'], ['hist', 'Minhas ligações'], ['listas', 'Listas de clientes']];
-  if (dcGestao()) abas.splice(2, 0, ['equipe', 'Equipe hoje'], ['inativos', 'Inativos']);
+  if (dcGestao()) abas.splice(2, 0, ['equipe', 'Equipe'], ['inativos', 'Inativos']);
   abas.push(['config', 'Configurar']);
   var h = '<div class="dc-head"><h2 class="dc-tit">Discador</h2><div class="dc-abas">' +
     abas.map(function(a) { return '<button class="dc-aba' + (DC.aba === a[0] ? ' on' : '') + '" onclick="dcSetAba(\'' + a[0] + '\')">' + a[1] + '</button>'; }).join('') + '</div></div>';
@@ -29170,16 +29180,74 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') { if (dcNoAr()) dcDesliguei(); else dcPararAuto(); }
 });
 
+/* ── Equipe por período (29/10/2026): hoje ao vivo; outros períodos leem discador/dias/{VN} de cada um ── */
+var DCE = { tipo: 'hoje', de: '', ate: '', carregando: 0 };
+function dcEqSet(campo, valor) {
+  DCE[campo] = valor;
+  if (campo === 'tipo' && valor === 'custom' && !DCE.de) { DCE.de = dcHoje().slice(0, 8) + '01'; DCE.ate = dcHoje(); }
+  dcRender();
+}
+function dcEqCarregar(forcar) {
+  CK_EQUIPE.forEach(function(vn) {
+    var c = DCP.cache[vn]; if (!forcar && c && Date.now() - c.t < 120000) return;
+    if (DCE['ld_' + vn]) return; DCE['ld_' + vn] = 1; DCE.carregando++;
+    Promise.resolve(dbRef('discador/dias/' + vn).once('value')).then(function(snap) { DCP.cache[vn] = { t: Date.now(), dias: (snap && snap.val()) || {} }; })
+      .catch(function() {}).then(function() { DCE['ld_' + vn] = 0; DCE.carregando--; if (DCE.carregando <= 0 && DC.aba === 'equipe') dcRender(); });
+  });
+}
+function dcEqItens(vn, de, ate) {
+  var h = dcHoje(), out = [];
+  var hoje = (DC.equipe[vn] || []).map(function(x) { return Object.assign({ dia: h }, x); });
+  if (de === h && ate === h) return hoje;
+  var c = DCP.cache[vn]; if (!c) return null;
+  Object.keys(c.dias).forEach(function(k) {
+    var dia = k.replace(/_/g, '-'); if (dia < de || dia > ate || dia === h) return;
+    var v = c.dias[k] || {}, its = Array.isArray(v.itens) ? v.itens : (v.itens && typeof v.itens === 'object' ? Object.keys(v.itens).map(function(j) { return v.itens[j]; }) : []);
+    dcItensDoDia(its.filter(Boolean), dia).forEach(function(x) { out.push(Object.assign({ dia: dia }, x)); });
+  });
+  if (h >= de && h <= ate) out = out.concat(hoje);
+  out.sort(function(a, b) { return (a.hora || 0) - (b.hora || 0); });
+  return out;
+}
 function dcVEquipe() {
-  var rows = CK_EQUIPE.map(function(vn) { var r = dcResumo(DC.equipe[vn] || []); r.vn = vn; return r; }).sort(function(a, b) { return b.total - a.total; });
-  var t = rows.reduce(function(s, r) { return { total: s.total + r.total, at: s.at + r.contaMeta, seg: s.seg + r.seg, ped: s.ped + r.pedidos, wa: s.wa + r.wa }; }, { total: 0, at: 0, seg: 0, ped: 0, wa: 0 });
-  return '<div class="dc-tots"><div><b>' + t.total + '</b><span>ligações da equipe hoje</span></div><div><b>' + t.at + '</b><span>atendidas · ' + (t.total ? Math.round(t.at / t.total * 100) : 0) + '%</span></div>' +
-    '<div><b>' + dcDur(t.seg) + '</b><span>tempo falando</span></div><div><b>' + t.ped + '</b><span>pedidos fechados</span></div></div>' +
-    '<div class="dc-card"><div class="dc-scroll"><table class="dc-tab"><thead><tr><th>Vendedor</th><th>Ligações</th><th>Atendidas</th><th>Taxa</th><th>Tempo falando</th><th>Pedidos</th><th>Pelo WhatsApp</th><th>Última</th></tr></thead><tbody>' +
-    rows.map(function(r) {
-      var its = DC.equipe[r.vn] || [], ult = its.length ? new Date(its[its.length - 1].hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
-      return '<tr><td><b>' + dcEsc(rtNome ? rtNome(r.vn) : r.vn) + '</b></td><td>' + r.total + '</td><td>' + r.contaMeta + '</td><td>' + (r.total ? Math.round(r.contaMeta / r.total * 100) + '%' : '—') + '</td><td>' + dcDur(r.seg) + '</td><td>' + r.pedidos + '</td><td>' + r.wa + '</td><td>' + ult + '</td></tr>';
-    }).join('') + '</tbody><tfoot><tr><td><b>Total da equipe</b></td><td><b>' + t.total + '</b></td><td><b>' + t.at + '</b></td><td><b>' + (t.total ? Math.round(t.at / t.total * 100) + '%' : '—') + '</b></td><td><b>' + dcDur(t.seg) + '</b></td><td><b>' + t.ped + '</b></td><td><b>' + t.wa + '</b></td><td></td></tr></tfoot></table></div><div class="dc-sub" style="margin-top:8px">Só conta o que foi discado por aqui. Atendidas = ligações atendidas (Atendeu, Pedido fechado, Levou para o funil) + todo contato pelo WhatsApp; é esse número que entra sozinho na meta de ligações da Rota da Meta.</div></div>';
+  var r = dcRangeDe(DCE.tipo, DCE.de, DCE.ate), de = r[0], ate = r[1], varios = de !== ate, h = dcHoje();
+  var f = function(d) { return d.slice(8, 10) + '/' + d.slice(5, 7); };
+  var rot = de === ate ? (de === h ? 'hoje' : 'em ' + f(de)) : 'de ' + f(de) + ' a ' + f(ate);
+  if (!(de === h && ate === h)) dcEqCarregar(false);
+  var falta = 0, porDia = {};
+  var rows = CK_EQUIPE.map(function(vn) {
+    var its = dcEqItens(vn, de, ate); if (its === null) { falta++; its = []; }
+    var x = dcResumo(its); x.vn = vn; x.its = its;
+    var dias = {}; its.forEach(function(i) { dias[i.dia] = 1; var d = porDia[i.dia] || (porDia[i.dia] = { total: 0, at: 0 }); d.total++; if (i.canal === 'wa' || (DC_RESMAP[i.res] && DC_RESMAP[i.res].at)) d.at++; });
+    x.nDias = Object.keys(dias).length; return x;
+  }).sort(function(a, b) { return b.total - a.total; });
+  var t = rows.reduce(function(s, x) { return { total: s.total + x.total, at: s.at + x.contaMeta, seg: s.seg + x.seg, ped: s.ped + x.pedidos, wa: s.wa + x.wa }; }, { total: 0, at: 0, seg: 0, ped: 0, wa: 0 });
+  var ops = [['hoje', 'Hoje'], ['ontem', 'Ontem'], ['7d', 'Últimos 7 dias'], ['semana', 'Esta semana'], ['mes', 'Este mês'], ['mesant', 'Mês passado'], ['custom', 'Escolher datas']];
+  var hh = '<div class="dc-per"><label>Período <select onchange="dcEqSet(\'tipo\',this.value)">' + ops.map(function(o) { return '<option value="' + o[0] + '"' + (DCE.tipo === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label>' +
+    (DCE.tipo === 'custom' ? '<label>De <input type="date" value="' + de + '" max="' + h + '" onchange="dcEqSet(\'de\',this.value)"></label><label>Até <input type="date" value="' + ate + '" max="' + h + '" onchange="dcEqSet(\'ate\',this.value)"></label>' : '') +
+    (DCE.tipo !== 'hoje' ? '<button class="dc-link" onclick="dcEqCarregar(true)" title="Buscar de novo no servidor">↻ atualizar</button>' : '') +
+    (falta ? '<span class="dc-sub">Carregando o histórico da equipe…</span>' : '') + '</div>';
+  var diasLista = Object.keys(porDia).sort(), nDiasEq = diasLista.length;
+  hh += '<div class="dc-tots"><div><b>' + t.total + '</b><span>ligações da equipe ' + rot + '</span></div><div><b>' + t.at + '</b><span>atendidas · ' + (t.total ? Math.round(t.at / t.total * 100) : 0) + '%</span></div>' +
+    '<div><b>' + dcDur(t.seg) + '</b><span>tempo falando</span></div><div><b>' + (varios ? (nDiasEq ? Math.round(t.total / nDiasEq) : 0) : t.ped) + '</b><span>' + (varios ? 'ligações por dia (média)' : 'pedidos fechados') + '</span></div></div>';
+  // ligações da equipe dia a dia
+  if (varios && nDiasEq) {
+    var mx = Math.max.apply(null, diasLista.map(function(d) { return porDia[d].total; })) || 1, sem = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    hh += '<div class="dc-card"><div class="dc-eyebrow">Ligações da equipe por dia</div><div class="dz-dias">' + diasLista.map(function(d) {
+      var x = porDia[d], dt = new Date(d + 'T12:00:00');
+      return '<div class="dz-dia1" title="' + f(d) + ': ' + x.total + ' ligações, ' + x.at + ' atendidas"><span class="n">' + x.total + '</span><div class="col"><i class="tot" style="height:' + Math.round(x.total / mx * 100) + '%"></i><i class="at" style="height:' + Math.round(x.at / mx * 100) + '%"></i></div><span class="d">' + f(d) + '</span><span class="w">' + sem[dt.getDay()] + '</span></div>';
+    }).join('') + '</div><div class="dz-leg"><span><i class="tot"></i>Ligações</span><span><i class="at"></i>Atendidas</span></div></div>';
+  }
+  var ult = function(x) {
+    if (!x.its.length) return '—'; var u = x.its[x.its.length - 1], hr = u.hora ? new Date(u.hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+    return varios ? f(u.dia) + (hr ? ' ' + hr : '') : (hr || '—');
+  };
+  hh += '<div class="dc-card"><div class="dc-scroll"><table class="dc-tab"><thead><tr><th>Vendedor</th><th>Ligações</th>' + (varios ? '<th>Dias ligando</th><th>Média/dia</th>' : '') + '<th>Atendidas</th><th>Taxa</th><th>Tempo falando</th><th>Pedidos</th><th>Pelo WhatsApp</th><th>Última</th></tr></thead><tbody>' +
+    rows.map(function(x) {
+      return '<tr><td><b>' + dcEsc(rtNome ? rtNome(x.vn) : x.vn) + '</b></td><td>' + x.total + '</td>' + (varios ? '<td>' + x.nDias + '</td><td>' + (x.nDias ? Math.round(x.total / x.nDias) : '—') + '</td>' : '') + '<td>' + x.contaMeta + '</td><td>' + (x.total ? Math.round(x.contaMeta / x.total * 100) + '%' : '—') + '</td><td>' + dcDur(x.seg) + '</td><td>' + x.pedidos + '</td><td>' + x.wa + '</td><td>' + ult(x) + '</td></tr>';
+    }).join('') + '</tbody><tfoot><tr><td><b>Total da equipe</b></td><td><b>' + t.total + '</b></td>' + (varios ? '<td><b>' + nDiasEq + '</b></td><td><b>' + (nDiasEq ? Math.round(t.total / nDiasEq) : '—') + '</b></td>' : '') + '<td><b>' + t.at + '</b></td><td><b>' + (t.total ? Math.round(t.at / t.total * 100) + '%' : '—') + '</b></td><td><b>' + dcDur(t.seg) + '</b></td><td><b>' + t.ped + '</b></td><td><b>' + t.wa + '</b></td><td></td></tr></tfoot></table></div>' +
+    '<div class="dc-sub" style="margin-top:8px">Só conta o que foi discado por aqui. Atendidas = ligações atendidas (Atendeu, Pedido fechado, Levou para o funil) + todo contato pelo WhatsApp; é esse número que entra sozinho na meta de ligações da Rota da Meta.' + (varios ? ' Para ver ligação por ligação de um vendedor no período, use <b>Minhas ligações</b> e escolha o vendedor.' : '') + '</div></div>';
+  return hh;
 }
 
 /* ── Minhas ligações por período ──
@@ -29187,15 +29255,16 @@ function dcVEquipe() {
    discador/dias/{VN} uma vez e guardam em cache por 2 min. Gestão pode ver de outro vendedor. */
 var DCP = { tipo: 'hoje', de: '', ate: '', vn: null, cache: {}, carregando: false, erro: '' };
 function dcPerDataStr(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-function dcPerRange() {
+function dcPerRange() { return dcRangeDe(DCP.tipo, DCP.de, DCP.ate); }
+function dcRangeDe(tipo, pde, pate) {
   var hoje = new Date(), h = dcHoje(), d;
-  switch (DCP.tipo) {
+  switch (tipo) {
     case 'ontem': d = new Date(); d.setDate(d.getDate() - 1); return [dcPerDataStr(d), dcPerDataStr(d)];
     case '7d': d = new Date(); d.setDate(d.getDate() - 6); return [dcPerDataStr(d), h];
     case 'semana': d = new Date(); var dw = d.getDay(); d.setDate(d.getDate() - (dw === 0 ? 6 : dw - 1)); return [dcPerDataStr(d), h];
     case 'mes': return [h.slice(0, 8) + '01', h];
     case 'mesant': d = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1); var f = new Date(hoje.getFullYear(), hoje.getMonth(), 0); return [dcPerDataStr(d), dcPerDataStr(f)];
-    case 'custom': var de = DCP.de || h, ate = DCP.ate || h; return de <= ate ? [de, ate] : [ate, de];
+    case 'custom': var de = pde || h, ate = pate || h; return de <= ate ? [de, ate] : [ate, de];
     default: return [h, h];
   }
 }
