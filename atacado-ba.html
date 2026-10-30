@@ -24747,8 +24747,8 @@ function msnListaHtml() {
       '<button type="button" onclick="msnAlternarCores()" aria-expanded="' + !!MSN.coresAbertas + '">🎨 Cores</button></div>' +
     (MSN.coresAbertas ? msnCoresHtml() : '') + (MSN.fotoMenu ? msnFotoMenuHtml() : '') +
     '<div class="msn-bsc"><input id="msn-busca-in" placeholder="Procurar um contato…" value="' + msnEsc(MSN.busca || '') + '" oninput="MSN.busca=this.value;msnRender()" aria-label="Procurar contato"></div>' +
-    '<div class="msn-contatos">' + (function() { var sl = msnMinhasSalas().filter(function(x) { return !q || filtra(x); }); return sl.length ? grupo('grupo', 'Salas (' + sl.length + ')', sl, '') : ''; })() +
-      grupo('on', 'Online (' + onl.length + ')', onl, 'Ninguém online agora.') + grupo('off', 'Offline (' + off.length + ')', off, '') + '</div>' +
+    (typeof msn2AbasHtml === 'function' ? msn2AbasHtml() : '') + '<div class="msn-contatos">' + (typeof msn2ConversasHtml === 'function' && MSN2.aba === 'conversas' ? msn2ConversasHtml(MSN.busca) : (function() { var sl = msnMinhasSalas().filter(function(x) { return !q || filtra(x); }); return sl.length ? grupo('grupo', 'Salas (' + sl.length + ')', sl, '') : ''; })() +
+      grupo('on', 'Online (' + onl.length + ')', onl, 'Ninguém online agora.') + grupo('off', 'Offline (' + off.length + ')', off, '')) + '</div>' +
     (msnEhGestao() ? '<div class="msn-somg">' + [['msg', 'somMsg', '🎵 Som de mensagem', 'padrão do guia'], ['tremer', 'somTremer', '📳 Som do chamar atenção', MSN.somMsg ? 'o mesmo da mensagem' : 'padrão do guia']].map(function(x) {
       var atual = MSN[x[1]];
       return '<div style="margin-bottom:6px"><b>' + x[2] + ' (equipe):</b> ' + msnEsc(atual ? atual.nome : x[3]) +
@@ -25043,7 +25043,7 @@ function msnArrastavel(el, seletor, ch) {
 function msnAbrir(conv) {
   if (!MSN.on) return;
   var i = MSN.abertas.indexOf(conv);
-  if (i < 0) { MSN.abertas.push(conv); if (MSN.abertas.length > (window.innerWidth < 1100 ? 1 : 2)) msnFechar(MSN.abertas[0]); msnCriarJanela(conv); msnOuvir(conv); }
+  if (i < 0) { MSN.abertas.push(conv); if (MSN.abertas.length > (window.innerWidth < 1100 ? 1 : window.innerWidth < 1600 ? 2 : 3)) msnFechar(MSN.abertas[0]); msnCriarJanela(conv); msnOuvir(conv); }
   var w = document.getElementById('msn-w-' + conv); if (w) w.classList.remove('min');
   if (window.innerWidth < 700) { MSN.listaAberta = false; msnRender(); }
   msnMarcarLida(conv);
@@ -25199,6 +25199,7 @@ function msnGravar(conv, m) {
   var p = dbRef('chat/conv/' + conv + '/msgs/' + id).set(m);
   var resumo = { de: m.de, txt: String(m.txt || '').slice(0, 120), ts: m.ts, tipo: m.tipo };
   if (m.wink) resumo.wink = m.wink;
+  if (m.mencoes) resumo.mencoes = m.mencoes;
   if (msnSala(conv)) dbRef('chat/grupo/' + conv).set(resumo);
   else conv.split('__').forEach(function(u) { dbRef('chat/indice/' + u + '/' + conv).set(resumo); });
   try { dbRef('chat/digitando/' + conv + '/' + MSN.eu).remove(); } catch (e) {}
@@ -32678,7 +32679,7 @@ setInterval(function() { try { if (currentUser && TF.ligado !== currentUser) { t
 .asst-bt:hover{background:#EAF3FD}
 .asst-bt.pri{background:linear-gradient(#5FB2F0,#2D7DD2);color:#fff}
 .asst-bt[disabled]{opacity:.5;cursor:default}
-.asst-av{display:flex;align-items:center;justify-content:center;border-radius:6px;background:linear-gradient(135deg,#0B2D6B,#2D7DD2);color:#fff;overflow:hidden}
+.asst-av{display:flex;align-items:center;justify-content:center;border-radius:6px;background:radial-gradient(circle at 50% 40%,#FFFFFF,#DCEBFB);overflow:hidden;padding:1px;box-sizing:border-box}
 .asst-cfg-fundo{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px}
 .asst-cfg{background:var(--surface,#fff);color:var(--txt,#1C2B3A);border-radius:12px;max-width:480px;width:100%;max-height:calc(100vh - 32px);overflow:auto;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3);font-size:14px}
 .asst-cfg h3{margin:0 0 4px;font-size:18px}
@@ -32707,6 +32708,7 @@ setInterval(function() { try { if (currentUser && TF.ligado !== currentUser) { t
      assistente/autoPed/<chave>        = ts   pedido aberto: uma tarefa só, para quem do administrativo pegar primeiro
    As mensagens ficam na conversa normal do chat: chat/conv/ASSISTENTE__<LOGIN>/msgs */
 var ASST_ID = 'ASSISTENTE';
+var ASST_AGUIA = '<svg viewBox="0 6 120 124" width="100%" height="100%" aria-hidden="true"><g><path d="M44 70 C36 95 33 112 28 125 L43 117 L51 127 L60 117 L69 127 L77 117 L92 125 C87 112 84 95 76 70 Z" fill="#C41E1E"/><path d="M50 80 C48 96 47 108 46 118 M70 80 C72 96 73 108 74 118" stroke="#7A0C0C" stroke-width="1.6" fill="none" opacity=".7"/><g><path d="M42 72 C32 60 20 50 4 38 L11 51 L0 53 L11 61 L2 67 L15 71 L8 80 L23 80 C30 82 36 80 42 78 Z" fill="#3F2616"/><path d="M40 72 L12 52 M40 74 L13 62 M40 76 L17 72" stroke="#7B4E2C" stroke-width="1.4" stroke-linecap="round"/></g><g><path d="M78 72 C88 60 100 50 116 38 L109 51 L120 53 L109 61 L118 67 L105 71 L112 80 L97 80 C90 82 84 80 78 78 Z" fill="#3F2616"/><path d="M80 72 L108 52 M80 74 L107 62 M80 76 L103 72" stroke="#7B4E2C" stroke-width="1.4" stroke-linecap="round"/></g><path d="M42 68 C39 92 45 112 60 117 C75 112 81 92 78 68 C70 62 50 62 42 68 Z" fill="#3A2213"/><path d="M47 100 l4 4 l4 -4 M65 100 l4 4 l4 -4 M54 108 l6 4 l6 -4" stroke="#6B4428" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M60 76 L73 80 L71 96 C69 102 65 106 60 108 C55 106 51 102 49 96 L47 80 Z" fill="#C41E1E" stroke="#FFFFFF" stroke-width="1.6"/><path d="M60 84 L67 92 L60 100 L53 92 Z" fill="#FFFFFF"/><path d="M60 88 L63.5 92 L60 96 L56.5 92 Z" fill="#C41E1E"/><g stroke-linecap="round"><path d="M52 114 L52 120" stroke="#F5B400" stroke-width="4"/><path d="M68 114 L68 120" stroke="#F5B400" stroke-width="4"/><path d="M52 120 l-5 5 M52 120 l0 6 M52 120 l5 5 M68 120 l-5 5 M68 120 l0 6 M68 120 l5 5" stroke="#F5B400" stroke-width="3"/><path d="M47 125 l-1.5 1.5 M52 126 l0 2 M57 125 l1.5 1.5 M63 125 l-1.5 1.5 M68 126 l0 2 M73 125 l1.5 1.5" stroke="#111" stroke-width="2"/></g><g><path d="M40 31 L27 21 L41 25 L33 13 L47 21 L46 11 L55 21 Z" fill="#F2EEE8"/><path d="M60 21 C73 21 83 28 85 40 C87 51 80 61 70 65 L50 65 C40 61 33 51 35 40 C37 28 47 21 60 21 Z" fill="#FFFFFF"/><path d="M37 50 C42 59 50 64 60 64 C70 64 78 59 83 50 C79 61 70 66 60 66 C50 66 41 61 37 50 Z" fill="#DCD6CC"/><path d="M43 61 L47 70 L51 63 L55 71 L60 64 L65 71 L69 63 L73 70 L77 61 Z" fill="#FFFFFF"/><g><path d="M43 42 C46 37.5 53 37.5 57 41 C53 45.5 47.5 46 43 42 Z" fill="#F5B400"/><path d="M77 42 C74 37.5 67 37.5 63 41 C67 45.5 72.5 46 77 42 Z" fill="#F5B400"/><circle cx="51.5" cy="41.6" r="2.7" fill="#111"/><circle cx="68.5" cy="41.6" r="2.7" fill="#111"/><circle cx="52.4" cy="40.6" r=".9" fill="#fff"/><circle cx="69.4" cy="40.6" r=".9" fill="#fff"/></g><g><path d="M39 34 L58 38.5 L57 41.5 L40 37.5 Z" fill="#2A1A10"/><path d="M81 34 L62 38.5 L63 41.5 L80 37.5 Z" fill="#2A1A10"/></g><path d="M51 46 C55 42.5 66 42.5 70 46.5 C72.5 52 70 58.5 63.5 63 C63 59 62 56.5 60 56 C55.5 55.5 52 51.5 51 46 Z" fill="#F5B400"/><path d="M63.5 63 C66 59 66.2 56.2 64.2 53.6 L61.6 57.8 Z" fill="#B87400"/><path d="M53.5 50.5 C57.5 53.5 63 53.6 68.5 49.5" stroke="#A86A00" stroke-width="1.5" fill="none" stroke-linecap="round"/><circle cx="56" cy="47" r=".9" fill="#A86A00"/></g></g></svg>'; // o mascote do guia (mesma águia do canto da tela)
 var ASST_FB = '13.1.0';
 var ASST_MODELO = 'gemini-3.8-flash';
 var ASST_DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
@@ -32818,7 +32820,7 @@ function asstBotao(a, id, btn) {
   msnStatus = function(u) { return u === ASST_ID ? 'online' : oStatus(u); };
   msnAv = function(u, tam) {
     if (u !== ASST_ID) return oAv(u, tam); tam = tam || 32;
-    return '<div class="asst-av msn-ini" style="width:' + tam + 'px;height:' + tam + 'px;font-size:' + Math.round(tam * .6) + 'px">🦅</div>';
+    return '<div class="asst-av msn-ini" style="width:' + tam + 'px;height:' + tam + 'px">' + ASST_AGUIA + '</div>';
   };
   msnDoMeuTime = function(u) { return u === ASST_ID || oTime(u); };
   msnMembros = function(sala) { return oMembros(sala).filter(function(u) { return u !== ASST_ID; }); };
@@ -33312,6 +33314,561 @@ function asstConfigAbrir() {
 setInterval(function() { try { if (MSN.on && MSN.eu && ASST.user !== MSN.eu) asstIniciar(MSN.eu); } catch (e) {} }, 4000);
 </script>
 <!-- ══ fim do ASSISTENTE ══ -->
+
+<!-- ══ BATE-PAPO 2.0 (30/10/2026) ══ -->
+<style id="msn2-css">
+/* janelas maiores, com espaço para ler */
+.msn-win { width:500px; height:min(620px, calc(100vh - 30px)); position:relative; container-type:inline-size; }
+.msn-lista { width:330px; }
+.msn-wins { left:358px; }
+body.sb-on .msn-wins { left: calc(var(--sb-w) + 358px) !important; }
+@media (max-width:900px) { body.sb-on .msn-wins { left:16px !important; } }
+@media (max-width:700px) { .msn-wins, body.sb-on .msn-wins { left:0 !important; } }
+.msn-win .msn-linha textarea, .m2-painel input[type=text], .m2-bs input { background:#fff; color:#1C2B3A; }
+.m2-reac, .m2-pick button, .m2-sug button, .m2-cv, .m2-abas button:not(.on), .m2-filtros button:not(.on), .m2-pp button, .m2-painel .m2-b, .m2-pbtn { color:#1C3F73; }
+.m2-cv { color:#1C2B3A; }
+.msn-win .msn-dir { display:none; }
+.msn-win.msn2-max .msn-dir { display:flex; }
+.msn-win.msn2-max { position:fixed !important; left:2vw !important; top:2vh !important; right:auto !important; bottom:auto !important; width:96vw !important; height:96vh !important; max-width:none !important; max-height:none !important; z-index:99996; }
+@media (max-width:700px) { .msn-win.msn2-max { left:0 !important; top:0 !important; width:100vw !important; height:100% !important; } }
+.msn-xb.m2-maxb { font-size:12px; }
+/* barra de ferramentas mais enxuta */
+.msn-win .msn-tb { flex-wrap:nowrap; gap:2px; overflow-x:auto; scrollbar-width:none; }
+.msn-win .msn-tb button { flex-direction:row; gap:4px; font-size:11.5px; padding:3px 7px; }
+.msn-win .msn-tb button .ic { font-size:16px; line-height:20px; }
+@container (max-width:480px) { .msn-win .msn-tb button { font-size:0; padding:3px 6px; } .msn-win .msn-tb button .ic { font-size:18px; } }
+.msn-para { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+.msn-para .m2-pav { flex-shrink:0; display:flex; }
+.msn-para .m2-ptx { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.m2-pbtn { flex-shrink:0; border:1px solid #9DB9DD; background:#fff; color:#1C3F73; border-radius:12px; font:600 11.5px 'Segoe UI',Tahoma,sans-serif; padding:3px 9px; cursor:pointer; }
+.m2-pbtn:hover { background:#EEF5FE; }
+/* conversa em balões */
+.msn-win .msn-corpo { background:#F3F7FC; padding:8px 10px 12px; font:13.5px 'Segoe UI',Tahoma,sans-serif; border-radius:6px; }
+.msn-dia { margin:10px 0 6px; }
+.msn-dia span { background:#E1EAF6; color:#5E7591; padding:2px 10px; border-radius:10px; font-size:11px; }
+.m2 { display:flex; align-items:flex-end; gap:6px; margin:2px 0 0; position:relative; padding-left:0; line-height:1.4; }
+.m2:not(.seg) { margin-top:10px; }
+.m2.eu { flex-direction:row-reverse; }
+.m2-av { width:28px; flex-shrink:0; align-self:flex-end; }
+.m2-av .msn-ini, .m2-av .msn-avbox, .m2-av .asst-av { border-radius:50% !important; }
+.m2-col { max-width:min(78%, 560px); display:flex; flex-direction:column; align-items:flex-start; min-width:0; }
+.m2.eu .m2-col { align-items:flex-end; }
+.m2-nome { font-size:11.5px; font-weight:700; color:#2D6BB0; margin:0 0 2px 10px; }
+.m2-bal { background:#fff; border:1px solid #D5E2F2; border-radius:16px 16px 16px 4px; padding:6px 11px 5px; white-space:pre-wrap; word-wrap:break-word; overflow-wrap:anywhere; color:#1C2B3A; box-shadow:0 1px 1px rgba(13,60,110,.06); max-width:100%; box-sizing:border-box; }
+.m2.eu .m2-bal { background:linear-gradient(#DDEBFF,#CDE1FF); border-color:#B5D0F3; border-radius:16px 16px 4px 16px; }
+.m2.seg .m2-bal { border-radius:16px; }
+.m2.asst .m2-bal { background:#FFFDF5; border-color:#F0E2B8; }
+.m2-bal.apag { color:#9AA5B1; font-style:italic; }
+.m2-h { display:inline-block; float:right; font-size:10.5px; color:#8597AD; margin:6px 0 0 10px; line-height:1; white-space:nowrap; }
+.m2-edt { font-size:10.5px; color:#8597AD; font-style:italic; margin-left:4px; }
+.m2-cit { display:block; width:100%; max-width:420px; text-align:left; border:0; border-left:3px solid #2D7DD2; background:rgba(45,125,210,.09); border-radius:6px; padding:4px 8px; margin:0 0 5px; font:12px 'Segoe UI',Tahoma,sans-serif; color:#3B5875; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.m2-cit b { display:block; color:#2D6BB0; }
+.m2-reacs { display:flex; gap:4px; flex-wrap:wrap; margin:3px 6px 0; }
+.m2-reac { border:1px solid #D5E2F2; background:#fff; border-radius:12px; font:12px 'Segoe UI',sans-serif; padding:1px 7px; cursor:pointer; min-height:22px; }
+.m2-reac.meu { border-color:#2D7DD2; background:#E7F1FD; }
+.m2 .m2-acoes { position:absolute; top:-14px; right:36px; float:none; display:none; gap:0; background:#fff; border:1px solid #C9D9EE; border-radius:14px; padding:1px 3px; box-shadow:0 2px 8px rgba(13,60,110,.15); z-index:3; }
+.m2.eu .m2-acoes { right:auto; left:0; }
+.m2:hover .m2-acoes, .m2:focus-within .m2-acoes { display:inline-flex; }
+.m2 .m2-acoes button { border:0; background:transparent; min-height:26px; min-width:26px; padding:0 4px; border-radius:10px; font-size:13px; cursor:pointer; }
+.m2 .m2-acoes button:hover { background:#EEF5FE; }
+@media (hover:none) { .m2 .m2-acoes { display:none; } .m2.sel .m2-acoes { display:inline-flex; } }
+.m2-men { color:#1F6FEB; font-weight:600; }
+.m2-men.mim { background:#FFF1B8; border-radius:4px; padding:0 2px; }
+.m2.flash .m2-bal { animation:m2flash 1.6s ease; }
+@keyframes m2flash { 0%,60% { box-shadow:0 0 0 3px #FFD23F; } 100% { box-shadow:none; } }
+.msn-sis.sis2 { color:#5E7591; font-weight:600; font-size:11.5px; }
+.m2-pick { position:fixed; z-index:100001; display:flex; gap:2px; background:#fff; border:1px solid #C9D9EE; border-radius:20px; padding:3px 6px; box-shadow:0 4px 16px rgba(13,60,110,.25); }
+.m2-pick button { border:0; background:transparent; font-size:20px; width:34px; height:34px; border-radius:50%; cursor:pointer; }
+.m2-pick button:hover { background:#EEF5FE; transform:scale(1.15); }
+/* faixas: fixada, busca, responder, sugestão de @ */
+.m2-fx, .m2-bs, .m2-rb { display:none; align-items:center; gap:8px; font:12px 'Segoe UI',Tahoma,sans-serif; }
+.m2-fx.on, .m2-bs.on, .m2-rb.on { display:flex; }
+.m2-fx { background:#FFF8DC; border:1px solid #F0DC9A; border-radius:6px; padding:5px 8px; margin-bottom:5px; color:#5A4A12; cursor:pointer; }
+.m2-fx span { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.m2-bs { margin-bottom:5px; }
+.m2-bs input { flex:1; min-width:0; border:1px solid #9DB9DD; border-radius:14px; padding:5px 10px; font:12.5px 'Segoe UI',sans-serif; }
+.m2-rb { background:#EAF3FD; border-left:3px solid #2D7DD2; border-radius:6px; padding:5px 8px; margin-bottom:5px; color:#3B5875; }
+.m2-rb span { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.m2-x { border:0; background:transparent; cursor:pointer; font-size:15px; color:#5E7591; width:24px; height:24px; border-radius:50%; flex-shrink:0; }
+.m2-x:hover { background:rgba(0,0,0,.07); }
+.m2-sug { display:none; background:#fff; border:1px solid #9DB9DD; border-radius:8px; margin-bottom:5px; max-height:170px; overflow-y:auto; box-shadow:0 4px 14px rgba(13,60,110,.18); }
+.m2-sug.on { display:block; }
+.m2-sug button { display:flex; align-items:center; gap:8px; width:100%; border:0; background:transparent; padding:5px 8px; font:13px 'Segoe UI',sans-serif; cursor:pointer; text-align:left; }
+.m2-sug button.at, .m2-sug button:hover { background:#EAF3FD; }
+/* campo de escrever */
+.msn-win .msn-linha { align-items:flex-end; }
+.msn-win .msn-linha textarea { height:46px; min-height:46px; max-height:140px; border-radius:18px; padding:12px 14px; font:13.5px 'Segoe UI',Tahoma,sans-serif; }
+.msn-win .msn-linha button { width:auto; min-width:70px; height:46px; border-radius:23px; border:1px solid #1C5FA8; background:linear-gradient(#5FB2F0,#2D7DD2); color:#fff; }
+.msn-win .msn-linha button:hover { background:linear-gradient(#73BEF4,#3A88DC); }
+/* lista: abas, filtros e conversas recentes */
+.m2-abas { display:flex; gap:4px; padding:4px 8px 0; align-items:center; }
+.m2-abas button { border:0; background:transparent; font:600 12.5px 'Segoe UI',Tahoma,sans-serif; color:#5E7591; padding:6px 8px; border-bottom:2px solid transparent; cursor:pointer; }
+.m2-abas button.on { color:#1C3F73; border-bottom-color:#2D7DD2; }
+.m2-abas .m2-novo { margin-left:auto; border:1px solid #9DB9DD; border-radius:12px; padding:3px 9px; background:#fff; color:#1C3F73; }
+.m2-filtros { display:flex; gap:4px; padding:6px 8px 2px; }
+.m2-filtros button { border:1px solid #C9D9EE; background:#fff; border-radius:12px; font:12px 'Segoe UI',sans-serif; color:#3B5875; padding:2px 10px; cursor:pointer; }
+.m2-filtros button.on { background:#2D7DD2; border-color:#2D7DD2; color:#fff; }
+.m2-cv { display:flex; align-items:center; gap:9px; width:100%; text-align:left; background:transparent; border:0; border-radius:8px; padding:6px 8px; cursor:pointer; font:13px 'Segoe UI',Tahoma,sans-serif; color:#1C2B3A; }
+.m2-cv:hover, .m2-cv:focus-visible { background:#E4EEFA; outline:none; }
+.m2-cv-av { position:relative; flex-shrink:0; display:flex; }
+.m2-cv-av .msn-ini, .m2-cv-av .msn-avbox, .m2-cv-av .asst-av { border-radius:50% !important; }
+.m2-cv-av i { position:absolute; right:-1px; bottom:-1px; width:11px; height:11px; border-radius:50%; border:2px solid #F4F9FF; }
+.m2-cv-t { flex:1; min-width:0; }
+.m2-cv-l1 { display:flex; gap:6px; align-items:baseline; }
+.m2-cv-l1 b { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+.m2-cv-l1 small { color:#7A8DA3; font-size:11px; flex-shrink:0; }
+.m2-cv-l2 { display:flex; gap:6px; align-items:center; }
+.m2-cv-l2 span { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#6B8199; font-size:12px; }
+.m2-cv.nl .m2-cv-l1 b, .m2-cv.nl .m2-cv-l2 span { font-weight:700; color:#1C2B3A; }
+.m2-cv-n { background:#2D7DD2; color:#fff; border-radius:10px; font-size:11px; font-weight:700; padding:0 6px; min-width:18px; text-align:center; flex-shrink:0; }
+.m2-vz { padding:18px 12px; text-align:center; color:#7A8DA3; font-size:12.5px; }
+/* participantes do grupo */
+.m2-painel { position:absolute; inset:28px 0 0 0; background:#F4F9FF; z-index:5; display:flex; flex-direction:column; font:13px 'Segoe UI',Tahoma,sans-serif; color:#1C2B3A; }
+.m2-painel .m2-ph { display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid #C9D9EE; }
+.m2-painel .m2-ph b { flex:1; font-size:14px; }
+.m2-painel .m2-pc { flex:1; overflow-y:auto; padding:8px 12px; }
+.m2-painel h4 { margin:12px 0 6px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#5E7591; }
+.m2-pp { display:flex; align-items:center; gap:8px; padding:5px 0; }
+.m2-pp span { flex:1; min-width:0; }
+.m2-pp small { color:#7A8DA3; }
+.m2-pp button, .m2-painel .m2-b { border:1px solid #9DB9DD; background:#fff; color:#1C3F73; border-radius:12px; font:600 12px 'Segoe UI',sans-serif; padding:3px 10px; cursor:pointer; }
+.m2-painel .m2-b.perigo, .m2-pp button.perigo { color:#C62828; border-color:#E8A9A9; }
+.m2-painel input[type=text] { width:100%; box-sizing:border-box; border:1px solid #9DB9DD; border-radius:8px; padding:7px 10px; font:13px 'Segoe UI',sans-serif; }
+.m2-cores { display:flex; gap:6px; flex-wrap:wrap; }
+.m2-cores button { width:26px; height:26px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #C9D9EE; cursor:pointer; }
+.m2-cores button.on { box-shadow:0 0 0 2px #1C3F73; }
+.m2-modal-f { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:100002; display:flex; align-items:center; justify-content:center; padding:16px; }
+.m2-modal { position:relative; inset:auto; width:min(420px,100%); max-height:calc(100vh - 32px); border-radius:12px; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,.3); }
+</style>
+<script>
+/* ══ BATE-PAPO 2.0 (30/10/2026) ══
+   · lista com abas Conversas (recentes no topo, prévia, não lidas) e Contatos, filtros Todas / Não lidas / Grupos;
+   · grupos criados por qualquer pessoa: chat/gruposX/<id> = { nome, cor, membros:{LOGIN:true}, criadoPor, ts }
+     (quem criou e a gestão incluem e tiram pessoas; qualquer um sai). Conversa: 'G_<id>', igual às salas;
+   · janelas maiores, botão maximizar, até 3 conversas abertas em tela larga;
+   · balões, responder (m.resp), reações (msgs/<id>/reacoes/<LOGIN>), @menção (m.mencoes, avisa mesmo em "Ocupado"),
+     busca na conversa e mensagem fixada (chat/fixadas/<CONV>). */
+var MSN2 = { aba: 'conversas', filtro: 'todas', resp: {}, busca: {}, fix: {}, fixRefs: {}, grupos: {}, gSub: {}, gRef: null, gPrimeira: true, sug: {} };
+var MSN2_REACOES = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '✅'];
+var MSN2_CORES = ['#6B3FA0', '#0453D8', '#0A7FA8', '#2E8B2E', '#E07A10', '#C41E1E', '#D63A8A', '#4A5568'];
+function msn2Norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function msn2Prim(u) { return String(msnNome(u) || u).split(/\s+/)[0]; }
+function msn2Gestao() { try { return ehDona(MSN.eu) || !semPaineisGestao(MSN.eu); } catch (e) { return false; } }
+function msn2EhGrupo(c) { return /^G_/.test(String(c || '')); }
+function msn2Grupo(c) { return MSN2.grupos[String(c).slice(2)] || null; }
+function msn2Membros(g) { var m = (g && g.membros) || {}; return Object.keys(m).filter(function(u) { return m[u]; }); }
+function msn2PodeEditar(g) { return !!g && (g.criadoPor === MSN.eu || msn2Gestao()); }
+function msn2Id() { return 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function msn2Quando(ts) { return msnDia(ts) === 'Hoje' ? msnHora(ts) : msnDia(ts); }
+function msn2Previa(ult, conv) {
+  if (!ult) return '';
+  var quem = ult.de === MSN.eu ? 'Você: ' : (msnSala(conv) ? msn2Prim(ult.de) + ': ' : '');
+  var t = ult.tipo === 'tremer' ? '📳 chamou a atenção' : ult.tipo === 'wink' ? '✨ enviou um wink' : ult.tipo === 'figurinha' ? '🖼️ Figurinha' : ult.tipo === 'anexo' ? '📎 ' + (ult.txt || 'Arquivo') : ult.tipo === 'sis' ? msn2Prim(ult.de) + ' ' + (ult.txt || '') : (ult.txt || '');
+  return ult.tipo === 'sis' ? t : quem + t;
+}
+
+/* ── grupos ── */
+function msn2OuvirGrupos() {
+  if (MSN2.gRef) return;
+  MSN2.gPrimeira = true;
+  try {
+    MSN2.gRef = dbRef('chat/gruposX');
+    MSN2.gRef.on('value', function(s) {
+      var v = (s && s.val()) || {}; MSN2.grupos = {};
+      Object.keys(v).forEach(function(k) { if (v[k] && typeof v[k] === 'object') { v[k].id = k; MSN2.grupos[k] = v[k]; } });
+      msn2SincSalas();
+    });
+  } catch (e) { console.warn('bate-papo: grupos', e); }
+}
+function msn2SincSalas() {
+  if (!MSN.on) return;
+  var me = MSN.eu, meus = {}, primeira = MSN2.gPrimeira; MSN2.gPrimeira = false;
+  Object.keys(MSN2.grupos).forEach(function(k) { var g = MSN2.grupos[k]; if (g.membros && g.membros[me]) meus['G_' + k] = g; });
+  Object.keys(MSN_SALAS).forEach(function(c) { if (msn2EhGrupo(c) && !meus[c]) { delete MSN_SALAS[c]; msn2PararGrupo(c); if (MSN.abertas.indexOf(c) >= 0) msnFechar(c); } });
+  Object.keys(meus).forEach(function(c) {
+    var g = meus[c], novo = !MSN_SALAS[c];
+    MSN_SALAS[c] = { nome: g.nome || 'Grupo', sub: msn2Membros(g).length + ' participantes', cor: g.cor || '#6B3FA0', custom: true };
+    msn2OuvirGrupo(c);
+    if (novo && !primeira && g.criadoPor !== me) { try { msnBalao(c, g.incluidoPor && g.incluidoPor[me] || g.criadoPor, 'incluiu você no grupo ' + (g.nome || ''), false); msnSom('grupo'); } catch (e) {} }
+  });
+  msnRender(); MSN.abertas.forEach(function(c) { if (msnSala(c)) msnRenderTopoJanela(c); });
+  if (MSN2.painel && document.getElementById('m2-painel-' + MSN2.painel)) msn2PainelRender(MSN2.painel);
+}
+function msn2OuvirGrupo(c) {
+  if (MSN2.gSub[c]) return;
+  var r = dbRef('chat/grupo/' + c); MSN2.gSub[c] = r;
+  r.on('value', function(s) {
+    var v = s && s.val(), antes = MSN.grupos[c]; MSN.grupos[c] = v || null;
+    if (MSN.base && MSN.base['g_' + c] && v && (!antes || v.ts !== antes.ts)) msnChegou(c, v);
+    if (MSN.base) MSN.base['g_' + c] = true; msnRender();
+  });
+}
+function msn2PararGrupo(c) { var r = MSN2.gSub[c]; if (r && r.off) { try { r.off(); } catch (e) {} } delete MSN2.gSub[c]; delete MSN.grupos[c]; }
+function msn2LimparGrupos() {
+  Object.keys(MSN2.gSub).forEach(msn2PararGrupo);
+  Object.keys(MSN_SALAS).forEach(function(c) { if (msn2EhGrupo(c)) delete MSN_SALAS[c]; });
+  if (MSN2.gRef && MSN2.gRef.off) { try { MSN2.gRef.off(); } catch (e) {} } MSN2.gRef = null; MSN2.grupos = {};
+}
+function msn2Sis(conv, txt) { msnGravar(conv, { de: MSN.eu, txt: String(txt).slice(0, 200), ts: Date.now(), tipo: 'sis' }); }
+function msn2Pessoas() { return msnContatos().filter(function(u) { return u !== 'ASSISTENTE'; }).sort(function(a, b) { return msnNome(a).localeCompare(msnNome(b), 'pt-BR'); }); }
+
+/* modal para criar grupo */
+function msn2NovoGrupo() {
+  var sel = {}, cor = MSN2_CORES[Math.floor(Math.random() * MSN2_CORES.length)], busca = '';
+  var f = document.createElement('div'); f.className = 'm2-modal-f';
+  var desenha = function() {
+    var lista = msn2Pessoas().filter(function(u) { return !busca || msn2Norm(msnNome(u)).indexOf(msn2Norm(busca)) >= 0; });
+    var nome = (f.querySelector('#m2-ng-nome') || {}).value || '';
+    f.innerHTML = '<div class="m2-painel m2-modal" role="dialog" aria-modal="true" aria-label="Novo grupo"><div class="m2-ph"><b>👥 Novo grupo</b><button type="button" class="m2-x" data-a="fechar" aria-label="Fechar">✕</button></div><div class="m2-pc">' +
+      '<h4>Nome do grupo</h4><input type="text" id="m2-ng-nome" maxlength="40" placeholder="Ex.: Fechamento do mês" value="' + msnEsc(nome) + '">' +
+      '<h4>Cor</h4><div class="m2-cores">' + MSN2_CORES.map(function(c) { return '<button type="button" data-cor="' + c + '" class="' + (c === cor ? 'on' : '') + '" style="background:' + c + '" aria-label="Cor ' + c + '"></button>'; }).join('') + '</div>' +
+      '<h4>Participantes (' + Object.keys(sel).length + ')</h4><input type="text" id="m2-ng-busca" placeholder="Procurar pessoa…" value="' + msnEsc(busca) + '">' +
+      lista.map(function(u) { return '<label class="m2-pp" style="cursor:pointer"><input type="checkbox" data-u="' + msnEsc(u) + '"' + (sel[u] ? ' checked' : '') + '>' + msnAv(u, 26) + '<span>' + msnEsc(msnNome(u)) + (msnDoMeuTime(u) ? '' : ' <small>· ' + MSN_TIMES[msnOutroTime()] + '</small>') + '</span></label>'; }).join('') +
+      '</div><div style="display:flex;gap:8px;justify-content:flex-end;padding:10px 12px;border-top:1px solid #C9D9EE"><button type="button" class="m2-b" data-a="fechar">Cancelar</button><button type="button" class="m2-b" data-a="criar" style="background:#2D7DD2;color:#fff;border-color:#2D7DD2">Criar grupo</button></div></div>';
+  };
+  desenha(); document.body.appendChild(f);
+  setTimeout(function() { var n = f.querySelector('#m2-ng-nome'); if (n) n.focus(); }, 30);
+  f.addEventListener('input', function(e) { if (e.target.id === 'm2-ng-busca') { busca = e.target.value; desenha(); var b = f.querySelector('#m2-ng-busca'); b.focus(); b.setSelectionRange(busca.length, busca.length); } });
+  f.addEventListener('change', function(e) { var u = e.target.getAttribute && e.target.getAttribute('data-u'); if (u) { if (e.target.checked) sel[u] = true; else delete sel[u]; var h = f.querySelectorAll('h4')[2]; if (h) h.textContent = 'Participantes (' + Object.keys(sel).length + ')'; } });
+  f.addEventListener('click', function(e) {
+    if (e.target === f) { f.remove(); return; }
+    var c = e.target.closest('[data-cor]'); if (c) { cor = c.getAttribute('data-cor'); f.querySelectorAll('[data-cor]').forEach(function(b) { b.classList.toggle('on', b === c); }); return; }
+    var a = e.target.closest('[data-a]'); if (!a) return;
+    if (a.getAttribute('data-a') === 'fechar') { f.remove(); return; }
+    var nome = (f.querySelector('#m2-ng-nome').value || '').trim();
+    if (!nome) { alert('Dê um nome para o grupo.'); return; }
+    if (!Object.keys(sel).length) { alert('Escolha pelo menos uma pessoa.'); return; }
+    var id = msn2Id(), membros = {}; membros[MSN.eu] = true; Object.keys(sel).forEach(function(u) { membros[u] = true; });
+    var g = { nome: nome.slice(0, 40), cor: cor, membros: membros, criadoPor: MSN.eu, ts: Date.now() };
+    Promise.resolve(dbRef('chat/gruposX/' + id).set(g)).then(function() {
+      f.remove(); MSN2.grupos[id] = Object.assign({ id: id }, g); msn2SincSalas();
+      var conv = 'G_' + id; msn2Sis(conv, 'criou o grupo com ' + Object.keys(sel).map(msn2Prim).join(', '));
+      MSN2.aba = 'conversas'; msnAbrir(conv);
+    }).catch(function(err) { alert('Não criou o grupo: ' + (err && err.message || err)); });
+  });
+}
+/* painel de participantes dentro da janela do grupo */
+function msn2Painel(conv) {
+  var w = document.getElementById('msn-w-' + conv); if (!w) return;
+  var p = document.getElementById('m2-painel-' + conv);
+  if (p) { p.remove(); MSN2.painel = null; return; }
+  p = document.createElement('div'); p.className = 'm2-painel'; p.id = 'm2-painel-' + conv; w.appendChild(p); MSN2.painel = conv;
+  p.addEventListener('click', function(e) { msn2PainelAcao(conv, e); });
+  msn2PainelRender(conv);
+}
+function msn2PainelRender(conv) {
+  var p = document.getElementById('m2-painel-' + conv), g = msn2Grupo(conv); if (!p) return;
+  if (!g) { p.remove(); return; }
+  var ed = msn2PodeEditar(g), mem = msn2Membros(g).sort(function(a, b) { return msnNome(a).localeCompare(msnNome(b), 'pt-BR'); });
+  var fora = msn2Pessoas().filter(function(u) { return mem.indexOf(u) < 0; }), busca = MSN2.pBusca || '';
+  if (busca) fora = fora.filter(function(u) { return msn2Norm(msnNome(u)).indexOf(msn2Norm(busca)) >= 0; });
+  p.innerHTML = '<div class="m2-ph"><b>👥 ' + msnEsc(g.nome || 'Grupo') + '</b><button type="button" class="m2-x" data-a="fechar" aria-label="Fechar">✕</button></div><div class="m2-pc">' +
+    (ed ? '<h4>Nome e cor</h4><div style="display:flex;gap:6px"><input type="text" id="m2-pn-' + conv + '" maxlength="40" value="' + msnEsc(g.nome || '') + '"><button type="button" class="m2-b" data-a="renomear">Salvar</button></div><div class="m2-cores" style="margin-top:8px">' +
+      MSN2_CORES.map(function(c) { return '<button type="button" data-cor="' + c + '" class="' + (c === g.cor ? 'on' : '') + '" style="background:' + c + '" aria-label="Cor ' + c + '"></button>'; }).join('') + '</div>' : '') +
+    '<h4>Participantes (' + mem.length + ')</h4>' + mem.map(function(u) {
+      return '<div class="m2-pp">' + msnAv(u, 28) + '<span>' + msnEsc(u === MSN.eu ? 'Você' : msnNome(u)) + (u === g.criadoPor ? ' <small>· criou o grupo</small>' : '') + '</span>' +
+        (ed && u !== MSN.eu ? '<button type="button" class="perigo" data-a="tirar" data-u="' + msnEsc(u) + '">Tirar</button>' : '') + '</div>';
+    }).join('') +
+    (ed ? '<h4>Incluir pessoas</h4><input type="text" id="m2-pb-' + conv + '" placeholder="Procurar pessoa…" value="' + msnEsc(busca) + '" oninput="MSN2.pBusca=this.value;msn2PainelRender(\'' + conv + '\');var i=document.getElementById(\'m2-pb-' + conv + '\');i.focus();i.setSelectionRange(i.value.length,i.value.length)">' +
+      (fora.length ? fora.map(function(u) { return '<div class="m2-pp">' + msnAv(u, 28) + '<span>' + msnEsc(msnNome(u)) + '</span><button type="button" data-a="incluir" data-u="' + msnEsc(u) + '">+ Incluir</button></div>'; }).join('') : '<div class="m2-vz">Todo mundo já está no grupo.</div>')
+      : '<p style="color:#7A8DA3;font-size:12px;margin:10px 0">Só quem criou o grupo e a gestão incluem ou tiram pessoas.</p>') +
+    '<h4>Opções</h4><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="m2-b perigo" data-a="sair">Sair do grupo</button>' + (ed ? '<button type="button" class="m2-b perigo" data-a="apagar">Apagar grupo</button>' : '') + '</div></div>';
+}
+function msn2PainelAcao(conv, e) {
+  var g = msn2Grupo(conv), id = conv.slice(2); if (!g) return;
+  var c = e.target.closest('[data-cor]'); if (c && msn2PodeEditar(g)) { dbRef('chat/gruposX/' + id + '/cor').set(c.getAttribute('data-cor')); return; }
+  var a = e.target.closest('[data-a]'); if (!a) return; var ac = a.getAttribute('data-a'), u = a.getAttribute('data-u');
+  if (ac === 'fechar') { msn2Painel(conv); return; }
+  if (ac === 'renomear') { var n = (document.getElementById('m2-pn-' + conv).value || '').trim(); if (n && n !== g.nome) { dbRef('chat/gruposX/' + id + '/nome').set(n.slice(0, 40)); msn2Sis(conv, 'mudou o nome do grupo para "' + n.slice(0, 40) + '"'); } return; }
+  if (ac === 'incluir' && u) { dbRef('chat/gruposX/' + id + '/membros/' + u).set(true); dbRef('chat/gruposX/' + id + '/incluidoPor/' + u).set(MSN.eu); msn2Sis(conv, 'incluiu ' + msnNome(u)); return; }
+  if (ac === 'tirar' && u) { if (!confirm('Tirar ' + msnNome(u) + ' do grupo?')) return; dbRef('chat/gruposX/' + id + '/membros/' + u).remove(); msn2Sis(conv, 'tirou ' + msnNome(u) + ' do grupo'); return; }
+  if (ac === 'sair') {
+    if (!confirm('Sair do grupo "' + (g.nome || '') + '"?')) return;
+    msn2Sis(conv, 'saiu do grupo');
+    var resto = msn2Membros(g).filter(function(x) { return x !== MSN.eu; });
+    if (!resto.length) dbRef('chat/gruposX/' + id).remove(); else dbRef('chat/gruposX/' + id + '/membros/' + MSN.eu).remove();
+    return;
+  }
+  if (ac === 'apagar') {
+    if (!confirm('Apagar o grupo "' + (g.nome || '') + '" e todas as mensagens dele, para todo mundo?')) return;
+    dbRef('chat/gruposX/' + id).remove(); dbRef('chat/conv/' + conv).remove(); dbRef('chat/grupo/' + conv).remove(); dbRef('chat/fixadas/' + conv).remove();
+  }
+}
+
+/* ── lista: abas, filtros e conversas recentes ── */
+function msn2AbasHtml() {
+  var aba = MSN2.aba, f = MSN2.filtro;
+  return '<div class="m2-abas" role="tablist"><button type="button" role="tab" aria-selected="' + (aba === 'conversas') + '" class="' + (aba === 'conversas' ? 'on' : '') + '" onclick="MSN2.aba=\'conversas\';msnRender()">Conversas</button>' +
+    '<button type="button" role="tab" aria-selected="' + (aba === 'contatos') + '" class="' + (aba === 'contatos' ? 'on' : '') + '" onclick="MSN2.aba=\'contatos\';msnRender()">Contatos</button>' +
+    '<button type="button" class="m2-novo" onclick="msn2NovoGrupo()" title="Criar um grupo e escolher quem participa">＋ Novo grupo</button></div>' +
+    (aba === 'conversas' ? '<div class="m2-filtros">' + [['todas', 'Todas'], ['naolidas', 'Não lidas'], ['grupos', 'Grupos']].map(function(x) {
+      return '<button type="button" class="' + (f === x[0] ? 'on' : '') + '" onclick="MSN2.filtro=\'' + x[0] + '\';msnRender()">' + x[1] + '</button>'; }).join('') + '</div>' : '');
+}
+function msn2NaoLidasQtd(conv) { if (!msnNaoLidas(conv)) return 0; var l = MSN.msgs[conv]; if (!l) return 1; var lid = MSN.lidas[conv] || 0; return Math.max(1, l.filter(function(m) { return m.de !== MSN.eu && m.ts > lid; }).length); }
+function msn2ConversasHtml(q) {
+  q = msn2Norm(q || '');
+  var itens = [];
+  msnContatos().forEach(function(u) { var c = msnConv(MSN.eu, u); itens.push({ c: c, u: u, ult: MSN.ind[c], g: false }); });
+  msnMinhasSalas().forEach(function(s) { itens.push({ c: s, u: s, ult: MSN.grupos[s], g: true }); });
+  itens = itens.filter(function(x) {
+    if (q && msn2Norm(msnNome(x.u)).indexOf(q) < 0) return false;
+    if (MSN2.filtro === 'naolidas') return msnNaoLidas(x.c);
+    if (MSN2.filtro === 'grupos') return x.g;
+    return q || x.ult || x.g || x.u === 'ASSISTENTE';
+  }).sort(function(a, b) { return ((b.ult && b.ult.ts) || 0) - ((a.ult && a.ult.ts) || 0) || msnNome(a.u).localeCompare(msnNome(b.u), 'pt-BR'); });
+  if (!itens.length) return '<div class="m2-vz">' + (MSN2.filtro === 'naolidas' ? 'Nenhuma conversa não lida. 🎉' : MSN2.filtro === 'grupos' ? 'Nenhum grupo ainda. Crie um em “＋ Novo grupo”.' : q ? 'Ninguém com esse nome.' : 'Nenhuma conversa ainda. Veja a aba Contatos.') + '</div>';
+  var cores = { online: '#3BB54A', ausente: '#F2A31E', ocupado: '#E53935' };
+  return itens.map(function(x) {
+    var st = x.g ? '' : msnStatus(x.u), n = msn2NaoLidasQtd(x.c), sub = x.ult ? msn2Previa(x.ult, x.c) : (x.g ? MSN_SALAS[x.u].sub : (MSN.pres[x.u] && MSN.pres[x.u].frase) || (st === 'offline' ? 'Offline' : MSN_STATUS[st] || ''));
+    return '<button type="button" class="m2-cv' + (n ? ' nl' : '') + '" onclick="msnAbrir(\'' + x.c + '\')"><span class="m2-cv-av">' + msnAv(x.u, 38) + (cores[st] ? '<i style="background:' + cores[st] + '"></i>' : '') + '</span>' +
+      '<span class="m2-cv-t"><span class="m2-cv-l1"><b>' + msnEsc(msnNome(x.u)) + '</b>' + (x.ult ? '<small>' + msn2Quando(x.ult.ts) + '</small>' : '') + '</span>' +
+      '<span class="m2-cv-l2"><span>' + msnEsc(sub) + '</span>' + (n ? '<em class="m2-cv-n">' + (n > 99 ? '99+' : n) + '</em>' : '') + '</span></span></button>';
+  }).join('');
+}
+
+/* ── janela: maximizar, buscar, fixada, responder, @menção ── */
+function msn2Max(conv) { var w = document.getElementById('msn-w-' + conv); if (!w) return; w.classList.remove('min'); w.classList.toggle('msn2-max'); MSN2.maxs = MSN2.maxs || {}; MSN2.maxs[conv] = w.classList.contains('msn2-max'); msnRenderTopoJanela(conv); var b = document.getElementById('msn-c-' + conv); if (b) b.scrollTop = b.scrollHeight; }
+function msn2Buscar(conv) {
+  var b = document.getElementById('m2-bs-' + conv); if (!b) return;
+  if (b.classList.contains('on')) { b.classList.remove('on'); MSN2.busca[conv] = ''; msnRenderMsgs(conv); return; }
+  b.classList.add('on'); b.innerHTML = '🔍<input type="search" placeholder="Buscar nesta conversa…" oninput="MSN2.busca[\'' + conv + '\']=this.value;msnRenderMsgs(\'' + conv + '\')" onkeydown="if(event.key===\'Escape\')msn2Buscar(\'' + conv + '\')"><button type="button" class="m2-x" onclick="msn2Buscar(\'' + conv + '\')" aria-label="Fechar busca">✕</button>';
+  b.querySelector('input').focus();
+}
+function msn2IrMsg(conv, id) {
+  if (MSN2.busca[conv]) { MSN2.busca[conv] = ''; var b = document.getElementById('m2-bs-' + conv); if (b) b.classList.remove('on'); msnRenderMsgs(conv); }
+  var el = document.getElementById('m2-' + conv + '-' + id);
+  if (!el) { msnBalao(conv, MSN.eu, 'Essa mensagem é antiga e não está mais carregada na conversa.', 'wink'); return; }
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+function msn2Previo(m) { return m.tipo === 'anexo' ? '📎 ' + ((m.anexo && m.anexo.nome) || 'Arquivo') : m.tipo === 'figurinha' ? '🖼️ Figurinha' : String(m.txt || '').replace(/\*\*/g, '').slice(0, 120); }
+function msn2Responder(conv, id) {
+  var m = msnMsgAchar(conv, id); if (!m) return;
+  MSN2.resp[conv] = { id: id, de: m.de, txt: msn2Previo(m) }; msn2RenderResp(conv);
+  var t = document.getElementById('msn-in-' + conv); if (t) t.focus();
+}
+function msn2RenderResp(conv) {
+  var el = document.getElementById('m2-rb-' + conv); if (!el) return; var r = MSN2.resp[conv];
+  if (!r) { el.classList.remove('on'); el.innerHTML = ''; return; }
+  el.classList.add('on'); el.innerHTML = '↩️<span><b>' + msnEsc(r.de === MSN.eu ? 'Você' : msnNome(r.de)) + ':</b> ' + msnEsc(r.txt) + '</span><button type="button" class="m2-x" onclick="delete MSN2.resp[\'' + conv + '\'];msn2RenderResp(\'' + conv + '\')" aria-label="Cancelar resposta">✕</button>';
+}
+function msn2Fixar(conv, id) {
+  var m = msnMsgAchar(conv, id); if (!m) return; var f = MSN2.fix[conv];
+  if (f && f.id === id) { dbRef('chat/fixadas/' + conv).remove(); return; }
+  dbRef('chat/fixadas/' + conv).set({ id: id, de: m.de, txt: msn2Previo(m), por: MSN.eu, ts: Date.now() });
+}
+function msn2OuvirFixada(conv) {
+  if (MSN2.fixRefs[conv]) return;
+  try { var r = dbRef('chat/fixadas/' + conv); MSN2.fixRefs[conv] = r; r.on('value', function(s) { MSN2.fix[conv] = (s && s.val()) || null; msn2RenderFix(conv); }); } catch (e) {}
+}
+function msn2PararFixada(conv) { var r = MSN2.fixRefs[conv]; if (r && r.off) { try { r.off(); } catch (e) {} } delete MSN2.fixRefs[conv]; }
+function msn2RenderFix(conv) {
+  var el = document.getElementById('m2-fx-' + conv); if (!el) return; var f = MSN2.fix[conv];
+  if (!f) { el.classList.remove('on'); el.innerHTML = ''; return; }
+  el.classList.add('on'); el.title = 'Fixada por ' + (f.por === MSN.eu ? 'você' : msnNome(f.por)) + ' — clique para ver';
+  el.innerHTML = '📌<span><b>' + msnEsc(f.de === MSN.eu ? 'Você' : msnNome(f.de)) + ':</b> ' + msnEsc(f.txt) + '</span><button type="button" class="m2-x" data-desf="1" aria-label="Desafixar">✕</button>';
+  el.onclick = function(e) { if (e.target.getAttribute('data-desf')) { e.stopPropagation(); dbRef('chat/fixadas/' + conv).remove(); return; } msn2IrMsg(conv, f.id); };
+}
+/* reações */
+function msn2Reagir(ev, conv, id) {
+  ev.stopPropagation(); var velho = document.querySelector('.m2-pick'); if (velho) velho.remove();
+  var p = document.createElement('div'); p.className = 'm2-pick'; p.setAttribute('role', 'menu');
+  p.innerHTML = MSN2_REACOES.map(function(e) { return '<button type="button" role="menuitem" data-e="' + e + '" aria-label="Reagir ' + e + '">' + e + '</button>'; }).join('');
+  document.body.appendChild(p);
+  var r = ev.currentTarget.getBoundingClientRect(), w = p.offsetWidth;
+  p.style.left = Math.max(6, Math.min(window.innerWidth - w - 6, r.left + r.width / 2 - w / 2)) + 'px'; p.style.top = Math.max(6, r.top - p.offsetHeight - 6) + 'px';
+  p.onclick = function(e) { var b = e.target.closest('[data-e]'); if (b) { msn2ReagirCom(conv, id, b.getAttribute('data-e')); p.remove(); } };
+  setTimeout(function() { document.addEventListener('click', function fora(e) { if (!p.contains(e.target)) { p.remove(); document.removeEventListener('click', fora); } }); }, 0);
+}
+function msn2ReagirCom(conv, id, e) {
+  var m = msnMsgAchar(conv, id); if (!m) return; var cur = m.reacoes && m.reacoes[MSN.eu];
+  var r = dbRef('chat/conv/' + conv + '/msgs/' + id + '/reacoes/' + MSN.eu);
+  if (cur === e) r.remove(); else r.set(e);
+}
+function msn2ReacHtml(conv, m) {
+  var r = m.reacoes || {}, por = {}; Object.keys(r).forEach(function(u) { if (r[u]) (por[r[u]] = por[r[u]] || []).push(u); });
+  var ks = Object.keys(por); if (!ks.length) return '';
+  return '<div class="m2-reacs">' + ks.map(function(e) {
+    return '<button type="button" class="m2-reac' + (por[e].indexOf(MSN.eu) >= 0 ? ' meu' : '') + '" title="' + msnEsc(por[e].map(function(u) { return u === MSN.eu ? 'Você' : msnNome(u); }).join(', ')) + '" onclick="msn2ReagirCom(\'' + conv + '\',\'' + m._id + '\',\'' + e + '\')">' + e + ' ' + por[e].length + '</button>';
+  }).join('') + '</div>';
+}
+/* @menção (só em salas e grupos) */
+function msn2Mencionaveis(conv) { return msnSala(conv) ? msnMembros(conv).filter(function(u) { return u !== MSN.eu && u !== 'ASSISTENTE'; }) : []; }
+function msn2Sugestoes(conv) {
+  var t = document.getElementById('msn-in-' + conv), box = document.getElementById('m2-sug-' + conv); if (!t || !box) return;
+  var antes = t.value.slice(0, t.selectionStart), m = antes.match(/(^|\s)@([^\s@]{0,20})$/);
+  var l = m ? msn2Mencionaveis(conv) : [];
+  if (m) { var q = msn2Norm(m[2]); l = l.filter(function(u) { return !q || msn2Norm(msnNome(u)).indexOf(q) >= 0; }).slice(0, 8); if (!q || 'todos'.indexOf(q) === 0) l.unshift('@todos'); }
+  if (!l.length) { msn2FecharSug(conv); return; }
+  MSN2.sug[conv] = { l: l, i: 0 };
+  msn2RenderSug(conv);
+}
+function msn2RenderSug(conv) {
+  var box = document.getElementById('m2-sug-' + conv), s = MSN2.sug[conv]; if (!box || !s) return;
+  box.classList.add('on');
+  box.innerHTML = s.l.map(function(u, i) { return '<button type="button" class="' + (i === s.i ? 'at' : '') + '" onmousedown="event.preventDefault();msn2EscolherSug(\'' + conv + '\',' + i + ')">' + (u === '@todos' ? '<span style="width:26px;text-align:center">📣</span><b>@todos</b> <small style="color:#7A8DA3">avisa todo mundo da conversa</small>' : msnAv(u, 26) + msnEsc(msnNome(u))) + '</button>'; }).join('');
+}
+function msn2FecharSug(conv) { delete MSN2.sug[conv]; var b = document.getElementById('m2-sug-' + conv); if (b) { b.classList.remove('on'); b.innerHTML = ''; } }
+function msn2EscolherSug(conv, i) {
+  var s = MSN2.sug[conv], t = document.getElementById('msn-in-' + conv); if (!s || !t) return;
+  var u = s.l[i], nome = u === '@todos' ? 'todos' : msn2Prim(u), pos = t.selectionStart, antes = t.value.slice(0, pos).replace(/@([^\s@]{0,20})$/, '@' + nome + ' ');
+  t.value = antes + t.value.slice(pos); t.setSelectionRange(antes.length, antes.length); t.focus(); msn2FecharSug(conv);
+}
+function msn2AcharMencoes(conv, txt) {
+  var n = msn2Norm(txt), out = [], mem = msn2Mencionaveis(conv);
+  if (!mem.length) return out;
+  if (/(^|\s)@todos\b/.test(n)) return mem.slice();
+  mem.forEach(function(u) { var p = msn2Norm(msn2Prim(u)), c = msn2Norm(msnNome(u)); if (new RegExp('(^|\\s)@(' + c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '|' + p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')(?![a-z0-9])').test(n)) out.push(u); });
+  return out;
+}
+function msn2Mencoes(html, m) {
+  if (!m.mencoes && html.indexOf('@') < 0) return html;
+  var meu = msn2Norm(msn2Prim(MSN.eu));
+  return html.replace(/(^|\s)@([A-Za-zÀ-ÿ0-9]+)/g, function(t, a, nome) { var x = msn2Norm(nome); return a + '<span class="m2-men' + (x === meu || x === 'todos' ? ' mim' : '') + '">@' + nome + '</span>'; });
+}
+
+/* ── desenho das mensagens em balões ── */
+function msn2RenderMsgs(conv) {
+  var box = document.getElementById('msn-c-' + conv); if (!box) return;
+  var perto = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  var lista = MSN.msgs[conv] || [], q = msn2Norm(MSN2.busca[conv] || ''), sala = msnSala(conv), dia = '', h = '', ant = null, achou = 0;
+  if (!lista.length) h = '<div class="msn-dia"><span>Nenhuma mensagem ainda. Diga um oi! 👋</span></div>';
+  lista.forEach(function(m) {
+    if (q) { if (m.apagada || msn2Norm((m.txt || '') + ' ' + ((m.anexo && m.anexo.nome) || '') + ' ' + msnNome(m.de)).indexOf(q) < 0) return; achou++; }
+    var d = msnDia(m.ts); if (d !== dia) { dia = d; ant = null; h += '<div class="msn-dia"><span>' + d + '</span></div>'; }
+    if (m.tipo === 'wink') { ant = null; var wi = msnWinkInfo(m.wink) || ['', '✨', 'Wink']; h += '<div class="msn-sis wk">' + wi[1] + ' ' + (m.de === MSN.eu ? 'Você enviou' : msnEsc(msnNome(m.de)) + ' enviou') + ' um wink: <b>' + msnEsc(wi[2]) + '</b><button type="button" onclick="msnWinkTocar(\'' + msnEsc(m.wink) + '\')">▶ Ver</button> <span style="color:#9AA5B1;font-weight:400">' + msnHora(m.ts) + '</span></div>'; return; }
+    if (m.tipo === 'tremer') { ant = null; h += '<div class="msn-sis">📳 ' + (m.de === MSN.eu ? 'Você chamou a atenção' : msnEsc(msnNome(m.de)) + ' chamou ' + (sala ? 'a atenção de todos' : 'sua atenção') + '!') + ' <span style="color:#9AA5B1;font-weight:400">' + msnHora(m.ts) + '</span></div>'; return; }
+    if (m.tipo === 'sis') { ant = null; h += '<div class="msn-sis sis2">' + msnEsc(m.de === MSN.eu ? 'Você' : msnNome(m.de)) + ' ' + msnEsc(m.txt) + ' · ' + msnHora(m.ts) + '</div>'; return; }
+    var meu = m.de === MSN.eu, seg = !!(ant && ant.de === m.de && m.ts - ant.ts < 5 * 60000 && !m.resp); ant = m;
+    var id = m._id || '', cls = 'msn-msg m2' + (meu ? ' eu' : '') + (seg ? ' seg' : '') + (m.de === 'ASSISTENTE' ? ' asst' : '');
+    var av = meu ? '' : '<div class="m2-av">' + (seg ? '' : msnAv(m.de, 28)) + '</div>';
+    var nomeTopo = !meu && !seg && sala ? '<div class="m2-nome" style="color:' + msn2CorNome(m.de) + '">' + msnEsc(msnNome(m.de)) + '</div>' : '';
+    var hora = '<span class="m2-h" title="' + new Date(m.ts).toLocaleString('pt-BR') + '">' + msnHora(m.ts) + '</span>';
+    if (m.apagada) { h += '<div class="' + cls + '" id="m2-' + conv + '-' + id + '">' + av + '<div class="m2-col">' + nomeTopo + '<div class="m2-bal apag">🚫 Mensagem apagada' + hora + '</div></div></div>'; return; }
+    var podeApagar = id && (meu || ehDona(MSN.eu)), podeEditar = id && meu && (m.tipo === 'msg' || !m.tipo);
+    var ed = MSN.editando && MSN.editando.conv === conv && MSN.editando.id === id;
+    var acoes = id && !ed ? '<span class="msn-acoes m2-acoes">' +
+      '<button type="button" onclick="msn2Reagir(event,\'' + conv + '\',\'' + id + '\')" title="Reagir">😊</button>' +
+      '<button type="button" onclick="msn2Responder(\'' + conv + '\',\'' + id + '\')" title="Responder">↩️</button>' +
+      '<button type="button" onclick="msn2Fixar(\'' + conv + '\',\'' + id + '\')" title="' + (MSN2.fix[conv] && MSN2.fix[conv].id === id ? 'Desafixar' : 'Fixar no topo da conversa') + '">📌</button>' +
+      (podeEditar ? '<button type="button" onclick="msnMsgEditar(\'' + conv + '\',\'' + id + '\')" title="Editar">✏️</button>' : '') +
+      (podeApagar ? '<button type="button" onclick="msnMsgApagar(\'' + conv + '\',\'' + id + '\')" title="Apagar para todos">🗑️</button>' : '') + '</span>' : '';
+    var corpo;
+    if (ed) corpo = '<div class="msn-editbox"><textarea id="msn-ed-' + conv + '" maxlength="1000" oninput="MSN.editando.txt=this.value" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();msnMsgSalvar(\'' + conv + '\')}else if(event.key===\'Escape\'){msnMsgCancelar(\'' + conv + '\')}">' + msnEsc(MSN.editando.txt) + '</textarea><div><button type="button" class="pri" onclick="msnMsgSalvar(\'' + conv + '\')">Salvar</button><button type="button" onclick="msnMsgCancelar(\'' + conv + '\')">Cancelar</button></div></div>';
+    else if (m.tipo === 'figurinha') corpo = msnFigHtml(m.fig);
+    else if (m.tipo === 'anexo' && m.anexo) corpo = msnAnexoHtml(m.anexo);
+    else if (m.de === 'ASSISTENTE' && typeof asstMsgHtml === 'function') corpo = asstMsgHtml(m);
+    else { var lt = m.fmt && typeof msnLtOk === 'function' && msnLtOk(m.fmt.lt); corpo = msnTextoLetras(m.txt, m.fmt); if (!lt) corpo = msn2Mencoes(corpo, m); }
+    var cit = m.resp && m.resp.id ? '<button type="button" class="m2-cit" onclick="msn2IrMsg(\'' + conv + '\',\'' + msnEsc(m.resp.id) + '\')"><b>' + msnEsc(m.resp.de === MSN.eu ? 'Você' : msnNome(m.resp.de)) + '</b>' + msnEsc(m.resp.txt || '') + '</button>' : '';
+    var estilo = (m.tipo === 'msg' || !m.tipo) && m.de !== 'ASSISTENTE' ? msnEstiloFmt(m.fmt) : '';
+    h += '<div class="' + cls + (ed ? ' editando' : '') + '" id="m2-' + conv + '-' + id + '">' + av + '<div class="m2-col">' + nomeTopo +
+      '<div class="m2-bal" style="' + estilo + '">' + cit + corpo + (m.editada ? '<span class="m2-edt" title="Editada às ' + msnHora(m.editadaEm || m.ts) + '">(editada)</span>' : '') + (ed ? '' : hora) + '</div>' +
+      msn2ReacHtml(conv, m) + '</div>' + acoes + '</div>';
+  });
+  if (q) h = '<div class="msn-dia"><span>' + achou + ' resultado' + (achou === 1 ? '' : 's') + ' para “' + msnEsc(MSN2.busca[conv]) + '”</span></div>' + h;
+  var rolagem = box.scrollTop;
+  box.innerHTML = h;
+  if (MSN.editando && MSN.editando.conv === conv) { box.scrollTop = rolagem; var te = document.getElementById('msn-ed-' + conv); if (te && document.activeElement !== te) { te.focus(); te.setSelectionRange(te.value.length, te.value.length); } return; }
+  if (q) { box.scrollTop = 0; return; }
+  if (perto || lista.length && lista[lista.length - 1].de === MSN.eu) box.scrollTop = box.scrollHeight; else box.scrollTop = rolagem;
+}
+function msn2CorNome(u) { var c = ['#2D6BB0', '#C2410C', '#2E7D32', '#8E24AA', '#0B7A75', '#B5179E', '#A16207', '#C41E1E'], h = 0; String(u).split('').forEach(function(x) { h = (h * 31 + x.charCodeAt(0)) | 0; }); return c[Math.abs(h) % c.length]; }
+
+/* ── encaixe nas funções do bate-papo ── */
+(function() {
+  // desenho das mensagens: troca a função usada pela janela
+  _msnRenderMsgsOrig = msn2RenderMsgs;
+  var oIniciar = msnIniciar, oEncerrar = msnEncerrar, oMembros = msnMembros, oCriar = msnCriarJanela, oTopo = msnRenderTopoJanela,
+      oOuvir = msnOuvir, oFechar = msnFechar, oChegou = msnChegou, oDig = msnDigitando, oTecla = msnTecla;
+  msnIniciar = function(user) {
+    Object.keys(MSN_SALAS).forEach(function(c) { if (msn2EhGrupo(c)) delete MSN_SALAS[c]; }); // os grupos entram depois, já com quem participa
+    var r = oIniciar.apply(this, arguments);
+    try { if (MSN.on) msn2OuvirGrupos(); } catch (e) { console.warn('bate-papo: grupos', e); }
+    return r;
+  };
+  msnEncerrar = function() { var r = oEncerrar.apply(this, arguments); try { msn2LimparGrupos(); Object.keys(MSN2.fixRefs).forEach(msn2PararFixada); } catch (e) {} return r; };
+  msnMembros = function(sala) { if (msn2EhGrupo(sala)) { return msn2Membros(msn2Grupo(sala)).filter(function(u) { return u !== MSN.eu; }); } return oMembros(sala); };
+  msnCriarJanela = function(conv) {
+    oCriar(conv);
+    var w = document.getElementById('msn-w-' + conv); if (!w) return;
+    if (MSN2.maxs && MSN2.maxs[conv]) w.classList.add('msn2-max');
+    var tb = w.querySelector('.msn-tb');
+    if (tb) tb.insertAdjacentHTML('beforeend', '<button type="button" onclick="msn2Buscar(\'' + conv + '\')" title="Buscar nesta conversa"><span class="ic">🔍</span>Buscar</button>');
+    var corpo = document.getElementById('msn-c-' + conv);
+    if (corpo) {
+      corpo.insertAdjacentHTML('beforebegin', '<div class="m2-fx" id="m2-fx-' + conv + '"></div><div class="m2-bs" id="m2-bs-' + conv + '"></div>');
+      corpo.addEventListener('click', function(e) { // no celular: toca no balão para ver as ações
+        if (!window.matchMedia || !matchMedia('(hover: none)').matches) return;
+        var m = e.target.closest('.m2'); if (!m || e.target.closest('button, a')) return;
+        var ja = m.classList.contains('sel'); corpo.querySelectorAll('.m2.sel').forEach(function(x) { x.classList.remove('sel'); }); if (!ja) m.classList.add('sel');
+      });
+    }
+    var linha = w.querySelector('.msn-linha');
+    if (linha) linha.insertAdjacentHTML('beforebegin', '<div class="m2-rb" id="m2-rb-' + conv + '"></div><div class="m2-sug" id="m2-sug-' + conv + '" role="listbox"></div>');
+    var t = document.getElementById('msn-in-' + conv);
+    if (t) {
+      t.placeholder = msnSala(conv) ? 'Mensagem… use @ para mencionar' : 'Escreva uma mensagem…'; t.title = 'Enter envia · Shift+Enter pula linha · ↑ edita a sua última';
+      t.addEventListener('input', function() { t.style.height = 'auto'; t.style.height = Math.min(140, Math.max(46, t.scrollHeight)) + 'px'; });
+      t.addEventListener('blur', function() { setTimeout(function() { msn2FecharSug(conv); }, 150); });
+    }
+    msn2RenderResp(conv); msn2OuvirFixada(conv); msn2RenderFix(conv);
+  };
+  msnRenderTopoJanela = function(conv) {
+    oTopo(conv);
+    var t = document.getElementById('msn-wt-' + conv), w = document.getElementById('msn-w-' + conv);
+    if (t && w && !t.querySelector('.m2-maxb')) {
+      var mn = t.querySelector('.msn-xb.min'), max = w.classList.contains('msn2-max');
+      if (mn) mn.insertAdjacentHTML('afterend', '<button type="button" class="msn-xb m2-maxb" onclick="msn2Max(\'' + conv + '\')" aria-label="' + (max ? 'Restaurar' : 'Maximizar') + '" title="' + (max ? 'Restaurar tamanho' : 'Maximizar') + '">' + (max ? '❐' : '☐') + '</button>');
+    }
+    var pa = document.getElementById('msn-pa-' + conv);
+    if (pa && !pa.querySelector('.m2-pav')) {
+      var u = msnOutro(conv), g = msn2Grupo(conv);
+      pa.innerHTML = '<span class="m2-pav">' + msnAv(u, 26) + '</span><span class="m2-ptx">' + pa.innerHTML + (g ? ' <span class="cz">· ' + msn2Membros(g).map(function(x) { return x === MSN.eu ? 'Você' : msn2Prim(x); }).slice(0, 8).join(', ') + (msn2Membros(g).length > 8 ? '…' : '') + '</span>' : '') + '</span>' +
+        (g ? '<button type="button" class="m2-pbtn" onclick="msn2Painel(\'' + conv + '\')">👥 Participantes</button>' : '');
+    }
+  };
+  msnOuvir = function(conv) { oOuvir(conv); msn2OuvirFixada(conv); };
+  msnFechar = function(conv) { oFechar(conv); msn2PararFixada(conv); delete MSN2.resp[conv]; delete MSN2.busca[conv]; if (MSN2.painel === conv) MSN2.painel = null; };
+  // @menção: avisa mesmo com status "Ocupado" e com a conversa aberta em segundo plano
+  msnChegou = function(conv, v) {
+    if (v && v.de !== MSN.eu && v.mencoes && (Array.isArray(v.mencoes) ? v.mencoes : Object.keys(v.mencoes).map(function(k) { return v.mencoes[k]; })).indexOf(MSN.eu) >= 0 && v.tipo !== 'tremer') {
+      var aberta = MSN.abertas.indexOf(conv) >= 0, win = document.getElementById('msn-w-' + conv), minim = win && win.classList.contains('min');
+      if (!aberta || minim) msnBalao(conv, v.de, '📣 mencionou você: ' + (v.txt || ''), false);
+      if (!aberta || minim || document.hidden) { msnSom('msg'); msnNotificar('📣 ' + msnNome(v.de) + ' mencionou você' + (msnSala(conv) ? ' em ' + MSN_SALAS[conv].nome : ''), v.txt, conv, true); }
+      if (aberta && !document.hidden) msnMarcarLida(conv);
+      return;
+    }
+    return oChegou(conv, v);
+  };
+  msnDigitando = function(conv) { oDig(conv); msn2Sugestoes(conv); };
+  msnTecla = function(e, conv) {
+    var s = MSN2.sug[conv];
+    if (s) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); s.i = (s.i + (e.key === 'ArrowDown' ? 1 : -1) + s.l.length) % s.l.length; msn2RenderSug(conv); return; }
+      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); msn2EscolherSug(conv, s.i); return; }
+      if (e.key === 'Escape') { e.preventDefault(); msn2FecharSug(conv); return; }
+    }
+    if (e.key === 'Escape' && MSN2.resp[conv]) { delete MSN2.resp[conv]; msn2RenderResp(conv); return; }
+    if (e.key === 'ArrowUp' && !e.target.value) { var ult = (MSN.msgs[conv] || []).filter(function(m) { return m.de === MSN.eu && !m.apagada && (m.tipo === 'msg' || !m.tipo); }).pop(); if (ult) { e.preventDefault(); msnMsgEditar(conv, ult._id); } return; }
+    return oTecla(e, conv);
+  };
+  // enviar: leva a resposta e as menções junto
+  msnEnviar = function(conv) {
+    var t = document.getElementById('msn-in-' + conv); if (!t) return;
+    var txt = t.value.replace(/\s+$/, ''); if (!txt.trim()) return;
+    t.value = ''; t.style.height = '';
+    var e = document.getElementById('msn-e-' + conv); if (e) e.classList.remove('on');
+    var fo = document.getElementById('msn-fo-' + conv); if (fo) fo.classList.remove('on');
+    var m = { de: MSN.eu, txt: txt.slice(0, 1000), ts: Date.now(), tipo: 'msg', fmt: msnFmt() };
+    var r = MSN2.resp[conv]; if (r) { m.resp = { id: r.id, de: r.de, txt: String(r.txt || '').slice(0, 120) }; delete MSN2.resp[conv]; msn2RenderResp(conv); }
+    var men = msn2AcharMencoes(conv, txt); if (men.length) m.mencoes = men;
+    msn2FecharSug(conv);
+    msnGravar(conv, m);
+  };
+  // se já estava logado quando este trecho carregou
+  setTimeout(function() { try { if (MSN.on) { msn2OuvirGrupos(); msnRender(); } } catch (e) {} }, 0);
+})();
+</script>
+<!-- ══ fim do BATE-PAPO 2.0 ══ -->
 
 </body>
 </html>
