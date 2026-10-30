@@ -33205,6 +33205,7 @@ function asstAjuda() {
 }
 function asstIAStatus() {
   if (ASST.cfg.ia === false) return 'IA: desligada (entendo as frases por regras).';
+  if (ASST.cfg.recaptchaTipo === 'nenhum') return 'IA: Gemini (' + (ASST.cfg.modelo || ASST_MODELO) + ') pelo Firebase, sem App Check.';
   if (!ASST.cfg.recaptcha) return 'IA: falta configurar o App Check (chave do reCAPTCHA). Enquanto isso, entendo as frases por regras.';
   return 'IA: Gemini (' + (ASST.cfg.modelo || ASST_MODELO) + ') pelo Firebase.';
 }
@@ -33224,7 +33225,7 @@ function asstResponder(txt) {
 }
 function asstPessoasPermitidas() { try { return tfPodeAtribuir(null); } catch (e) { return [MSN.eu]; } }
 function asstInterpretar(t) {
-  if (ASST.cfg.ia === false || !ASST.cfg.recaptcha) return Promise.resolve(asstRegras(t));
+  if (ASST.cfg.ia === false || (!ASST.cfg.recaptcha && ASST.cfg.recaptchaTipo !== 'nenhum')) return Promise.resolve(asstRegras(t));
   return asstIA(t).catch(function(e) {
     console.warn('assistente: IA indisponível, usando regras', e);
     if (asstGestao() && !ASST.iaErroAvisado) { ASST.iaErroAvisado = true; setTimeout(function() { asstFalar('⚠️ (só a gestão vê) A IA não respondeu: ' + String(e && e.message || e).slice(0, 200) + '\nUsei as regras no lugar. Confira as configurações.', { botoes: [{ a: 'config', rot: '⚙️ Configurar' }] }); }, 1500); }
@@ -33246,7 +33247,7 @@ function asstIAModelo() {
     var nome = 'assistente-ia-' + asstChave(chave).replace(/[^A-Za-z0-9_-]/g, '').slice(-40), app;
     try { app = appMod.getApp(nome); } catch (e) {
       app = appMod.initializeApp(opts, nome);
-      if (cfg.recaptcha) acMod.initializeAppCheck(app, { provider: cfg.recaptchaTipo === 'enterprise' ? new acMod.ReCaptchaEnterpriseProvider(cfg.recaptcha) : new acMod.ReCaptchaV3Provider(cfg.recaptcha), isTokenAutoRefreshEnabled: true });
+      if (cfg.recaptcha && cfg.recaptchaTipo !== 'nenhum') acMod.initializeAppCheck(app, { provider: cfg.recaptchaTipo === 'enterprise' ? new acMod.ReCaptchaEnterpriseProvider(cfg.recaptcha) : new acMod.ReCaptchaV3Provider(cfg.recaptcha), isTokenAutoRefreshEnabled: true });
     }
     var ai = aiMod.getAI(app, { backend: new aiMod.GoogleAIBackend() });
     ASST.ia = aiMod.getGenerativeModel(ai, { model: cfg.modelo || ASST_MODELO, generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } });
@@ -33450,7 +33451,7 @@ function asstConfigAbrir() {
   f.innerHTML = '<div class="asst-cfg" role="dialog" aria-modal="true" aria-label="Configurar assistente"><h3>🦅 Configurar assistente</h3><p class="sub">Vale para a equipe toda. Só a gestão vê esta tela.</p>' +
     '<label class="ck"><input type="checkbox" data-k="ia"' + (c.ia !== false ? ' checked' : '') + '> <span><b>Usar IA (Gemini)</b> para entender as frases</span></label>' +
     '<label class="l" for="asst-c-rc">Chave do site do reCAPTCHA (App Check)</label><input type="text" id="asst-c-rc" data-k="recaptcha" value="' + msnEsc(c.recaptcha || '') + '" placeholder="6Lc…" autocomplete="off">' +
-    '<label class="l" for="asst-c-rt">Tipo do reCAPTCHA</label><select id="asst-c-rt" data-k="recaptchaTipo"><option value="v3"' + (c.recaptchaTipo !== 'enterprise' ? ' selected' : '') + '>reCAPTCHA v3</option><option value="enterprise"' + (c.recaptchaTipo === 'enterprise' ? ' selected' : '') + '>reCAPTCHA Enterprise</option></select>' +
+    '<label class="l" for="asst-c-rt">Tipo do reCAPTCHA</label><select id="asst-c-rt" data-k="recaptchaTipo"><option value="v3"' + (c.recaptchaTipo !== 'enterprise' ? ' selected' : '') + '>reCAPTCHA v3</option><option value="enterprise"' + (c.recaptchaTipo === 'enterprise' ? ' selected' : '') + '>reCAPTCHA Enterprise</option><option value="nenhum"' + (c.recaptchaTipo === 'nenhum' ? ' selected' : '') + '>Sem App Check (AI Logic como “Monitorando”)</option></select>' +
     '<label class="l" for="asst-c-md">Modelo</label><input type="text" id="asst-c-md" data-k="modelo" value="' + msnEsc(c.modelo || '') + '" placeholder="' + ASST_MODELO + '">' +
     '<label class="l" for="asst-c-hr">Hora do resumo do dia</label><input type="number" id="asst-c-hr" data-k="resumoHora" min="5" max="12" value="' + (+c.resumoHora || 7) + '">' +
     '<label class="l">Tarefas automáticas</label>' + ck('ret', 'Retornos marcados no Discador') + ck('neg', 'Próximas ações do Funil') + ck('inat', 'Inativos que vencem hoje/amanhã') + ck('ped', 'Pedidos abertos', '(para o administrativo)') +
@@ -33472,7 +33473,7 @@ function asstConfigAbrir() {
     if (c2 === 'fechar') f.remove();
     if (c2 === 'salvar') { var n = ler(); ASST.cfg = n; ASST.iaErroAvisado = false; Promise.resolve(dbRef('assistente/config').set(n)).then(function() { tfAviso('Configurações do assistente salvas'); f.remove(); }).catch(function(err) { st('Não salvou: ' + (err && err.message || err)); }); }
     if (c2 === 'testar') {
-      var n2 = ler(); if (!n2.recaptcha) { st('Preencha a chave do reCAPTCHA primeiro (veja o passo a passo).'); return; }
+      var n2 = ler(); if (!n2.recaptcha && n2.recaptchaTipo !== 'nenhum') { st('Preencha a chave do reCAPTCHA ou escolha "Sem App Check".'); return; }
       var antes = ASST.cfg; ASST.cfg = Object.assign({}, antes, n2); st('Testando…');
       asstComTempo(asstIAModelo().then(function(md) { return md.generateContent('Responda só {"ok":true}'); }), 25000)
         .then(function(res) { st('✅ A IA respondeu: ' + String(res.response.text()).slice(0, 80) + ' — pode salvar.'); })
