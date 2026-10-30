@@ -33587,6 +33587,15 @@ body.sb-on .msn-wins { left: calc(var(--sb-w) + 358px) !important; }
 .m2-men.mim { background:#FFF1B8; border-radius:4px; padding:0 2px; }
 .m2.flash .m2-bal { animation:m2flash 1.6s ease; }
 @keyframes m2flash { 0%,60% { box-shadow:0 0 0 3px #FFD23F; } 100% { box-shadow:none; } }
+.m2-midia { display:flex; flex-direction:column; gap:4px; min-width:220px; max-width:100%; white-space:normal; }
+.m2-midia audio { width:min(300px, 100%); height:40px; }
+.m2-midia video { width:min(340px, 100%); max-height:260px; border-radius:10px; background:#000; }
+.m2-play { width:48px; height:48px; border-radius:50%; border:0; background:linear-gradient(#5FB2F0,#2D7DD2); color:#fff; font-size:20px; cursor:pointer; box-shadow:0 2px 6px rgba(13,60,110,.25); align-self:flex-start; }
+.m2-play:hover { filter:brightness(1.08); }
+.m2-mrod { display:flex; align-items:center; gap:6px; font-size:12px; color:#3B5875; min-width:0; }
+.m2-mnome { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.m2-mnome small { color:#8597AD; }
+.m2-mbx { border:1px solid #C9D9EE; background:#fff; color:#1C3F73; border-radius:50%; width:26px; height:26px; cursor:pointer; flex-shrink:0; }
 .msn-sis.sis2 { color:#5E7591; font-weight:600; font-size:11.5px; }
 .m2-pick { position:fixed; z-index:100001; display:flex; gap:2px; background:#fff; border:1px solid #C9D9EE; border-radius:20px; padding:3px 6px; box-shadow:0 4px 16px rgba(13,60,110,.25); }
 .m2-pick button { border:0; background:transparent; font-size:20px; width:34px; height:34px; border-radius:50%; cursor:pointer; }
@@ -33966,7 +33975,7 @@ function msn2RenderMsgs(conv) {
     var corpo;
     if (ed) corpo = '<div class="msn-editbox"><textarea id="msn-ed-' + conv + '" maxlength="1000" oninput="MSN.editando.txt=this.value" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();msnMsgSalvar(\'' + conv + '\')}else if(event.key===\'Escape\'){msnMsgCancelar(\'' + conv + '\')}">' + msnEsc(MSN.editando.txt) + '</textarea><div><button type="button" class="pri" onclick="msnMsgSalvar(\'' + conv + '\')">Salvar</button><button type="button" onclick="msnMsgCancelar(\'' + conv + '\')">Cancelar</button></div></div>';
     else if (m.tipo === 'figurinha') corpo = msnFigHtml(m.fig);
-    else if (m.tipo === 'anexo' && m.anexo) corpo = msnAnexoHtml(m.anexo);
+    else if (m.tipo === 'anexo' && m.anexo) corpo = msn2TipoMidia(m.anexo) ? msn2MidiaHtml(m.anexo) : msnAnexoHtml(m.anexo);
     else if (m.de === 'ASSISTENTE' && typeof asstMsgHtml === 'function') corpo = asstMsgHtml(m);
     else { var lt = m.fmt && typeof msnLtOk === 'function' && msnLtOk(m.fmt.lt); corpo = msnTextoLetras(m.txt, m.fmt); if (!lt) corpo = msn2Mencoes(corpo, m); }
     var cit = m.resp && m.resp.id ? '<button type="button" class="m2-cit" onclick="msn2IrMsg(\'' + conv + '\',\'' + msnEsc(m.resp.id) + '\')"><b>' + msnEsc(m.resp.de === MSN.eu ? 'Você' : msnNome(m.resp.de)) + '</b>' + msnEsc(m.resp.txt || '') + '</button>' : '';
@@ -33976,11 +33985,40 @@ function msn2RenderMsgs(conv) {
       msn2ReacHtml(conv, m) + '</div>' + acoes + '</div>';
   });
   if (q) h = '<div class="msn-dia"><span>' + achou + ' resultado' + (achou === 1 ? '' : 's') + ' para “' + msnEsc(MSN2.busca[conv]) + '”</span></div>' + h;
-  var rolagem = box.scrollTop;
+  var rolagem = box.scrollTop, players = {};
+  box.querySelectorAll('.m2-midia').forEach(function(el) { if (el.querySelector('audio, video')) players[el.getAttribute('data-midia')] = el; });
   box.innerHTML = h;
+  Object.keys(players).forEach(function(id) { var novo = box.querySelector('.m2-midia[data-midia="' + id + '"]'); if (novo) novo.replaceWith(players[id]); });
   if (MSN.editando && MSN.editando.conv === conv) { box.scrollTop = rolagem; var te = document.getElementById('msn-ed-' + conv); if (te && document.activeElement !== te) { te.focus(); te.setSelectionRange(te.value.length, te.value.length); } return; }
   if (q) { box.scrollTop = 0; return; }
   if (perto || lista.length && lista[lista.length - 1].de === MSN.eu) box.scrollTop = box.scrollHeight; else box.scrollTop = rolagem;
+}
+/* áudio e vídeo tocam dentro da conversa (30/10/2026) */
+MSN2.midia = {};
+function msn2TipoMidia(a) {
+  var t = String(a.tipo || '').toLowerCase(), ext = String(a.nome || '').toLowerCase().split('.').pop();
+  if (/^audio\//.test(t) || ['mp3', 'wav', 'ogg', 'oga', 'opus', 'm4a', 'aac', 'amr', 'weba', 'flac'].indexOf(ext) >= 0) return 'audio';
+  if (/^video\//.test(t) || ['mp4', 'webm', 'mov', 'm4v', '3gp', 'mkv'].indexOf(ext) >= 0) return 'video';
+  return '';
+}
+function msn2MidiaHtml(a) {
+  var tipo = msn2TipoMidia(a), id = msnEsc(a.id), m = MSN2.midia[a.id];
+  var baixar = '<button type="button" class="m2-mbx" onclick="msnBaixarAnexo(\'' + id + '\')" title="Baixar">⬇</button>';
+  var nome = '<span class="m2-mnome" title="' + msnEsc(a.nome) + '">' + (tipo === 'audio' ? '🎵 ' : '🎬 ') + msnEsc(a.nome) + ' <small>' + msnTam(a.tam || 0) + '</small></span>';
+  if (m && m.url) return '<div class="m2-midia" data-midia="' + id + '">' + (tipo === 'audio' ? '<audio controls preload="metadata" src="' + m.url + '"></audio>' : '<video controls playsinline preload="metadata" src="' + m.url + '"></video>') + '<div class="m2-mrod">' + nome + baixar + '</div></div>';
+  return '<div class="m2-midia" data-midia="' + id + '"><button type="button" class="m2-play" onclick="msn2Tocar(\'' + id + '\', this)" aria-label="' + (tipo === 'audio' ? 'Ouvir' : 'Assistir') + '">' + (m && m.carregando ? '⏳' : '▶') + '</button><div class="m2-mrod">' + nome + baixar + '</div></div>';
+}
+function msn2Tocar(id, btn) {
+  var m = MSN2.midia[id] || (MSN2.midia[id] = {}); if (m.carregando) return;
+  m.carregando = true; if (btn) btn.textContent = '⏳';
+  msnLerAnexo(id).then(function(v) {
+    m.url = URL.createObjectURL(msnBlob(v)); m.carregando = false;
+    var box = btn && btn.closest('.m2-midia'); if (!box) return;
+    var a = { id: id, nome: v.nome, tipo: v.tipo, tam: v.tam };
+    var tmp = document.createElement('div'); tmp.innerHTML = msn2MidiaHtml(a); var novo = tmp.firstChild;
+    box.replaceWith(novo);
+    var el = novo.querySelector('audio, video'); if (el) { var pr = el.play(); if (pr && pr.catch) pr.catch(function() {}); }
+  }).catch(function(e) { m.carregando = false; if (btn) btn.textContent = '▶'; alert('Não consegui abrir: ' + (e && e.message || e)); });
 }
 function msn2CorNome(u) { var c = ['#2D6BB0', '#C2410C', '#2E7D32', '#8E24AA', '#0B7A75', '#B5179E', '#A16207', '#C41E1E'], h = 0; String(u).split('').forEach(function(x) { h = (h * 31 + x.charCodeAt(0)) | 0; }); return c[Math.abs(h) % c.length]; }
 
