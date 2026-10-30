@@ -24857,7 +24857,7 @@ function msnAlternarLista() {
 }
 function msnRender() {
   if (!MSN.on) return;
-  var cts = msnContatos(), on = cts.filter(function(u) { return msnStatus(u) !== 'offline'; });
+  var cts = msnContatos(), on = cts.filter(function(u) { return u !== 'ASSISTENTE' && msnStatus(u) !== 'offline'; });
   var naoLidas = cts.filter(function(u) { return msnNaoLidas(msnConv(MSN.eu, u)); }).length + msnMinhasSalas().filter(msnNaoLidas).length;
   document.getElementById('msn-qtd-on').textContent = on.length + ' online';
   var bd = document.getElementById('msn-badge'); bd.style.display = naoLidas ? '' : 'none'; bd.textContent = naoLidas;
@@ -25309,7 +25309,7 @@ function msnRenderMsgs(conv) {
     var acoes = podeApagar ? '<span class="msn-acoes">' + (podeEditar ? '<button type="button" onclick="msnMsgEditar(\'' + conv + '\',\'' + m._id + '\')" title="Editar mensagem">✏️ Editar</button>' : '') + '<button type="button" onclick="msnMsgApagar(\'' + conv + '\',\'' + m._id + '\')" title="Apagar para todos">🗑️ Apagar</button></span>' : '';
     var ed = MSN.editando && MSN.editando.conv === conv && MSN.editando.id === m._id;
     var corpo = ed ? '<div class="msn-editbox"><textarea id="msn-ed-' + conv + '" maxlength="1000" oninput="MSN.editando.txt=this.value" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();msnMsgSalvar(\'' + conv + '\')}else if(event.key===\'Escape\'){msnMsgCancelar(\'' + conv + '\')}">' + msnEsc(MSN.editando.txt) + '</textarea><div><button type="button" class="pri" onclick="msnMsgSalvar(\'' + conv + '\')">Salvar</button><button type="button" onclick="msnMsgCancelar(\'' + conv + '\')">Cancelar</button></div></div>'
-      : (m.tipo === 'figurinha' ? msnFigHtml(m.fig) : m.tipo === 'anexo' && m.anexo ? msnAnexoHtml(m.anexo) : msnTextoLetras(m.txt, m.fmt)) + (m.editada ? ' <span class="msn-edt" title="Editada às ' + msnHora(m.editadaEm || m.ts) + '">(editada)</span>' : '');
+      : (m.tipo === 'figurinha' ? msnFigHtml(m.fig) : m.tipo === 'anexo' && m.anexo ? msnAnexoHtml(m.anexo) : (m.de === 'ASSISTENTE' && typeof asstMsgHtml === 'function' ? asstMsgHtml(m) : msnTextoLetras(m.txt, m.fmt))) + (m.editada ? ' <span class="msn-edt" title="Editada às ' + msnHora(m.editadaEm || m.ts) + '">(editada)</span>' : '');
     h += '<div class="msn-msg' + (meu ? ' eu' : '') + (ed ? ' editando' : '') + '"><div class="msn-quem">' + quem + (m.tipo === 'anexo' || m.tipo === 'figurinha' ? ' enviou' : ' diz') + hora + ':' + (ed ? '' : acoes) + '</div><div class="msn-txt" style="' + (m.tipo === 'msg' || !m.tipo ? msnEstiloFmt(m.fmt) : '') + '">' + corpo + '</div></div>';
   });
   var rolagem = box.scrollTop;
@@ -32842,5 +32842,647 @@ setInterval(function() { try { if (currentUser && TF.ligado !== currentUser) { t
   .rk-kpi b{font-size:18px}
 }
 </style>
+<!-- ══ ASSISTENTE DO GUIA (30/10/2026) ══ -->
+<style>
+.asst-bts{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;white-space:normal}
+.asst-bt{font:600 12px "Segoe UI",Tahoma,sans-serif;border:1px solid #1C5FA8;border-radius:5px;background:#fff;color:#1C5FA8;padding:4px 10px;cursor:pointer}
+.asst-bt:hover{background:#EAF3FD}
+.asst-bt.pri{background:linear-gradient(#5FB2F0,#2D7DD2);color:#fff}
+.asst-bt[disabled]{opacity:.5;cursor:default}
+.asst-av{display:flex;align-items:center;justify-content:center;border-radius:6px;background:linear-gradient(135deg,#0B2D6B,#2D7DD2);color:#fff;overflow:hidden}
+.asst-cfg-fundo{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px}
+.asst-cfg{background:var(--surface,#fff);color:var(--txt,#1C2B3A);border-radius:12px;max-width:480px;width:100%;max-height:calc(100vh - 32px);overflow:auto;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3);font-size:14px}
+.asst-cfg h3{margin:0 0 4px;font-size:18px}
+.asst-cfg p.sub{margin:0 0 14px;color:var(--muted,#6B8199);font-size:12.5px}
+.asst-cfg label.l{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted,#6B8199);margin:12px 0 4px}
+.asst-cfg input[type=text],.asst-cfg input[type=number],.asst-cfg select{width:100%;box-sizing:border-box;font:inherit;font-size:14px;height:36px;border:1px solid var(--line,#ccd);border-radius:8px;padding:0 10px;background:var(--surface-2,#fff);color:inherit}
+.asst-cfg .ck{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:14px;cursor:pointer}
+.asst-cfg .rod{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.asst-cfg .rod button{font:inherit;font-size:14px;font-weight:600;border-radius:8px;padding:8px 14px;cursor:pointer;border:1px solid var(--line,#ccd);background:var(--surface,#fff);color:inherit}
+.asst-cfg .rod button.pri{background:#2564CF;border-color:#2564CF;color:#fff}
+.asst-cfg .st{font-size:12.5px;margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--surface-2,#F4F7FB)}
+</style>
+<script>
+/* ══ ASSISTENTE DO GUIA (30/10/2026) ══
+   Um contato "Assistente" no bate-papo, que:
+     · cria tarefas a partir de uma frase ("Bruno ligar pro cliente X sexta 10h");
+     · avisa no chat quando alguém passa uma tarefa para você (e quando concluem uma que você passou);
+     · manda o resumo do dia de manhã (atrasadas, de hoje e o que está na agenda);
+     · cria tarefas sozinho: retornos do Discador, próximas ações do Funil, inativos vencendo, pedidos abertos (administrativo).
+   IA: Gemini pelo Firebase AI Logic (a chave fica no Firebase, nada no código). Sem a IA, entende as frases por regras.
+   Firebase:
+     assistente/config                 = { ia, modelo, recaptcha, recaptchaTipo, resumoHora, auto:{ret,neg,inat,ped} }  (só a gestão muda)
+     assistente/avisos/<USER>/<chave>  = ts   aviso já mandado (não repete em outro aparelho)
+     assistente/resumos/<USER>/<dia>   = ts
+     assistente/auto/<USER>/<chave>    = ts   tarefa automática já criada (não volta se a pessoa excluir)
+     assistente/autoPed/<chave>        = ts   pedido aberto: uma tarefa só, para quem do administrativo pegar primeiro
+   As mensagens ficam na conversa normal do chat: chat/conv/ASSISTENTE__<LOGIN>/msgs */
+var ASST_ID = 'ASSISTENTE';
+var ASST_FB = '13.1.0';
+var ASST_MODELO = 'gemini-3.8-flash';
+var ASST_DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+var ASST = { cfg: {}, ia: null, iaChave: '', iaCarregando: null, iaErroAvisado: false, tarUser: null, ultAuto: 0, feitos: {}, timer: null, ocupado: false, digT: null, cfgRef: null };
+
+/* ── utilitários ── */
+function asstEh(conv) { return String(conv || '').split('__').indexOf(ASST_ID) >= 0; }
+function asstConv() { return msnConv(MSN.eu, ASST_ID); }
+function asstChave(s) { return String(s == null ? '' : s).replace(/[.#$\[\]\/\s]/g, '_').slice(0, 140); }
+function asstNorm(s) { return String(s || '').normalize('NFC').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function asstGestao() { return typeof tfGestao === 'function' && tfGestao(); }
+function asstPrimeiro(vn) { return typeof tfPrimeiro === 'function' ? tfPrimeiro(vn) : vn; }
+function asstQuando(iso, hora) {
+  if (!iso) return '';
+  var h = tfHoje(), txt = iso === h ? 'hoje' : iso === tfSoma(h, 1) ? 'amanhã' : iso === tfSoma(h, -1) ? 'ontem' :
+    ASST_DIAS[tfData(iso).getDay()] + ', ' + iso.slice(8, 10) + '/' + iso.slice(5, 7);
+  return txt + (hora ? ' às ' + (typeof agdHoraTxt === 'function' ? agdHoraTxt(hora) : hora) : '');
+}
+function asstSaudacao() { var h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; }
+function asstTarefasAbertas(filtro) { return Object.keys(TF.tar || {}).map(function(k) { return TF.tar[k]; }).filter(function(t) { return t && !t.feita && (!filtro || filtro(t)); }); }
+function asstMinhas() { return asstTarefasAbertas(function(t) { return tfResp(t) === MSN.eu; }); }
+function asstTarOk() { return !!MSN.on && ASST.tarUser === MSN.eu; }
+
+/* marca uma vez só no Firebase (transação): devolve true só para quem marcou primeiro */
+function asstMarcar(path) {
+  try {
+    var r = dbRef(path);
+    if (r && typeof r.transaction === 'function')
+      return Promise.resolve(r.transaction(function(cur) { return cur ? undefined : Date.now(); })).then(function(res) { return !!(res && res.committed); }).catch(function() { return false; });
+  } catch (e) {}
+  var k = 'fgv_asst_' + path;
+  try { if (localStorage.getItem(k)) return Promise.resolve(false); localStorage.setItem(k, '1'); } catch (e) {}
+  return Promise.resolve(true);
+}
+
+/* ── o Assistente fala na conversa de quem está logado ── */
+function asstFalar(txt, extra) {
+  if (!MSN.on || !MSN.eu) return Promise.resolve();
+  var conv = asstConv(), ts = Date.now();
+  var m = { de: ASST_ID, txt: String(txt || '').slice(0, 3000), ts: ts, tipo: 'msg' };
+  if (extra && extra.botoes && extra.botoes.length) m.botoes = extra.botoes.map(function(b) { var c = { a: b.a, rot: b.rot }; if (b.id) c.id = String(b.id); if (b.pri) c.pri = true; return c; });
+  var id = ts + '_' + ASST_ID + '_' + Math.random().toString(36).slice(2, 6);
+  var p = dbRef('chat/conv/' + conv + '/msgs/' + id).set(m);
+  dbRef('chat/indice/' + MSN.eu + '/' + conv).set({ de: ASST_ID, txt: m.txt.replace(/\*\*/g, '').slice(0, 120), ts: ts, tipo: 'msg' });
+  return p;
+}
+function asstDigitando(on) {
+  if (!MSN.on) return;
+  var c = asstConv(); clearInterval(ASST.digT);
+  var marca = function() { MSN.dig[c] = MSN.dig[c] || {}; MSN.dig[c][ASST_ID] = Date.now(); try { msnRenderDig(c); } catch (e) {} };
+  if (on) { marca(); ASST.digT = setInterval(marca, 3000); }
+  else { if (MSN.dig[c]) delete MSN.dig[c][ASST_ID]; try { msnRenderDig(c); } catch (e) {} }
+}
+
+/* ── corpo da mensagem do Assistente: **negrito** e botões ── */
+function asstMsgHtml(m) {
+  var h = msnEsc(m.txt || '').replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>');
+  var bs = Array.isArray(m.botoes) ? m.botoes : (m.botoes ? Object.keys(m.botoes).map(function(k) { return m.botoes[k]; }) : []);
+  if (bs.length) h += '<span class="asst-bts">' + bs.map(function(b) {
+    return '<button type="button" class="asst-bt' + (b.pri ? ' pri' : '') + '" data-asst-a="' + msnEsc(b.a) + '" data-asst-id="' + msnEsc(b.id || '') + '">' + msnEsc(b.rot || 'Abrir') + '</button>';
+  }).join('') + '</span>';
+  return h;
+}
+document.addEventListener('click', function(e) {
+  var b = e.target && e.target.closest && e.target.closest('[data-asst-a]'); if (!b) return;
+  e.preventDefault(); asstBotao(b.getAttribute('data-asst-a'), b.getAttribute('data-asst-id') || '', b);
+});
+function asstIrTarefas(vista, sel) {
+  // abre a aba primeiro (na 1ª vez ela restaura a última lista vista) e depois aponta para a tarefa
+  var b = document.getElementById('nav-tarefas'); if (b && typeof showTab === 'function') showTab('tarefas', b);
+  if (vista) TF.vista = vista; TF.sel = sel || null;
+  try { tfRender(); } catch (e) {}
+  if (window.innerWidth < 700 && MSN.listaAberta) { MSN.listaAberta = false; msnRender(); }
+}
+function asstVistaDe(t) {
+  var me = MSN.eu;
+  if (t.projeto) return 'proj:' + t.projeto;
+  if (t.dono && t.dono !== me) return 'delegadas';
+  if (t.dono === me && t.criadoPor && t.criadoPor !== me) return 'atribuidas';
+  if (t.lista) return 'lista:' + t.lista;
+  return 'tarefas';
+}
+function asstBotao(a, id, btn) {
+  if (a === 'abrir') {
+    var t = TF.tar[id]; if (!t) { tfAviso('Essa tarefa não existe mais'); return; }
+    asstIrTarefas(asstVistaDe(t), t.projeto ? null : id); return;
+  }
+  if (a === 'tarefas') { asstIrTarefas(id || 'meudia'); return; }
+  if (a === 'desfazer') {
+    if (btn) btn.disabled = true;
+    var ids = String(id || '').split(',').filter(Boolean), feitas = [];
+    ids.forEach(function(x) { var t = TF.tar[x]; if (!t || !tfEdita(t)) return; feitas.push(t.tit); delete TF.tar[x]; dbRef('tarefas/' + x).remove(); });
+    if (TF.sel && ids.indexOf(TF.sel) >= 0) TF.sel = null;
+    try { tfSelo(); if (document.getElementById('tab-tarefas').classList.contains('active')) tfRenderSeguro(); } catch (e) {}
+    asstFalar(feitas.length ? '↩️ Pronto, desfiz: ' + feitas.map(function(x) { return '**' + x + '**'; }).join(', ') + '.' : 'Essa tarefa já tinha sido apagada ou concluída.');
+    return;
+  }
+  if (a === 'config') { asstConfigAbrir(); return; }
+  if (a === 'resumo') { asstResumo(false); return; }
+  if (a === 'ajuda') { asstAjuda(); return; }
+}
+
+/* ── encaixe no bate-papo: o Assistente vira um contato sempre online ── */
+(function() {
+  var oContatos = msnContatos, oNome = msnNome, oStatus = msnStatus, oAv = msnAv, oTime = msnDoMeuTime, oMembros = msnMembros,
+      oGravar = msnGravar, oIniciar = msnIniciar, oEncerrar = msnEncerrar, oEntrou = msnEntrou;
+  msnContatos = function() { var l = oContatos(); if (MSN.eu && l.indexOf(ASST_ID) < 0) l.unshift(ASST_ID); return l; };
+  msnNome = function(u) { return u === ASST_ID ? 'Assistente' : oNome(u); };
+  msnStatus = function(u) { return u === ASST_ID ? 'online' : oStatus(u); };
+  msnAv = function(u, tam) {
+    if (u !== ASST_ID) return oAv(u, tam); tam = tam || 32;
+    return '<div class="asst-av msn-ini" style="width:' + tam + 'px;height:' + tam + 'px;font-size:' + Math.round(tam * .6) + 'px">🦅</div>';
+  };
+  msnDoMeuTime = function(u) { return u === ASST_ID || oTime(u); };
+  msnMembros = function(sala) { return oMembros(sala).filter(function(u) { return u !== ASST_ID; }); };
+  msnEntrou = function(u) { if (u !== ASST_ID) oEntrou(u); };
+  // conversa com o Assistente: grava só no índice da pessoa e responde
+  msnGravar = function(conv, m) {
+    if (!asstEh(conv)) return oGravar(conv, m);
+    var id = m.ts + '_' + MSN.eu + '_' + Math.random().toString(36).slice(2, 6);
+    var p = dbRef('chat/conv/' + conv + '/msgs/' + id).set(m);
+    dbRef('chat/indice/' + MSN.eu + '/' + conv).set({ de: m.de, txt: String(m.txt || '').slice(0, 120), ts: m.ts, tipo: m.tipo || 'msg' });
+    try { MSN_DIG_ULT[conv] = 0; } catch (e) {}
+    if (m.de === MSN.eu) setTimeout(function() {
+      if (m.tipo === 'tremer') asstFalar('📳 Opa, tô aqui! Escreva **ajuda** para ver o que eu faço.');
+      else if (m.tipo === 'msg' || !m.tipo) asstResponder(m.txt);
+      else if (m.tipo !== 'wink') asstFalar('Ainda não leio arquivos nem figurinhas 😅 — me escreva em texto o que precisa.');
+    }, 350);
+    return p;
+  };
+  msnIniciar = function(user) { var r = oIniciar.apply(this, arguments); try { if (MSN.on) asstIniciar(MSN.eu); } catch (e) { console.warn('assistente: início', e); } return r; };
+  msnEncerrar = function() { try { asstEncerrar(); } catch (e) {} return oEncerrar.apply(this, arguments); };
+  // quando as tarefas chegam do Firebase: avisos de tarefa nova
+  var oDepois = tfDepoisDados;
+  tfDepoisDados = function(campo) {
+    oDepois(campo);
+    if (campo === 'tar') { ASST.tarUser = TF.ligado; try { asstAvisos(); } catch (e) { console.warn('assistente: avisos', e); } }
+  };
+})();
+
+function asstIniciar(user) {
+  if (ASST.user === user && ASST.timer) return;
+  asstEncerrar();
+  ASST.user = user; ASST.feitos = {}; ASST.ultAuto = 0;
+  if (TF.ligado === user) ASST.tarUser = user;
+  MSN.pres[ASST_ID] = { status: 'online', frase: 'Me peça uma tarefa do seu jeito ou escreva "ajuda"', ts: Date.now() };
+  try { ASST.cfgRef = dbRef('assistente/config'); ASST.cfgRef.on('value', function(s) { ASST.cfg = (s && s.val()) || {}; }); } catch (e) {}
+  try { if (typeof tfOuvir === 'function') tfOuvir(); } catch (e) {}
+  asstMarcar('assistente/avisos/' + user + '/boasvindas').then(function(ok) {
+    if (!ok) return;
+    asstFalar('👋 Oi, ' + asstPrimeiro(user) + '! Eu sou o **Assistente** do guia.\n' +
+      'Me escreva aqui do jeito que você fala e eu viro tarefa. Também te aviso quando chegar tarefa nova e mando o resumo do seu dia de manhã.\n' +
+      'Escreva **ajuda** para ver exemplos.', { botoes: [{ a: 'ajuda', rot: 'Ver exemplos', pri: true }] });
+  });
+  ASST.timer = setInterval(asstTick, 60000);
+  setTimeout(asstTick, 6000);
+  msnRender();
+}
+function asstEncerrar() {
+  clearInterval(ASST.timer); ASST.timer = null; clearInterval(ASST.digT);
+  try { if (ASST.cfgRef && ASST.cfgRef.off) ASST.cfgRef.off(); } catch (e) {}
+  ASST.cfgRef = null; ASST.user = null;
+}
+function asstTick() {
+  if (!MSN.on || !asstTarOk()) return;
+  try { asstAvisos(); } catch (e) { console.warn('assistente: avisos', e); }
+  try { asstResumoAuto(); } catch (e) { console.warn('assistente: resumo', e); }
+  if (Date.now() - ASST.ultAuto > 5 * 60000) { ASST.ultAuto = Date.now(); try { asstAuto(); } catch (e) { console.warn('assistente: automáticas', e); } }
+}
+
+/* ── avisos: tarefa nova para mim · tarefa que passei foi concluída ── */
+function asstAvisos() {
+  if (!MSN.on || !asstTarOk()) return;
+  var me = MSN.eu, lim = Date.now() - 3 * 864e5;
+  Object.keys(TF.tar).forEach(function(k) {
+    var t = TF.tar[k]; if (!t) return;
+    // nova para mim
+    if (!t.feita && t.dono === me && t.atribuidoPor && t.atribuidoPor !== me && (t.atribuidoEm || 0) >= lim) {
+      var ch = asstChave('n_' + t.id + '_' + t.atribuidoEm);
+      if (!ASST.feitos[ch]) { ASST.feitos[ch] = 1;
+        asstMarcar('assistente/avisos/' + me + '/' + ch).then(function(ok) {
+          if (!ok) return; var p = tfProjDe(t), hora = t.lembrete ? String(t.lembrete).slice(11, 16) : '';
+          asstFalar('📌 **' + tfNome(t.atribuidoPor) + '** passou ' + (p ? 'uma etapa do projeto ' + (p.tit || '') : 'uma tarefa') + ' para você:\n' +
+            '**' + t.tit + '**' + (t.prazo ? '\nPrazo: ' + asstQuando(t.prazo, hora) : '') + (t.imp ? '\n⭐ Marcada como importante' : '') + (t.nota ? '\nObs.: ' + String(t.nota).slice(0, 300) : ''),
+            { botoes: [{ a: 'abrir', id: t.id, rot: 'Ver tarefa', pri: true }] });
+        });
+      }
+    }
+    // concluída por outra pessoa, e fui eu que passei
+    if (t.feita && t.feitaPor && t.feitaPor !== me && (t.atribuidoPor === me || (t.criadoPor === me && t.dono !== me)) && (t.feitaEm || 0) >= lim) {
+      var cf = asstChave('c_' + t.id + '_' + t.feitaEm);
+      if (!ASST.feitos[cf]) { ASST.feitos[cf] = 1;
+        asstMarcar('assistente/avisos/' + me + '/' + cf).then(function(ok) {
+          if (ok) asstFalar('✅ **' + tfNome(t.feitaPor) + '** concluiu a tarefa que você passou: **' + t.tit + '**', { botoes: [{ a: 'abrir', id: t.id, rot: 'Ver tarefa' }] });
+        });
+      }
+    }
+  });
+}
+
+/* ── resumo do dia ── */
+function asstResumoTxt(cheio) {
+  var me = MSN.eu, h = tfHoje(), minhas = asstMinhas();
+  var hr = function(t) { return t.lembrete ? String(t.lembrete).slice(11, 16) : ''; };
+  var ord = function(a, b) { return String(a.prazo || '9').localeCompare(String(b.prazo || '9')) || String(hr(a)).localeCompare(String(hr(b))); };
+  var atras = minhas.filter(function(t) { return t.prazo && t.prazo < h; }).sort(ord);
+  var hoje = minhas.filter(function(t) { return t.prazo === h; }).sort(ord);
+  var depois = cheio ? minhas.filter(function(t) { return !t.prazo || t.prazo > h; }).sort(ord) : [];
+  var lin = function(t) { var p = tfProjDe(t); return '• ' + (t.imp ? '⭐ ' : '') + t.tit + (p ? ' (' + (p.tit || 'projeto') + ')' : '') + (t.prazo && t.prazo !== h ? ' — ' + asstQuando(t.prazo) : hr(t) ? ' — ' + asstQuando(t.prazo, hr(t)) : ''); };
+  var bloco = function(tit, l, max) { return l.length ? '\n\n**' + tit + ' (' + l.length + ')**\n' + l.slice(0, max).map(lin).join('\n') + (l.length > max ? '\n…e mais ' + (l.length - max) : '') : ''; };
+  var txt = bloco('Atrasadas', atras, 8) + bloco('Para hoje', hoje, 10) + bloco('Próximas e sem prazo', depois, 10);
+  // agenda: retornos, funil e inativos de hoje
+  try {
+    if (typeof agdEventos === 'function') {
+      var ev = agdEventos(h).filter(function(e) { return e.dono === me; }), c = { ret: 0, neg: 0, inat: 0, pessoal: 0 };
+      ev.forEach(function(e) { if (c[e.fonte] != null) c[e.fonte] += e.fonte === 'inat' ? (e.lista || []).length : 1; });
+      var ag = [];
+      if (c.pessoal) ag.push(c.pessoal + ' compromisso' + (c.pessoal > 1 ? 's' : ''));
+      if (c.ret) ag.push(c.ret + ' retorno' + (c.ret > 1 ? 's' : '') + ' do Discador');
+      if (c.neg) ag.push(c.neg + ' próxima' + (c.neg > 1 ? 's ações' : ' ação') + ' do Funil');
+      if (c.inat) ag.push(c.inat + ' inativo' + (c.inat > 1 ? 's vencem' : ' vence'));
+      if (ag.length) txt += '\n\n**Na agenda de hoje:** ' + ag.join(', ') + '.';
+    }
+  } catch (e) {}
+  return { txt: txt, vazio: !atras.length && !hoje.length && !depois.length, atras: atras.length, hoje: hoje.length };
+}
+function asstResumo(auto) {
+  if (!asstTarOk()) { asstFalar('Só um instante, ainda estou carregando suas tarefas… tente de novo daqui a pouco.'); return; }
+  var r = asstResumoTxt(!auto), me = MSN.eu, h = tfHoje();
+  var topo = auto ? '☀️ ' + asstSaudacao() + ', ' + asstPrimeiro(me) + '! Seu resumo de ' + asstQuando(h).replace('hoje', ASST_DIAS[new Date().getDay()] + ', ' + h.slice(8, 10) + '/' + h.slice(5, 7)) + ':'
+    : '📋 Suas tarefas em aberto:';
+  if (r.vazio) asstFalar(topo + (r.txt || '') + '\n\nNada atrasado e nada marcado para hoje. 🎉 Quer anotar alguma coisa? É só escrever.');
+  else asstFalar(topo + r.txt + (auto ? '\n\nBom trabalho! 💪' : ''), { botoes: [{ a: 'tarefas', id: 'meudia', rot: 'Abrir tarefas', pri: true }] });
+}
+function asstResumoAuto() {
+  var agora = new Date(), h = tfHoje(), hora = +(ASST.cfg.resumoHora || 7);
+  if (agora.getHours() < hora || agora.getHours() >= 18) return;
+  if (typeof agdUtil === 'function' && !agdUtil(h)) return;
+  if (ASST.feitos['resumo_' + h]) return; ASST.feitos['resumo_' + h] = 1;
+  asstMarcar('assistente/resumos/' + MSN.eu + '/' + h).then(function(ok) { if (ok) asstResumo(true); });
+}
+
+/* ── tarefas automáticas ── */
+function asstAutoLigado(k) { var a = ASST.cfg.auto || {}; return a[k] !== false; }
+function asstAuto() {
+  if (!MSN.on || !asstTarOk() || ASST.cfg.autoDesligado) return;
+  var me = MSN.eu, h = tfHoje(), amanha = tfSoma(h, 1), ini = tfSoma(h, -2), pend = [];
+  var dentro = function(d) { return !!d && d >= ini && d <= amanha; };
+  var tem = function(p) { return typeof AGD !== 'undefined' && Object.prototype.hasOwnProperty.call(AGD.c, p); };
+  var cria = function(chave, tit, extra, marcador) {
+    if (ASST.feitos['a_' + chave]) return; ASST.feitos['a_' + chave] = 1;
+    pend.push(asstMarcar(marcador || ('assistente/auto/' + me + '/' + chave)).then(function(ok) {
+      if (!ok) return null;
+      return tfNova(tit, Object.assign({ dono: me }, extra)).then(function(id) { return id ? { id: id, tit: tit, prazo: extra.prazo || '', hora: extra.lembrete ? String(extra.lembrete).slice(11, 16) : '' } : null; });
+    }));
+  };
+  if (typeof agdSub === 'function') {
+    var pRet = 'discador/estado/' + me + '/retornos', pNeg = 'negociacoes/' + me;
+    if (asstAutoLigado('ret')) agdSub(pRet);
+    if (asstAutoLigado('neg')) agdSub(pNeg);
+    if (asstAutoLigado('inat')) { agdSub('discador/inativos'); agdSub('discador/inatConfig'); }
+    // retornos marcados no Discador
+    if (asstAutoLigado('ret') && tem(pRet)) agdLista(AGD.c[pRet]).forEach(function(r) {
+      if (!r || !r.quando) return; var d = String(r.quando).slice(0, 10); if (!dentro(d)) return;
+      if (typeof dcDesqDe === 'function' && dcDesqDe(r)) return;
+      var hh = String(r.quando).slice(11, 16), tel = typeof dcTel === 'function' ? dcTel(r.tel) : (r.tel || ''), nome = r.empresa || r.nome || tel || 'cliente';
+      cria('ret_' + asstChave((r.tel || nome) + '_' + r.quando), 'Retorno: ' + nome,
+        { prazo: d, lembrete: /^\d\d:\d\d$/.test(hh) ? d + 'T' + hh : '', nota: [tel ? 'Telefone: ' + tel : '', r.obs || r.nota || ''].filter(Boolean).join('\n'), auto: 'ret' });
+    });
+    // próximas ações do Funil
+    if (asstAutoLigado('neg') && tem(pNeg)) agdLista(AGD.c[pNeg]).forEach(function(n) {
+      if (!n || !n.proximaData || n.etapa === 'fechado' || n.etapa === 'perdido') return; var d = String(n.proximaData).slice(0, 10); if (!dentro(d)) return;
+      var nome = n.empresa || n.contato || 'negociação';
+      cria('neg_' + asstChave((n.id || nome) + '_' + d), 'Funil: ' + nome + (n.proximaAcao ? ' — ' + n.proximaAcao : ''), { prazo: d, nota: n.obs ? String(n.obs).slice(0, 500) : '', auto: 'neg' });
+    });
+    // inativos que vencem hoje ou amanhã (uma tarefa por dia)
+    if (asstAutoLigado('inat') && tem('discador/inativos')) {
+      var recs = AGD.c['discador/inativos'] || {}, dias = typeof agdInatCfgDias === 'function' ? agdInatCfgDias() : 4, por = {};
+      Object.keys(recs).forEach(function(k) { var r = recs[k]; if (!r || r.status !== 'andamento' || r.vn !== me) return;
+        var d = tfIso(new Date((r.desde || 0) + (r.dias || dias) * 864e5)); if (d < h || d > amanha) return;
+        (por[d] = por[d] || []).push(r.empresa || r.nome || r.cliente || k); });
+      Object.keys(por).forEach(function(d) { var l = por[d];
+        cria('inat_' + d, 'Inativos: ' + l.length + ' cliente' + (l.length > 1 ? 's vencem ' : ' vence ') + (d === h ? 'hoje' : 'amanhã'), { prazo: d, imp: true, nota: l.slice(0, 30).join('\n'), auto: 'inat' }); });
+    }
+  }
+  // pedidos abertos em "Chamado para tratar" → tarefa para o administrativo (uma só por pedido)
+  if (asstAutoLigado('ped') && typeof abEhAdm === 'function' && abEhAdm()) {
+    try { if (typeof abGarantirListener === 'function') abGarantirListener(); if (typeof abPedidos === 'function') abPedidos(); } catch (e) {}
+    if (typeof AB !== 'undefined' && AB.carregado) {
+      var lim = Date.now() - 3 * 864e5;
+      Object.keys(AB.itens || {}).forEach(function(id) {
+        var r = AB.itens[id]; if (!r || r.excluido || (r.criadoEm || 0) < lim) return;
+        var rr = Object.assign({ id: id }, r), et; try { et = abEtapa(rr); } catch (e) { return; } if (et !== 'tratar') return;
+        var ch = 'ped_' + asstChave(id);
+        cria(ch, 'Conferir pedido: ' + (r.cliente || 'cliente') + (r.chamado ? ' · chamado ' + r.chamado : '') + ' (' + (typeof abNomeVend === 'function' ? abNomeVend(r.vendedor) : r.vendedor || '') + ')',
+          { prazo: h, auto: 'ped', nota: 'Pedido aberto em "Chamado para tratar" (aba Pedidos abertos). 1º passo: conferência — quantidades/valores, endereço, margem, frete, planta, carreta/truck, entrega/retira, NF/cupom.' },
+          'assistente/autoPed/' + ch);
+      });
+    }
+  }
+  if (!pend.length) return;
+  Promise.all(pend).then(function(res) {
+    var l = res.filter(Boolean); if (!l.length) return;
+    asstFalar('🤖 Criei ' + (l.length === 1 ? 'uma tarefa automática' : l.length + ' tarefas automáticas') + ' para você:\n' +
+      l.slice(0, 8).map(function(x) { return '• ' + x.tit + (x.prazo ? ' — ' + asstQuando(x.prazo, x.hora) : ''); }).join('\n') + (l.length > 8 ? '\n…e mais ' + (l.length - 8) : ''),
+      { botoes: l.length === 1 ? [{ a: 'abrir', id: l[0].id, rot: 'Ver tarefa', pri: true }] : [{ a: 'tarefas', id: 'planejado', rot: 'Ver tarefas', pri: true }] });
+  });
+}
+
+/* ── conversa: entender o pedido ── */
+function asstAjuda() {
+  var g = asstGestao();
+  asstFalar('Escreva do jeito que você fala, que eu viro tarefa. Exemplos:\n' +
+    '• "Ligar pro cliente Casa Nova sexta às 10h"\n' +
+    '• "Mandar tabela de aço pro lojista amanhã, urgente"\n' +
+    '• "Conferir pedidos toda segunda"\n' +
+    (g ? '• "Bruno: retornar o orçamento da Obra Fácil até quinta" (passa para outra pessoa)\n' : '') +
+    '• Várias de uma vez: separe por linha ou por ";"\n\n' +
+    'Também entendo: **resumo** (seu dia), **minhas tarefas**, **feito** + nome da tarefa, e pedidos como "muda a última para amanhã".\n\n' +
+    'Sozinho, eu: aviso aqui quando alguém te passa uma tarefa (e quando concluem uma que você passou), mando o resumo do dia de manhã e crio tarefas a partir dos retornos do Discador, do Funil, dos inativos' + (typeof abEhAdm === 'function' && abEhAdm() ? ' e dos pedidos abertos' : '') + '.' +
+    (g ? '\n\n' + asstIAStatus() : ''),
+    { botoes: g ? [{ a: 'config', rot: '⚙️ Configurar assistente' }] : [] });
+}
+function asstIAStatus() {
+  if (ASST.cfg.ia === false) return 'IA: desligada (entendo as frases por regras).';
+  if (!ASST.cfg.recaptcha) return 'IA: falta configurar o App Check (chave do reCAPTCHA). Enquanto isso, entendo as frases por regras.';
+  return 'IA: Gemini (' + (ASST.cfg.modelo || ASST_MODELO) + ') pelo Firebase.';
+}
+function asstResponder(txt) {
+  var t = String(txt || '').trim(), n = asstNorm(t);
+  if (!t) return;
+  if (/^(ajuda|help|\?+|menu|comandos|o que voce faz|como funciona)\b/.test(n)) return asstAjuda();
+  if (/^(resumo|meu dia|o que tenho (pra|para) hoje)\b/.test(n)) return asstResumo(true);
+  if (/^(minhas tarefas|tarefas|lista|pendencias|o que (eu )?tenho)\b/.test(n) && t.length < 40) return asstResumo(false);
+  if (/^(config|configurar|configuracoes|ajustes)\b/.test(n)) { if (asstGestao()) asstConfigAbrir(); else asstFalar('Só a gestão mexe nas configurações do assistente.'); return; }
+  if (/^(oi+|ola|opa|bom dia|boa tarde|boa noite|e ai|hey)\b/.test(n) && t.length < 25) return asstFalar(asstSaudacao() + ', ' + asstPrimeiro(MSN.eu) + '! 😊 Me diga o que precisa fazer e eu anoto. Ou escreva **resumo** para ver seu dia.');
+  if (/^(obrigad|valeu|vlw|brigad|show|top|perfeito|beleza|blz|ok|certo)\b/.test(n) && t.length < 25) return asstFalar('Por nada! 😉');
+  if (ASST.ocupado) { asstFalar('Só um segundo, ainda estou no pedido anterior…'); return; }
+  ASST.ocupado = true; asstDigitando(true);
+  asstInterpretar(t).then(asstExecutar).catch(function(e) { console.warn('assistente', e); asstFalar('Não consegui entender agora 😕 Tente de outro jeito, por exemplo: "Ligar pro cliente X amanhã às 10h".'); })
+    .then(function() { ASST.ocupado = false; asstDigitando(false); });
+}
+function asstPessoasPermitidas() { try { return tfPodeAtribuir(null); } catch (e) { return [MSN.eu]; } }
+function asstInterpretar(t) {
+  if (ASST.cfg.ia === false || !ASST.cfg.recaptcha) return Promise.resolve(asstRegras(t));
+  return asstIA(t).catch(function(e) {
+    console.warn('assistente: IA indisponível, usando regras', e);
+    if (asstGestao() && !ASST.iaErroAvisado) { ASST.iaErroAvisado = true; setTimeout(function() { asstFalar('⚠️ (só a gestão vê) A IA não respondeu: ' + String(e && e.message || e).slice(0, 200) + '\nUsei as regras no lugar. Confira as configurações.', { botoes: [{ a: 'config', rot: '⚙️ Configurar' }] }); }, 1500); }
+    return asstRegras(t);
+  });
+}
+
+/* ── Gemini pelo Firebase AI Logic (SDK modular carregado só quando precisa) ── */
+function asstIAModelo() {
+  var cfg = ASST.cfg || {}, chave = [cfg.modelo || ASST_MODELO, cfg.recaptcha || '', cfg.recaptchaTipo || 'v3'].join('|');
+  if (ASST.ia && ASST.iaChave === chave) return Promise.resolve(ASST.ia);
+  if (ASST.iaCarregando && ASST.iaChave === chave) return ASST.iaCarregando;
+  ASST.iaChave = chave; ASST.ia = null;
+  var base = 'https://www.gstatic.com/firebasejs/' + ASST_FB + '/';
+  ASST.iaCarregando = Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-ai.js'), import(base + 'firebase-app-check.js')]).then(function(m) {
+    var appMod = m[0], aiMod = m[1], acMod = m[2];
+    var opts = window.firebase && firebase.apps && firebase.apps.length ? firebase.apps[0].options : null;
+    if (!opts) throw new Error('o guia não está conectado ao Firebase');
+    var nome = 'assistente-ia-' + asstChave(chave).replace(/[^A-Za-z0-9_-]/g, '').slice(-40), app;
+    try { app = appMod.getApp(nome); } catch (e) {
+      app = appMod.initializeApp(opts, nome);
+      if (cfg.recaptcha) acMod.initializeAppCheck(app, { provider: cfg.recaptchaTipo === 'enterprise' ? new acMod.ReCaptchaEnterpriseProvider(cfg.recaptcha) : new acMod.ReCaptchaV3Provider(cfg.recaptcha), isTokenAutoRefreshEnabled: true });
+    }
+    var ai = aiMod.getAI(app, { backend: new aiMod.GoogleAIBackend() });
+    ASST.ia = aiMod.getGenerativeModel(ai, { model: cfg.modelo || ASST_MODELO, generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } });
+    return ASST.ia;
+  });
+  ASST.iaCarregando.catch(function() { ASST.iaCarregando = null; ASST.iaChave = ''; });
+  return ASST.iaCarregando;
+}
+function asstComTempo(p, ms) { return Promise.race([p, new Promise(function(_, rej) { setTimeout(function() { rej(new Error('demorou demais para responder')); }, ms); })]); }
+function asstIA(texto) {
+  var me = MSN.eu, h = tfHoje(), agora = new Date();
+  var pessoas = asstPessoasPermitidas().map(function(v) { return { login: v, nome: tfNome(v) }; });
+  var abertas = asstTarefasAbertas(function(t) { return tfResp(t) === me || (t.criadoPor === me && (t.criadoEm || 0) > Date.now() - 7 * 864e5); })
+    .sort(function(a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); }).slice(0, 40)
+    .map(function(t) { return { id: t.id, tit: t.tit, responsavel: tfResp(t), prazo: t.prazo || '', hora: t.lembrete ? String(t.lembrete).slice(11, 16) : '', importante: !!t.imp, criadaEm: t.criadoEm ? tfIso(new Date(t.criadoEm)) : '' }; });
+  var hist = (MSN.msgs[asstConv()] || []).slice(-8).map(function(m) { return (m.de === ASST_ID ? 'Assistente: ' : 'Usuário: ') + String(m.txt || '').slice(0, 300); }).join('\n');
+  var prompt = 'Você é o Assistente do "Guia do Vendedor", ferramenta de uma equipe de televendas de materiais de construção a seco (drywall, steel frame) no Brasil. ' +
+    'Sua função é transformar o pedido do usuário em ações sobre a lista de tarefas dele. Responda SEMPRE só com um JSON válido, sem texto fora dele.\n\n' +
+    'Agora: ' + h + ' (' + ASST_DIAS[agora.getDay()] + '), ' + String(agora.getHours()).padStart(2, '0') + ':' + String(agora.getMinutes()).padStart(2, '0') + ', horário de Brasília.\n' +
+    'Usuário: ' + JSON.stringify({ login: me, nome: tfNome(me) }) + '\n' +
+    'Pessoas para quem o usuário pode passar tarefa (use o login): ' + JSON.stringify(pessoas) + '\n' +
+    'Tarefas abertas do usuário e as que ele passou nos últimos 7 dias: ' + JSON.stringify(abertas) + '\n' +
+    'Conversa recente:\n' + (hist || '(nenhuma)') + '\n\n' +
+    'Pedido do usuário: ' + JSON.stringify(texto) + '\n\n' +
+    'Formato da resposta:\n' +
+    '{"acao":"criar"|"concluir"|"editar"|"apagar"|"responder",\n' +
+    ' "tarefas":[{"tit":"título curto e claro, começando com verbo","dono":"LOGIN ou vazio para o próprio usuário","prazo":"AAAA-MM-DD ou vazio","hora":"HH:MM ou vazio","imp":false,"rep":""|"dia"|"uteis"|"semana"|"mes","nota":"detalhes úteis (telefone, cliente, valores) ou vazio"}],\n' +
+    ' "ids":["ids das tarefas a concluir ou apagar"],\n' +
+    ' "edicoes":[{"id":"id da tarefa","tit":"","prazo":"","hora":"","dono":"","imp":null}],\n' +
+    ' "resposta":"frase curta e simpática em português do Brasil para o usuário"}\n\n' +
+    'Regras:\n' +
+    '- "criar": uma ou mais tarefas novas. Datas relativas (amanhã, sexta, dia 5, semana que vem) viram AAAA-MM-DD a partir de hoje; dia da semana sem "próxima" é a próxima ocorrência a partir de hoje. Se tiver hora e não tiver data, use hoje (ou amanhã, se a hora já passou).\n' +
+    '- "dono" só pode ser um login da lista de pessoas. Nome de cliente/empresa NUNCA é dono. Se o usuário pedir para alguém fora da lista, deixe vazio e explique na resposta.\n' +
+    '- "urgente", "importante", "prioridade" → imp=true. "todo dia"→dia, "dias úteis"→uteis, "toda semana"/"toda segunda"→semana, "todo mês"→mes.\n' +
+    '- "concluir": o usuário disse que terminou algo; use os ids da lista de tarefas abertas.\n' +
+    '- "apagar": o usuário pediu para apagar/cancelar uma tarefa (ex.: "apaga a última"); use os ids da lista.\n' +
+    '- "editar": mudar tarefa existente (ex.: "muda a última para amanhã"); só preencha nas edições os campos que mudam (os outros vazios, imp null).\n' +
+    '- "responder": perguntas, conversa, ou quando não der para entender; aí peça o que falta na resposta. Não invente informações sobre clientes, preços ou pedidos.\n' +
+    '- Mantenha o título fiel ao pedido, sem inventar detalhes. A resposta deve ter no máximo 2 frases.';
+  return asstComTempo(asstIAModelo().then(function(model) { return model.generateContent(prompt); }), 25000).then(function(res) {
+    var raw = res && res.response && typeof res.response.text === 'function' ? res.response.text() : '';
+    raw = String(raw || '').replace(/^\s*```(?:json)?/i, '').replace(/```\s*$/, '').trim();
+    var j = JSON.parse(raw); j.viaIA = true; return j;
+  });
+}
+
+/* ── regras (sem IA): data, hora, responsável, importante, repetição ── */
+function asstProxDia(wd, proxima) { var h = tfHoje(), d = tfData(h).getDay(), n = (wd - d + 7) % 7; if (proxima && n === 0) n = 7; return tfSoma(h, n); }
+function asstUltimaMinha() {
+  var me = MSN.eu, l = asstTarefasAbertas(function(t) { return t.criadoPor === me; }).sort(function(a, b) { return (b.criadoEm || 0) - (a.criadoEm || 0); });
+  return l.filter(function(t) { return t.viaAssistente; })[0] || l[0] || null;
+}
+function asstRegras(txt) {
+  txt = String(txt || '').normalize('NFC');
+  var n = asstNorm(txt);
+  // "muda a última para segunda", "passa a última pro Bruno", "adia a última para amanhã às 14h"
+  var mu = n.match(/^(?:muda|mudar|mude|passa|passar|adia|adiar|remarca|remarcar|joga|jogar|troca|trocar)\s+(?:a\s+)?ultima(?:\s+tarefa)?\s+(?:pra|para|pro)\s+(.+)$/);
+  if (mu) {
+    var ult = asstUltimaMinha(); if (!ult) return { acao: 'responder', resposta: 'Não achei uma tarefa sua recente para mudar.' };
+    var x = asstRegra1(txt.slice(txt.length - mu[1].length)), e = { id: ult.id };
+    if (x.prazo) e.prazo = x.prazo; if (x.hora) e.hora = x.hora; if (x.dono) e.dono = x.dono; if (x.imp) e.imp = true;
+    if (!x.prazo && !x.hora && !x.dono) return { acao: 'responder', resposta: 'Para quando ou para quem eu passo "' + ult.tit + '"?' };
+    return { acao: 'editar', edicoes: [e] };
+  }
+  if (/^(?:apaga|apagar|apague|exclui|excluir|exclua|cancela|cancelar|desfaz|desfazer|desfaca)\s+(?:a\s+)?ultima/.test(n)) {
+    var u2 = asstUltimaMinha(); return u2 ? { acao: 'apagar', ids: [u2.id] } : { acao: 'responder', resposta: 'Não achei uma tarefa sua recente para apagar.' };
+  }
+  var m = n.match(/^(feito|feita|terminei|conclui|concluir|finalizei|pronto)[:\s]+(.{3,})$/);
+  if (m) {
+    var alvo = m[2].trim(), achou = asstMinhas().filter(function(t) { return asstNorm(t.tit).indexOf(alvo) >= 0; });
+    if (achou.length === 1) return { acao: 'concluir', ids: [achou[0].id] };
+    return { acao: 'responder', resposta: achou.length ? 'Achei ' + achou.length + ' tarefas com esse nome: ' + achou.slice(0, 5).map(function(t) { return '"' + t.tit + '"'; }).join(', ') + '. Qual delas?' : 'Não achei tarefa aberta com "' + m[2].trim() + '".' };
+  }
+  var partes = String(txt).split(/\n|;/).map(function(s) { return s.trim(); }).filter(Boolean);
+  var tarefas = partes.map(asstRegra1).filter(function(t) { return t.tit; });
+  if (!tarefas.length) return { acao: 'responder', resposta: 'O que é para fazer? Me escreva a tarefa, por exemplo: "Ligar pro cliente X amanhã às 10h".' };
+  return { acao: 'criar', tarefas: tarefas };
+}
+function asstRegra1(frase) {
+  var t = String(frase).normalize('NFC'), n = asstNorm(t), o = { tit: '', dono: '', prazo: '', hora: '', imp: false, rep: '', nota: '' }, h = tfHoje();
+  var tira = function(re) { var m = n.match(re); if (!m) return null; var i = m.index, f = i + m[0].length; t = t.slice(0, i) + ' ' + t.slice(f); n = n.slice(0, i) + ' ' + n.slice(f); return m; };
+  var dias = { domingo: 0, segunda: 1, terca: 2, quarta: 3, quinta: 4, sexta: 5, sabado: 6 }, m;
+  // responsável no começo ("Bruno: ...", "pede pro Bruno ...", "pra Nivia ...")
+  var cands = [];
+  tfPessoas().forEach(function(v) { [v, tfNome(v), asstPrimeiro(v)].forEach(function(x) { x = asstNorm(x).trim(); if (x && x.length > 2) cands.push({ v: v, x: x }); }); });
+  cands.sort(function(a, b) { return b.x.length - a.x.length; });
+  for (var i = 0; i < cands.length; i++) {
+    var esc = cands[i].x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var re = new RegExp('^\\s*(?:(?:pede|pedir|peca|manda|mandar|avisa|avisar|lembra|lembrar)\\s+(?:pr[oa]|para|ao?|a)\\s+|(?:pr[oa]|para)\\s+(?:o\\s+|a\\s+)?)?' + esc + '\\b\\s*[:,\\-–]?\\s*(?:(?:de|que|pra|para)\\s+)?');
+    var achou = tira(re); if (achou) { var mesmo = cands.filter(function(c) { return c.x === cands[i].x; }).map(function(c) { return c.v; }).filter(function(v, k, a) { return a.indexOf(v) === k; }); if (mesmo.length === 1) o.dono = cands[i].v; break; }
+  }
+  if (tira(/\b(urgente|urgencia|importante|prioridade|prioritari[oa])\b[!]*/)) o.imp = true;
+  if (tira(/\b(todo dia|todos os dias|diariamente)\b/)) o.rep = 'dia';
+  else if (tira(/\b(dias uteis|de segunda a sexta)\b/)) o.rep = 'uteis';
+  else if (tira(/\b(todo mes|todos os meses|mensalmente)\b/)) o.rep = 'mes';
+  else if ((m = tira(/\b(?:toda|todas as|todo)\s+(segunda|terca|quarta|quinta|sexta|sabado|domingo)s?(?:[- ]feiras?)?\b/))) { o.rep = 'semana'; o.prazo = asstProxDia(dias[m[1]]); }
+  else if (tira(/\b(toda semana|semanalmente|todas as semanas)\b/)) o.rep = 'semana';
+  // hora
+  if ((m = tira(/(?:\b(?:as|a partir das|ate as|por volta das)\s+)?\b([01]?\d|2[0-3])\s*(?:h|:|hs)\s*([0-5]\d)?\s*(?:hs|h|horas|min)?(?=\s|$|[,.!?;])/))) o.hora = String(m[1]).padStart(2, '0') + ':' + (m[2] || '00');
+  // data
+  if (!o.prazo) {
+    if (tira(/\b(?:(?:ate|pra|para)\s+)?depois de amanha\b/)) o.prazo = tfSoma(h, 2);
+    else if (tira(/\b(?:(?:ate|pra|para)\s+)?amanha\b/)) o.prazo = tfSoma(h, 1);
+    else if (tira(/\b(?:(?:ate|pra|para)\s+)?hoje\b/)) o.prazo = h;
+    else if ((m = tira(/\b(?:(?:ate|pra|para|na|no|nesta|neste|essa|esse)\s+)?(?:(?:a|o)\s+)?(proxim[ao]\s+)?(segunda|terca|quarta|quinta|sexta|sabado|domingo)(?:[- ]feira)?(?:\s+que vem)?\b/))) o.prazo = asstProxDia(dias[m[2]], !!m[1] || /que vem/.test(m[0]));
+    else if (tira(/\b(?:(?:ate|pra|para|na)\s+)?(?:a\s+)?semana que vem\b|\bproxima semana\b/)) o.prazo = asstProxDia(1, true);
+    else if (tira(/\b(?:(?:ate|pra|para|no)\s+)?(?:o\s+)?fim do mes\b|\bfinal do mes\b/)) { var x = tfData(h); o.prazo = tfIso(new Date(x.getFullYear(), x.getMonth() + 1, 0)); }
+    else if ((m = tira(/\b(?:(?:ate|pra|para|em|no|dia)\s+)*(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/))) {
+      var dd = +m[1], mm = +m[2], aa = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : tfData(h).getFullYear();
+      var iso = aa + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0'); if (!m[3] && iso < h) iso = (aa + 1) + iso.slice(4);
+      if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) o.prazo = iso;
+    }
+    else if ((m = tira(/\b(?:(?:ate|pra|para|no)\s+)?dia\s+(\d{1,2})\b/))) {
+      var y = tfData(h), dia = +m[1]; if (dia >= 1 && dia <= 31) { var c = new Date(y.getFullYear(), y.getMonth(), dia); if (tfIso(c) < h) c = new Date(y.getFullYear(), y.getMonth() + 1, dia); o.prazo = tfIso(c); }
+    }
+  }
+  if (o.hora && !o.prazo) { var agora = new Date(), hm = String(agora.getHours()).padStart(2, '0') + ':' + String(agora.getMinutes()).padStart(2, '0'); o.prazo = o.hora > hm ? h : tfSoma(h, 1); }
+  // título: o que sobrou, sem as palavras de comando
+  var tit = t.replace(/\s+/g, ' ').trim()
+    .replace(/^(?:(?:por favor|pf|pfv)[,\s]+)?(?:(?:me\s+)?lembr[ae]r?\s+(?:de\s+|que\s+)?|anot[ae]r?\s*(?:a[ií]\s*)?[:\-]?\s*|cri[ae]r?\s+(?:uma\s+)?tarefa\s*(?:de|para|pra)?\s*[:\-]?\s*|nova tarefa\s*[:\-]?\s*|tarefa\s*[:\-]\s*|preciso\s+(?:de\s+)?|tenho que\s+|tem que\s+)/i, '')
+    .replace(/^[\s,:;\-–]+|[\s,:;\-–]+$/g, '').replace(/\s+(?:as|às|ate|até|pra|para|na|no|de|em)$/i, '').trim();
+  o.tit = tit ? tit.charAt(0).toUpperCase() + tit.slice(1) : '';
+  return o;
+}
+
+/* ── executar o que foi entendido ── */
+function asstExecutar(r) {
+  r = r || {}; var me = MSN.eu, okPessoas = asstPessoasPermitidas(), acao = r.acao || 'responder';
+  var dataOk = function(d) { return /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')) ? d : ''; };
+  var horaOk = function(x) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(x || '')) ? x : ''; };
+  var repOk = function(x) { return ['dia', 'uteis', 'semana', 'mes'].indexOf(x) >= 0 ? x : ''; };
+  var resolveDono = function(d) {
+    if (!d) return me; d = String(d).trim(); if (okPessoas.indexOf(d) >= 0) return d;
+    var nd = asstNorm(d), hit = okPessoas.filter(function(v) { return asstNorm(v) === nd || asstNorm(tfNome(v)) === nd || asstNorm(asstPrimeiro(v)) === nd; });
+    return hit.length === 1 ? hit[0] : null;
+  };
+  if (acao === 'criar') {
+    var lista = (Array.isArray(r.tarefas) ? r.tarefas : []).filter(function(x) { return x && String(x.tit || '').trim(); }).slice(0, 10);
+    if (!lista.length) return asstFalar(r.resposta || 'O que é para fazer? Me escreva a tarefa com o prazo, se tiver.');
+    var avisos = [];
+    return Promise.all(lista.map(function(x) {
+      var dono = resolveDono(x.dono);
+      if (!dono) { var nm = vendedores[x.dono] ? tfNome(x.dono) : x.dono; avisos.push(asstGestao() ? 'Não achei "' + nm + '" na equipe, então deixei com você.' : 'Só a gestão passa tarefa para outra pessoa, então deixei com você. Se quiser, avise ' + nm + ' pelo chat.'); dono = me; }
+      var prazo = dataOk(x.prazo), hora = horaOk(x.hora);
+      if (hora && !prazo) prazo = tfHoje();
+      var extra = { dono: dono, prazo: prazo, lembrete: prazo && hora ? prazo + 'T' + hora : '', imp: !!x.imp, rep: repOk(x.rep), nota: String(x.nota || '').slice(0, 1000), viaAssistente: true };
+      if (extra.rep && !extra.prazo) extra.prazo = tfHoje();
+      return tfNova(String(x.tit).trim().slice(0, 200), extra).then(function(id) { return id ? { id: id, tit: String(x.tit).trim(), dono: dono, prazo: extra.prazo, hora: hora, imp: extra.imp, rep: extra.rep } : null; });
+    })).then(function(feitas) {
+      feitas = feitas.filter(Boolean); if (!feitas.length) return asstFalar('Não consegui salvar 😕 Confira a internet e tente de novo.');
+      var REP = { dia: 'todo dia', uteis: 'dias úteis', semana: 'toda semana', mes: 'todo mês' }, outros = feitas.filter(function(f) { return f.dono !== me; });
+      var txt = '✅ ' + (feitas.length === 1 ? 'Anotei:' : 'Anotei ' + feitas.length + ' tarefas:') + '\n' + feitas.map(function(f) {
+        return '• ' + (f.imp ? '⭐ ' : '') + '**' + f.tit + '**' + [f.dono !== me ? 'para ' + tfNome(f.dono) : '', f.prazo ? asstQuando(f.prazo, f.hora) : 'sem prazo', f.rep ? '🔁 ' + REP[f.rep] : ''].filter(Boolean).map(function(s) { return ' · ' + s; }).join('');
+      }).join('\n') +
+        (outros.length ? '\n' + outros.map(function(f) { return asstPrimeiro(f.dono); }).filter(function(v, i, a) { return a.indexOf(v) === i; }).join(' e ') + ' vai receber o aviso aqui no chat.' : '') +
+        (avisos.length ? '\n' + avisos.join('\n') : '') + (r.viaIA && r.resposta && feitas.length > 1 ? '' : '');
+      try { tfSelo(); } catch (e) {}
+      return asstFalar(txt, { botoes: (feitas.length === 1 ? [{ a: 'abrir', id: feitas[0].id, rot: 'Ver tarefa', pri: true }] : [{ a: 'tarefas', id: 'planejado', rot: 'Ver tarefas', pri: true }])
+        .concat([{ a: 'desfazer', id: feitas.map(function(f) { return f.id; }).join(','), rot: '↩️ Desfazer' }]) });
+    });
+  }
+  if (acao === 'apagar') {
+    var ap = (Array.isArray(r.ids) ? r.ids : []).filter(function(id) { var t = TF.tar[id]; return t && tfEdita(t); });
+    if (!ap.length) return asstFalar('Não achei essa tarefa.');
+    asstBotao('desfazer', ap.join(',')); return Promise.resolve();
+  }
+  if (acao === 'concluir') {
+    var ts = (Array.isArray(r.ids) ? r.ids : []).map(function(id) { return TF.tar[id]; }).filter(function(t) { return t && !t.feita && tfEdita(t); });
+    if (!ts.length) return asstFalar(r.resposta && !r.viaIA ? r.resposta : 'Não achei essa tarefa aberta. Escreva **minhas tarefas** para ver a lista.');
+    ts.forEach(function(t) { tfConcluir(t, true); });
+    return asstFalar('🎉 Concluída' + (ts.length > 1 ? 's' : '') + ': ' + ts.map(function(t) { return '**' + t.tit + '**'; }).join(', ') + '. Mandou bem!');
+  }
+  if (acao === 'editar') {
+    var feitos = [];
+    (Array.isArray(r.edicoes) ? r.edicoes : []).forEach(function(e) {
+      var t = e && TF.tar[e.id]; if (!t || !tfEdita(t)) return; var c = {};
+      if (e.tit && String(e.tit).trim()) c.tit = String(e.tit).trim().slice(0, 200);
+      var p = dataOk(e.prazo), hh = horaOk(e.hora);
+      if (p) c.prazo = p;
+      if (hh) c.lembrete = (p || t.prazo || tfHoje()) + 'T' + hh; else if (p && t.lembrete) c.lembrete = p + 'T' + String(t.lembrete).slice(11, 16);
+      if (hh && !t.prazo && !p) c.prazo = tfHoje();
+      if (typeof e.imp === 'boolean') c.imp = e.imp;
+      if (e.dono) { var d = resolveDono(e.dono); if (d && d !== t.dono) { c.dono = d; if (d !== me) { c.atribuidoPor = me; c.atribuidoEm = Date.now(); } } }
+      if (!Object.keys(c).length) return;
+      tfSalvar(t, c); feitos.push(Object.assign({}, t, c));
+    });
+    if (!feitos.length) return asstFalar(r.resposta || 'Não entendi qual tarefa mudar. Diga o nome da tarefa e o que muda.');
+    return asstFalar('✏️ Atualizei:\n' + feitos.map(function(t) { return '• **' + t.tit + '**' + (t.prazo ? ' · ' + asstQuando(t.prazo, t.lembrete ? String(t.lembrete).slice(11, 16) : '') : '') + (t.dono && t.dono !== me ? ' · para ' + tfNome(t.dono) : ''); }).join('\n'),
+      { botoes: feitos.length === 1 ? [{ a: 'abrir', id: feitos[0].id, rot: 'Ver tarefa' }] : [] });
+  }
+  return asstFalar(String(r.resposta || 'Não entendi 🤔 Escreva **ajuda** para ver exemplos.').slice(0, 800));
+}
+
+/* ── configurações (gestão) ── */
+function asstConfigAbrir() {
+  if (!asstGestao()) { asstFalar('Só a gestão mexe nas configurações do assistente.'); return; }
+  var c = ASST.cfg || {}, a = c.auto || {};
+  var velho = document.getElementById('asst-cfg'); if (velho) velho.remove();
+  var f = document.createElement('div'); f.id = 'asst-cfg'; f.className = 'asst-cfg-fundo';
+  var ck = function(k, rot, sub) { return '<label class="ck"><input type="checkbox" data-k="auto.' + k + '"' + (a[k] !== false ? ' checked' : '') + '> <span>' + rot + (sub ? ' <small style="color:var(--muted)">' + sub + '</small>' : '') + '</span></label>'; };
+  f.innerHTML = '<div class="asst-cfg" role="dialog" aria-modal="true" aria-label="Configurar assistente"><h3>🦅 Configurar assistente</h3><p class="sub">Vale para a equipe toda. Só a gestão vê esta tela.</p>' +
+    '<label class="ck"><input type="checkbox" data-k="ia"' + (c.ia !== false ? ' checked' : '') + '> <span><b>Usar IA (Gemini)</b> para entender as frases</span></label>' +
+    '<label class="l" for="asst-c-rc">Chave do site do reCAPTCHA (App Check)</label><input type="text" id="asst-c-rc" data-k="recaptcha" value="' + msnEsc(c.recaptcha || '') + '" placeholder="6Lc…" autocomplete="off">' +
+    '<label class="l" for="asst-c-rt">Tipo do reCAPTCHA</label><select id="asst-c-rt" data-k="recaptchaTipo"><option value="v3"' + (c.recaptchaTipo !== 'enterprise' ? ' selected' : '') + '>reCAPTCHA v3</option><option value="enterprise"' + (c.recaptchaTipo === 'enterprise' ? ' selected' : '') + '>reCAPTCHA Enterprise</option></select>' +
+    '<label class="l" for="asst-c-md">Modelo</label><input type="text" id="asst-c-md" data-k="modelo" value="' + msnEsc(c.modelo || '') + '" placeholder="' + ASST_MODELO + '">' +
+    '<label class="l" for="asst-c-hr">Hora do resumo do dia</label><input type="number" id="asst-c-hr" data-k="resumoHora" min="5" max="12" value="' + (+c.resumoHora || 7) + '">' +
+    '<label class="l">Tarefas automáticas</label>' + ck('ret', 'Retornos marcados no Discador') + ck('neg', 'Próximas ações do Funil') + ck('inat', 'Inativos que vencem hoje/amanhã') + ck('ped', 'Pedidos abertos', '(para o administrativo)') +
+    '<div class="st" id="asst-c-st">' + msnEsc(asstIAStatus()) + '</div>' +
+    '<div class="rod"><button type="button" data-c="testar">Testar IA</button><button type="button" data-c="fechar">Fechar</button><button type="button" class="pri" data-c="salvar">Salvar</button></div></div>';
+  document.body.appendChild(f);
+  var ler = function() {
+    var n = { auto: {} };
+    f.querySelectorAll('[data-k]').forEach(function(el) { var k = el.getAttribute('data-k'), v = el.type === 'checkbox' ? el.checked : el.value.trim();
+      if (k === 'resumoHora') v = Math.min(12, Math.max(5, +v || 7));
+      if (k.indexOf('auto.') === 0) n.auto[k.slice(5)] = v; else n[k] = v; });
+    if (!n.modelo) delete n.modelo;
+    return n;
+  };
+  var st = function(m) { var e = document.getElementById('asst-c-st'); if (e) e.textContent = m; };
+  f.onclick = function(e) {
+    if (e.target === f) { f.remove(); return; }
+    var b = e.target.closest('[data-c]'); if (!b) return; var c2 = b.getAttribute('data-c');
+    if (c2 === 'fechar') f.remove();
+    if (c2 === 'salvar') { var n = ler(); ASST.cfg = n; ASST.iaErroAvisado = false; Promise.resolve(dbRef('assistente/config').set(n)).then(function() { tfAviso('Configurações do assistente salvas'); f.remove(); }).catch(function(err) { st('Não salvou: ' + (err && err.message || err)); }); }
+    if (c2 === 'testar') {
+      var n2 = ler(); if (!n2.recaptcha) { st('Preencha a chave do reCAPTCHA primeiro (veja o passo a passo).'); return; }
+      var antes = ASST.cfg; ASST.cfg = Object.assign({}, antes, n2); st('Testando…');
+      asstComTempo(asstIAModelo().then(function(md) { return md.generateContent('Responda só {"ok":true}'); }), 25000)
+        .then(function(res) { st('✅ A IA respondeu: ' + String(res.response.text()).slice(0, 80) + ' — pode salvar.'); })
+        .catch(function(err) { st('❌ Não funcionou: ' + String(err && err.message || err).slice(0, 300)); })
+        .then(function() { ASST.cfg = antes; });
+    }
+  };
+}
+// se a pessoa já estava logada antes deste trecho carregar (sessão salva), liga o assistente mesmo assim
+setInterval(function() { try { if (MSN.on && MSN.eu && ASST.user !== MSN.eu) asstIniciar(MSN.eu); } catch (e) {} }, 4000);
+</script>
+<!-- ══ fim do ASSISTENTE ══ -->
+
 </body>
 </html>
