@@ -27755,7 +27755,7 @@ var DC_RES = [
   { k: 'atendeu',  t: 'Atendeu',         cor: '#1F8A5B', at: true },
   { k: 'pedido',   t: 'Pedido fechado',  cor: '#E07A1F', at: true },
   { k: 'funil',    t: 'Levou para o funil', cor: '#7B4FBF', at: true },
-  { k: 'retornar', t: 'Retornar depois', cor: '#2F6FB3', at: false }, // não conta como atendida (21/10/2026)
+  { k: 'retornar', t: 'Retornar depois', cor: '#2F6FB3', at: true }, // 30/10/2026: conta como atendida (o cliente atendeu e pediu retorno)
   { k: 'nao',      t: 'Não atendeu',     cor: '#8E939C', at: false },
   { k: 'caixa',    t: 'Caixa postal',    cor: '#B7791F', at: false },
   { k: 'errado',   t: 'Número errado',   cor: '#C2413B', at: false },
@@ -34081,5 +34081,31 @@ function msn2CorNome(u) { var c = ['#2D6BB0', '#C2410C', '#2E7D32', '#8E24AA', '
 </script>
 <!-- ══ fim do BATE-PAPO 2.0 ══ -->
 
+<script>
+/* 30/10/2026: "Retornar depois" passou a contar como atendida. Recontagem única desde 01/10/2026:
+   refaz as atendidas de cada dia já registrado no Discador (feita uma vez, por quem for da gestão). */
+function dcRecontarMes() {
+  if (!currentUser || typeof dcGestao !== 'function' || !dcGestao() || !(firebaseOK && db)) return;
+  // conta todos os dias desde 01/10/2026 (inclui os "Retornar depois" que ficaram de fora desde 21/10), mesmo que o guia novo só seja aberto em novembro
+  var desde = '2026-10-01', marca = dbRef('discador/recontagem/retornar_desde_2026_10_01');
+  if (typeof marca.transaction !== 'function') return;
+  Promise.resolve(marca.transaction(function(cur) { return cur ? undefined : { em: Date.now(), por: currentUser }; })).then(function(res) {
+    if (!res || !res.committed) return;
+    var equipe = (typeof CK_EQUIPE !== 'undefined' ? CK_EQUIPE : []).concat(Object.keys(vendedores || {})).filter(function(v, i, a) { return a.indexOf(v) === i && vendedores[v] && !vendedores[v].bloqueado; });
+    equipe.forEach(function(vn) {
+      dbRef('discador/dias/' + vn).once('value').then(function(snap) {
+        var dias = (snap && snap.val()) || {};
+        Object.keys(dias).forEach(function(k) {
+          var data = k.replace(/_/g, '-'); if (data < desde || data > dcHoje()) return;
+          var itens = dcItensDoDia(Array.isArray(dias[k] && dias[k].itens) ? dias[k].itens.filter(Boolean) : [], data);
+          if (!itens.length) return;
+          rtLigGravar(vn, { disc: itens.length, discAt: dcResumo(itens).contaMeta }, data).catch(function(e) { console.warn('recontagem', vn, data, e); });
+        });
+      });
+    });
+  }).catch(function(e) { console.warn('recontagem do mês', e); });
+}
+setInterval(function() { try { if (currentUser && !dcRecontarMes.feito) { dcRecontarMes.feito = currentUser; dcRecontarMes(); } } catch (e) {} }, 8000);
+</script>
 </body>
 </html>
