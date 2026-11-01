@@ -27551,6 +27551,7 @@ function rtnPadraoVend() {
       { id: rtnId(), quando: '3 primeiros dias úteis', txt: 'Falar com 100% dos clientes ativos da carteira' },
       { id: rtnId(), quando: '3 primeiros dias úteis', txt: 'Levantar a necessidade de cada cliente ativo para o mês' },
       { id: rtnId(), quando: 'Até o dia 20', txt: '80% da meta do mês entregue' },
+      { id: rtnId(), quando: 'Dias 1 e 15', txt: 'Cliente oculto das regiões lançado no Shopping de Preços' },
       { id: rtnId(), quando: 'A partir do 4º dia útil', txt: 'Rodada completa nos inativos pelo Discador' },
       { id: rtnId(), quando: 'A partir do 4º dia útil', txt: 'Clientes novos prospectados e cadastrados' },
       { id: rtnId(), quando: 'Fim do mês', txt: 'Nenhuma negociação aberta sem próxima ação' }
@@ -27563,6 +27564,17 @@ function rtnPadraoVend() {
 var RTN_FERIADOS = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25'];
 function rtnUtil(d) { var w = d.getDay(); return w !== 0 && w !== 6 && RTN_FERIADOS.indexOf(String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')) < 0; }
 function rtnUteisAte(d) { var n = 0; for (var i = 1; i <= d.getDate(); i++) if (rtnUtil(new Date(d.getFullYear(), d.getMonth(), i))) n++; return n; }
+/* 01/11/2026: cliente oculto das regiões (rodada do Shopping de Preços) nos dias 1 e 15 —
+   se cair em fim de semana ou feriado, vale o próximo dia útil */
+function rtnDiaOculto(d) {
+  d = d || new Date(); if (!rtnUtil(d)) return false;
+  return [1, 15].some(function(alvo) { var x = new Date(d.getFullYear(), d.getMonth(), alvo); while (!rtnUtil(x)) x.setDate(x.getDate() + 1); return x.getDate() === d.getDate(); });
+}
+function rtnProxOculto() {
+  var d = new Date(); d.setHours(12, 0, 0, 0);
+  for (var i = 1; i < 40; i++) { d.setDate(d.getDate() + 1); if (rtnDiaOculto(d)) return d; }
+  return null;
+}
 function rtnFase(d) {
   d = d || new Date();
   var du = rtnUteisAte(d) - (rtnUtil(d) ? 1 : 0); // dias úteis já passados antes de hoje
@@ -27633,10 +27645,11 @@ function rtnExemplar() {
     { id: 'ex_h2', grupo: 'Horário', txt: 'Café, pausa e almoço no tempo certo (volta às 13h)' },
     { id: 'ex_s1', grupo: 'Sala', txt: 'Minha mesa organizada: sem papel, copo ou comida largados' },
     { id: 'ex_s2', grupo: 'Sala', txt: 'Ao sair: sala arrumada, cadeira no lugar, lixo no lixo, luz e ar desligados' },
+    rtnDiaOculto() ? { id: 'ex_oc', grupo: 'Cliente oculto', txt: 'Hoje é dia de cliente oculto: cotar os concorrentes da sua região e lançar no Shopping de Preços' } : null,
     { id: 'ex_l', grupo: 'Ligações', txt: 'Meta de ligações do dia: ' + p.lig.hoje + ' de ' + p.lig.meta, auto: p.lig.meta > 0 && p.lig.hoje >= p.lig.meta },
     { id: 'ex_n', grupo: 'Negociações', txt: 'Negociações novas no Funil: ' + p.neg.hoje + ' de ' + p.neg.meta, auto: p.neg.meta > 0 && p.neg.hoje >= p.neg.meta },
     { id: 'ex_p', grupo: 'Pedidos', txt: 'Pedidos fechados hoje: ' + p.fec.hoje + ' de ' + alvoPed + ' (nunca abaixo da sua média)', auto: p.fec.hoje >= alvoPed }
-  ];
+  ].filter(Boolean);
 }
 function rtnExemplarOk(it) { return it.auto !== undefined ? !!it.auto : rtnFeito('dia', it.id); }
 function rtnExemplarHTML() {
@@ -27644,7 +27657,8 @@ function rtnExemplarHTML() {
   var itens = lista.map(function(it) {
     var feito = rtnExemplarOk(it), auto = it.auto !== undefined;
     return '<label class="rtn-item' + (feito ? ' ok' : '') + '"' + (auto ? ' title="Marca sozinho pelo placar" style="cursor:default;"' : '') + '><input type="checkbox"' + (feito ? ' checked' : '') +
-      (auto ? ' disabled' : ' onchange="rtnMarcar(\'dia\',\'' + it.id + '\',this.checked)"') + '><span><span class="rtn-tag' + (feito ? '' : ' hoje') + '">' + rtnEsc(it.grupo) + '</span>' + rtnEsc(it.txt) + (auto ? ' <span style="font-size:11px;color:var(--faint);">· automático</span>' : '') + '</span></label>';
+      (auto ? ' disabled' : ' onchange="rtnMarcar(\'dia\',\'' + it.id + '\',this.checked)"') + '><span><span class="rtn-tag' + (feito ? '' : ' hoje') + '">' + rtnEsc(it.grupo) + '</span>' + rtnEsc(it.txt) + (auto ? ' <span style="font-size:11px;color:var(--faint);">· automático</span>' : '') +
+      (it.id === 'ex_oc' ? ' <button type="button" class="rtn-btn min" onclick="event.preventDefault();showTab(\'shopping\',document.getElementById(\'nav-shopping\'))">Abrir Shopping de Preços</button>' : '') + '</span></label>';
   }).join('');
   return '<div class="rtn-card" style="border-color:var(--acc);"><h3>Ser exemplar todo dia · ' + ok + ' de ' + lista.length + '</h3>' +
     '<div class="rtn-desc" style="margin-bottom:8px;">Com ou sem a gestora na sala, o combinado é o mesmo: horário, sala organizada, ligações, negociações e pedidos.</div>' +
@@ -27673,7 +27687,8 @@ function rtnFocoHTML() {
   return '<div class="rtn-card" style="border-color:var(--acc);"><h3>Foco do mês · ' + rtnEsc(f.quando) + '</h3>' +
     '<div style="font-size:15px;font-weight:800;color:var(--txt);margin-bottom:2px;">' + rtnEsc(f.tit) + '</div>' +
     '<div class="rtn-desc" style="margin-bottom:8px;">' + rtnEsc(f.txt) + '</div>' + rtnMeta20HTML() + itens +
-    '<p class="rtn-vazio" style="margin:8px 0 0;">' + (f.k === 'ativos' ? 'A partir do 4º dia útil o foco passa para inativos e novos.' : 'No 1º dia útil do mês o foco volta para a carteira ativa.') + '</p></div>';
+    (function() { var o = rtnProxOculto(); return rtnDiaOculto() ? '<p style="font-size:12px;font-weight:700;color:var(--acc-txt);margin:8px 0 0;">Hoje tem cliente oculto das regiões (dias 1 e 15).</p>' : (o ? '<p class="rtn-vazio" style="margin:8px 0 0;">Próximo cliente oculto das regiões: ' + o.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }) + '</p>' : ''); })() +
+    '<p class="rtn-vazio" style="margin:4px 0 0;">' + (f.k === 'ativos' ? 'A partir do 4º dia útil o foco passa para inativos e novos.' : 'No 1º dia útil do mês o foco volta para a carteira ativa.') + '</p></div>';
 }
 
 /* Firebase pode devolver listas como objeto */
@@ -27683,6 +27698,7 @@ function rtnNormalizar(m) {
   m.blocos = rtnLista(m.blocos).map(function(b) { b.itens = rtnLista(b.itens); return b; });
   m.semana = rtnLista(m.semana); m.mes = rtnLista(m.mes);
   // 01/11/2026: carteira ativa passou de 10 dias para os 3 primeiros dias úteis (rotinas já salvas)
+  if (m.perfil === 'vendedor' && !m.mes.some(function(it) { return it.quando === 'Dias 1 e 15'; })) m.mes.splice(3, 0, { id: 'mes_oculto', quando: 'Dias 1 e 15', txt: 'Cliente oculto das regiões lançado no Shopping de Preços' });
   m.mes.forEach(function(it) { if (it.quando === '1º ao 10º dia') it.quando = '3 primeiros dias úteis'; else if (it.quando === 'Do dia 11') it.quando = 'A partir do 4º dia útil'; });
   if (m.lembretes === undefined) m.lembretes = true;
   return m;
@@ -27906,7 +27922,8 @@ function rtnLembrar() {
     var pend = b.itens.filter(function(it) { return !rtnFeito('dia', it.id); });
     var texto = (b.desc ? rtnEsc(b.desc) + '<br>' : '') + pend.map(function(it) { return '• ' + rtnEsc(it.txt); }).join('<br>');
     if (rtnEhVend()) { var pl = rtnPlacar(), cai = [pl.lig.caindo && 'ligações', pl.neg.caindo && 'negociações', pl.fec.caindo && 'fechamentos'].filter(Boolean);
-      var exPend = rtnExemplar().filter(function(it) { return it.auto === undefined && !rtnFeito('dia', it.id) && (it.id !== 'ex_s2' || rtnAgoraMin() >= 1050) && (it.id !== 'ex_h2' || rtnAgoraMin() >= 780); });
+      if (rtnDiaOculto() && !rtnFeito('dia', 'ex_oc')) texto += '<br><b>Hoje é dia de cliente oculto das regiões</b> — Shopping de Preços.';
+      var exPend = rtnExemplar().filter(function(it) { if (it.id === 'ex_oc') return false; return it.auto === undefined && !rtnFeito('dia', it.id) && (it.id !== 'ex_s2' || rtnAgoraMin() >= 1050) && (it.id !== 'ex_h2' || rtnAgoraMin() >= 780); });
       if (exPend.length) texto += '<br><b>Ser exemplar:</b> ' + exPend.map(function(it) { return rtnEsc(it.txt); }).join(' · ');
       texto += '<br><b>Placar:</b> ' + pl.lig.hoje + ' lig · ' + pl.neg.hoje + ' neg · ' + pl.fec.hoje + ' fech' + (cai.length ? '<br><b style="color:#C62828;">Caindo: ' + cai.join(', ') + '</b>' : ''); }
     var abrir = function() { var btn = document.getElementById('nav-rotina'); if (btn) showTab('rotina', btn); };
