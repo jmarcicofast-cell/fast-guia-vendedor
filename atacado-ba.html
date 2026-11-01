@@ -1648,7 +1648,7 @@ html body #dc-root input.dc-edit.dc-edit:focus{border:1px solid var(--dc-ok)!imp
       <span style="font-size:28px; flex-shrink:0;">📋</span>
       <div style="flex:1;">
         <div style="font-size:14px; font-weight:700; color:#fff; margin-bottom:3px;">Grade de pedidos — preenchimento diário</div>
-        <div style="font-size:12px; color:var(--faint); margin-bottom:8px;">O pedido só segue para entrega após o registro na grade. <span style="color:#FAC775;font-weight:600;">Prazo diário: até as 15h.</span></div>
+        <div style="font-size:12px; color:var(--faint); margin-bottom:8px;">O pedido só segue para entrega após o registro na grade. <span style="color:#FAC775;font-weight:600;">Prazo diário: até as 13h50.</span></div>
         <div id="grade-lembrete" style="padding:7px 12px; border-radius:7px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:7px;"></div>
       </div>
     </div>
@@ -3565,8 +3565,8 @@ function pdResumoCopiar() {
               <span style="font-size:12px;font-weight:700;color:color-mix(in srgb, #4A148C var(--tm), #fff);">TARDE — 13h às 18h</span>
             </div>
             <div style="display:grid;gap:9px;">
-              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:var(--muted);min-width:38px;">13h00</span><div><b style="font-size:12.5px;">Ligações + negociações + implantações</b><div style="margin-top:3px;"><span style="background:var(--surface-3);color:var(--txt-2);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;">meta: <span id="evt-badge-tarde">35 lig · 10 neg</span></span></div></div></div>
-              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:var(--muted);min-width:38px;">15h30</span><div><b style="font-size:12.5px;">Grade de entrega</b><div style="font-size:11px;color:var(--muted);">inserção na grade até <span id="evt-txt-prazo-grade">15h30</span></div><div style="margin-top:3px;"><span style="background:color-mix(in srgb, #FFEBEE var(--tint), var(--surface));color:var(--acc-txt);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">deadline <span id="evt-badge-prazo-grade">15h30</span></span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:var(--muted);min-width:38px;">13h00</span><div><b style="font-size:12.5px;">Grade de entrega</b><div style="font-size:11px;color:var(--muted);">inserção na grade até <span id="evt-txt-prazo-grade">13h50</span></div><div style="margin-top:3px;"><span style="background:color-mix(in srgb, #FFEBEE var(--tint), var(--surface));color:var(--acc-txt);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">deadline <span id="evt-badge-prazo-grade">13h50</span></span></div></div></div>
+              <div style="display:flex;gap:10px;"><span style="font-size:11px;color:var(--muted);min-width:38px;">13h50</span><div><b style="font-size:12.5px;">Ligações + negociações + implantações</b><div style="margin-top:3px;"><span style="background:var(--surface-3);color:var(--txt-2);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;">meta: <span id="evt-badge-tarde">35 lig · 10 neg</span></span></div></div></div>
               <div style="display:flex;gap:10px;"><span style="font-size:11px;color:var(--muted);min-width:38px;">16h30</span><div><b style="font-size:12.5px;">Alerta: prazo de pedidos</b><div style="font-size:11px;color:var(--muted);">todos os pedidos devem ser implantados até <span id="evt-txt-prazo-implantacao">17h</span></div><div style="margin-top:3px;"><span style="background:color-mix(in srgb, #FFEBEE var(--tint), var(--surface));color:var(--acc-txt);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">deadline <span id="evt-badge-prazo-implantacao">17h</span></span></div></div></div>
               <div style="display:flex;gap:10px;"><span style="font-size:11px;color:var(--muted);min-width:38px;">17h30</span><div><b style="font-size:12.5px;">Atualização final + encerramento</b><div style="font-size:11px;color:var(--muted);">Qtd ligações · Qtd + valor negociações · Qtd + valor fechamentos · Planilha de vendas</div><div style="margin-top:3px;"><span style="background:color-mix(in srgb, #E8F5E9 var(--tint), var(--surface));color:color-mix(in srgb, #1B5E20 var(--tm), #fff);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">✓ obrigatório antes de sair — saída <span id="evt-badge-saida">18h</span></span></div></div></div>
             </div>
@@ -4175,7 +4175,7 @@ function pdResumoCopiar() {
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;">
             <div>
               <label style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Grade de entrega (deadline)</label>
-              <input id="at-prazo-grade" type="text" placeholder="Ex: 15h30" style="width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:6px;font-size:13px;outline:none;">
+              <input id="at-prazo-grade" type="text" placeholder="Ex: 13h50" style="width:100%;padding:7px 10px;border:1.5px solid var(--line);border-radius:6px;font-size:13px;outline:none;">
             </div>
             <div>
               <label style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:3px;">Implantação de pedidos (deadline)</label>
@@ -10397,8 +10397,8 @@ function aplicarGestaoTempoNaTela() {
     var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
     set('evt-badge-manha', (g.ligManha != null ? g.ligManha : 15) + ' lig · ' + (g.negDia != null ? g.negDia : 10) + ' neg');
     set('evt-badge-tarde', (g.ligTarde != null ? g.ligTarde : 35) + ' lig · ' + (g.negDia != null ? g.negDia : 10) + ' neg');
-    set('evt-txt-prazo-grade', g.prazoGrade || '15h30');
-    set('evt-badge-prazo-grade', g.prazoGrade || '15h30');
+    set('evt-txt-prazo-grade', gtPrazoGrade(g));
+    set('evt-badge-prazo-grade', gtPrazoGrade(g));
     set('evt-txt-prazo-implantacao', g.prazoImplantacao || '17h');
     set('evt-badge-prazo-implantacao', g.prazoImplantacao || '17h');
     set('evt-badge-saida', g.horarioSaida || '18h');
@@ -15262,7 +15262,7 @@ function empresaNav(section, btn) {
   const hoje = new Date().getDay(); // 0=Dom,1=Seg,2=Ter,3=Qua,4=Qui,5=Sex,6=Sab
   const agora = new Date();
   const hora = agora.getHours() * 60 + agora.getMinutes();
-  const limite = 15 * 60; // 15h
+  const limite = 13 * 60 + 50; // 01/11/2026: grade pronta até 13h50
   const passou = hora >= limite;
 
   const lembretes = {
@@ -15279,11 +15279,11 @@ function empresaNav(section, btn) {
     if (passou) {
       el.style.background = '#F1EFE8';
       el.style.color = '#888';
-      el.innerHTML = 'Prazo encerrado — grade deve ser preenchida até as 15h. Verifique com a gestão.';
+      el.innerHTML = 'Prazo encerrado — grade deve ser preenchida até as 13h50. Verifique com a gestão.';
     } else {
       el.style.background = l.bg;
       el.style.color = l.color;
-      el.innerHTML = '' + l.msg + ' — <strong>prazo até as 15h!</strong>';
+      el.innerHTML = '' + l.msg + ' — <strong>prazo até as 13h50!</strong>';
     }
   } else {
     el.style.background = '#F1EFE8';
@@ -18804,9 +18804,11 @@ function confPnConferir() {
 }
 
 // ══ GESTÃO DE TEMPO — metas/prazos personalizados por vendedor ══
+/* 01/11/2026: grade pronta até 13h50 — prazo antigo de 15h30 salvo por pessoa passa a valer 13h50 */
+function gtPrazoGrade(g) { var v = g && g.prazoGrade; return (!v || v === '15h30') ? '13h50' : v; }
 var GESTAO_TEMPO_PADRAO = {
   ligManha: 15, ligTarde: 35, negDia: 10, atualizacoes: 2,
-  prazoGrade: '15h30', prazoImplantacao: '17h', horarioSaida: '18h', obs: ''
+  prazoGrade: '13h50', prazoImplantacao: '17h', horarioSaida: '18h', obs: ''
 };
 var admTempoVendedorAtual = null;
 
@@ -18826,14 +18828,14 @@ function admTempoSelect(nome, btn) {
     set('at-lig-tarde', g.ligTarde != null ? g.ligTarde : GESTAO_TEMPO_PADRAO.ligTarde);
     set('at-neg-dia', g.negDia != null ? g.negDia : GESTAO_TEMPO_PADRAO.negDia);
     set('at-atualizacoes', g.atualizacoes != null ? g.atualizacoes : GESTAO_TEMPO_PADRAO.atualizacoes);
-    set('at-prazo-grade', g.prazoGrade || GESTAO_TEMPO_PADRAO.prazoGrade);
+    set('at-prazo-grade', gtPrazoGrade(g));
     set('at-prazo-implantacao', g.prazoImplantacao || GESTAO_TEMPO_PADRAO.prazoImplantacao);
     set('at-horario-saida', g.horarioSaida || GESTAO_TEMPO_PADRAO.horarioSaida);
     set('at-obs', g.obs || '');
   }).catch(function() {
     var g = GESTAO_TEMPO_PADRAO;
     set('at-lig-manha', g.ligManha); set('at-lig-tarde', g.ligTarde); set('at-neg-dia', g.negDia);
-    set('at-atualizacoes', g.atualizacoes); set('at-prazo-grade', g.prazoGrade);
+    set('at-atualizacoes', g.atualizacoes); set('at-prazo-grade', gtPrazoGrade(g));
     set('at-prazo-implantacao', g.prazoImplantacao); set('at-horario-saida', g.horarioSaida);
   });
 }
@@ -18842,7 +18844,7 @@ function admTempoRestaurarPadrao() {
   var g = GESTAO_TEMPO_PADRAO;
   var set = function(id, val) { var el = document.getElementById(id); if (el) el.value = val; };
   set('at-lig-manha', g.ligManha); set('at-lig-tarde', g.ligTarde); set('at-neg-dia', g.negDia);
-  set('at-atualizacoes', g.atualizacoes); set('at-prazo-grade', g.prazoGrade);
+  set('at-atualizacoes', g.atualizacoes); set('at-prazo-grade', gtPrazoGrade(g));
   set('at-prazo-implantacao', g.prazoImplantacao); set('at-horario-saida', g.horarioSaida);
   set('at-obs', '');
 }
@@ -27366,8 +27368,8 @@ function rtnPadraoVend() {
       b('08:45', '10:00', 'Pendências e pedidos', 'Finalizar até 10h', ['Pendências de cargas e tratativas em aberto', 'Pedidos abertos conferidos (endereço, frete, margem)']),
       b('10:00', '11:45', 'Ligações + negociações — manhã', 'Bloco de telefone: nada de planilha aqui', ['Rodar o Discador no foco do mês', 'Toda necessidade levantada vira negociação no Funil', 'Cobrar retorno das negociações paradas']),
       b('11:45', '12:00', 'Atualização pré-almoço', 'Obrigatório', ['Conferir o placar: ligações, negociações, fechamentos', 'Se está abaixo do ritmo: o que muda à tarde?']),
-      b('13:00', '15:30', 'Ligações + negociações — tarde', 'O maior bloco do dia', ['Rodar o Discador no foco do mês', 'Fechar as negociações quentes', 'Apresentar o mix (não só o item que o cliente sempre compra)']),
-      b('15:30', '16:30', 'Grade de entrega', 'Inserção na grade até 15h30', ['Pedidos do dia inseridos na grade']),
+      b('13:00', '13:50', 'Grade de entrega', 'Grade pronta até 13h50 — sem atraso', ['Pedidos do dia inseridos na grade até 13h50', 'Conferir se nenhum pedido ficou de fora']),
+      b('13:50', '16:30', 'Ligações + negociações — tarde', 'O maior bloco do dia', ['Rodar o Discador no foco do mês', 'Fechar as negociações quentes', 'Apresentar o mix (não só o item que o cliente sempre compra)']),
       b('16:30', '17:30', 'Prazo dos pedidos + fechamentos', 'Tudo implantado até 17h', ['Pedidos fechados hoje implantados', 'Última ligação para quem prometeu fechar hoje']),
       b('17:30', '18:00', 'Encerramento', 'Antes de sair', ['Placar final: ligações, negociações (qtd + valor), fechamentos (qtd + valor)', 'Planilha de vendas atualizada', 'Retornos de amanhã agendados no Discador'])
     ],
@@ -27528,6 +27530,10 @@ function rtnNormalizar(m) {
   m.semana = rtnLista(m.semana); m.mes = rtnLista(m.mes);
   // 01/11/2026: carteira ativa passou de 10 dias para os 3 primeiros dias úteis (rotinas já salvas)
   if (m.perfil === 'vendedor' && !m.mes.some(function(it) { return it.quando === 'Dias 1 e 15'; })) m.mes.splice(3, 0, { id: 'mes_oculto', quando: 'Dias 1 e 15', txt: 'Cliente oculto das regiões lançado no Shopping de Preços' });
+  if (m.perfil === 'vendedor') m.blocos.forEach(function(b) {
+    if (b.tit === 'Grade de entrega' && b.ini === '15:30') { b.ini = '13:00'; b.fim = '13:50'; b.desc = 'Grade pronta até 13h50 — sem atraso'; b.itens.forEach(function(it) { if (it.txt === 'Pedidos do dia inseridos na grade') it.txt = 'Pedidos do dia inseridos na grade até 13h50'; }); }
+    else if (b.tit === 'Ligações + negociações — tarde' && b.ini === '13:00') { b.ini = '13:50'; b.fim = '16:30'; }
+  });
   m.mes.forEach(function(it) { if (it.quando === '1º ao 10º dia') it.quando = '3 primeiros dias úteis'; else if (it.quando === 'Do dia 11') it.quando = 'A partir do 4º dia útil'; });
   if (m.lembretes === undefined) m.lembretes = true;
   return m;
