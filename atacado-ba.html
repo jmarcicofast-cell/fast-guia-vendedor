@@ -4243,7 +4243,7 @@ function pdResumoCopiar() {
   </div>
 </div>
 
-<!-- ══ MINHA ROTINA (gestora) ══ -->
+<!-- ══ MINHA ROTINA (gestora e vendedores) ══ -->
 <div id="tab-rotina" class="tab-content">
   <div class="page-section" style="max-width:100%;"><div id="rtn-box"></div></div>
 </div>
@@ -26891,7 +26891,8 @@ function acPadrao(key, navId) {
     return (typeof AB_NAV_ADM !== 'undefined') && AB_NAV_ADM.indexOf(navId) !== -1;
   }
   switch (navId) {
-    case 'clientes': case 'rotina': return jul;
+    case 'clientes': return jul;
+    case 'rotina': return true; // 01/11/2026: Minha Rotina para todos (vendedor tem rotina própria)
     case 'central': return caUsuarioLiberado(key);
     case 'quiz': return (typeof qzTemAcesso === 'function') && qzTemAcesso(key);
     case 'admin': case 'rampa': return !semPaineisGestao(key);
@@ -27262,7 +27263,8 @@ function acExcluirUnid(k) {
                rotinaGestora/{USUARIO}/dia/{AAAA-MM-DD}   { feito:{id:true}, pessoas:[USUARIO], notas }
                rotinaGestora/{USUARIO}/semana/{segunda}   { feito:{id:true} }
                rotinaGestora/{USUARIO}/mes/{AAAA-MM}      { feito:{id:true} }
-     Quem vê: Ana Carolina (pode ser liberada para outra pessoa em Gestão > Acessos).
+     Quem vê: todos (01/11/2026). Gestora tem a rotina de gestão; vendedor e líder têm a rotina de vendas,
+     com o placar do dia (ligações, negociações, fechamentos) e o foco do mês (1º ao 10º: carteira ativa; depois: inativos e novos).
      ══════════════════════════════════════════════════════════════ -->
 <style>
   .rtn-top { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:1rem; }
@@ -27320,8 +27322,12 @@ function rtnMes() { return rtnHoje().slice(0, 7); }
 function rtnMin(h) { var p = String(h || '').split(':'); return (+p[0] || 0) * 60 + (+p[1] || 0); }
 function rtnAgoraMin() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
 
+/* vendedor ou vendedor líder (não gestora, diretoria nem administrativo) */
+function rtnEhVend(u) { u = u || RTN.user || currentUser; return typeof semPaineisGestao === 'function' && semPaineisGestao(u); }
+
 /* rotina sugerida (ponto de partida — tudo pode ser mudado em "Editar rotina") */
-function rtnPadrao() {
+function rtnPadrao(u) {
+  if (rtnEhVend(u)) return rtnPadraoVend();
   function b(ini, fim, tit, desc, itens) { return { id: rtnId(), ini: ini, fim: fim, tit: tit, desc: desc, itens: itens.map(function(t) { return { id: rtnId(), txt: t }; }) }; }
   return {
     lembretes: true,
@@ -27350,6 +27356,109 @@ function rtnPadrao() {
     ]
   };
 }
+/* rotina sugerida do VENDEDOR — segue a Rotina Estratégica (8h às 18h) da Gestão de Tempo */
+function rtnPadraoVend() {
+  function b(ini, fim, tit, desc, itens) { return { id: rtnId(), ini: ini, fim: fim, tit: tit, desc: desc, itens: itens.map(function(t) { return { id: rtnId(), txt: t }; }) }; }
+  return {
+    lembretes: true, perfil: 'vendedor',
+    blocos: [
+      b('08:00', '08:30', 'Abertura do dia', 'Olhar o placar antes de pegar o telefone', ['Placar de ontem: ligações, negociações e fechamentos', 'Retornos agendados no Discador e próximas ações do Funil', 'Ver o foco do mês e separar os clientes de hoje']),
+      b('08:45', '10:00', 'Pendências e pedidos', 'Finalizar até 10h', ['Pendências de cargas e tratativas em aberto', 'Pedidos abertos conferidos (endereço, frete, margem)']),
+      b('10:00', '11:45', 'Ligações + negociações — manhã', 'Bloco de telefone: nada de planilha aqui', ['Rodar o Discador no foco do mês', 'Toda necessidade levantada vira negociação no Funil', 'Cobrar retorno das negociações paradas']),
+      b('11:45', '12:00', 'Atualização pré-almoço', 'Obrigatório', ['Conferir o placar: ligações, negociações, fechamentos', 'Se está abaixo do ritmo: o que muda à tarde?']),
+      b('13:00', '15:30', 'Ligações + negociações — tarde', 'O maior bloco do dia', ['Rodar o Discador no foco do mês', 'Fechar as negociações quentes', 'Apresentar o mix (não só o item que o cliente sempre compra)']),
+      b('15:30', '16:30', 'Grade de entrega', 'Inserção na grade até 15h30', ['Pedidos do dia inseridos na grade']),
+      b('16:30', '17:30', 'Prazo dos pedidos + fechamentos', 'Tudo implantado até 17h', ['Pedidos fechados hoje implantados', 'Última ligação para quem prometeu fechar hoje']),
+      b('17:30', '18:00', 'Encerramento', 'Antes de sair', ['Placar final: ligações, negociações (qtd + valor), fechamentos (qtd + valor)', 'Planilha de vendas atualizada', 'Retornos de amanhã agendados no Discador'])
+    ],
+    semana: [
+      { id: rtnId(), dia: '1', txt: 'Separar os clientes da semana conforme o foco do mês' },
+      { id: rtnId(), dia: '3', txt: 'Revisar negociações paradas há mais de 7 dias — ligar ou encerrar' },
+      { id: rtnId(), dia: '5', txt: 'Fechar a semana: ligações, negociações e fechamentos não caíram em relação à semana passada?' }
+    ],
+    mes: [
+      { id: rtnId(), quando: '1º ao 10º dia', txt: 'Falar com 100% dos clientes ativos da carteira' },
+      { id: rtnId(), quando: '1º ao 10º dia', txt: 'Levantar a necessidade de cada cliente ativo para o mês' },
+      { id: rtnId(), quando: 'Do dia 11', txt: 'Rodada completa nos inativos pelo Discador' },
+      { id: rtnId(), quando: 'Do dia 11', txt: 'Clientes novos prospectados e cadastrados' },
+      { id: rtnId(), quando: 'Fim do mês', txt: 'Nenhuma negociação aberta sem próxima ação' }
+    ]
+  };
+}
+
+/* foco do mês (vendedor): começo = carteira ativa; depois = inativos e novos. Os itens entram no checklist do dia. */
+function rtnFase(d) {
+  d = d || new Date();
+  if (d.getDate() <= 10) return { k: 'ativos', tit: 'Carteira ativa', quando: '1º ao 10º dia do mês',
+    txt: 'Trabalhar a necessidade de todos os clientes ativos da sua carteira. Ninguém da carteira fica sem contato.',
+    itens: [['fa1', 'Ligar para os clientes ativos da carteira (nenhum fica sem contato no mês)'], ['fa2', 'Perguntar a necessidade de cada um para o mês: obra, estoque, próximas compras'], ['fa3', 'Oferecer o mix completo, não só o que ele sempre compra'], ['fa4', 'Necessidade levantada = negociação no Funil, com próxima ação e data']] };
+  return { k: 'inativos', tit: 'Inativos e novos', quando: 'do dia 11 até o fim do mês',
+    txt: 'Carteira ativa trabalhada: agora é trazer de volta os inativos e abrir clientes novos — sem largar quem já compra.',
+    itens: [['fi1', 'Ativo que ficou sem contato no começo do mês: ligar primeiro'], ['fi2', 'Rodada de inativos no Discador: por que parou e o que traz de volta'], ['fi3', 'Prospectar lojistas novos e mandar apresentação'], ['fi4', 'Conversa boa = negociação no Funil, com próxima ação e data']] };
+}
+
+/* placar do vendedor: hoje × meta (Gestão de Tempo) × média dos dias úteis anteriores do mês */
+function rtnDiasUteisAntes(d) { var n = 0; for (var i = 1; i < d.getDate(); i++) { var w = new Date(d.getFullYear(), d.getMonth(), i).getDay(); if (w && w !== 6) n++; } return n; }
+function rtnDataNeg(n) { var t = n && (n.dataCriacao || n.criadoEm); if (!t) return ''; var d = new Date(t); return isNaN(d) ? '' : rtnHoje(d); }
+function rtnPlacar() {
+  var P = RTN.pl || {}, hoje = rtnHoje(), ini = rtnMes() + '-01', g = P.gt || (typeof GESTAO_TEMPO_PADRAO !== 'undefined' ? GESTAO_TEMPO_PADRAO : {});
+  var num = function(x) { return Number(x) || 0; };
+  var lig = { hoje: 0, antes: 0 }, neg = { hoje: 0, antes: 0, abertas: 0 }, fec = { hoje: 0, antes: 0, vHoje: 0 };
+  rtnLista(P.lig).forEach(function(l) { if (!l || !l.data || l.data < ini || l.data > hoje) return; if (l.data === hoje) lig.hoje += num(l.qtd); else lig.antes += num(l.qtd); });
+  rtnLista(P.neg).forEach(function(n) {
+    if (!n) return; if (n.etapa !== 'fechado' && n.etapa !== 'perdido') neg.abertas++;
+    var d = rtnDataNeg(n); if (!d || d < ini || d > hoje) return; if (d === hoje) neg.hoje++; else neg.antes++;
+  });
+  rtnLista(P.ped).forEach(function(p) {
+    if (!p || p.excluido || p.status === 'cancelado' || !p.data || p.data < ini || p.data > hoje) return;
+    if (p.data === hoje) { fec.hoje++; fec.vHoje += (typeof mmValorPedido === 'function' ? mmValorPedido(p) : 0); } else fec.antes++;
+  });
+  var dAnt = rtnDiasUteisAntes(new Date());
+  lig.media = dAnt ? lig.antes / dAnt : 0; neg.media = dAnt ? neg.antes / dAnt : 0; fec.media = dAnt ? fec.antes / dAnt : 0;
+  lig.meta = (g.ligManha != null ? num(g.ligManha) : 15) + (g.ligTarde != null ? num(g.ligTarde) : 35);
+  neg.meta = g.negDia != null ? num(g.negDia) : 10;
+  fec.meta = 0;
+  // quanto do dia já passou (8h às 18h, almoço fora) — para dizer se o ritmo está caindo
+  var m = rtnAgoraMin(), util = Math.max(0, Math.min(m, 720) - 480) + Math.max(0, Math.min(m, 1080) - 780), frac = Math.min(1, util / 540), wd = new Date().getDay();
+  if (!wd || wd === 6) frac = 0; // fim de semana: não acusa queda
+  [lig, neg, fec].forEach(function(x) {
+    var alvo = Math.max(x.meta, x.media);
+    x.esperado = alvo * frac;
+    x.caindo = frac > 0.1 && alvo > 0 && x.hoje < Math.floor(x.esperado * 0.85);
+  });
+  return { lig: lig, neg: neg, fec: fec, frac: frac, carregado: !!P.ok };
+}
+function rtnPlacarHTML() {
+  var p = rtnPlacar(), fmt = function(n) { return (Math.round(n * 10) / 10).toLocaleString('pt-BR'); };
+  function card(rot, x, extra) {
+    var cor = x.caindo ? '#C62828' : (x.meta && x.hoje >= x.meta) || (!x.meta && x.media && x.hoje >= x.media) ? '#2E7D32' : 'var(--txt)';
+    var alvo = x.meta || Math.ceil(x.media) || 0, pct = alvo ? Math.min(100, Math.round(x.hoje / alvo * 100)) : (x.hoje ? 100 : 0);
+    return '<div style="flex:1;min-width:120px;border:1px solid ' + (x.caindo ? '#E57373' : 'var(--line)') + ';border-radius:10px;padding:10px;">' +
+      '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);">' + rot + '</div>' +
+      '<div style="font-size:22px;font-weight:800;color:' + cor + ';line-height:1.2;">' + x.hoje + (x.meta ? '<span style="font-size:12px;font-weight:500;color:var(--muted);"> / ' + x.meta + '</span>' : '') + '</div>' +
+      '<div class="rtn-prog" style="min-width:0;margin:4px 0;"><i style="width:' + pct + '%;background:' + (x.caindo ? '#C62828' : 'var(--acc)') + '"></i></div>' +
+      '<div style="font-size:11.5px;color:var(--muted);">Sua média no mês: ' + fmt(x.media) + '/dia' + (extra || '') + '</div>' +
+      (x.caindo ? '<div style="font-size:11.5px;font-weight:700;color:#C62828;margin-top:3px;">Caindo — pelo horário, deveria estar em ' + Math.ceil(x.esperado) + '</div>' : '') + '</div>';
+  }
+  var vh = p.fec.vHoje ? ' · ' + p.fec.vHoje.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }) + ' hoje' : '';
+  var caindo = [p.lig.caindo && 'ligações', p.neg.caindo && 'negociações', p.fec.caindo && 'fechamentos'].filter(Boolean);
+  return '<div class="rtn-card"><h3>Meu placar de hoje</h3>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;">' + card('Ligações atendidas', p.lig) + card('Negociações novas', p.neg, ' · ' + p.neg.abertas + ' abertas') + card('Fechamentos', p.fec, vh) + '</div>' +
+    '<p style="font-size:12px;margin:8px 0 0;color:' + (caindo.length ? '#C62828' : 'var(--muted)') + ';' + (caindo.length ? 'font-weight:700;' : '') + '">' +
+      (caindo.length ? 'Atenção: ' + caindo.join(', ') + ' abaixo do seu ritmo. Volte para o Discador agora.' : 'Ligação, negociação e fechamento não podem cair. Meta de ligações e negociações definida pela gestão.') + '</p></div>';
+}
+function rtnFocoHTML() {
+  var f = rtnFase(), total = 0, ok = 0;
+  var itens = f.itens.map(function(it) {
+    var id = 'foco_' + it[0], feito = rtnFeito('dia', id); total++; if (feito) ok++;
+    return '<label class="rtn-item' + (feito ? ' ok' : '') + '"><input type="checkbox"' + (feito ? ' checked' : '') + ' onchange="rtnMarcar(\'dia\',\'' + id + '\',this.checked)"><span>' + rtnEsc(it[1]) + '</span></label>';
+  }).join('');
+  return '<div class="rtn-card" style="border-color:var(--acc);"><h3>Foco do mês · ' + rtnEsc(f.quando) + '</h3>' +
+    '<div style="font-size:15px;font-weight:800;color:var(--txt);margin-bottom:2px;">' + rtnEsc(f.tit) + '</div>' +
+    '<div class="rtn-desc" style="margin-bottom:8px;">' + rtnEsc(f.txt) + '</div>' + itens +
+    '<p class="rtn-vazio" style="margin:8px 0 0;">' + (f.k === 'ativos' ? 'Do dia 11 em diante o foco passa para inativos e novos.' : 'No dia 1º o foco volta para a carteira ativa.') + '</p></div>';
+}
+
 /* Firebase pode devolver listas como objeto */
 function rtnLista(x) { if (!x) return []; if (Array.isArray(x)) return x.filter(Boolean); return Object.keys(x).map(function(k) { return x[k]; }).filter(Boolean); }
 function rtnNormalizar(m) {
@@ -27359,7 +27468,7 @@ function rtnNormalizar(m) {
   if (m.lembretes === undefined) m.lembretes = true;
   return m;
 }
-function rtnModelo() { if (!RTN.modelo) RTN.modelo = rtnPadrao(); return RTN.modelo; }
+function rtnModelo() { if (!RTN.modelo) RTN.modelo = rtnPadrao(RTN.user); return RTN.modelo; }
 function rtnBase() { return 'rotinaGestora/' + RTN.user; }
 
 /* ── dados ── */
@@ -27376,7 +27485,7 @@ function rtnOuvir() {
       var v = (snap && snap.val()) || null;
       RTN[campo] = norm ? norm(v) : (v || {});
       // primeira vez: grava a rotina sugerida para os ids das tarefas ficarem fixos
-      if (campo === 'modelo' && !RTN.modelo) { RTN.modelo = rtnPadrao(); rtnGravar('/modelo', RTN.modelo); }
+      if (campo === 'modelo' && !RTN.modelo) { RTN.modelo = rtnPadrao(u); rtnGravar('/modelo', RTN.modelo); }
       if (!RTN.editando) rtnRender();
     });
   }
@@ -27384,6 +27493,13 @@ function rtnOuvir() {
   ouvir('/dia/' + rtnHoje(), 'dia');
   ouvir('/semana/' + rtnSegunda(), 'semana');
   ouvir('/mes/' + rtnMes(), 'mes');
+  RTN.pl = {};
+  if (rtnEhVend(u)) {
+    [['ligacoes/' + u, 'lig'], ['negociacoes/' + u, 'neg'], ['pedidos/' + u, 'ped'], ['gestaoTempo/' + u, 'gt']].forEach(function(x) {
+      var r = dbRef(x[0]); RTN.refs.push(r);
+      r.on('value', function(snap) { RTN.pl[x[1]] = (snap && snap.val()) || null; RTN.pl.ok = true; if (!RTN.editando && !(document.activeElement && document.activeElement.id === 'rtn-notas')) rtnRender(); });
+    });
+  }
 }
 function rtnGravar(caminho, valor) {
   return Promise.resolve(dbRef(rtnBase() + caminho).set(valor)).catch(function(e) { alert('Não consegui salvar: ' + (e && e.message || e)); });
@@ -27455,6 +27571,8 @@ function rtnRender() {
     return '<button type="button" class="rtn-chip' + (on ? ' on' : '') + '" onclick="rtnTogglePessoa(\'' + rtnEsc(k) + '\')">' + rtnEsc(vendedores[k].nome) + '</button>';
   }).join('');
 
+  var vend = rtnEhVend();
+  if (vend) rtnFase().itens.forEach(function(it) { total++; if (rtnFeito('dia', 'foco_' + it[0])) feitos++; });
   var pct = total ? Math.round(feitos / total * 100) : 0;
   var dataTxt = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
   var foco = document.activeElement && document.activeElement.id === 'rtn-notas';
@@ -27463,12 +27581,13 @@ function rtnRender() {
       '<div class="rtn-prog"><i style="width:' + pct + '%"></i></div><p>' + feitos + ' de ' + total + ' do dia feitos · zera toda manhã</p></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="rtn-btn" onclick="rtnAlternarLembretes()">' + (m.lembretes ? 'Lembretes ligados' : 'Lembretes desligados') + '</button>' +
       '<button class="rtn-btn pri" onclick="rtnEditar()">Editar rotina</button></div></div>' +
+    (vend ? rtnPlacarHTML() : '') +
     '<div class="rtn-grid"><div><div class="rtn-card"><h3>Hoje</h3>' + htmlBlocos + '</div></div>' +
-    '<div><div class="rtn-card"><h3>Pessoas do dia</h3><div class="rtn-pessoas">' + (pessoas || '<span class="rtn-vazio">Sem equipe.</span>') + '</div>' +
-      '<p class="rtn-vazio" style="margin:8px 0 0;">Quem mais precisa de você hoje. Zera amanhã.</p></div>' +
+    '<div>' + (vend ? rtnFocoHTML() : '<div class="rtn-card"><h3>Pessoas do dia</h3><div class="rtn-pessoas">' + (pessoas || '<span class="rtn-vazio">Sem equipe.</span>') + '</div>' +
+      '<p class="rtn-vazio" style="margin:8px 0 0;">Quem mais precisa de você hoje. Zera amanhã.</p></div>') +
     '<div class="rtn-card"><h3>Esta semana</h3>' + semana + '</div>' +
     '<div class="rtn-card"><h3>Este mês</h3>' + mes + '</div>' +
-    '<div class="rtn-card"><h3>Anotações do dia</h3><textarea class="rtn-notas" id="rtn-notas" placeholder="Combinados, feedbacks dados, o que levar pro Poli…" oninput="rtnNota(this.value)">' + rtnEsc(RTN.dia.notas || '') + '</textarea></div>' +
+    '<div class="rtn-card"><h3>Anotações do dia</h3><textarea class="rtn-notas" id="rtn-notas" placeholder="' + (vend ? 'Clientes para retornar, necessidades levantadas, o que levar para a gestão…' : 'Combinados, feedbacks dados, o que levar pro Poli…') + '" oninput="rtnNota(this.value)">' + rtnEsc(RTN.dia.notas || '') + '</textarea></div>' +
     '</div></div>';
   if (foco) { var t = document.getElementById('rtn-notas'); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }
 }
@@ -27496,7 +27615,7 @@ function rtnSalvar() {
 }
 function rtnRestaurar() {
   if (!confirm('Voltar para a rotina sugerida? O que você editou será substituído.')) return;
-  RTN.rasc = rtnPadrao(); rtnRenderEdicao();
+  RTN.rasc = rtnPadrao(RTN.user); rtnRenderEdicao();
 }
 /* lê o que está digitado antes de redesenhar */
 function rtnLerForm() {
@@ -27566,6 +27685,8 @@ function rtnLembrar() {
     try { if (localStorage.getItem(ch)) return; localStorage.setItem(ch, '1'); } catch (e) { if (RTN.avisados[ch]) return; RTN.avisados[ch] = 1; }
     var pend = b.itens.filter(function(it) { return !rtnFeito('dia', it.id); });
     var texto = (b.desc ? rtnEsc(b.desc) + '<br>' : '') + pend.map(function(it) { return '• ' + rtnEsc(it.txt); }).join('<br>');
+    if (rtnEhVend()) { var pl = rtnPlacar(), cai = [pl.lig.caindo && 'ligações', pl.neg.caindo && 'negociações', pl.fec.caindo && 'fechamentos'].filter(Boolean);
+      texto += '<br><b>Placar:</b> ' + pl.lig.hoje + ' lig · ' + pl.neg.hoje + ' neg · ' + pl.fec.hoje + ' fech' + (cai.length ? '<br><b style="color:#C62828;">Caindo: ' + cai.join(', ') + '</b>' : ''); }
     var abrir = function() { var btn = document.getElementById('nav-rotina'); if (btn) showTab('rotina', btn); };
     if (typeof window.aguiaAvisar === 'function') {
       window.aguiaAvisar({ titulo: '⏰ ' + rtnEsc(b.ini) + ' — ' + rtnEsc(b.tit), anim: 'ag-aponta', som: 'pequeno', texto: texto || 'Hora deste bloco.', dura: 15000,
@@ -30546,7 +30667,7 @@ function agdEventos(iso) {
   });
   if (agdCalOn('rotina') && agdUtil(iso)) pessoas.forEach(function(p) {
     var mod = AGD.c['rotinaGestora/' + p + '/modelo'];
-    if (!mod && p === currentUser && typeof rtnPadrao === 'function' && typeof acVe === 'function' && acVe(p, 'rotina')) mod = AGD.rotPad = AGD.rotPad || rtnPadrao(); // rotina sugerida, enquanto não foi salva
+    if (!mod && p === currentUser && typeof rtnPadrao === 'function' && typeof acVe === 'function' && acVe(p, 'rotina')) mod = AGD.rotPad = AGD.rotPad || rtnPadrao(p); // rotina sugerida, enquanto não foi salva
     if (!mod) return;
     agdLista(mod.blocos).forEach(function(b) { if (!b || !b.ini) return;
       push({ fonte: 'rotina', id: (b.id || b.ini) + '_' + p, dono: p, tit: pre(p) + (b.tit || 'Bloco da rotina'), ini: b.ini, fim: b.fim || agdHora(agdMin(b.ini) + 30), cor: '#616161', leve: true, b: b }); });
