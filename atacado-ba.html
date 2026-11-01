@@ -27264,7 +27264,7 @@ function acExcluirUnid(k) {
                rotinaGestora/{USUARIO}/semana/{segunda}   { feito:{id:true} }
                rotinaGestora/{USUARIO}/mes/{AAAA-MM}      { feito:{id:true} }
      Quem vê: todos (01/11/2026). Gestora tem a rotina de gestão; vendedor e líder têm a rotina de vendas,
-     com o placar do dia (ligações, negociações, fechamentos) e o foco do mês (1º ao 10º: carteira ativa; depois: inativos e novos).
+     com o placar do dia (ligações, negociações, fechamentos) e o foco do mês (3 primeiros dias úteis: carteira ativa; depois: inativos e novos; 80% da meta até o dia 20).
      ══════════════════════════════════════════════════════════════ -->
 <style>
   .rtn-top { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:1rem; }
@@ -27377,22 +27377,28 @@ function rtnPadraoVend() {
       { id: rtnId(), dia: '5', txt: 'Fechar a semana: ligações, negociações e fechamentos não caíram em relação à semana passada?' }
     ],
     mes: [
-      { id: rtnId(), quando: '1º ao 10º dia', txt: 'Falar com 100% dos clientes ativos da carteira' },
-      { id: rtnId(), quando: '1º ao 10º dia', txt: 'Levantar a necessidade de cada cliente ativo para o mês' },
-      { id: rtnId(), quando: 'Do dia 11', txt: 'Rodada completa nos inativos pelo Discador' },
-      { id: rtnId(), quando: 'Do dia 11', txt: 'Clientes novos prospectados e cadastrados' },
+      { id: rtnId(), quando: '3 primeiros dias úteis', txt: 'Falar com 100% dos clientes ativos da carteira' },
+      { id: rtnId(), quando: '3 primeiros dias úteis', txt: 'Levantar a necessidade de cada cliente ativo para o mês' },
+      { id: rtnId(), quando: 'Até o dia 20', txt: '80% da meta do mês entregue' },
+      { id: rtnId(), quando: 'A partir do 4º dia útil', txt: 'Rodada completa nos inativos pelo Discador' },
+      { id: rtnId(), quando: 'A partir do 4º dia útil', txt: 'Clientes novos prospectados e cadastrados' },
       { id: rtnId(), quando: 'Fim do mês', txt: 'Nenhuma negociação aberta sem próxima ação' }
     ]
   };
 }
 
 /* foco do mês (vendedor): começo = carteira ativa; depois = inativos e novos. Os itens entram no checklist do dia. */
+/* 01/11/2026: carteira ativa só nos 3 primeiros dias úteis — até o dia 20 a equipe precisa ter 80% da meta entregue */
+var RTN_FERIADOS = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25'];
+function rtnUtil(d) { var w = d.getDay(); return w !== 0 && w !== 6 && RTN_FERIADOS.indexOf(String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')) < 0; }
+function rtnUteisAte(d) { var n = 0; for (var i = 1; i <= d.getDate(); i++) if (rtnUtil(new Date(d.getFullYear(), d.getMonth(), i))) n++; return n; }
 function rtnFase(d) {
   d = d || new Date();
-  if (d.getDate() <= 10) return { k: 'ativos', tit: 'Carteira ativa', quando: '1º ao 10º dia do mês',
-    txt: 'Trabalhar a necessidade de todos os clientes ativos da sua carteira. Ninguém da carteira fica sem contato.',
+  var du = rtnUteisAte(d) - (rtnUtil(d) ? 1 : 0); // dias úteis já passados antes de hoje
+  if (du < 3) return { k: 'ativos', tit: 'Carteira ativa', quando: '3 primeiros dias úteis · dia ' + (du + 1) + ' de 3',
+    txt: 'Só 3 dias úteis para falar com TODOS os clientes ativos da carteira e levantar a necessidade do mês. Até o dia 20 a meta tem que estar 80% entregue.',
     itens: [['fa1', 'Ligar para os clientes ativos da carteira (nenhum fica sem contato no mês)'], ['fa2', 'Perguntar a necessidade de cada um para o mês: obra, estoque, próximas compras'], ['fa3', 'Oferecer o mix completo, não só o que ele sempre compra'], ['fa4', 'Necessidade levantada = negociação no Funil, com próxima ação e data']] };
-  return { k: 'inativos', tit: 'Inativos e novos', quando: 'do dia 11 até o fim do mês',
+  return { k: 'inativos', tit: 'Inativos e novos', quando: 'do 4º dia útil até o fim do mês',
     txt: 'Carteira ativa trabalhada: agora é trazer de volta os inativos e abrir clientes novos — sem largar quem já compra.',
     itens: [['fi1', 'Ativo que ficou sem contato no começo do mês: ligar primeiro'], ['fi2', 'Rodada de inativos no Discador: por que parou e o que traz de volta'], ['fi3', 'Prospectar lojistas novos e mandar apresentação'], ['fi4', 'Conversa boa = negociação no Funil, com próxima ação e data']] };
 }
@@ -27473,6 +27479,20 @@ function rtnExemplarHTML() {
     '<div class="rtn-desc" style="margin-bottom:8px;">Com ou sem a gestora na sala, o combinado é o mesmo: horário, sala organizada, ligações, negociações e pedidos.</div>' +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));column-gap:18px;">' + itens + '</div></div>';
 }
+/* até o dia 20: 80% da meta do mês entregue */
+function rtnMeta20HTML() {
+  var meta = typeof ckMetaPessoa === 'function' ? ckMetaPessoa(RTN.user, 'metaMensalPorPessoa', rtnMes()) : 0;
+  var ini = rtnMes() + '-01', hoje = rtnHoje(), v = 0;
+  rtnLista((RTN.pl || {}).ped).forEach(function(p) { if (p && !p.excluido && p.status !== 'cancelado' && p.data >= ini && p.data <= hoje && typeof mmValorPedido === 'function') v += mmValorPedido(p); });
+  var dia = new Date().getDate(), brl = function(n) { return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }); };
+  var h = '<div style="background:var(--surface-2);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12.5px;color:var(--txt);"><b>Até o dia 20: 80% da meta entregue.</b>';
+  if (meta > 0) {
+    var alvo = meta * 0.8, pct = Math.round(v / meta * 100), falta = Math.max(0, alvo - v);
+    var cor = v >= alvo ? '#2E7D32' : (dia >= 20 ? '#C62828' : 'var(--txt)');
+    h += ' <span style="color:' + cor + ';font-weight:700;">Você está em ' + pct + '%</span>' + (falta ? ' — faltam ' + brl(falta) + (dia < 20 ? ' em ' + (20 - dia) + ' dias' : '') : ' — 80% batido ✓');
+  }
+  return h + '</div>';
+}
 function rtnFocoHTML() {
   var f = rtnFase(), total = 0, ok = 0;
   var itens = f.itens.map(function(it) {
@@ -27481,8 +27501,8 @@ function rtnFocoHTML() {
   }).join('');
   return '<div class="rtn-card" style="border-color:var(--acc);"><h3>Foco do mês · ' + rtnEsc(f.quando) + '</h3>' +
     '<div style="font-size:15px;font-weight:800;color:var(--txt);margin-bottom:2px;">' + rtnEsc(f.tit) + '</div>' +
-    '<div class="rtn-desc" style="margin-bottom:8px;">' + rtnEsc(f.txt) + '</div>' + itens +
-    '<p class="rtn-vazio" style="margin:8px 0 0;">' + (f.k === 'ativos' ? 'Do dia 11 em diante o foco passa para inativos e novos.' : 'No dia 1º o foco volta para a carteira ativa.') + '</p></div>';
+    '<div class="rtn-desc" style="margin-bottom:8px;">' + rtnEsc(f.txt) + '</div>' + rtnMeta20HTML() + itens +
+    '<p class="rtn-vazio" style="margin:8px 0 0;">' + (f.k === 'ativos' ? 'A partir do 4º dia útil o foco passa para inativos e novos.' : 'No 1º dia útil do mês o foco volta para a carteira ativa.') + '</p></div>';
 }
 
 /* Firebase pode devolver listas como objeto */
@@ -27491,6 +27511,8 @@ function rtnNormalizar(m) {
   if (!m) return null;
   m.blocos = rtnLista(m.blocos).map(function(b) { b.itens = rtnLista(b.itens); return b; });
   m.semana = rtnLista(m.semana); m.mes = rtnLista(m.mes);
+  // 01/11/2026: carteira ativa passou de 10 dias para os 3 primeiros dias úteis (rotinas já salvas)
+  m.mes.forEach(function(it) { if (it.quando === '1º ao 10º dia') it.quando = '3 primeiros dias úteis'; else if (it.quando === 'Do dia 11') it.quando = 'A partir do 4º dia útil'; });
   if (m.lembretes === undefined) m.lembretes = true;
   return m;
 }
