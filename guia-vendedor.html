@@ -3988,6 +3988,7 @@ function pdResumoCopiar() {
       <button class="qf-btn" id="admsub-btn-tempo" onclick="showAdminSub('tempo',this)">Gestão de tempo</button>
       <button class="qf-btn" id="admsub-btn-antonio" onclick="showAdminSub('antonio',this)">Antônio — escuta</button>
       <button class="qf-btn" id="admsub-btn-confpn" onclick="showAdminSub('confpn',this)">Conferir chamado em lote</button>
+      <button class="qf-btn" id="admsub-btn-pontos" onclick="showAdminSub('pontos',this)">Pontos e níveis</button>
       <button class="qf-btn" id="admsub-btn-acessos" style="display:none;" onclick="showAdminSub('acessos',this)">Acessos</button>
     </div>
 
@@ -4260,6 +4261,7 @@ function pdResumoCopiar() {
     </div>
 
     <!-- ACESSOS (logins e páginas) — Juliana e quem gerencia acessos -->
+    <div id="admsub-pontos" class="admsub-content"></div>
     <div id="admsub-acessos" class="admsub-content">
       <div id="ac-box"></div>
     </div>
@@ -17601,6 +17603,7 @@ function rtPainelVendedor(c) {
   if (mv && mv.alvoHoje > 0) mis.push({ txt: 'Vender ' + rtFmt(mv, mv.alvoHoje) + ' hoje (feito: ' + rtFmt(mv, mv.hoje) + ')', ok: mv.hoje >= mv.alvoHoje });
   h += rtCardLigacoes(c, eu, alvoLig);
   h += premCardHtml(c.vn, eu);
+  h += pgCardHtml(c.vn, eu);
   h += comCardHtml(c.vn, eu);
   h += '<div class="rt-card rt-missao"><div class="rt-pix">MISSÃO DO DIA</div>' + mis.map(function(m) {
     return '<div class="rt-mis' + (m.ok ? ' feito' : '') + '"><span class="rt-check">' + (m.ok ? '✓' : '') + '</span>' + rtEsc(m.txt) + '</div>';
@@ -18895,6 +18898,7 @@ function showAdminSub(name, btn) {
   document.getElementById('admsub-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'acessos' && typeof acRender === 'function') acRender();
+  if (name === 'pontos' && typeof pgGestaoRender === 'function') pgGestaoRender();
   if (name === 'tempo') {
     var atbtn = document.getElementById('atbtn-' + adminVendedor);
     admTempoSelect(adminVendedor, atbtn);
@@ -27943,6 +27947,111 @@ function rtnLembrar() {
 }
 setInterval(function() { try { rtnLembrar(); } catch (e) { console.warn('rotina', e); } }, 30000);
 
+// ══ PONTOS & NÍVEIS (gamificação) — calculados na hora a partir do que já está cadastrado no guia ══
+// Fontes: discador/dias/{VN}/{AAAA_MM_DD}.itens (ligações) e pedidos (RT.ped). Nada é guardado à parte: mudou a regra, tudo recalcula.
+var PG_CFG = {
+  atendida: 15,            // cada ligação atendida (mesma regra da meta: Atendeu, Pedido fechado, Funil, Retornar depois)
+  funil: 20,               // a mais, por lead levado ao funil
+  pedido: 30,              // cada pedido fechado (cadastrado em Pedidos, não cancelado)
+  valor100k: 20,           // bônus: pedido acima de R$ 100.000,00
+  fita: 2, cimenticia: 5, glasroc: 3,   // bônus por unidade vendida no pedido
+  acoPor10k: 10,           // bônus: a cada R$ 10.000 em aço no pedido
+  niveis: [[500, 'Iniciante', '🥉'], [2000, 'Bronze', '🥉'], [3000, 'Prata', '🥈'], [6000, 'Ouro', '🥇'], [20000, 'Diamante', '💎']],
+  reAco: /(^|[^A-Z])ACO([^A-Z]|$)|VERGALH/   // como o material "aço" é reconhecido pelo nome — ajustar se preciso
+};
+var PG = { dias: {}, ligado: false, h: null };
+function pgInit() {
+  if (PG.ligado || typeof dbRef !== 'function') return; PG.ligado = true;
+  dbRef('gamificacao/config').on('value', function(sn) { pgAplicarConfig(sn && sn.val()); pgAtualizar(); var g = document.getElementById('admsub-pontos'); if (g && g.classList.contains('active')) pgGestaoRender(); });
+  CK_EQUIPE.forEach(function(vn) {
+    dbRef('discador/dias/' + vn).on('value', function(s) { PG.dias[vn] = (s && s.val()) || {}; pgAtualizar(); });
+  });
+  if (typeof rtInit === 'function' && !RT.ligado) { try { rtInit(); } catch (e) {} }
+}
+function pgAtualizar() { clearTimeout(PG.h); PG.h = setTimeout(function() {
+  var a = function(id) { var t = document.getElementById(id); return t && t.classList.contains('active'); };
+  try { if (a('tab-rota') && typeof rtRender === 'function') rtRender(); if (a('tab-discador') && typeof dcRender === 'function' && DC.aba === 'discar') dcRender(); } catch (e) {}
+}, 600); }
+function pgValorPedido(p) { if (p.itens && p.itens.length) return p.itens.reduce(function(s, it) { return s + (Number(String(it.qtd).replace(',', '.')) || 0) * (Number(String(it.vUnit).replace(',', '.')) || 0); }, 0); return Number(p.vTotal || 0); }
+function pgCalc(vn) {
+  var mes = ckMesAtualStr(), pre = mes.replace('-', '_'), C = PG_CFG, r = { atend: 0, funil: 0, ped: 0, bonus: 0, n: { atend: 0, funil: 0, ped: 0 }, det: { fita: 0, cim: 0, glas: 0, aco: 0, v100: 0 } };
+  var dias = PG.dias[vn] || {};
+  Object.keys(dias).forEach(function(k) { if (k.indexOf(pre) !== 0) return;
+    ((dias[k] || {}).itens || []).forEach(function(x) { if (!x) return;
+      if (DC_RESMAP[x.res] && DC_RESMAP[x.res].at && x.res !== 'desq') { r.n.atend++; r.atend += C.atendida; }
+      if (x.res === 'funil') { r.n.funil++; r.funil += C.funil; } }); });
+  premPedidos(vn).forEach(function(p) { if (String(p.data).slice(0, 7) !== mes) return;
+    r.n.ped++; r.ped += C.pedido;
+    if (pgValorPedido(p) > 100000) { r.det.v100++; r.bonus += C.valor100k; }
+    var aco = 0;
+    (p.itens || []).forEach(function(it) { var m = premNorm(it && it.material), q = Number(String((it && it.qtd) || 0).replace(',', '.')) || 0;
+      if (/FITA/.test(m) && /HOBBY/.test(m)) { r.det.fita += q; r.bonus += q * C.fita; }
+      else if (/CIMENTICIA/.test(m)) { r.det.cim += q; r.bonus += q * C.cimenticia; }
+      else if (/GLASROC/.test(m)) { r.det.glas += q; r.bonus += q * C.glasroc; }
+      else if (C.reAco.test(m)) aco += q * (Number(String(it.vUnit || 0).replace(',', '.')) || 0); });
+    var b = Math.floor(aco / 10000) * C.acoPor10k; r.det.aco += b; r.bonus += b; });
+  r.total = Math.round(r.atend + r.funil + r.ped + r.bonus);
+  var nv = null, prox = null; C.niveis.forEach(function(n) { if (r.total >= n[0]) nv = n; else if (!prox) prox = n; });
+  r.nivel = nv; r.prox = prox; return r;
+}
+function pgFmt(n) { return Number(n || 0).toLocaleString('pt-BR'); }
+function pgCardHtml(vn, eu) {
+  pgInit(); var r = pgCalc(vn), nv = r.nivel, pr = r.prox, base = nv ? nv[0] : 0, pct = pr ? Math.min(100, Math.round((r.total - base) / (pr[0] - base) * 100)) : 100;
+  var h = '<div class="rt-card"><div class="rt-pix">' + (eu ? 'MEUS PONTOS' : 'PONTOS') + ' · ' + rtMesNome() + '</div>' +
+    '<div class="rt-prem-total">' + pgFmt(r.total) + ' pts</div>' +
+    '<div class="rt-forte">' + (nv ? nv[2] + ' ' + nv[1] : 'Ainda sem nível') + '</div>' +
+    '<div style="height:10px;border-radius:6px;background:rgba(128,128,128,.25);margin:8px 0;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:#7B4FBF"></div></div>' +
+    '<div class="rt-sub">' + (pr ? 'Faltam <b>' + pgFmt(pr[0] - r.total) + '</b> pts para ' + pr[1] : 'Nível máximo alcançado') + '</div>' +
+    '<div class="rt-sub" style="margin-top:6px">📞 ' + r.n.atend + ' atendidas = ' + pgFmt(r.atend) + ' · 🟣 ' + r.n.funil + ' no funil = ' + pgFmt(r.funil) + ' · ✅ ' + r.n.ped + ' pedidos = ' + pgFmt(r.ped) + ' · ⭐ bônus ' + pgFmt(Math.round(r.bonus)) + '</div>';
+  var lista = CK_EQUIPE.map(function(v) { return { vn: v, r: pgCalc(v) }; }).sort(function(a, b) { return b.r.total - a.r.total; });
+  var soma = lista.reduce(function(s, x) { return s + x.r.total; }, 0);
+  h += '<div class="rt-pix" style="margin-top:12px">RANKING DO MÊS</div>' + lista.map(function(x, i) {
+    return '<div class="rt-sub" style="' + (x.vn === vn ? 'font-weight:700' : '') + '">' + (i + 1) + 'º ' + rtEsc(rtNome(x.vn)) + ' — ' + pgFmt(x.r.total) + ' pts' + (x.r.nivel ? ' · ' + x.r.nivel[2] + ' ' + x.r.nivel[1] : '') + '</div>'; }).join('') +
+    '<div class="rt-sub" style="margin-top:6px"><b>Equipe:</b> ' + pgFmt(soma) + ' pts · média ' + pgFmt(Math.round(soma / CK_EQUIPE.length)) + ' por vendedor</div></div>';
+  return h;
+}
+function pgBandHtml() {
+  if (!currentUser || CK_EQUIPE.indexOf(currentUser) < 0) return ''; pgInit();
+  var r = pgCalc(currentUser), nv = r.nivel, pr = r.prox, base = nv ? nv[0] : 0, pct = pr ? Math.min(100, Math.round((r.total - base) / (pr[0] - base) * 100)) : 100;
+  return '<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;margin:8px 0;border:1px solid var(--line);border-radius:10px;font-size:13px"><b>' + pgFmt(r.total) + ' pts</b><span>' + (nv ? nv[2] + ' ' + nv[1] : 'sem nível') + '</span>' +
+    '<div style="flex:1;height:8px;border-radius:5px;background:rgba(128,128,128,.25);overflow:hidden"><div style="height:100%;width:' + pct + '%;background:#7B4FBF"></div></div><span>' + (pr ? 'faltam ' + pgFmt(pr[0] - r.total) + ' p/ ' + pr[1] : 'nível máximo') + '</span></div>';
+}
+
+// ── Edição na aba Gestão > Pontos e níveis (grava em gamificacao/config; vale para toda a equipe) ──
+var PG_PADRAO = JSON.parse(JSON.stringify({ atendida: PG_CFG.atendida, funil: PG_CFG.funil, pedido: PG_CFG.pedido, valor100k: PG_CFG.valor100k, fita: PG_CFG.fita, cimenticia: PG_CFG.cimenticia, glasroc: PG_CFG.glasroc, acoPor10k: PG_CFG.acoPor10k, niveis: PG_CFG.niveis, reAcoTxt: '(^|[^A-Z])ACO([^A-Z]|$)|VERGALH' }));
+var PG_CAMPOS = [['atendida', 'Ligação atendida'], ['funil', 'Lead levado ao funil (a mais)'], ['pedido', 'Pedido fechado'], ['valor100k', 'Bônus: pedido acima de R$ 100.000'], ['fita', 'Bônus: Fita Hobby (por unidade)'], ['cimenticia', 'Bônus: Cimentícia (por unidade)'], ['glasroc', 'Bônus: Glasroc (por unidade)'], ['acoPor10k', 'Bônus: aço (a cada R$ 10.000)']];
+function pgAplicarConfig(c) {
+  c = c || {};
+  PG_CAMPOS.forEach(function(f) { var v = Number(c[f[0]]); PG_CFG[f[0]] = isFinite(v) && c[f[0]] != null && c[f[0]] !== '' ? v : PG_PADRAO[f[0]]; });
+  var nv = Array.isArray(c.niveis) ? c.niveis.filter(function(n) { return n && Number(n[0]) >= 0 && n[1]; }).map(function(n, i) { return [Number(n[0]), String(n[1]), (PG_PADRAO.niveis[i] || ['', '', '🏅'])[2]]; }) : null;
+  PG_CFG.niveis = (nv && nv.length ? nv : PG_PADRAO.niveis).slice().sort(function(a, b) { return a[0] - b[0]; });
+  try { PG_CFG.reAco = new RegExp(String(c.reAcoTxt || PG_PADRAO.reAcoTxt)); } catch (e) { PG_CFG.reAco = new RegExp(PG_PADRAO.reAcoTxt); }
+  PG.cfgTxt = c.reAcoTxt || PG_PADRAO.reAcoTxt;
+}
+function pgGestaoRender() {
+  var el = document.getElementById('admsub-pontos'); if (!el) return; pgInit();
+  var inp = 'width:110px;padding:6px 8px;border:1.5px solid var(--line);border-radius:6px;background:var(--surface);color:var(--txt)';
+  el.innerHTML = '<div class="page-section" style="max-width:640px"><h3 style="margin:0 0 6px">Pontos e níveis</h3><div class="rt-sub" style="margin-bottom:12px">Vale para toda a equipe e recalcula o mês inteiro na hora.</div>' +
+    PG_CAMPOS.map(function(f) { return '<label style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:6px 0;font-size:13px">' + f[1] + '<input type="number" min="0" id="pgc-' + f[0] + '" value="' + PG_CFG[f[0]] + '" style="' + inp + '"></label>'; }).join('') +
+    '<div style="font-weight:700;margin:14px 0 4px;font-size:13px">Níveis (pontos no mês)</div>' +
+    PG_CFG.niveis.map(function(n, i) { return '<div style="display:flex;gap:8px;margin:5px 0;align-items:center"><input type="text" id="pgn-nome-' + i + '" value="' + rtEsc(n[1]) + '" style="' + inp + '"><input type="number" min="0" id="pgn-pts-' + i + '" value="' + n[0] + '" style="' + inp + '"><span class="rt-sub">pts</span></div>'; }).join('') +
+    '<div style="font-weight:700;margin:14px 0 4px;font-size:13px">Como reconhecer aço (texto do nome do material)</div><input type="text" id="pgc-reaco" value="' + rtEsc(PG.cfgTxt || PG_PADRAO.reAcoTxt) + '" style="width:100%;padding:6px 8px;border:1.5px solid var(--line);border-radius:6px;background:var(--surface);color:var(--txt)">' +
+    '<div style="display:flex;gap:8px;margin-top:14px"><button class="qf-btn" onclick="pgGestaoSalvar()">Salvar</button><button class="qf-btn" onclick="pgGestaoPadrao()">Voltar ao padrão</button></div><div id="pgc-msg" class="rt-sub" style="margin-top:8px"></div></div>';
+}
+function pgGestaoSalvar() {
+  if (!(ehDona() || dcGestao())) { document.getElementById('pgc-msg').textContent = 'Só a gestão pode alterar.'; return; }
+  var c = {}; PG_CAMPOS.forEach(function(f) { c[f[0]] = Number(document.getElementById('pgc-' + f[0]).value) || 0; });
+  c.niveis = PG_CFG.niveis.map(function(n, i) { return [Number(document.getElementById('pgn-pts-' + i).value) || 0, document.getElementById('pgn-nome-' + i).value || n[1]]; });
+  c.reAcoTxt = document.getElementById('pgc-reaco').value || PG_PADRAO.reAcoTxt;
+  try { new RegExp(c.reAcoTxt); } catch (e) { document.getElementById('pgc-msg').textContent = 'O texto do aço está inválido.'; return; }
+  dbRef('gamificacao/config').set(c).then(function() { pgAplicarConfig(c); document.getElementById('pgc-msg').textContent = 'Salvo. Os pontos já foram recalculados.'; pgAtualizar(); })
+    .catch(function() { document.getElementById('pgc-msg').textContent = 'Não consegui salvar (verifique a permissão do Firebase para gamificacao/).'; });
+}
+function pgGestaoPadrao() {
+  if (!(ehDona() || dcGestao())) return;
+  dbRef('gamificacao/config').remove().then(function() { pgAplicarConfig(null); pgGestaoRender(); pgAtualizar(); });
+}
+
 // ══ DISCADOR — liga pelo MicroSIP (link tel:), em sequência, e registra cada ligação ══
 // Firebase: discador/listas/{id} · discador/dias/{VN}/{AAAA_MM_DD} = {itens:[...]} · discador/estado/{VN} = {posicoes, retornos}
 // Cada ligação registrada atualiza o campo 'disc' do dia em ligacoes/{VN} (soma no total do dia da Rota da Meta).
@@ -28513,6 +28622,7 @@ function dcRender() {
   var h = '<div class="dc-head"><h2 class="dc-tit">Discador</h2><div class="dc-abas">' +
     abas.map(function(a) { return '<button class="dc-aba' + (DC.aba === a[0] ? ' on' : '') + '" onclick="dcSetAba(\'' + a[0] + '\')">' + a[1] + '</button>'; }).join('') + '</div></div>';
   if (DC.aba === 'discar' || fcEstado()) h += fcBandHtml();
+  if (DC.aba === 'discar') h += pgBandHtml();
   h += ({ discar: dcVDiscar, funil: dcVFunil, equipe: dcVEquipe, inativos: dcVInativos, hist: dcVHist, listas: dcVListas, config: dcVConfig })[DC.aba]();
   h += '<div class="dc-toast" id="dc-toast"></div>';
   var foco = document.activeElement && document.activeElement.id;
