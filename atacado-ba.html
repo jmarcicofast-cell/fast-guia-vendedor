@@ -1278,6 +1278,10 @@ html body #dc-root input.dc-edit.dc-edit:focus{border:1px solid var(--dc-ok)!imp
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
     Rota da Meta
   </button>
+  <button class="nav-btn" id="nav-perfil" draggable="true" data-nav-id="perfil" onclick="showTab('perfil',this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+    Meu Perfil <span id="pf-nav-pts" style="font-size:11px;opacity:.8;margin-left:4px"></span>
+  </button>
   <button class="nav-btn" id="nav-discador" draggable="true" data-nav-id="discador" onclick="showTab('discador',this)">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>
     Discador
@@ -3326,6 +3330,7 @@ function pdResumoCopiar() {
   <div class="page-section" style="max-width:100%;"><div id="tf-root"></div></div>
 </div>
 
+<div id="tab-perfil" class="tab-content"><div class="page-section" style="max-width:100%;"><div id="pf-root"></div></div></div>
 <div id="tab-rota" class="tab-content">
   <div class="page-section" style="max-width:100%;"><div id="rota-root"></div></div>
 </div>
@@ -18718,6 +18723,7 @@ function showTab(name, btn) {
   if (name === 'checkin') ckInit();
   if (name === 'minhasmetas') mmInit();
   if (name === 'rota' && typeof rtInit === 'function') rtInit();
+  if (name === 'perfil' && typeof pfInit === 'function') pfInit();
   if (name === 'discador' && typeof dcInit === 'function') dcInit();
   if (name === 'tarefas' && typeof tfInit === 'function') tfInit();
   if (name === 'agenda' && typeof agdInit === 'function') { agdInit(); if (typeof agdNovosVistos === 'function') agdNovosVistos(); }
@@ -26759,7 +26765,7 @@ var AC_PAGINAS = [
   ['minhasmetas', 'Minhas Metas'], ['tabela', 'Tabela de Produtos'], ['empresa', 'Empresa'], ['pedidos', 'Pedidos'],
   ['clientes', 'Base de Clientes'], ['abastecimento', 'Pedidos abertos'], ['central', 'Central Abast.'],
   ['shopping', 'Shopping de Preços'], ['treinamentos', 'Treinamentos'], ['reconhecimento', 'Ranking'],
-  ['rota', 'Rota da Meta'], ['agenda', 'Agenda'], ['tarefas', 'Tarefas'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
+  ['rota', 'Rota da Meta'], ['perfil', 'Meu Perfil'], ['agenda', 'Agenda'], ['tarefas', 'Tarefas'], ['quadro', 'Quadro'], ['sugestoes', 'Sugestões'], ['quiz', 'Quiz'],
   ['admin', 'Gestão'], ['rampa', 'Rampa dos Novos'], ['parana', 'Plano PR'], ['rotina', 'Minha Rotina']
 ];
 var AC_PERFIS = [
@@ -27799,11 +27805,13 @@ function pgInit() {
 }
 function pgAtualizar() { clearTimeout(PG.h); PG.h = setTimeout(function() {
   var a = function(id) { var t = document.getElementById(id); return t && t.classList.contains('active'); };
+  try { if (a('tab-perfil') && typeof pfRender === 'function') pfRender(); var np = document.getElementById('pf-nav-pts'); if (np && currentUser && CK_EQUIPE.indexOf(currentUser) >= 0) np.textContent = pgFmt(pgCalc(currentUser).total) + ' pts'; } catch (e) {}
   try { if (a('tab-rota') && typeof rtRender === 'function') rtRender(); if (a('tab-discador') && typeof dcRender === 'function' && DC.aba === 'discar') dcRender(); } catch (e) {}
 }, 600); }
 function pgValorPedido(p) { if (p.itens && p.itens.length) return p.itens.reduce(function(s, it) { return s + (Number(String(it.qtd).replace(',', '.')) || 0) * (Number(String(it.vUnit).replace(',', '.')) || 0); }, 0); return Number(p.vTotal || 0); }
-function pgCalc(vn) {
-  var mes = ckMesAtualStr(), pre = mes.replace('-', '_'), C = PG_CFG, r = { atend: 0, funil: 0, ped: 0, bonus: 0, n: { atend: 0, funil: 0, ped: 0 }, det: { fita: 0, cim: 0, glas: 0, aco: 0, v100: 0 } };
+function pgCalc(vn) { return pgCalcMes(vn, ckMesAtualStr()); }
+function pgCalcMes(vn, mes) {
+  var pre = mes.replace('-', '_'), C = PG_CFG, r = { atend: 0, funil: 0, ped: 0, bonus: 0, n: { atend: 0, funil: 0, ped: 0 }, det: { fita: 0, cim: 0, glas: 0, aco: 0, v100: 0 } };
   var dias = PG.dias[vn] || {};
   Object.keys(dias).forEach(function(k) { if (k.indexOf(pre) !== 0) return;
     ((dias[k] || {}).itens || []).forEach(function(x) { if (!x) return;
@@ -27835,14 +27843,14 @@ function pgCardHtml(vn, eu) {
   var lista = CK_EQUIPE.map(function(v) { return { vn: v, r: pgCalc(v) }; }).sort(function(a, b) { return b.r.total - a.r.total; });
   var soma = lista.reduce(function(s, x) { return s + x.r.total; }, 0);
   h += '<div class="rt-pix" style="margin-top:12px">RANKING DO MÊS</div>' + lista.map(function(x, i) {
-    return '<div class="rt-sub" style="' + (x.vn === vn ? 'font-weight:700' : '') + '">' + (i + 1) + 'º ' + rtEsc(rtNome(x.vn)) + ' — ' + pgFmt(x.r.total) + ' pts' + (x.r.nivel ? ' · ' + x.r.nivel[2] + ' ' + x.r.nivel[1] : '') + '</div>'; }).join('') +
+    return '<div class="rt-sub" onclick="pfAbrir(\'' + x.vn + '\')" title="Ver o perfil" style="cursor:pointer;' + (x.vn === vn ? 'font-weight:700' : '') + '">' + (i + 1) + 'º ' + rtEsc(rtNome(x.vn)) + ' — ' + pgFmt(x.r.total) + ' pts' + (x.r.nivel ? ' · ' + x.r.nivel[2] + ' ' + x.r.nivel[1] : '') + '</div>'; }).join('') +
     '<div class="rt-sub" style="margin-top:6px"><b>Equipe:</b> ' + pgFmt(soma) + ' pts · média ' + pgFmt(Math.round(soma / CK_EQUIPE.length)) + ' por vendedor</div></div>';
   return h;
 }
 function pgBandHtml() {
   if (!currentUser || CK_EQUIPE.indexOf(currentUser) < 0) return ''; pgInit();
   var r = pgCalc(currentUser), nv = r.nivel, pr = r.prox, base = nv ? nv[0] : 0, pct = pr ? Math.min(100, Math.round((r.total - base) / (pr[0] - base) * 100)) : 100;
-  return '<div style="display:flex;align-items:center;gap:12px;padding:8px 12px;margin:8px 0;border:1px solid var(--line);border-radius:10px;font-size:13px"><b>' + pgFmt(r.total) + ' pts</b><span>' + (nv ? nv[2] + ' ' + nv[1] : 'sem nível') + '</span>' +
+  return '<div onclick="showTab(\'perfil\',document.getElementById(\'nav-perfil\'))" title="Abrir meu perfil" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:8px 12px;margin:8px 0;border:1px solid var(--line);border-radius:10px;font-size:13px"><b>' + pgFmt(r.total) + ' pts</b><span>' + (nv ? nv[2] + ' ' + nv[1] : 'sem nível') + '</span>' +
     '<div style="flex:1;height:8px;border-radius:5px;background:rgba(128,128,128,.25);overflow:hidden"><div style="height:100%;width:' + pct + '%;background:#7B4FBF"></div></div><span>' + (pr ? 'faltam ' + pgFmt(pr[0] - r.total) + ' p/ ' + pr[1] : 'nível máximo') + '</span></div>';
 }
 
@@ -27881,6 +27889,64 @@ function pgGestaoPadrao() {
   dbRef('gamificacao/config').remove().then(function() { pgAplicarConfig(null); pgGestaoRender(); pgAtualizar(); });
 }
 
+// ══ MEU PERFIL — nível, pontos, acumulado, melhor mês, emblemas e cartas de clientes reativados ══
+var PF = { vn: null };
+var PF_MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function pfMesTxt(m) { var p = String(m).split('-'); return PF_MESES[(+p[1] || 1) - 1] + '/' + p[0]; }
+function pgHist(vn) {
+  var meses = {}, st = { atend: 0, funil: 0, ped: 0, p100: 0, vendido: 0, diasCheios: 0 }, cartas = [], vistos = {};
+  var add = function(m) { if (m && !meses[m]) meses[m] = 1; };
+  Object.keys(PG.dias[vn] || {}).forEach(function(k) { var m = k.slice(0, 4) + '-' + k.slice(5, 7); add(m);
+    var n = 0; (((PG.dias[vn][k] || {}).itens) || []).forEach(function(x) { if (x && DC_RESMAP[x.res] && DC_RESMAP[x.res].at && x.res !== 'desq') n++; });
+    if (n >= 33) st.diasCheios++; });
+  premPedidos(vn).forEach(function(p) { var m = String(p.data).slice(0, 7); add(m);
+    var v = pgValorPedido(p); st.vendido += v; if (v > 100000) st.p100++;
+    if (p.tipoCliente === 'inativo') { var ch = (typeof cliChavePedido === 'function' ? cliChavePedido(p) : premNorm(p.empresa)) || premNorm(p.empresa);
+      if (ch && !vistos[ch]) { vistos[ch] = 1; cartas.push({ nome: p.empresa || 'Cliente', data: p.data, valor: v }); } } });
+  var res = Object.keys(meses).sort().map(function(m) { var r = pgCalcMes(vn, m); st.atend += r.n.atend; st.funil += r.n.funil; st.ped += r.n.ped; return { mes: m, total: r.total }; });
+  var acum = res.reduce(function(s, x) { return s + x.total; }, 0), melhor = res.reduce(function(b, x) { return !b || x.total > b.total ? x : b; }, null);
+  cartas.sort(function(a, b) { return String(b.data).localeCompare(String(a.data)); });
+  return { meses: res, acum: acum, melhor: melhor, st: st, cartas: cartas };
+}
+function pgEmblemas(h) {
+  var st = h.st, mp = h.melhor ? h.melhor.total : 0, E = [];
+  var t = function(ic, nome, desc, atual, meta) { E.push({ ic: ic, nome: nome, desc: desc, atual: atual, meta: meta }); };
+  [[100, 'Aquecendo'], [500, 'No ritmo'], [1000, 'Máquina de ligar']].forEach(function(x) { t('📞', x[1], x[0] + ' ligações atendidas', st.atend, x[0]); });
+  [[10, 'Farejador'], [50, 'Mestre do funil']].forEach(function(x) { t('🟣', x[1], x[0] + ' leads levados ao funil', st.funil, x[0]); });
+  [[1, 'Primeiro pedido'], [10, 'Fechador'], [50, 'Rolo compressor']].forEach(function(x) { t('✅', x[1], x[0] + ' pedido' + (x[0] > 1 ? 's' : '') + ' fechado' + (x[0] > 1 ? 's' : ''), st.ped, x[0]); });
+  [[1, 'Reativador'], [5, 'Caçador de inativos'], [10, 'Resgate total']].forEach(function(x) { t('🃏', x[1], x[0] + ' cliente' + (x[0] > 1 ? 's' : '') + ' inativo' + (x[0] > 1 ? 's' : '') + ' reativado' + (x[0] > 1 ? 's' : ''), h.cartas.length, x[0]); });
+  t('💰', 'Pedidão', 'Um pedido acima de R$ 100.000', st.p100, 1);
+  [[1, 'Dia cheio'], [10, 'Constância']].forEach(function(x) { t('🔥', x[1], x[0] + ' dia' + (x[0] > 1 ? 's' : '') + ' com 33+ ligações atendidas', st.diasCheios, x[0]); });
+  PG_CFG.niveis.forEach(function(n) { t(n[2], 'Mês ' + n[1], 'Chegar ao nível ' + n[1] + ' em um mês (' + pgFmt(n[0]) + ' pts)', mp, n[0]); });
+  return E;
+}
+function pfCarta(c) {
+  var r = c.valor > 100000 ? ['Lendária', '#E6A700'] : c.valor > 50000 ? ['Épica', '#7B4FBF'] : c.valor > 20000 ? ['Rara', '#2F6FB3'] : ['Comum', '#8E939C'];
+  return '<div style="width:150px;border:2px solid ' + r[1] + ';border-radius:12px;padding:10px;background:var(--surface)"><div style="font-size:11px;font-weight:700;color:' + r[1] + '">' + r[0].toUpperCase() + '</div><div style="font-size:26px;margin:4px 0">🃏</div>' +
+    '<div style="font-size:13px;font-weight:700;line-height:1.2">' + rtEsc(c.nome) + '</div><div class="rt-sub" style="margin-top:4px">Reativado em ' + rtEsc(String(c.data).split('-').reverse().join('/')) + '</div><div class="rt-sub">R$ ' + pgFmt(Math.round(c.valor)) + '</div></div>';
+}
+function pfAbrir(vn) { PF.vn = vn; PF.fixo = true; showTab('perfil', document.getElementById('nav-perfil')); }
+function pfInit() { pgInit(); var raiz = document.getElementById('pf-root'); if (raiz) { if (!PF.fixo || !PF.vn) PF.vn = CK_EQUIPE.indexOf(currentUser) >= 0 ? currentUser : CK_EQUIPE[0]; PF.fixo = false; pfRender(); } }
+function pfVer(vn) { PF.vn = vn; pfRender(); }
+function pfRender() {
+  var el = document.getElementById('pf-root'); if (!el || !PF.vn) return;
+  var vn = PF.vn, h = pgHist(vn), atual = pgCalc(vn), nv = atual.nivel, pr = atual.prox, base = nv ? nv[0] : 0, pct = pr ? Math.min(100, Math.round((atual.total - base) / (pr[0] - base) * 100)) : 100;
+  var box = 'border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface)', kpi = function(r, v, s) { return '<div style="' + box + ';flex:1;min-width:150px"><div class="rt-sub">' + r + '</div><div style="font-size:22px;font-weight:800">' + v + '</div>' + (s ? '<div class="rt-sub">' + s + '</div>' : '') + '</div>'; };
+  var E = pgEmblemas(h), got = E.filter(function(e) { return e.atual >= e.meta; }).length;
+  var meu = CK_EQUIPE.indexOf(currentUser) >= 0 ? currentUser : null, sel = (vn !== meu && meu ? '<button class="qf-btn" onclick="pfVer(\'' + meu + '\')">Voltar ao meu perfil</button>' : '') + '<select onchange="pfVer(this.value)" style="padding:6px 8px;border:1.5px solid var(--line);border-radius:6px;background:var(--surface);color:var(--txt)">' + CK_EQUIPE.map(function(v) { return '<option value="' + v + '"' + (v === vn ? ' selected' : '') + '>' + rtEsc(rtNome(v)) + '</option>'; }).join('') + '</select>';
+  el.innerHTML = '<div style="max-width:980px;margin:0 auto;padding:6px 2px">' +
+    '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px"><div style="width:62px;height:62px;border-radius:50%;background:#7B4FBF;color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800">' + rtEsc(rtNome(vn).charAt(0)) + '</div>' +
+    '<div style="flex:1"><div style="font-size:22px;font-weight:800">' + rtEsc(rtNome(vn)) + '</div><div style="font-size:16px;font-weight:700">' + (nv ? nv[2] + ' ' + nv[1] : 'Ainda sem nível') + ' <span class="rt-sub">· ' + pgFmt(atual.total) + ' pts em ' + rtMesNome() + '</span></div>' +
+    '<div style="height:10px;border-radius:6px;background:rgba(128,128,128,.25);margin:6px 0;overflow:hidden;max-width:420px"><div style="height:100%;width:' + pct + '%;background:#7B4FBF"></div></div><div class="rt-sub">' + (pr ? 'Faltam <b>' + pgFmt(pr[0] - atual.total) + '</b> pts para ' + pr[1] : 'Nível máximo alcançado') + '</div></div>' + sel + '</div>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">' + kpi('Pontos no mês', pgFmt(atual.total), (nv ? nv[1] : 'sem nível')) + kpi('Pontos acumulados', pgFmt(h.acum), 'todos os meses') +
+    kpi('Melhor mês', h.melhor ? pgFmt(h.melhor.total) + ' pts' : '—', h.melhor ? pfMesTxt(h.melhor.mes) : '') + kpi('Vendido (todos os meses)', 'R$ ' + pgFmt(Math.round(h.st.vendido)), h.st.ped + ' pedidos') + '</div>' +
+    '<div style="font-weight:800;margin:6px 0">Emblemas <span class="rt-sub">· ' + got + ' de ' + E.length + '</span></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:18px">' +
+    E.map(function(e) { var ok = e.atual >= e.meta; return '<div style="' + box + ';' + (ok ? '' : 'opacity:.5;filter:grayscale(1)') + '"><div style="font-size:26px">' + e.ic + '</div><div style="font-weight:700;font-size:13px">' + rtEsc(e.nome) + '</div><div class="rt-sub">' + rtEsc(e.desc) + '</div><div class="rt-sub" style="margin-top:3px">' + (ok ? '✓ conquistado' : pgFmt(Math.round(e.atual)) + ' / ' + pgFmt(e.meta)) + '</div></div>'; }).join('') + '</div>' +
+    '<div style="font-weight:800;margin:6px 0">Cartas de clientes inativos <span class="rt-sub">· ' + h.cartas.length + ' conquistada' + (h.cartas.length === 1 ? '' : 's') + '</span></div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">' +
+    (h.cartas.length ? h.cartas.map(pfCarta).join('') : '<div class="rt-sub">Cada cliente inativo reativado vira uma carta. Ainda não há nenhuma.</div>') + '</div>' +
+    '<div style="font-weight:800;margin:6px 0">Mês a mês</div>' + (h.meses.length ? h.meses.slice().reverse().map(function(m) { return '<div class="rt-sub">' + pfMesTxt(m.mes) + ' — ' + pgFmt(m.total) + ' pts' + (h.melhor && h.melhor.mes === m.mes ? ' ⭐ melhor mês' : '') + '</div>'; }).join('') : '<div class="rt-sub">Sem registros ainda.</div>') +
+    '<div class="rt-sub" style="margin-top:10px">Os pontos antigos são recalculados com as regras atuais.</div></div>';
+}
 // ══ DISCADOR — liga pelo MicroSIP (link tel:), em sequência, e registra cada ligação ══
 // Firebase: discador/listas/{id} · discador/dias/{VN}/{AAAA_MM_DD} = {itens:[...]} · discador/estado/{VN} = {posicoes, retornos}
 // Cada ligação registrada atualiza o campo 'disc' do dia em ligacoes/{VN} (soma no total do dia da Rota da Meta).
